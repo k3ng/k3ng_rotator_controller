@@ -23,29 +23,10 @@
                           http://creativecommons.org/licenses/by-nc-sa/3.0/legalcode
 
 
-   ***************************************************************************************************************    */
-
-#include <avr/pgmspace.h>
-#include <EEPROM.h>
-#include <math.h> 
-#include <avr/wdt.h>
-
-#define CODE_VERSION "2013082401UNSTABLE"
+   ***************************************************************************************************************    
 
 
 
-/* BETA Features:
-
-  Backtracked to 2013072501UNSTABLE.... got mixed up on versioning...
-    
-  #define OPTION_EL_MANUAL_ROTATE_LIMITS    
-  #define EL_MANUAL_ROTATE_DOWN_LIMIT -1
-  #define EL_MANUAL_ROTATE_UP_LIMIT 181
-  rotate_up_or_down pin
-
-*/
-
-/*
 
     All copyrights are the property of their respective owners
 
@@ -201,111 +182,20 @@
 
 */
 
-/* ---------------------- Features and Options - you must configure this !! ------------------------------------------------*/
 
-/* main features */
-#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
-#define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232A emulation
-#define OPTION_GS_232B_EMULATION          // uncomment this for GS-232B emulation (also uncomment FEATURE_YAESU_EMULATION above)
-//#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation (undefine FEATURE_YAESU_EMULATION above)
-//#define FEATURE_ROTATION_INDICATOR_PIN     // activate pin (defined below) to indicate rotation
+#include <avr/pgmspace.h>
+#include <EEPROM.h>
+#include <math.h> 
+#include <avr/wdt.h>
+#include "rotator_features.h"
+#include "rotator_pins.h"
 
-/* host and remote unit functionality */
-//#define FEATURE_REMOTE_UNIT_SLAVE //uncomment this to make this unit a remote unit controlled by a host unit
+//#include "pins.h"
+//#include "pins_m0upu.h"
 
-
-/* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
-//#define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
-//#define FEATURE_AZ_POSITION_ROTARY_ENCODER
-//#define FEATURE_AZ_POSITION_PULSE_INPUT
-//#define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support (also uncomment object declaration below)
-#define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires an Arduino with Serial1 suppport (i.e. Arduino Mega)
-//#define FEATURE_AZ_POSITION_LSM303                            // Uncomment for elevation using LSM303 magnetometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
-
-//#define FEATURE_EL_POSITION_POTENTIOMETER
-//#define FEATURE_EL_POSITION_ROTARY_ENCODER
-//#define FEATURE_EL_POSITION_PULSE_INPUT
-//#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library (also uncomment object declaration below)
-//#define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library (also uncomment object declaration below)
-#define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires an Arduino with Serial1 suppport (i.e. Arduino Mega)
-//#define FEATURE_EL_POSITION_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
-
-/* preset rotary encoder features and options */
-//#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
-//#define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
-#define OPTION_ENCODER_HALF_STEP_MODE
-#define OPTION_ENCODER_ENABLE_PULLUPS          // define to enable weak pullups on rotary encoder pins
-//#define OPTION_PRESET_ENCODER_RELATIVE_CHANGE   // this makes the encoder(s) change the az or el in a relative fashion rather then store an absolute setting
-
-/* position sensor options */
-#define OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT // stop azimuth at lower and upper limit rather than rolling over
-#define OPTION_EL_POSITION_ROTARY_ENCODER_HARD_LIMIT // stop elevation at lower and upper limits rather than rolling over
-#define OPTION_AZ_POSITION_PULSE_HARD_LIMIT  // stop azimuth at lower and upper limit rather than rolling over
-#define OPTION_EL_POSITION_PULSE_HARD_LIMIT  // stop elevation at lower and upper limits rather than rolling over
-#define OPTION_POSITION_PULSE_INPUT_PULLUPS  // define to enable weak pullups on position pulse inputs
-
-/* less often used features and options */
-//#define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
-//#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
-//#define FEATURE_PARK
-//#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
-//#define OPTION_EL_MANUAL_ROTATE_LIMITS
-//#define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
-//#define OPTION_EASYCOM_EL_QUERY_COMMAND // Adds non-standard Easycom command: EL with no parm returns current elevation
-//#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
-//#define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
-#define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-//#define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table below
-//#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table below
-//#define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
-//#define FEATURE_JOYSTICK_CONTROL          // analog joystick support
-//#define OPTION_JOYSTICK_REVERSE_X_AXIS
-//#define OPTION_JOYSTICK_REVERSE_Y_AXIS
-#define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED    // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
-
-  /*
-  
-  Note:
-  
-  Ham Radio Deluxe expects AZ and EL in output for Yaesu C command in AZ/EL mode.  I'm not sure if this is default behavior for
-  the Yaesu interface since the C2 command is supposed to be for AZ and EL.  If you have problems with other software with this code in AZ/EL mode,
-  uncomment #define OPTION_C_COMMAND_SENDS_AZ_AND_EL.
-  
-  */
-
-/* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
+#define CODE_VERSION "2013091101"
 
 
-
-#define DEFAULT_DEBUG_STATE 0  // this should be set to zero unless you're debugging something at startup
-
-//#define DEBUG_MEMORY
-//#define DEBUG_BUTTONS
-//#define DEBUG_SERIAL
-//#define DEBUG_SERVICE_REQUEST_QUEUE
-//#define DEBUG_EEPROM
-//#define DEBUG_AZ_SPEED_POT
-//#define DEBUG_AZ_PRESET_POT
-//#define DEBUG_PRESET_ENCODERS
-//#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
-//#define DEBUG_BRAKE
-//#define DEBUG_OVERLAP
-//#define DEBUG_DISPLAY
-//#define DEBUG_AZ_CHECK_OPERATION_TIMEOUT
-//#define DEBUG_TIMED_BUFFER
-//#define DEBUG_EL_CHECK_OPERATION_TIMEOUT
-//#define DEBUG_VARIABLE_OUTPUTS
-#define DEBUG_ROTATOR
-//#define DEBUG_SUBMIT_REQUEST
-//#define DEBUG_SERVICE_ROTATION
-//#define DEBUG_POSITION_ROTARY_ENCODER
-//#define DEBUG_PROFILE_LOOP_TIME
-//#define DEBUG_POSITION_PULSE_INPUT
-//#define DEBUG_ACCEL
-//#define DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
-//#define DEBUG_HEADING_READING_TIME
-//#define DEBUG_JOYSTICK
-//#define DEBUG_ROTATION_INDICATION_PIN
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
@@ -316,10 +206,6 @@
 #define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
 
 
-
-#include "rotator_pins.h"
-//#include "pins.h"
-//#include "pins_m0upu.h"
 
 
 
@@ -696,7 +582,7 @@ You can tweak these, but read the online documentation!
 #define ELEVATION_TOLERANCE 1.0
 #define OPERATION_TIMEOUT 60000        // timeout for any rotation operation in mS ; 60 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
-#define SERIAL_BAUD_RATE 9600          // 9600
+#define SERIAL_BAUD_RATE 115200 //9600          // 9600
 #define SERIAL1_BAUD_RATE 9600          // 9600
 #define SERIAL2_BAUD_RATE 9600          // 9600
 #define SERIAL3_BAUD_RATE 9600          // 9600
@@ -944,8 +830,8 @@ volatile unsigned int el_pulse_counter_ambiguous = 0;
 
 */
 #ifdef FEATURE_AZIMUTH_CORRECTION
-float azimuth_calibration_from[]  = {0, 450};
-float azimuth_calibration_to[]    = {0, 450};
+float azimuth_calibration_from[]  = {180, 630};    /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
+float azimuth_calibration_to[]    = {180, 630};
 #endif //FEATURE_AZIMUTH_CORRECTION
 
 #ifdef FEATURE_ELEVATION_CORRECTION
@@ -3792,6 +3678,11 @@ void read_azimuth(){
       }
       #endif //DEBUG_HEADING_READING_TIME
       raw_azimuth = remote_unit_command_result_float * HEADING_MULTIPLIER;
+      
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = (correct_azimuth(raw_azimuth/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+      #endif //FEATURE_AZIMUTH_CORRECTION      
+      
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         raw_azimuth = (raw_azimuth*(1-(AZIMUTH_SMOOTHING_FACTOR/100))) + (previous_raw_azimuth*(AZIMUTH_SMOOTHING_FACTOR/100));
       }      
@@ -4575,6 +4466,11 @@ void read_elevation()
       
       
       elevation = remote_unit_command_result_float * HEADING_MULTIPLIER;
+      
+      #ifdef FEATURE_ELEVATION_CORRECTION
+      elevation = (correct_elevation(elevation/HEADING_MULTIPLIER)*HEADING_MULTIPLIER);
+      #endif //FEATURE_ELEVATION_CORRECTION      
+      
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
         elevation = (elevation*(1-(ELEVATION_SMOOTHING_FACTOR/100))) + (previous_elevation*(ELEVATION_SMOOTHING_FACTOR/100));
       }      
