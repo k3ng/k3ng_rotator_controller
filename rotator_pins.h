@@ -179,3 +179,11 @@
 #define pin_memsic_2125_x 0
 #define pin_memsic_2125_y 0
 #endif //FEATURE_EL_POSITION_MEMSIC_2125
+
+#ifdef FEATURE_ANALOG_OUTPUT_PINS
+#define pin_analog_az_out 0
+#define pin_analog_el_out 0
+#endif //FEATURE_ANALOG_OUTPUT_PINS
+
+
+

@@ -1,27 +1,27 @@
 /* Arduino Rotator Controller
- * Anthony Good
- * K3NG
- * anthony.good@gmail.com
- *
- * Contributions from John Eigenbode, W3SA
- * w3sa@arrl.net
- * Contributions: AZ/EL testing and debugging, AZ/EL LCD Enhancements, original North center code, Az/El Rotator Control Connector Pins
- *
- * Contributions from Jim Balls, M0CKE
- * makidoja@gmail.com
- * Contributions: Rotary Encoder Preset Support
- *
- * Contributions from Gord, VO1GPK
- * Contribution: FEATURE_ADAFRUIT_BUTTONS code
- *
- * Moon2 and sunpos libraries courtesy of Pete Hardie, VE5VA
- *
- * Non-English extensions ideas, code, and testing provided by Marcin SP5IOU, Hjalmar OZ1JHM, and Sverre LA3ZA
- *
- * Testing, ideas, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, and many others
- *
- * Translations: Maximo, EA1DDO
- *
+   Anthony Good
+   K3NG
+   anthony.good@gmail.com
+  
+   Contributions from John Eigenbode, W3SA
+   w3sa@arrl.net
+   Contributions: AZ/EL testing and debugging, AZ/EL LCD Enhancements, original North center code, Az/El Rotator Control Connector Pins
+  
+   Contributions from Jim Balls, M0CKE
+   makidoja@gmail.com
+   Contributions: Rotary Encoder Preset Support
+  
+   Contributions from Gord, VO1GPK
+   Contribution: FEATURE_ADAFRUIT_BUTTONS code
+  
+   Moon2 and sunpos libraries courtesy of Pete Hardie, VE5VA
+  
+   Non-English extensions ideas, code, and testing provided by Marcin SP5IOU, Hjalmar OZ1JHM, and Sverre LA3ZA
+  
+   Testing, ideas, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, and many others
+  
+   Translations: Maximo, EA1DDO
+  
  ***************************************************************************************************************
  *
  *  This program is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
@@ -32,306 +32,119 @@
  *
  *
  ***************************************************************************************************************
- *
- *
- *
- *
- *  All copyrights are the property of their respective owners
- *
- *   Very basic ASCII Art Schematic
- *
- **+----------------Yaesu Pin 1
- |
- |                             N
- |          D6---{1000 ohms}---P      2N2222
- |                             N    or similar
- |
- |                            GND
- |
- ||+----------------Yaesu Pin 2
- |
- |                             N
- |          D7---{1000 ohms}---P      2N2222
- |                             N    or similar
- |
- |                            GND
- |
- |          A0-------------+---------------------Yaesu Pin 4
- |
- |                      [0.01uF]
- |
- |                        GND
- |
- |          D10---{4.7K}---+---------------------Yaesu Pin 3
- |
- |                       [10uF]
- |
- |                        GND
- |
- |
- |          Not Connected------------------------Yaesu Pin 6
- |
- |          GND----------------------------------Yaesu Pin 5
- |
- |  Alternatively Yaesu Pin 3 can be connected to Pin 6 if variable speed functionality (X commands) are not desired.  This will feed +5V directly
- |  into the speed voltage pin and set the unit for maximum speed all the time
- |
- |  Yaesu Azimuth Only Rotator Controller Connector Pins
- |
- |     6 || 5
- |    4      3
- |      2  1
- |  1 - ground to rotate L
- |  2 - ground to rotate R
- |  3 - speed voltage (input); 4.5V = max speed
- |  4 - analog azimuth voltage (output); 0V = full CCW, ~4.9V = full CW
- |  5 - ground
- |  6 - +5V or so
- |
- |  Yaesu Az/El Rotator Control Connector Pins
- |
- |      7 | | 6
- |     3   8   1
- |      5     4
- |         2
- |
- |  1 - 2 - 4.5 VDC corresponding to 0 to 180 degrees elevation
- |  2 - Connect to Pin 8 to rotate right (clockwise)
- |  3 - Connect to Pin 8 to rotate Down
- |  4 - Connect to Pin 8 to rotate left (counterclockwise)
- |  5 - Connect to Pin 8 to rotate Up
- |  6 - 2 - 4.5 VDC corresponding to 0 to 450 degrees rotation
- |  7 - 13 - 6 VDC at up to 200 mA
- |  8 - Common ground
- |
- |   ASCII Art Schematic
- |
- ||+----------------Yaesu Pin 4
- |
- |                             N
- |          D6--{1000 ohms}---P      2N2222
- |                             N    or similar
- |
- |                            GND
- |
- ||+----------------Yaesu Pin 2
- |
- |                             N
- |          D7--{1000 ohms}---P      2N2222
- |                             N    or similar
- |
- |                            GND
- ||+----------------Yaesu Pin 5
- |
- |                             N
- |          D8--{1000 ohms}---P      2N2222
- |                             N    or similar
- |
- |                            GND
- |
- ||+----------------Yaesu Pin 3
- |
- |                             N
- |          D9--{1000 ohms}---P      2N2222
- |                             N    or similar
- |
- |                            GND
- |
- |          A0-----------------------------------Yaesu Pin 6
- |
- |          A1-----------------------------------Yaesu Pin 1
- |
- |          NC-----------------------------------Yaesu Pin 7
- |
- |          GND----------------------------------Yaesu Pin 8
- |
- |  Quick Start
- |
- |  In order to test and calibrate your unit, connect the Serial Monitor to the COM port set for 9600 and carriage return
- |  All command letters must be uppercase.
- |  The backslash d (\d) command toggles debug mode which will periodically display key parameters.
- |
- |  To test basic operation, send commands using Serial Monitor:
- |  Rotate left(CCW): L
- |  Rotate right(CW): R
- |  Stop rotation: A or S commands
- |  Read the current azimuth: C
- |  Go to an azimuth automatically: M command (examples: M180 = go to 180 degrees, M010 = go to 10 degrees
- |
- |  To calibrate the unit, send the O command and rotate to 180 degrees / full CCW and send a carriage return, then
- |  send the F command and rotate to 270 degrees / full CW and send a carriage return (assuming a 450 degrees rotation rotator).
- |  If you are operating a 360 degree rotation rotator, for the F command rotate to 180 degrees full CW, not 270.
- |
- |  ( CW means clockwise (or LEFT on Yaesu rotators) and CCW means counter clockwise (or RIGHT on Yaesu rotators))
- |
- |
- |  It does properly handle the 450 degree rotation capability of the Yaesu rotators.
- |
- |  This code has been successfully interfaced with non-Yaesu rotators. Email me if you have a rotator you would like to interface this to.
- |
- |  With the addition of a reasonable capacity DC power supply and two relays, this unit could entirely replace a control unit if desired.
- |
- *********************************************************************************************************************************************
- *
- * New in this release:
- *
- *  (Please note that many features are in the process of being documented.  The {documented} flags are to keep track of 
- *   what has been documented and what hasn't.)
- *
- * HH-12 encoder support {documented}
- * OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
- * \P PWM command is now \W
- * \P is Park command
- * park_in_progress_pin  // goes high when a park has been initiated and rotation is in progress {documented}
- * parked_pin            // goes high when in a parked position {documented}
- *
- * Introduced in 2013112701UNSTABLE
- *  heading_reading_inhibit_pin {documented}
- *  FEATURE_LIMIT_SENSE {documented}
- **#define az_limit_sense_pin 0  // input - low stops azimuthal rotation {documented}
- **#define el_limit_sense_pin 0  // input - low stops elevation rotation {documented}
- *  \Axxx command - manually set azimuth, xxx = azimuth (FEATURE_AZ_POSITION_ROTARY_ENCODER or FEATURE_AZ_POSITION_PULSE_INPUT only) {documented}
- *  \Bxxx command - manually set elevation, xxx = elevation (FEATURE_EL_POSITION_POTENTIOMETER or FEATURE_EL_POSITION_ROTARY_ENCODER only) {documented}
- *
- * Introduced in 2013112801UNSTABLE
- *  fixed bug with preset encoder start and kill button
- *
- * Introduced in 2013122201UNSTABLE
- *  FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
- *  FEATURE_EL_POSITION_INCREMENTAL_ENCODER
- *  OPTION_INCREMENTAL_ENCODER_PULLUPS
- **#define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 8000.0
- **#define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 8000.0
- *  AZIMUTH_STARTING_POINT_DEFAULT and AZIMUTH_ROTATION_CAPABILITY_DEFAULT are now persistent
- *  Yaesu P35, P45, and Z commands no longer write to eeprom {documented}
- *
- * Introduced in 2013122301UNSTABLE
- *  control_port points to the hardware port for computer interface
- *  remote_unit_port points to the hardware port for interfacing to remote unit
- *  removed OPTION_SERIAL1, 2, 3, 4
- *  SS command: SS0 = control port, SS1 = remote unit port
- *
- * Introduced in 1.9.2014010102-UNSTABLE
- *  No longer need to manually uncomment hh12.h or object declarations
- *  No longer need to manually uncomment LiquidCrystal lcd() {documented}
- *  No longer need to manually uncomment Adafruit_ADXL345 accel {documented}
- *  No longer need to manually uncomment ADXL345 accel {documented}
- *  No longer need to manually uncomment Adafruit_LSM303 lsm;
- *  No longer need to manually uncomment HMC5883L compass;
- *  FEATURE_4_BIT_LCD_DISPLAY {documented}
- *  FEATURE_ADAFRUIT_I2C_LCD {documented}
- *  FEATURE_YOURDUINO_I2C_LCD {documented}
- *  FEATURE_RFROBOT_I2C_DISPLAY 
- *
- * Introduced in 1.9.2014010201-UNSTABLE
- *  No longer need to uncomment:
- *   FEATURE_LCD_DISPLAY {documented}
- *   FEATURE_I2C_LCD {documented}
- *   any include files {documented}
- *
- * Introduced in 1.9.2014010401-UNSTABLE
- *  serial led duration now set by SERIAL_LED_TIME_MS
- *
- * Introduced in 1.9.2014010901-UNSTABLE
- **#define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.) {documented}
- **#define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port {documented}
- *  start of remote unit pin control
- *
- * Introduced in 1.9.2014011101-UNSTABLE
- *  remote unit pin control (add 100 to a pin number define to map to remote unit pin) {documented}
- *  FEATURE_CLOCK {documented}
- *  FEATURE_MOON_TRACKING {documented}
- **#define DEFAULT_LATITUDE 40.889958 {documented}
- **#define DEFAULT_LONGITUDE -75.585972 {documented}
- *
- **#define INTERNAL_CLOCK_CORRECTION 0.00145
- *
- *  \C - show clock {documented}
- *  \O - set clock \OYYYYMMDDHHmm {documented}
- *  \Mx - x = 0: deactive moon tracking; x = 1: activate moon tracking {documented}
- *  \Gxxxxxx - set coordinates via grid square (example: \GFN20EV) {documented}
- *
- *  Park is now deactivated when issuing a Yaesu command (other than C) or when doing manual rotation
- *
- * Introduced in 1.9.2014011202-UNSTABLE
- *  FEATURE_GPS
- **#define GPS_PORT_MAPPED_TO &Serial2 {documented}
- **#define GPS_PORT_BAUD_RATE 9600 {documented}
- **#define SYNC_TIME_WITH_GPS 1 {documented}
- **#define SYNC_COORDINATES_WITH_GPS 1 {documented}
- **#define GPS_SYNC_PERIOD_SECONDS 10  // how long to consider internal clock syncronized after a GPS reading {documented}
- **#define GPS_VALID_FIX_AGE_MS 10000  // consider a GPS reading valid if the fix age is less than this {documented}
- *
- * Introduced in 1.9.2014011701-UNSTABLE
- *  FEATURE_SUN_TRACKING {documented}
- *    \Ux - x = 0: deactive sun tracking; x = 1: activate sun tracking  {documented}
- *  working on FEATURE_TWO_DECIMAL_PLACE_HEADINGS - there is a bug in the azimuth calculations {documented}
- *
- * Introduced in 1.9.2014012001-UNSTABLE
- *  FEATURE_AZ_POSITION_INCREMENTAL_ENCODER & FEATURE_EL_POSITION_INCREMENTAL_ENCODER coding
- *
- * Introduced in 1.9.2014012401-UNSTABLE
- *  Updated debug output format
- *  \XS - calibration az and el to sun heading - there are calculation bugs
- *
- * Introduced in 1.9.2014012601-UNSTABLE
- *  fixed initialize_serial() compilaton error when neither yaesu or easycom protocol is selected in features
- *  fixed bugs in \XS and \XM
- *  still working on implementation \XS and \XM to work with all sensor types
- *
- * Introduced in 1.9.2014012701-UNSTABLE
- *  \XS and\XM now working on all sensor types {documented}
- *  moon_tracking_active_pin   {documented}
- *  sun_tracking_active_pin      {documented}
- *  moon_tracking_activate_line    {documented}
- *  sun_tracking_activate_line     {documented}
- *
- * Introduced in 1.9.2014012801-UNSTABLE
- *  moon_tracking_button  {documented}
- *  sun_tracking_button   {documented}
- *  \A azimuth calibration now also works with sensors other than rotary encoders and pulse input
- *  \B elevation calibration now also works with sensors other than rotary encoders and pulse input
- *
- * Introduced in 1.9.2014013001-UNSTABLE
- *  OPTION_BUTTON_RELEASE_NO_SLOWDOWN {documented}
- *
- * Introduced in 1.9.2014013101-UNSTABLEA
- *  Fixed God-awful bug that caused Arduino to crash when running FEATURE_GPS.  Note to self: never declare a char in a switch case.  It causes unpredicatable, unexplainable evil stuff to occur.
- *
- * 1.9.2014020101-UNSTABLE
- *  Fixed bug with elevation PWM
- *
-   1.9.2014020501-UNSTABLE
-     gps_sync pin - goes high when clock is GPS synchronized {documented}
+  
+  
+  
+  
+                            All copyrights are the property of their respective owners
+  
+ 
+ 
+ Full documentation is currently located here: https://docs.google.com/document/d/1Q4_X2XdndylohjhZWsaAUNl1UIqYGt9Kxp1VM70XJGM/edit?usp=sharing
 
-   1.9.2014020501-UNSTABLE
-     working on decoupling check_serial and yaesu_command and backslash command handling in preparation for Ethernet support
+      Rules for using this code:
 
-   1.9.2014020701-UNSTABLE
-     FEATURE_RTC_PCF8583 {documented}
+          Rule #1: Read the documentation.
+  
+          Rule #2: Refer to rule #1.
 
-  1.9.2014021001-UNSTABLE
+          Rule #3: Help others.
+
+          Rule #4: Have fun.
+
+  
+  New in this release:
+  
+   HH-12 encoder support 
+   OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
+   \P PWM command is now \W
+   \P is Park command
+   park_in_progress_pin  // goes high when a park has been initiated and rotation is in progress 
+   parked_pin            // goes high when in a parked position 
+    heading_reading_inhibit_pin 
+    FEATURE_LIMIT_SENSE 
+   #define az_limit_sense_pin 0  // input - low stops azimuthal rotation 
+   #define el_limit_sense_pin 0  // input - low stops elevation rotation 
+    \Axxx command - manually set azimuth, xxx = azimuth (FEATURE_AZ_POSITION_ROTARY_ENCODER or FEATURE_AZ_POSITION_PULSE_INPUT only) 
+    \Bxxx command - manually set elevation, xxx = elevation (FEATURE_EL_POSITION_POTENTIOMETER or FEATURE_EL_POSITION_ROTARY_ENCODER only) 
+    fixed bug with preset encoder start and kill button
+    FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+    FEATURE_EL_POSITION_INCREMENTAL_ENCODER
+    OPTION_INCREMENTAL_ENCODER_PULLUPS
+   #define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 8000.0
+   #define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 8000.0
+    AZIMUTH_STARTING_POINT_DEFAULT and AZIMUTH_ROTATION_CAPABILITY_DEFAULT are now persistent
+    Yaesu P35, P45, and Z commands no longer write to eeprom 
+    control_port points to the hardware port for computer interface
+    remote_unit_port points to the hardware port for interfacing to remote unit
+    removed OPTION_SERIAL1, 2, 3, 4
+    SS command: SS0 = control port, SS1 = remote unit port
+    No longer need to manually uncomment hh12.h or object declarations
+    No longer need to manually uncomment LiquidCrystal lcd() 
+    No longer need to manually uncomment Adafruit_ADXL345 accel 
+    No longer need to manually uncomment ADXL345 accel 
+    No longer need to manually uncomment Adafruit_LSM303 lsm;
+    No longer need to manually uncomment HMC5883L compass;
+    FEATURE_4_BIT_LCD_DISPLAY 
+    FEATURE_ADAFRUIT_I2C_LCD 
+    FEATURE_YOURDUINO_I2C_LCD 
+    FEATURE_RFROBOT_I2C_DISPLAY 
+    No longer need to uncomment:
+     FEATURE_LCD_DISPLAY 
+     FEATURE_I2C_LCD 
+     any include files 
+    serial led duration now set by SERIAL_LED_TIME_MS
+   #define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.) 
+   #define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port 
+    start of remote unit pin control
+    remote unit pin control (add 100 to a pin number define to map to remote unit pin) 
+    FEATURE_CLOCK 
+    FEATURE_MOON_TRACKING 
+   #define DEFAULT_LATITUDE 40.889958 
+   #define DEFAULT_LONGITUDE -75.585972 
+  
+   #define INTERNAL_CLOCK_CORRECTION 0.00145
+  
+    \C - show clock 
+    \O - set clock \OYYYYMMDDHHmm 
+    \Mx - x = 0: deactive moon tracking; x = 1: activate moon tracking 
+    \Gxxxxxx - set coordinates via grid square (example: \GFN20EV) 
+  
+    Park is now deactivated when issuing a Yaesu command (other than C) or when doing manual rotation
+    FEATURE_GPS
+   #define GPS_PORT_MAPPED_TO &Serial2 
+   #define GPS_PORT_BAUD_RATE 9600 
+   #define SYNC_TIME_WITH_GPS 1 
+   #define SYNC_COORDINATES_WITH_GPS 1 
+   #define GPS_SYNC_PERIOD_SECONDS 10  // how long to consider internal clock syncronized after a GPS reading 
+   #define GPS_VALID_FIX_AGE_MS 10000  // consider a GPS reading valid if the fix age is less than this 
+    FEATURE_SUN_TRACKING 
+      \Ux - x = 0: deactive sun tracking; x = 1: activate sun tracking  
+    FEATURE_AZ_POSITION_INCREMENTAL_ENCODER & FEATURE_EL_POSITION_INCREMENTAL_ENCODER coding
+    Updated debug output format
+    \XS - calibration az and el to sun heading - there are calculation bugs
+    fixed initialize_serial() compilaton error when neither yaesu or easycom protocol is selected in features
+    fixed bugs in \XS and \XM
+    \XS and\XM now working on all sensor types 
+    moon_tracking_active_pin   
+    sun_tracking_active_pin      
+    moon_tracking_activate_line    
+    sun_tracking_activate_line     
+    moon_tracking_button  
+    sun_tracking_button   
+    \A azimuth calibration now also works with sensors other than rotary encoders and pulse input
+    \B elevation calibration now also works with sensors other than rotary encoders and pulse input
+    OPTION_BUTTON_RELEASE_NO_SLOWDOWN 
+    Fixed God-awful bug that caused Arduino to crash when running FEATURE_GPS.  Note to self: never declare a char in a switch case.  It causes unpredicatable, unexplainable evil stuff to occur.
+    Fixed bug with elevation PWM
+     gps_sync pin - goes high when clock is GPS synchronized 
+     FEATURE_RTC_PCF8583 
     \O command also programs realtime clocks now
-
-  1.9.2014021101-UNSTABLE
     Fixed bug in PWM outputs when changing direction
     Ethernet now working with backslash commands, Yaesu commands, and Easycom commands
     Fixed bug in Easycom (non-standard) AZ and EL commands
-
-  1.9.2014021201-UNSTABLE
     Ethernet remote unit slave support (slave only, master using ethernet not done yet)
-
-  1.9.2014021301-UNSTABLE
-    More Ethernet code work
- 
-  1.9.2014021501-UNSTABLE
-    More print_debug conversion
- 
-  1.9.2014021701-UNSTABLE
-    #define GPS_MIRROR_PORT &Serial3   {documented}
-
-
-  1.9.2014021801-UNSTABLE
+    #define GPS_MIRROR_PORT &Serial3   
     OPTION_DISPLAY_SMALL_CLOCK
       #define LCD_SMALL_CLOCK_POSITION LEFT
     OPTION_DISPLAY_GPS_INDICATOR
@@ -343,10 +156,6 @@
       #define LCD_SUN_TRACKING_ROW 4
       #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000  
     #define LCD_ROWS 4  
-
-{documentation stops here ---------------------------------------------------------}
-
-  1.9.2014021901-UNSTABLE
     fixed bug with Yourduino LCD display initialization (thanks PA3FPQ)
     added GPS counters to debug output
     FEATURE_POWER_SWITCH
@@ -355,14 +164,7 @@
     OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
       #define LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW 3
     OPTION_DISPLAY_BIG_CLOCK
-
-  1.9.2014021902-UNSTABLE
     #define GPS_UPDATE_LATENCY_COMPENSATION_MS 200
-
-  1.9.2014022001-UNSTABLE
-    Fixed issue with FEATURE_RFROBOT_I2C_DISPLAY & FEATURE_ADAFRUIT_I2C_LCD compilation (thanks EA1DDO)
-
-  1.9.2014022101-UNSTABLE
     #define AZIMUTH_CALIBRATION_FROM_ARRAY {180,630} 
     #define AZIMUTH_CALIBRATION_TO_ARRAY {180,630}
     #define ELEVATION_CALIBRATION_FROM_ARRAY {-180,0,180}
@@ -372,91 +174,58 @@
     #define el_stepper_motor_direction 0
     bug fix for long clock display
     performance improvement for az / el display on LCD
-        
-  1.9.2014022201-UNSTABLE
-    bug fix for long clock display
-
-  1.9.2014022202-UNSTABLE
     #define az_stepper_motor_pulse 0
     #define el_stepper_motor_pulse 0  
-    OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD {documented}
-    #define LCD_SMALL_CLOCK_AND_MAIDENHEAD_POSITION {documented}
-    #define LCD_SMALL_CLOCK_AND_MAIDENHEAD_ROW 4 {documented}
-    #define LCD_GPS_INDICATOR_ROW 1 {documented}
-
-  1.9.2014030201-UNSTABLE
-    Fixed compilation issue with Yourduino LCD display ()
-
-  1.9.2014030301-UNSTABLE
+    OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD 
+    #define LCD_SMALL_CLOCK_AND_MAIDENHEAD_POSITION 
+    #define LCD_SMALL_CLOCK_AND_MAIDENHEAD_ROW 4 
+    #define LCD_GPS_INDICATOR_ROW 1 
     OPTION_EXTERNAL_ANALOG_REFERENCE
     more debug_print conversion
 
-  1.9.2014030901-UNSTABLE
-    OPTION_DISPLAY_SMALL_CLOCK renamed to OPTION_DISPLAY_HHMM_CLOCK {documented}
-    LCD_SMALL_CLOCK_POSITION renamed to LCD_HHMM_CLOCK_POSITION {documented}
-    OPTION_DISPLAY_HHMMSS_CLOCK {documented}
-    OPTION_DISPLAY_DISABLE_DIRECTION_STATUS {documented}
-    OPTION_DISPLAY_SMALL_CLOCK_AND_MAIDENHEAD renamed to OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD {documented}
-    OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD {documented}
+    OPTION_DISPLAY_SMALL_CLOCK renamed to OPTION_DISPLAY_HHMM_CLOCK 
+    LCD_SMALL_CLOCK_POSITION renamed to LCD_HHMM_CLOCK_POSITION 
+    OPTION_DISPLAY_HHMMSS_CLOCK 
+    OPTION_DISPLAY_DISABLE_DIRECTION_STATUS 
+    OPTION_DISPLAY_SMALL_CLOCK_AND_MAIDENHEAD renamed to OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD 
+    OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD 
 
-    #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT  {documented}
-    #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT {documented}
-    #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION LEFT {documented}
-    #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1 {documented}
-    #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION LEFT {documented}
-    #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 1 {documented}
+    #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT  
+    #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT 
+    #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION LEFT 
+    #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1 
+    #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION LEFT 
+    #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 1 
 
-  1.9.2014031001-UNSTABLE
-    OPTION_DISPLAY_DISABLE_DIRECTION_STATUS changed to OPTION_DISPLAY_DIRECTION_STATUS {documented}
+    OPTION_DISPLAY_DISABLE_DIRECTION_STATUS changed to OPTION_DISPLAY_DIRECTION_STATUS 
     worked on FEATURE_TWO_DECIMAL_PLACE_HEADINGS
     LANGUAGE_ENGLISH
 
-  1.9.2014031101-UNSTABLE
-    fixed issue with errant stuff happening, appears to have been from a bad char variable somewhere
-
-  1.9.2014031201-UNSTABLE
     Easycom improvements - space and LF are now also command delimiters.  Also fixed bug with one decimal place.  Works with PSTRotator
     Fixed issue with LCD display updating when target az or target el was changed during rotation
     I2C_LCD_COLOR also applies to Yourduino LCD display
 
-  1.9.2014031301-UNSTABLE
     HH-12 elevation bug fix
 
-  1.9.2014031401-UNSTABLE
     FEATURE_MASTER_WITH_SERIAL_SLAVE
     FEATURE_MASTER_WITH_ETHERNET_SLAVE
     FEATURE_EL_POSITION_MEMSIC_2125  under development - not working yet
 
-  1.9.2014031501-UNSTABLE
     fixed a bug with azimuth and elevation offset zeroing out first decimal place
     Ethernet master/slave link!
     #define ETHERNET_SLAVE_IP_ADDRESS 192,168,1,173
     #define ETHERNET_SLAVE_TCP_PORT 23
     #define ETHERNET_SLAVE_RECONNECT_TIME_MS 250
 
-  1.9.2014032201-UNSTABLE
     Changed master/slave AZ and EL command result format: AZxxx.xxxxxx EL+xxx.xxxxxx
     Slave CL command
 
-  1.9.2014032501-UNSTABLE
     OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
 
-  1.9.2014032601-UNSTABLE
     fixed "if (clock_status == SLAVE_SYNC) {clock_status = FREE_RUNNING;}" compile error
 
-  1.9.2014032701-UNSTABLE
-    more work on FEATURE_EL_POSITION_MEMSIC_2125
-
-  1.9.2014032801-UNSTABLE
-    more work on FEATURE_EL_POSITION_MEMSIC_2125
-
-  1.9.2014032802-UNSTABLE
     OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 
-  1.9.2014032901-UNSTABLE
-    fixed issue with OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-
-  1.9.2014040301-UNSTABLE
     OPTION_DISABLE_HMC5883L_ERROR_CHECKING
     HARDWARE_EA4TX_ARS_USB
     HARDWARE_M0UPU
@@ -466,31 +235,25 @@
     #define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
     #define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
 
-  1.9.2014040501-UNSTABLE
     FEATURE_EL_POSITION_INCREMENTAL_ENCODER now does 360 degrees of rotation rather than 720
 
-  1.9.2014040601-UNSTABLE
     OPTION_PRESET_ENCODER_0_360_DEGREES
 
-  1.9.2014041001-UNSTABLE
-    more OPTION_PRESET_ENCODER_0_360_DEGREES work
-
-  1.9.2014041101-UNSTABLE
     service_rotation() - fixed rollover bug with az and el slow down
 
-  1.9.2014041201-UNSTABLE
     Fixed decimal place issue with Easycom AZ and EL query commands
     FEATURE_EL_POSITION_INCREMENTAL_ENCODER - fixed storage and retrieval of elevation in eeprom
     Bug fix - stop command wouldn't work when in slow down
     AZ_INITIALLY_IN_SLOW_DOWN_PWM
     EL_INITIALLY_IN_SLOW_DOWN_PWM 
 
-  1.9.2014052301-UNSTABLE
     Fixed compilation error when FEATURE_JOYSTICK_CONTROL is activated and FEATURE_ELEVATION_CONTROL is disabled
 
- */
+    FEATURE_ANALOG_OUTPUT_PINS
 
-#define CODE_VERSION "2.0.2014070201"
+  */
+
+#define CODE_VERSION "2.0.2014070501"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -567,10 +330,6 @@
 #endif
 #include "rotator_settings.h"
 
-
-
-// #include "pins.h"        // note to Goody: reload IDE after uncommenting one of these
-// #include "pins_m0upu.h"
 
 
 
@@ -945,6 +704,7 @@ void setup() {
 
   initialize_interrupts();
 
+
 } /* setup */
 
 /*-------------------------- here's where the magic happens --------------------------------*/
@@ -1062,11 +822,16 @@ void loop() {
 
   service_blink_led();
 
+  #ifdef FEATURE_ANALOG_OUTPUT_PINS
+  service_analog_output_pins();
+  #endif //FEATURE_ANALOG_OUTPUT_PINS
+
+
 } /* loop */
 /* -------------------------------------- subroutines -----------------------------------------------
- *
- * Where the real work happens...
- *
+ 
+                                  Where the real work happens...
+ 
  */
 
 void read_headings(){
@@ -11494,3 +11259,21 @@ void service_stepper_pins(){
 
 }
 #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+//-------------------------------------------------------
+#ifdef FEATURE_ANALOG_OUTPUT_PINS
+void service_analog_output_pins(){
+
+  static int last_azimith_voltage_out = 0;
+  int azimuth_voltage_out = map(azimuth/HEADING_MULTIPLIER,0,360,0,255);
+  if (last_azimith_voltage_out != azimuth_voltage_out){analogWriteEnhanced(pin_analog_az_out,azimuth_voltage_out);}
+
+  #ifdef FEATURE_ELEVATION_CONTROL
+  static int last_elevation_voltage_out = 0;
+  int elevation_voltage_out = map(elevation/HEADING_MULTIPLIER,0,ANALOG_OUTPUT_MAX_EL_DEGREES,0,255);
+  if (last_elevation_voltage_out != elevation_voltage_out){analogWriteEnhanced(pin_analog_el_out,elevation_voltage_out);}
+  #endif //FEATURE_ELEVATION_CONTROL
+
+}
+#endif //FEATURE_ANALOG_OUTPUT_PINS
+
+

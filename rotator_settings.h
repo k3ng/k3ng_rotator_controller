@@ -26,10 +26,10 @@ You can tweak these, but read the online documentation!
                                               
 
 // PWM speed voltage settings
-#define PWM_SPEED_VOLTAGE_X1  64
-#define PWM_SPEED_VOLTAGE_X2  128
-#define PWM_SPEED_VOLTAGE_X3  191
-#define PWM_SPEED_VOLTAGE_X4  253
+#define PWM_SPEED_VOLTAGE_X1  64         // 0 to 255
+#define PWM_SPEED_VOLTAGE_X2  128        // 0 to 255
+#define PWM_SPEED_VOLTAGE_X3  191        // 0 to 255
+#define PWM_SPEED_VOLTAGE_X4  253        // 0 to 255
 
 //AZ
 #define AZ_SLOWSTART_DEFAULT 0            // 0 = off ; 1 = on
@@ -53,8 +53,8 @@ You can tweak these, but read the online documentation!
 #define EL_SLOW_START_STEPS 20            // must be < 256
 
 #define SLOW_DOWN_BEFORE_TARGET_EL 10.0  // if slow down is enabled, slowdown will be activated within this many degrees of target azimuth
-#define EL_SLOW_DOWN_PWM_START 200         // starting PWM value for slow down
-#define	EL_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down
+#define EL_SLOW_DOWN_PWM_START 200         // starting PWM value for slow down (must be < 256)
+#define	EL_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
 #define EL_SLOW_DOWN_STEPS 20
 #define EL_INITIALLY_IN_SLOW_DOWN_PWM 50  // PWM value to start at if we're starting in the slow down zone (1 - 255)
 
@@ -342,6 +342,8 @@ You can tweak these, but read the online documentation!
 
 #define ELEVATION_CALIBRATION_FROM_ARRAY {-180,0,180}
 #define ELEVATION_CALIBRATION_TO_ARRAY {-180,0,180}
+
+#define ANALOG_OUTPUT_MAX_EL_DEGREES 180
 
 
 

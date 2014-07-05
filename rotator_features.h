@@ -57,6 +57,8 @@
 //#define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
 //#define FEATURE_YOURDUINO_I2C_LCD
 //#define FEATURE_RFROBOT_I2C_DISPLAY
+//#define FEATURE_ANALOG_OUTPUT_PINS
+
 
 
 /* preset rotary encoder features and options */
