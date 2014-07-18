@@ -37,17 +37,17 @@
 //#define FEATURE_AZ_POSITION_PULSE_INPUT
 //#define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
 //#define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
-//#define FEATURE_AZ_POSITION_LSM303              // Uncomment for elevation using LSM303 magnetometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
+//#define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for elevation using LSM303 magnetometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 //#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 //#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 
-//#define FEATURE_EL_POSITION_POTENTIOMETER
+#define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
 //#define FEATURE_EL_POSITION_PULSE_INPUT
 //#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
 //#define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library
 //#define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
-//#define FEATURE_EL_POSITION_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
+//#define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 //#define FEATURE_EL_POSITION_HH12_AS5045_SSI
 //#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 //#define FEATURE_EL_POSITION_MEMSIC_2125
@@ -101,17 +101,17 @@
 #define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED    // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
 //#define OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES // for azimuth and elevation position pulse input feature, ignore pulses that arrive when no rotation is active
 //#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
-//#define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, syncronize realtime clock to GPS
+#define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, syncronize realtime clock to GPS
 //#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock on LCD row 1 (set position with #define LCD_HHMM_CLOCK_POSITION)
-//#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock on LCD row 1 (set position with #define LCD_HHMMSS_CLOCK_POSITION)
+#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock on LCD row 1 (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 //#define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
 //#define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
 //#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-//#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-//#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
+#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator in row 1 center
-//#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
+#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)

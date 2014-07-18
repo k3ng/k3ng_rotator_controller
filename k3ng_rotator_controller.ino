@@ -249,11 +249,15 @@
 
     Fixed compilation error when FEATURE_JOYSTICK_CONTROL is activated and FEATURE_ELEVATION_CONTROL is disabled
 
+  Not documented yet:
+
     FEATURE_ANALOG_OUTPUT_PINS
+    FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303
+    FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303
 
   */
 
-#define CODE_VERSION "2.0.2014070501"
+#define CODE_VERSION "2.0.2014071801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -271,7 +275,7 @@
 #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
 #endif // FEATURE_4_BIT_LCD_DISPLAY
 #ifdef FEATURE_WIRE_SUPPORT
-#include <Wire.h>  // required for FEATURE_I2C_LCD, any ADXL345 feature, FEATURE_AZ_POSITION_HMC5883L, FEATURE_EL_POSITION_LSM303
+#include <Wire.h>  // required for FEATURE_I2C_LCD, any ADXL345 feature, FEATURE_AZ_POSITION_HMC5883L, FEATURE_EL_POSITION_ADAFRUIT_LSM303
 #endif
 #if defined(FEATURE_ADAFRUIT_I2C_LCD)
 #include <Adafruit_MCP23017.h> // required for Adafruit I2C LCD display
@@ -286,7 +290,7 @@
 #if defined(FEATURE_AZ_POSITION_HMC5883L)
 #include <HMC5883L.h> // required for HMC5883L digital compass support
 #endif
-#if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB) || defined(FEATURE_AZ_POSITION_LSM303) || defined(FEATURE_EL_POSITION_LSM303)
+#if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303)
 #include <Adafruit_Sensor.h>    // required for any Adafruit sensor libraries
 #endif
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB)
@@ -295,7 +299,7 @@
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB)
 #include <Adafruit_ADXL345_U.h>   // required for elevation ADXL345 accelerometer using Adafruit ADXL345 library (FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB)
 #endif
-#if defined(FEATURE_EL_POSITION_LSM303) || defined(FEATURE_AZ_POSITION_LSM303)
+#if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
 #include <Adafruit_LSM303.h>     // required for azimuth and/or elevation using LSM303 compass and/or accelerometer
 #endif
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
@@ -4107,7 +4111,7 @@ void read_azimuth(byte force_read){
 
 
 
-    #ifdef FEATURE_AZ_POSITION_LSM303
+    #ifdef FEATURE_AZ_POSITION_ADAFRUIT_LSM303
     lsm.read();
     float heading = atan2(lsm.magData.y, lsm.magData.x);
     //  heading += declinationAngle;
@@ -4123,7 +4127,7 @@ void read_azimuth(byte force_read){
       raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
     }
     azimuth = raw_azimuth;
-    #endif // FEATURE_AZ_POSITION_LSM303
+    #endif // FEATURE_AZ_POSITION_ADAFRUIT_LSM303
 
 
 
@@ -4967,7 +4971,7 @@ void read_elevation(byte force_read){
 
 
 
-    #ifdef FEATURE_EL_POSITION_LSM303
+    #ifdef FEATURE_EL_POSITION_ADAFRUIT_LSM303
     lsm.read();
     #ifdef DEBUG_ACCEL
     if (debug_mode) {
@@ -4982,7 +4986,7 @@ void read_elevation(byte force_read){
     elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
-    #endif // FEATURE_EL_POSITION_LSM303
+    #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303
 
 
 
@@ -6069,6 +6073,15 @@ void initialize_pins(){
   pinModeEnhanced(pin_memsic_2125_y, INPUT);
   #endif //FEATURE_EL_POSITION_MEMSIC_2125
 
+  #ifdef FEATURE_ANALOG_OUTPUT_PINS
+  pinModeEnhanced(pin_analog_az_out, OUTPUT);
+  digitalWriteEnhanced(pin_analog_az_out, LOW);
+  #ifdef FEATURE_ELEVATION_CONTROL
+  pinModeEnhanced(pin_analog_el_out, OUTPUT);
+  digitalWriteEnhanced(pin_analog_el_out, LOW);
+  #endif //FEATURE_ELEVATION_CONTROL
+  #endif //FEATURE_ANALOG_OUTPUT_PINS
+
 
 } /* initialize_pins */
 
@@ -6178,13 +6191,13 @@ void initialize_peripherals(){
   pinModeEnhanced(pin_joystick_y, INPUT);
   #endif // FEATURE_JOYSTICK_CONTROL
 
-  #if defined(FEATURE_EL_POSITION_LSM303) || defined(FEATURE_AZ_POSITION_LSM303)
+  #if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
   if (!lsm.begin()) {
     #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
     control_port->println(F("setup: LSM303 error"));
     #endif
   }
-  #endif // FEATURE_EL_POSITION_LSM303 || FEATURE_AZ_POSITION_LSM303
+  #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303 || FEATURE_AZ_POSITION_ADAFRUIT_LSM303
 
   #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
   azimuth_hh12.initialize(az_hh12_clock_pin, az_hh12_cs_pin, az_hh12_data_pin);
@@ -9245,7 +9258,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
 
       } else {
-        strcpy(return_string, "Error. Usage: \\CYYYYMMDDHHmm");
+        strcpy(return_string, "Error. Usage: \\OYYYYMMDDHHmm");
       }
       break;
           #endif // FEATURE_CLOCK
@@ -11265,12 +11278,18 @@ void service_analog_output_pins(){
 
   static int last_azimith_voltage_out = 0;
   int azimuth_voltage_out = map(azimuth/HEADING_MULTIPLIER,0,360,0,255);
-  if (last_azimith_voltage_out != azimuth_voltage_out){analogWriteEnhanced(pin_analog_az_out,azimuth_voltage_out);}
+  if (last_azimith_voltage_out != azimuth_voltage_out){
+    analogWriteEnhanced(pin_analog_az_out,azimuth_voltage_out);
+    last_azimith_voltage_out = azimuth_voltage_out;
+  }
 
   #ifdef FEATURE_ELEVATION_CONTROL
   static int last_elevation_voltage_out = 0;
   int elevation_voltage_out = map(elevation/HEADING_MULTIPLIER,0,ANALOG_OUTPUT_MAX_EL_DEGREES,0,255);
-  if (last_elevation_voltage_out != elevation_voltage_out){analogWriteEnhanced(pin_analog_el_out,elevation_voltage_out);}
+  if (last_elevation_voltage_out != elevation_voltage_out){
+    analogWriteEnhanced(pin_analog_el_out,elevation_voltage_out);
+    last_elevation_voltage_out = elevation_voltage_out;
+  }
   #endif //FEATURE_ELEVATION_CONTROL
 
 }
