@@ -18,7 +18,7 @@
   
    Non-English extensions ideas, code, and testing provided by Marcin SP5IOU, Hjalmar OZ1JHM, and Sverre LA3ZA
   
-   Testing, ideas, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, and many others
+   Testing, ideas, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, and many others
   
    Translations: Maximo, EA1DDO
   
@@ -254,10 +254,11 @@
     FEATURE_ANALOG_OUTPUT_PINS
     FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303
     FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303
+    LANGUAGE_CZECH
 
   */
 
-#define CODE_VERSION "2.0.2014071801"
+#define CODE_VERSION "2.0.2014072401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>

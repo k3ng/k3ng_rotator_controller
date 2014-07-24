@@ -285,7 +285,7 @@ You can tweak these, but read the online documentation!
 #define NNE_STRING "NNE"
 #endif //LANGUAGE_SPANISH
 
-#ifdef LANGUAGE_OK
+#ifdef LANGUAGE_CHECK
 #define MOON_STRING "mesic "
 #define SUN_STRING "slunce "
 #define AZ_TARGET_STRING "Az cíl "
@@ -325,7 +325,7 @@ You can tweak these, but read the online documentation!
 #define ESE_STRING "smer   >   8Q"
 #define ENE_STRING "smer   >   ZL"
 #define NNE_STRING "smer   ^  UA0"
-#endif //LANGUAGE_OK
+#endif //LANGUAGE_CZECH
 
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
