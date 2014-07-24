@@ -7,7 +7,7 @@
 
 #define LANGUAGE_ENGLISH
 //#define LANGUAGE_SPANISH
-//#define LANGUAGE_OK
+//#define LANGUAGE_CZECH
 
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 
