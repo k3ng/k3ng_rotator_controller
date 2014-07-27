@@ -388,6 +388,26 @@ You can tweak these, but read the online documentation!
 #define ANALOG_OUTPUT_MAX_EL_DEGREES 180
 
 
+/* Pololu LSM303 Calibration tables
+ *
+ *
+ * For use with FEATURE_AZ_POSITION_POLOLU_LSM303 and/or FEATURE_EL_POSITION_POLOLU_LSM303
+ *
+
+
+  Calibration values; the default values of +/-32767 for each axis
+  lead to an assumed magnetometer bias of 0. Use the Calibrate example
+  program to determine appropriate values for your particular unit.
+
+  min: {   +59,    +19,   -731}    max: {  +909,   +491,    +14}
+  min: {32767, 32767, 32767}       max: {-32768, -32768, -32768}
+
+ */
+
+#define POLOLU_LSM_303_MIN_ARRAY {+59, +19, -731}
+#define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14}
+
+
 
 /* ---------------------------- object declarations ----------------------------------------------
 
@@ -434,6 +454,12 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 #if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
 Adafruit_LSM303 lsm;
 #endif
+
+#if defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
+LSM303 compass;
+LSM303::vector<int16_t> running_min = {32767, 32767, 32767}, running_max = {-32768, -32768, -32768};
+char report[80];
+#endif //FEATURE_AZ_POSITION_POLOLU_LSM303
 
 #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
 #include "hh12.h"

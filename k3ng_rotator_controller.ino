@@ -3,24 +3,25 @@
    K3NG
    anthony.good@gmail.com
   
-   Contributions from John Eigenbode, W3SA
-   w3sa@arrl.net
-   Contributions: AZ/EL testing and debugging, AZ/EL LCD Enhancements, original North center code, Az/El Rotator Control Connector Pins
+   Contributions: 
+   
+   John Eigenbode, W3SA, w3sa@arrl.net : AZ/EL testing and debugging, AZ/EL LCD Enhancements, original North center code, Az/El Rotator Control Connector Pins
   
-   Contributions from Jim Balls, M0CKE
-   makidoja@gmail.com
-   Contributions: Rotary Encoder Preset Support
-  
-   Contributions from Gord, VO1GPK
-   Contribution: FEATURE_ADAFRUIT_BUTTONS code
+   Jim Balls, M0CKE, makidoja@gmail.com: Rotary Encoder Preset Support
+   
+   FEATURE_ADAFRUIT_BUTTONS code provided by Gord VO1GPK
   
    Moon2 and sunpos libraries courtesy of Pete Hardie, VE5VA
   
    Non-English extensions ideas, code, and testing provided by Marcin SP5IOU, Hjalmar OZ1JHM, and Sverre LA3ZA
   
-   Testing, ideas, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, and many others
+   Testing, ideas, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, and many others
   
-   Translations: Maximo, EA1DDO
+   Translations: Maximo EA1DDO, Jan OK2ZAW
+
+   Pololu library LSM303 code provided by Mike AD0CZ
+
+   (If you contributed something and I forgot to put your name and call in here, please email me!)
   
  ***************************************************************************************************************
  *
@@ -251,14 +252,20 @@
 
   Not documented yet:
 
-    FEATURE_ANALOG_OUTPUT_PINS
-    FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303
-    FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303
-    LANGUAGE_CZECH
+    FEATURE_ANALOG_OUTPUT_PINS (rotator_features.h)
+    FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303 (rotator_features.h)
+    FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303 (rotator_features.h)
+    LANGUAGE_CZECH (rotator_features.h)
+
+    FEATURE_AZ_POSITION_POLOLU_LSM303 (rotator_features.h)  (code contributed by AD0CZ)
+    FEATURE_EL_POSITION_POLOLU_LSM303 (rotator_features.h)
+    #define POLOLU_LSM_303_MIN_ARRAY {+59, +19, -731} (rotator_settings.h)
+    #define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14} (rotator_settings.h)
+    DEBUG_POLOLU_LSM303_CALIBRATION (rotator_features.h)
 
   */
 
-#define CODE_VERSION "2.0.2014072401"
+#define CODE_VERSION "2.0.2014072701"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -302,6 +309,9 @@
 #endif
 #if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
 #include <Adafruit_LSM303.h>     // required for azimuth and/or elevation using LSM303 compass and/or accelerometer
+#endif
+#ifdef FEATURE_AZ_POSITION_POLOLU_LSM303
+#include <LSM303.h>
 #endif
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 #include "moon2.h"
@@ -4131,6 +4141,61 @@ void read_azimuth(byte force_read){
     #endif // FEATURE_AZ_POSITION_ADAFRUIT_LSM303
 
 
+    #ifdef FEATURE_AZ_POSITION_POLOLU_LSM303
+    compass.read();   
+    #ifdef DEBUG_POLOLU_LSM303_CALIBRATION
+    running_min.x = min(running_min.x, compass.m.x);
+    running_min.y = min(running_min.y, compass.m.y);
+    running_min.z = min(running_min.z, compass.m.z);
+    running_max.x = max(running_max.x, compass.m.x);
+    running_max.y = max(running_max.y, compass.m.y);
+    running_max.z = max(running_max.z, compass.m.z);
+    snprintf(report, sizeof(report), "min: {%+6d, %+6d, %+6d}    max: {%+6d, %+6d, %+6d}",
+    running_min.x, running_min.y, running_min.z,
+    running_max.x, running_max.y, running_max.z);
+    Serial.println(report);
+    #endif // DEBUG_POLOLU_LSM303_CALIBRATION
+    //lsm.read();
+        
+    /*
+    When given no arguments, the heading() function returns the angular
+    difference in the horizontal plane between a default vector and
+    north, in degrees.
+  
+    The default vector is chosen by the library to point along the
+    surface of the PCB, in the direction of the top of the text on the
+    silkscreen. This is the +X axis on the Pololu LSM303D carrier and
+    the -Y axis on the Pololu LSM303DLHC, LSM303DLM, and LSM303DLH
+    carriers.
+    
+    To use a different vector as a reference, use the version of heading()
+    that takes a vector argument; for example, use
+  
+    compass.heading((LSM303::vector<int>){0, 0, 1});
+  
+    to use the +Z axis as a reference.
+    */
+    float heading = compass.heading();
+    
+    //float heading = atan2(lsm.magData.y, lsm.magData.x);
+    //  heading += declinationAngle; 
+    // Correct for when signs are reversed.
+    /*
+    if (heading < 0) heading += 2 * PI;
+    if (heading > 2 * PI) heading -= 2 * PI;
+    raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; // radians to degree
+    */
+    raw_azimuth = heading * HEADING_MULTIPLIER ;  // pololu library returns float value of actual heading.
+    #ifdef FEATURE_AZIMUTH_CORRECTION
+    raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    #endif // FEATURE_AZIMUTH_CORRECTION
+    raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+    if (AZIMUTH_SMOOTHING_FACTOR > 0) {
+      raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+    }
+    azimuth = raw_azimuth;
+    #endif // FEATURE_AZ_POSITION_POLOLU_LSM303
+
 
 
     #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
@@ -4989,6 +5054,22 @@ void read_elevation(byte force_read){
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303
 
+    #ifdef FEATURE_EL_POSITION_POLOLU_LSM303
+    compass.read();
+    #ifdef DEBUG_ACCEL
+    if (debug_mode) {
+      control_port->print(F("read_elevation: compass.a.y: "));
+      control_port->print(compass.a.y);
+      control_port->print(F(" compass.a.z: "));
+      control_port->println(compass.a.z);
+    }
+    #endif // DEBUG_ACCEL
+    elevation = (atan2(compass.a.x, compass.a.z) * -180 * HEADING_MULTIPLIER) / M_PI; //lsm.accelData.y
+    #ifdef FEATURE_ELEVATION_CORRECTION
+    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    #endif // FEATURE_ELEVATION_CORRECTION
+    elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+    #endif // FEATURE_EL_POSITION_POLOLU_LSM303
 
 
     #ifdef FEATURE_EL_POSITION_PULSE_INPUT
@@ -6199,6 +6280,19 @@ void initialize_peripherals(){
     #endif
   }
   #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303 || FEATURE_AZ_POSITION_ADAFRUIT_LSM303
+
+
+  #if defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
+  if (!compass.init()) {
+    #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+    control_port->println(F("setup: LSM303 error"));
+    #endif
+  }
+  compass.enableDefault();
+  compass.m_min = (LSM303::vector<int16_t>) POLOLU_LSM_303_MIN_ARRAY;
+  compass.m_max = (LSM303::vector<int16_t>) POLOLU_LSM_303_MAX_ARRAY;
+  #endif //defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
+
 
   #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
   azimuth_hh12.initialize(az_hh12_clock_pin, az_hh12_cs_pin, az_hh12_data_pin);
