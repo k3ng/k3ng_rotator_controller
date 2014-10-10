@@ -15,7 +15,7 @@
   
    Non-English extensions ideas, code, and testing provided by Marcin SP5IOU, Hjalmar OZ1JHM, and Sverre LA3ZA
   
-   Testing, ideas, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, and many others
+   Testing, ideas, bug fixes, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, Paolo IT9IPQ, and many others
   
    Translations: Maximo EA1DDO, Jan OK2ZAW
 
@@ -263,9 +263,11 @@
     #define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14} (rotator_settings.h)
     DEBUG_POLOLU_LSM303_CALIBRATION (rotator_features.h)
 
+    bug fixed with brake_release() affecting elevation brake (thanks Paolo, IT9IPQ)
+
   */
 
-#define CODE_VERSION "2.0.2014072701"
+#define CODE_VERSION "2.0.2014100901"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1529,19 +1531,21 @@ void brake_release(byte az_or_el, byte operation){
       }
     }
   } else {
-        #ifdef FEATURE_ELEVATION_CONTROL
-    if (brake_el) {
-      digitalWriteEnhanced(brake_el, HIGH);
-      brake_el_engaged = 1;
-      #ifdef DEBUG_BRAKE
-      debug_println("brake_release: brake_el BRAKE_RELEASE_ON");
-      #endif // DEBUG_BRAKE
-    } else {
-      digitalWriteEnhanced(brake_el, LOW);
-      brake_el_engaged = 0;
-      #ifdef DEBUG_BRAKE
-      debug_println("brake_release: brake_el BRAKE_RELEASE_OFF");
-      #endif // DEBUG_BRAKE
+    #ifdef FEATURE_ELEVATION_CONTROL
+    if (operation == BRAKE_RELEASE_ON) { 
+      if (brake_el) {
+        digitalWriteEnhanced(brake_el, HIGH);
+        brake_el_engaged = 1;
+        #ifdef DEBUG_BRAKE
+        debug_println("brake_release: brake_el BRAKE_RELEASE_ON");
+        #endif // DEBUG_BRAKE
+      } else {
+        digitalWriteEnhanced(brake_el, LOW);
+        brake_el_engaged = 0;
+        #ifdef DEBUG_BRAKE
+        debug_println("brake_release: brake_el BRAKE_RELEASE_OFF");
+        #endif // DEBUG_BRAKE
+      }
     }
     #endif // FEATURE_ELEVATION_CONTROL
   }

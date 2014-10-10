@@ -55,7 +55,7 @@
 //#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 //#define FEATURE_EL_POSITION_MEMSIC_2125
 
-//#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
+#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
 //#define FEATURE_ADAFRUIT_I2C_LCD
 //#define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
 //#define FEATURE_YOURDUINO_I2C_LCD
