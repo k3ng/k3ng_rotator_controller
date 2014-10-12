@@ -17,7 +17,7 @@
   
    Testing, ideas, bug fixes, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, Paolo IT9IPQ, and many others
   
-   Translations: Maximo EA1DDO, Jan OK2ZAW
+   Translations: Maximo EA1DDO, Jan OK2ZAW, Paolo IT9IPQ
 
    Pololu library LSM303 code provided by Mike AD0CZ
 
@@ -265,9 +265,11 @@
 
     bug fixed with brake_release() affecting elevation brake (thanks Paolo, IT9IPQ)
 
+    LANGUAGE_ITALIAN code donated by Paolo, IT9IPQ
+
   */
 
-#define CODE_VERSION "2.0.2014100901"
+#define CODE_VERSION "2.0.2014101201"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>

@@ -285,7 +285,7 @@ You can tweak these, but read the online documentation!
 #define NNE_STRING "NNE"
 #endif //LANGUAGE_SPANISH
 
-#ifdef LANGUAGE_CHECK
+#ifdef LANGUAGE_CHECK            // courtesy of Jan, OK2ZAW
 #define MOON_STRING "mesic "
 #define SUN_STRING "slunce "
 #define AZ_TARGET_STRING "Az cíl "
@@ -326,6 +326,48 @@ You can tweak these, but read the online documentation!
 #define ENE_STRING "smer   >   ZL"
 #define NNE_STRING "smer   ^  UA0"
 #endif //LANGUAGE_CZECH
+
+#ifdef LANGUAGE_ITALIAN    // courtesy of Paolo, IT9IPQ           
+#define MOON_STRING "luna"
+#define SUN_STRING "sole "
+#define AZ_TARGET_STRING "Punta Az  "
+#define EL_TARGET_STRING "Punta El  "
+#define TARGET_STRING "Punta  "
+#define PARKED_STRING "Posa  "
+#define ROTATING_CW_STRING "Ruota DX > "
+#define ROTATING_CCW_STRING "Ruota SX <  "
+#define ROTATING_TO_STRING "Ruota verso "
+#define ELEVATING_TO_STRING "Alza verso   "
+#define ELEVATING_UP_STRING "Alzo  Su    "
+#define ELEVATING_DOWN_STRING "Alzo  Giu'    "
+#define ROTATING_STRING "Ruota    "
+#define CW_STRING "DX"
+#define CCW_STRING "SX "
+#define UP_STRING "SU"
+#define DOWN_STRING "GIU'"
+#define AZIMUTH_STRING "Azimuth "
+#define AZ_STRING "Az"
+#define AZ_SPACE_STRING "Az "
+#define SPACE_EL_STRING " El"
+#define SPACE_EL_SPACE_STRING " El "
+#define GPS_STRING "GPS"
+#define N_STRING "N"
+#define W_STRING "W"
+#define S_STRING "S"
+#define E_STRING "E"
+#define NW_STRING "NW"
+#define SW_STRING "SW"
+#define SE_STRING "SE"
+#define NE_STRING "NE"
+#define NNW_STRING "NNW"
+#define WNW_STRING "WNW"
+#define WSW_STRING "WSW"
+#define SSW_STRING "SSW"
+#define SSE_STRING "SSE"
+#define ESE_STRING "ESE"
+#define ENE_STRING "ENE"
+#define NNE_STRING "NNE"
+#endif //LANGUAGE_ITALIAN
 
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"

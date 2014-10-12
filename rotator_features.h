@@ -23,6 +23,7 @@
 #define LANGUAGE_ENGLISH
 //#define LANGUAGE_SPANISH
 //#define LANGUAGE_CZECH
+//#define LANGUAGE_ITALIAN
 
 /* master and remote slave unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit
