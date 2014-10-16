@@ -270,7 +270,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2014101501"
+#define CODE_VERSION "2.0.2014101502"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -6223,7 +6223,11 @@ void initialize_display(){
   lcd.setBacklight(I2C_LCD_COLOR);
   #endif // FEATURE_ADAFRUIT_I2C_LCD
 
-  if (LCD_ROWS == 4){start_row = 1;}
+  #ifdef OPTION_DISPLAY_VERSION_ON_STARTUP
+     if (LCD_ROWS == 4){start_row = 0;}
+  #else 
+     if (LCD_ROWS == 4){start_row = 1;}
+  #endif  
 
   lcd.setCursor(((LCD_COLUMNS - 4) / 2), start_row);
   lcd.print("\x4B\x33\x4E\x47");                           
