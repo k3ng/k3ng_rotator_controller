@@ -266,10 +266,11 @@
     bug fixed with brake_release() affecting elevation brake (thanks Paolo, IT9IPQ)
 
     LANGUAGE_ITALIAN code donated by Paolo, IT9IPQ
+    OPTION_DISPLAY_VERSION_ON_STARTUP code provided by Paolo, IT9IPQ
 
   */
 
-#define CODE_VERSION "2.0.2014101201"
+#define CODE_VERSION "2.0.2014101501"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -6228,6 +6229,12 @@ void initialize_display(){
   lcd.print("\x4B\x33\x4E\x47");                           
   lcd.setCursor(((LCD_COLUMNS - 16) / 2), start_row + 1);
   lcd.print("\x52\x6F\x74\x6F\x72\x20\x43\x6F\x6E\x74\x72\x6F\x6C\x6C\x65\x72");
+  #ifdef OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
+  if (LCD_ROWS == 4) {
+    lcd.setCursor(0, start_row + 3);
+    lcd.print("Ver: "); lcd.print(CODE_VERSION);
+  }
+  #endif //OPTION_DISPLAY_VERSION_ON_STARTUP
   last_lcd_update = millis();
 
 } /* initialize_display */

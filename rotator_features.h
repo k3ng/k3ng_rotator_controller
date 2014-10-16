@@ -56,7 +56,7 @@
 //#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 //#define FEATURE_EL_POSITION_MEMSIC_2125
 
-#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
+//#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
 //#define FEATURE_ADAFRUIT_I2C_LCD
 //#define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
 //#define FEATURE_YOURDUINO_I2C_LCD
@@ -117,6 +117,7 @@
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator in row 1 center
 #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+//#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 //#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
