@@ -268,9 +268,11 @@
     LANGUAGE_ITALIAN code donated by Paolo, IT9IPQ
     OPTION_DISPLAY_VERSION_ON_STARTUP code provided by Paolo, IT9IPQ
 
+    Fixed bug with LANGUAGE_CZECH (thanks Radek, OK2NMA)
+
   */
 
-#define CODE_VERSION "2.0.2014101502"
+#define CODE_VERSION "2.0.2014110301"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>

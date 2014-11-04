@@ -285,7 +285,7 @@ You can tweak these, but read the online documentation!
 #define NNE_STRING "NNE"
 #endif //LANGUAGE_SPANISH
 
-#ifdef LANGUAGE_CHECK            // courtesy of Jan, OK2ZAW
+#ifdef LANGUAGE_CZECH            // courtesy of Jan, OK2ZAW
 #define MOON_STRING "mesic "
 #define SUN_STRING "slunce "
 #define AZ_TARGET_STRING "Az cíl "
