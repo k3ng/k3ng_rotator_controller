@@ -270,9 +270,11 @@
 
     Fixed bug with LANGUAGE_CZECH (thanks Radek, OK2NMA)
 
+    Change in Easycom response terminator (now uses whatever command terminator was sent to it)
+
   */
 
-#define CODE_VERSION "2.0.2014110301"
+#define CODE_VERSION "2.0.2014110401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2063,7 +2065,9 @@ void check_serial(){
     if (((incoming_serial_byte == 10) || (incoming_serial_byte == 13) || (incoming_serial_byte == 32)) && (control_port_buffer[0] != '\\') && (control_port_buffer[0] != '/')){
       if (control_port_buffer_index > 1){
         process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
-        control_port->println(return_string);
+        //control_port->println(return_string); zzzzzz
+        control_port->print(return_string);
+        control_port->write(incoming_serial_byte);
       }
       clear_command_buffer();
     } else {
