@@ -17,7 +17,7 @@
   
    Testing, ideas, bug fixes, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, Paolo IT9IPQ, and many others
   
-   Translations: Maximo EA1DDO, Jan OK2ZAW, Paolo IT9IPQ
+   Translations: Maximo EA1DDO, Jan OK2ZAW, Paolo IT9IPQ, Ismael PY4PI
 
    Pololu library LSM303 code provided by Mike AD0CZ
 
@@ -271,10 +271,16 @@
     Fixed bug with LANGUAGE_CZECH (thanks Radek, OK2NMA)
 
     Change in Easycom response terminator (now uses whatever command terminator was sent to it)
+    Easycom AZ EL command string response change to +xxx.xx +xxx.xx
+
+    OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
+    LANGUAGE_PORTUGUESE_BRASIL (thanks Ismael, PY4PI)
+
+    check_brake_release() bug fix
 
   */
 
-#define CODE_VERSION "2.0.2014110401"
+#define CODE_VERSION "2.0.2014111701"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1502,7 +1508,9 @@ void check_brake_release() {
     }
   }
 
-    #ifdef FEATURE_ELEVATION_CONTROL
+  if ((az_state != IDLE) && (brake_az_engaged)) {in_az_brake_release_delay = 0;}
+
+  #ifdef FEATURE_ELEVATION_CONTROL
   if ((el_state == IDLE) && (brake_el_engaged)) {
     if (in_el_brake_release_delay) {
       if ((millis() - el_brake_delay_start_time) > EL_BRAKE_DELAY) {
@@ -1514,7 +1522,9 @@ void check_brake_release() {
       in_el_brake_release_delay = 1;
     }
   }
-      #endif // FEATURE_ELEVATION_CONTROL
+
+  if ((el_state != IDLE) && (brake_el_engaged)) {in_el_brake_release_delay = 0;}  
+  #endif // FEATURE_ELEVATION_CONTROL
 
 } /* check_brake_release */
 
@@ -2063,12 +2073,46 @@ void check_serial(){
 
     // if it is an Easycom command and we have a space, line feed, or carriage return, process it
     if (((incoming_serial_byte == 10) || (incoming_serial_byte == 13) || (incoming_serial_byte == 32)) && (control_port_buffer[0] != '\\') && (control_port_buffer[0] != '/')){
+      #if defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)
+      if ((control_port_buffer[0]=='A') && (control_port_buffer[1]=='Z') && (control_port_buffer_index == 2)){
+        unsigned long start_time_hack = millis();
+        if (!control_port->available()){
+          while (((millis() - start_time_hack) < 200) && (!control_port->available())){}  // wait 200 mS for something else to pop up on the serial port
+        }
+        if (control_port->available()){ // is there also 'EL ' waiting for us in the buffer?
+          start_time_hack = millis();
+          while ( (control_port->available()) && ((millis() - start_time_hack) < 200) ) {
+            control_port->read();
+          }
+          control_port_buffer[0] = 'Z';
+          process_easycom_command(control_port_buffer,1,CONTROL_PORT0,return_string);
+          //control_port->println(return_string); zzzzzz
+          control_port->print(return_string);
+          control_port->write(incoming_serial_byte);          
+        } else {  // we got just a bare AZ command
+          process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+          //control_port->println(return_string); zzzzzz
+          control_port->print(return_string);
+          control_port->write(incoming_serial_byte);
+        }
+      } else {
+
+        if (control_port_buffer_index > 1){
+          process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+          //control_port->println(return_string); zzzzzz
+          control_port->print(return_string);
+          control_port->write(incoming_serial_byte);
+        }
+
+      }
+      #else //defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)
       if (control_port_buffer_index > 1){
         process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
         //control_port->println(return_string); zzzzzz
         control_port->print(return_string);
         control_port->write(incoming_serial_byte);
       }
+      #endif //defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)
       clear_command_buffer();
     } else {
       // if it is a backslash command, process it if we have a carriage return
@@ -2183,7 +2227,7 @@ void check_buttons(){
     debug_println("check_buttons: button_cw pushed");
     #endif // DEBUG_BUTTONS
     #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
-      if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER)) {
+    if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER)) {
       #endif
       submit_request(AZ, REQUEST_CW, 0, 61);
       azimuth_button_was_pushed = 1;
@@ -10770,12 +10814,27 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
   strcpy(return_string,"");
 
   switch (easycom_command_buffer[0]) { // look at the first character of the command
+    #if defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)   //zzzzzz
+    case 'Z':
+      strcpy(return_string,"+");
+      dtostrf((float)azimuth/(float)HEADING_MULTIPLIER,0,1,tempstring);
+      strcat(return_string,tempstring);
+      if (elevation >= 0){
+        strcat(return_string,"+");
+      } else {
+        strcat(return_string,"-");
+      }
+      dtostrf((float)elevation/(float)HEADING_MULTIPLIER,0,1,tempstring);      
+      strcat(return_string,tempstring);
+      break;
+    #endif //OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
     case 'A':  // AZ
       if (easycom_command_buffer[1] == 'Z') {  // format is AZx.x or AZxx.x or AZxxx.x (why didn't they make it fixed length?)
         switch (easycom_command_buffer_index) {
           #ifdef OPTION_EASYCOM_AZ_QUERY_COMMAND
           case 2:
-            strcpy(return_string,"AZ");
+            //strcpy(return_string,"AZ");
+            strcpy(return_string,"+");
             dtostrf((float)azimuth/(float)HEADING_MULTIPLIER,0,1,tempstring);
             strcat(return_string,tempstring);
             return;
@@ -10807,7 +10866,12 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
         switch (easycom_command_buffer_index) {
           #ifdef OPTION_EASYCOM_EL_QUERY_COMMAND
           case 2:
-            strcpy(return_string,"EL");
+            //strcpy(return_string,"EL");
+            if (elevation >= 0){
+              strcpy(return_string,"+");
+            } else {
+              strcpy(return_string,"-");
+            }
             dtostrf((float)elevation/(float)HEADING_MULTIPLIER,0,1,tempstring);
             strcat(return_string,tempstring);            
             return;

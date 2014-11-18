@@ -24,6 +24,7 @@
 //#define LANGUAGE_SPANISH
 //#define LANGUAGE_CZECH
 //#define LANGUAGE_ITALIAN
+//#define LANGUAGE_PORTUGUESE_BRASIL
 
 /* master and remote slave unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit
@@ -44,7 +45,7 @@
 //#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 //#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 
-//#define FEATURE_EL_POSITION_POTENTIOMETER
+#define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
 //#define FEATURE_EL_POSITION_PULSE_INPUT
 //#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
@@ -122,6 +123,7 @@
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 //#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
+//#define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
 
 
 
