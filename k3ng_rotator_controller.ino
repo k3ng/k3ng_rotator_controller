@@ -278,9 +278,13 @@
 
     check_brake_release() bug fix
 
+    configuration.az_stepper_motor_last_direction, configuration.az_stepper_motor_last_pin_state, configuration.el_stepper_motor_last_direction, configuration.el_stepper_motor_last_pin_state    
+ 
+    OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK ; HARDWARE_WB6KCN
+
   */
 
-#define CODE_VERSION "2.0.2014111701"
+#define CODE_VERSION "2.0.2014112001"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -289,7 +293,11 @@
 #include "rotator_hardware.h"
 #ifdef HARDWARE_EA4TX_ARS_USB
 #include "rotator_features_ea4tx_ars_usb.h"
-#else
+#endif
+#ifdef HARDWARE_WB6KCN
+#include "rotator_features_wb6kcn.h"
+#endif
+#if !defined(HARDWARE_EA4TX_ARS_USB) && !defined(HARDWARE_WB6KCN)
 #include "rotator_features.h"
 #endif
 #include "rotator_dependencies.h"
@@ -355,11 +363,17 @@
 #ifdef HARDWARE_M0UPU
 #include "rotator_pins_m0upu.h"
 #endif
-#if !defined(HARDWARE_M0UPU) && !defined(HARDWARE_EA4TX_ARS_USB)
+#ifdef HARDWARE_WB6KCN
+#include "rotator_pins_wb6kcn.h"
+#endif
+#if !defined(HARDWARE_M0UPU) && !defined(HARDWARE_EA4TX_ARS_USB) &&!defined(HARDWARE_WB6KCN)
 #include "rotator_pins.h"
 #endif
+#ifdef HARDWARE_WB6KCN
+#include "rotator_settings_wb6kcn.h"
+#else
 #include "rotator_settings.h"
-
+#endif
 
 
 
@@ -429,6 +443,10 @@ struct config_t {
   int last_el_incremental_encoder_position;
   float azimuth_offset;
   float elevation_offset;
+  byte az_stepper_motor_last_pin_state;
+  byte el_stepper_motor_last_pin_state;
+  byte az_stepper_motor_last_direction;
+  byte el_stepper_motor_last_direction;
 } configuration;
 
 
@@ -675,8 +693,8 @@ unsigned long last_activity_time = 0;
 #endif //FEATURE_POWER_SWITCH
 
 #ifdef FEATURE_STEPPER_MOTOR
-byte az_stepper_motor_last_direction = STEPPER_UNDEF;
-byte az_stepper_motor_last_pin_state = LOW;
+//byte az_stepper_motor_last_direction = STEPPER_UNDEF;
+//byte az_stepper_motor_last_pin_state = LOW;
 #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
 unsigned long az_stepper_pulse_period_us = 0;
 unsigned long az_stepper_pulses_remaining = 0;
@@ -686,10 +704,15 @@ unsigned long el_stepper_pulses_remaining = 0;
 #endif //FEATURE_ELEVATION_CONTROL
 #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
 #ifdef FEATURE_ELEVATION_CONTROL
-byte el_stepper_motor_last_direction = STEPPER_UNDEF;
-byte el_stepper_motor_last_pin_state = LOW;
+//byte el_stepper_motor_last_direction = STEPPER_UNDEF;
+//byte el_stepper_motor_last_pin_state = LOW;
 #endif //FEATURE_ELEVATION_CONTROL
 #endif //FEATURE_STEPPER_MOTOR
+
+#if defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
+byte el_stepper_freq_pin = 0;
+unsigned int el_stepper_freq = 0;
+#endif //defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
 
 
 #ifdef FEATURE_AZIMUTH_CORRECTION
@@ -855,6 +878,10 @@ void loop() {
   #ifdef FEATURE_ANALOG_OUTPUT_PINS
   service_analog_output_pins();
   #endif //FEATURE_ANALOG_OUTPUT_PINS
+
+  #if defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
+  service_stepper_motor_pulse_pins();
+  #endif
 
 
 } /* loop */
@@ -2088,12 +2115,16 @@ void check_serial(){
           process_easycom_command(control_port_buffer,1,CONTROL_PORT0,return_string);
           //control_port->println(return_string); zzzzzz
           control_port->print(return_string);
-          control_port->write(incoming_serial_byte);          
+          #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
+          control_port->write(incoming_serial_byte);
+          #endif //OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK       
         } else {  // we got just a bare AZ command
           process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
           //control_port->println(return_string); zzzzzz
           control_port->print(return_string);
+          #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
           control_port->write(incoming_serial_byte);
+          #endif //OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK 
         }
       } else {
 
@@ -2101,7 +2132,9 @@ void check_serial(){
           process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
           //control_port->println(return_string); zzzzzz
           control_port->print(return_string);
+          #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
           control_port->write(incoming_serial_byte);
+          #endif //OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK 
         }
 
       }
@@ -2110,7 +2143,9 @@ void check_serial(){
         process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
         //control_port->println(return_string); zzzzzz
         control_port->print(return_string);
+        #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
         control_port->write(incoming_serial_byte);
+        #endif //OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK 
       }
       #endif //defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)
       clear_command_buffer();
@@ -3822,6 +3857,14 @@ void initialize_eeprom_with_defaults(){
   configuration.last_elevation = 0;
   #endif
 
+  #ifdef FEATURE_STEPPER_MOTOR
+  configuration.az_stepper_motor_last_direction = STEPPER_UNDEF;
+  configuration.az_stepper_motor_last_pin_state = LOW;
+  configuration.el_stepper_motor_last_direction = STEPPER_UNDEF;
+  configuration.el_stepper_motor_last_pin_state = LOW;
+  #endif //FEATURE_STEPPER_MOTOR
+
+
   write_settings_to_eeprom();
 
 } /* initialize_eeprom_with_defaults */
@@ -4362,6 +4405,15 @@ void output_debug(){
 
     debug_print("debug: \t");
     debug_print(CODE_VERSION);
+    #ifdef HARDWARE_WB6KCN
+    debug_print(" HARDWARE_WB6KCN");
+    #endif
+    #ifdef HARDWARE_M0UPU
+    debug_print(" HARDWARE_M0UPU");
+    #endif    
+    #ifdef HARDWARE_EA4TX_ARS_USB
+    debug_print(" HARDWARE_EA4TX_ARS_USB");
+    #endif      
     debug_print("\t\t");
 
     #ifdef FEATURE_CLOCK
@@ -5311,6 +5363,7 @@ void update_el_variable_outputs(byte speed_voltage){
     #endif // DEBUG_VARIABLE_OUTPUTS
     el_tone = map(speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH);
 
+    #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
     if ((el_tone < 31) && (el_tone != 0)) {el_tone = 31;}
     if (el_tone > 20000) {el_tone = 20000;}
     if (el_tone > 0) {
@@ -5318,6 +5371,14 @@ void update_el_variable_outputs(byte speed_voltage){
     } else {
       noTone(el_stepper_motor_pulse);
     }
+//zzzzzzzz
+    #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+    set_el_stepper_freq(el_stepper_motor_pulse,el_tone);
+    #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+
+
+
+
     #ifdef DEBUG_VARIABLE_OUTPUTS
     debug_print_int(el_tone);
     #endif // DEBUG_VARIABLE_OUTPUTS
@@ -5532,15 +5593,16 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         #ifdef FEATURE_STEPPER_MOTOR
         if (az_stepper_motor_direction){
-          if (az_stepper_motor_last_direction != STEPPER_CW){
-            if (az_stepper_motor_last_pin_state == LOW){
+          if (configuration.az_stepper_motor_last_direction != STEPPER_CW){
+            if (configuration.az_stepper_motor_last_pin_state == LOW){
               digitalWriteEnhanced(az_stepper_motor_direction,HIGH);
-              az_stepper_motor_last_pin_state = HIGH;
+              configuration.az_stepper_motor_last_pin_state = HIGH;
             } else {
               digitalWriteEnhanced(az_stepper_motor_direction,LOW);
-              az_stepper_motor_last_pin_state = LOW;              
+              configuration.az_stepper_motor_last_pin_state = LOW;             
             }
-            az_stepper_motor_last_direction = STEPPER_CW;
+            configuration.az_stepper_motor_last_direction = STEPPER_CW;
+            configuration_dirty = 1;
           }
         }
         #endif //FEATURE_STEPPER_MOTOR
@@ -5648,15 +5710,16 @@ void rotator(byte rotation_action, byte rotation_type) {
         }       
         #ifdef FEATURE_STEPPER_MOTOR
         if (az_stepper_motor_direction){
-          if (az_stepper_motor_last_direction != STEPPER_CCW){
-            if (az_stepper_motor_last_pin_state == LOW){
+          if (configuration.az_stepper_motor_last_direction != STEPPER_CCW){
+            if (configuration.az_stepper_motor_last_pin_state == LOW){
               digitalWriteEnhanced(az_stepper_motor_direction,HIGH);
-              az_stepper_motor_last_pin_state = HIGH;
+              configuration.az_stepper_motor_last_pin_state = HIGH;
             } else {
               digitalWriteEnhanced(az_stepper_motor_direction,LOW);
-              az_stepper_motor_last_pin_state = LOW;              
+              configuration.az_stepper_motor_last_pin_state = LOW;             
             }
-            az_stepper_motor_last_direction = STEPPER_CCW;
+            configuration.az_stepper_motor_last_direction = STEPPER_CCW;
+            configuration_dirty = 1;
           }
         }
         #endif //FEATURE_STEPPER_MOTOR
@@ -5720,8 +5783,14 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
+            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_el_stepper_freq(el_stepper_motor_pulse,0);
+            digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+
           }      
           #endif //FEATURE_STEPPER_MOTOR    
         } else {
@@ -5739,7 +5808,12 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
+            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             tone(el_stepper_motor_pulse, map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
+            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_el_stepper_freq(el_stepper_motor_pulse,map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+
           }
           #endif //FEATURE_STEPPER_MOTOR  
           if (rotate_down_freq) {
@@ -5757,15 +5831,16 @@ void rotator(byte rotation_action, byte rotation_type) {
         } 
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_direction){
-          if (el_stepper_motor_last_direction != STEPPER_UP){
-             if (el_stepper_motor_last_pin_state == LOW){
+          if (configuration.el_stepper_motor_last_direction != STEPPER_UP){
+             if (configuration.el_stepper_motor_last_pin_state == LOW){
                digitalWriteEnhanced(el_stepper_motor_direction,HIGH);
-               el_stepper_motor_last_pin_state = HIGH;
+               configuration.el_stepper_motor_last_pin_state = HIGH;
              } else {
                digitalWriteEnhanced(el_stepper_motor_direction,LOW);
-               el_stepper_motor_last_pin_state = LOW;              
+               configuration.el_stepper_motor_last_pin_state = LOW;             
              }
-             el_stepper_motor_last_direction = STEPPER_UP;
+             configuration.el_stepper_motor_last_direction = STEPPER_UP;
+             configuration_dirty = 1;
           }
         }
         #endif //FEATURE_STEPPER_MOTOR           
@@ -5792,8 +5867,14 @@ void rotator(byte rotation_action, byte rotation_type) {
         }   
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
+          #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
           noTone(el_stepper_motor_pulse);
           digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
+          #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+          set_el_stepper_freq(el_stepper_motor_pulse,0);
+          digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
+          #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+
         }      
         #endif //FEATURE_STEPPER_MOTOR   
       }
@@ -5830,8 +5911,13 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
+            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_el_stepper_freq(el_stepper_motor_pulse,0);
+            digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
           }      
           #endif //FEATURE_STEPPER_MOTOR             
         } else {
@@ -5852,8 +5938,13 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
+            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             tone(el_stepper_motor_pulse, map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_el_stepper_freq(el_stepper_motor_pulse,map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
+            digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE            
           }      
           #endif //FEATURE_STEPPER_MOTOR             
         }
@@ -5868,15 +5959,16 @@ void rotator(byte rotation_action, byte rotation_type) {
         }         
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_direction){
-          if (el_stepper_motor_last_direction != STEPPER_DOWN){
-             if (el_stepper_motor_last_pin_state == LOW){
+          if (configuration.el_stepper_motor_last_direction != STEPPER_DOWN){
+             if (configuration.el_stepper_motor_last_pin_state == LOW){
                digitalWriteEnhanced(el_stepper_motor_direction,HIGH);
-               el_stepper_motor_last_pin_state = HIGH;
+               configuration.el_stepper_motor_last_pin_state = HIGH;
              } else {
                digitalWriteEnhanced(el_stepper_motor_direction,LOW);
-               el_stepper_motor_last_pin_state = LOW;              
+               configuration.el_stepper_motor_last_pin_state = LOW;          
              }
-             el_stepper_motor_last_direction = STEPPER_DOWN;
+             configuration.el_stepper_motor_last_direction = STEPPER_DOWN;
+             configuration_dirty = 1;
           }
         }
         #endif //FEATURE_STEPPER_MOTOR  
@@ -5903,8 +5995,13 @@ void rotator(byte rotation_action, byte rotation_type) {
         }        
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
-          noTone(el_stepper_motor_pulse);
-          digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
+            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            noTone(el_stepper_motor_pulse);
+            digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
+            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_el_stepper_freq(el_stepper_motor_pulse,0);
+            digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
         }      
         #endif //FEATURE_STEPPER_MOTOR 
       }
@@ -6190,7 +6287,7 @@ void initialize_pins(){
 
   if (az_stepper_motor_direction){
     pinModeEnhanced(az_stepper_motor_direction, OUTPUT);
-    digitalWriteEnhanced(az_stepper_motor_direction, LOW);
+    digitalWriteEnhanced(az_stepper_motor_direction, configuration.az_stepper_motor_last_pin_state);
   }
 
 
@@ -6202,7 +6299,7 @@ void initialize_pins(){
 
   if (el_stepper_motor_direction){
     pinModeEnhanced(el_stepper_motor_direction, OUTPUT);
-    digitalWriteEnhanced(el_stepper_motor_direction, LOW);
+    digitalWriteEnhanced(el_stepper_motor_direction, configuration.el_stepper_motor_last_pin_state);
   }
   #endif //FEATURE_ELEVATION_CONTROL
   #endif //FEATURE_STEPPER_MOTOR
@@ -10816,13 +10913,13 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
   switch (easycom_command_buffer[0]) { // look at the first character of the command
     #if defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)   //zzzzzz
     case 'Z':
-      strcpy(return_string,"+");
+      //strcpy(return_string,"+");
+      strcpy(return_string,"=");
       dtostrf((float)azimuth/(float)HEADING_MULTIPLIER,0,1,tempstring);
       strcat(return_string,tempstring);
       if (elevation >= 0){
-        strcat(return_string,"+");
-      } else {
-        strcat(return_string,"-");
+        //strcat(return_string,"+");
+        strcat(return_string,"=");
       }
       dtostrf((float)elevation/(float)HEADING_MULTIPLIER,0,1,tempstring);      
       strcat(return_string,tempstring);
@@ -10869,8 +10966,6 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
             //strcpy(return_string,"EL");
             if (elevation >= 0){
               strcpy(return_string,"+");
-            } else {
-              strcpy(return_string,"-");
             }
             dtostrf((float)elevation/(float)HEADING_MULTIPLIER,0,1,tempstring);
             strcat(return_string,tempstring);            
@@ -11427,33 +11522,69 @@ void sync_master_clock_to_slave(){
 
 //------------------------------------------------------
 #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-void set_az_stepper_freq(int frequency){
+void set_az_stepper_freq(unsigned int frequency){
 
-  az_stepper_pulse_period_us = 1000000 / frequency;
 
 }
 
 #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
 //------------------------------------------------------
-#if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
-void set_el_stepper_freq(int frequency){
+#if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
+void set_el_stepper_freq(byte pin, unsigned int frequency){
 
-  el_stepper_pulse_period_us = 1000000 / frequency;
+  if (frequency > 31) {
+    tone(pin, frequency);
+  } else {
+    if (frequency == 0) {
+      noTone(pin);
+      el_stepper_freq_pin = 0;
+    } else {
+      el_stepper_freq_pin = pin;
+      el_stepper_freq = frequency;
+    }
+  }
 
 }
 
-#endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
+#endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
 //------------------------------------------------------
-#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-void service_stepper_pins(){
+#if defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
+void service_stepper_motor_pulse_pins(){
 
+  #if defined(FEATURE_ELEVATION_CONTROL)
+  static byte el_stepper_freq_pin_active = 0;
+  static unsigned long el_stepper_freq_pin_next_transition = 0;
+  static byte el_stepper_freq_pin_last_state = 0;
 
-//az_stepper_pulses_remaining
+  // pin just got activated
+  if ((el_stepper_freq_pin) && (!el_stepper_freq_pin_active)){
+    digitalWriteEnhanced(el_stepper_freq_pin,HIGH);
+    el_stepper_freq_pin_last_state = HIGH;
+    el_stepper_freq_pin_next_transition = millis() + ((1.0/el_stepper_freq)*500);
+    el_stepper_freq_pin_active = 1;
+  }
 
-//el_stepper_pulses_remaining
+  // pin got deactivated
+  if ((el_stepper_freq_pin_active) && (!el_stepper_freq_pin)) {el_stepper_freq_pin_active = 0;}
+
+  // pin is active, are we ready for a transition?
+  if ((el_stepper_freq_pin_active) && (millis() >= el_stepper_freq_pin_next_transition)){
+    if (el_stepper_freq_pin_last_state == LOW){
+      digitalWriteEnhanced(el_stepper_freq_pin,HIGH);
+      el_stepper_freq_pin_last_state = HIGH;
+    } else {
+      digitalWriteEnhanced(el_stepper_freq_pin,LOW);
+      el_stepper_freq_pin_last_state = LOW;      
+    }
+    el_stepper_freq_pin_next_transition = millis() + ((1.0/el_stepper_freq)*500);
+  }
+  #endif //defined(FEATURE_ELEVATION_CONTROL)
 
 }
-#endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+#endif //defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
+
+
+
 //-------------------------------------------------------
 #ifdef FEATURE_ANALOG_OUTPUT_PINS
 void service_analog_output_pins(){

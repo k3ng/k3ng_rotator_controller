@@ -3,7 +3,7 @@
 
 #define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator
                                                 
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 360 // the default rotation capability of the rotator in degrees
                                                 
 #define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
 
@@ -26,53 +26,54 @@ You can tweak these, but read the online documentation!
                                               
 
 // PWM speed voltage settings
-#define PWM_SPEED_VOLTAGE_X1  64         // 0 to 255
+#define PWM_SPEED_VOLTAGE_X1  74         // 0 to 255
 #define PWM_SPEED_VOLTAGE_X2  128        // 0 to 255
 #define PWM_SPEED_VOLTAGE_X3  191        // 0 to 255
 #define PWM_SPEED_VOLTAGE_X4  253        // 0 to 255
 
 //AZ
-#define AZ_SLOWSTART_DEFAULT 0            // 0 = off ; 1 = on
-#define AZ_SLOWDOWN_DEFAULT 0             // 0 = off ; 1 = on
-#define AZ_SLOW_START_UP_TIME 2000        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
-#define AZ_SLOW_START_STARTING_PWM 1      // PWM starting value for slow start (must be < 256)
+#define AZ_SLOWSTART_DEFAULT 1            // 0 = off ; 1 = on
+#define AZ_SLOWDOWN_DEFAULT 1             // 0 = off ; 1 = on
+#define AZ_SLOW_START_UP_TIME 550        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
+#define AZ_SLOW_START_STARTING_PWM 2      // PWM starting value for slow start (must be < 256)
 #define AZ_SLOW_START_STEPS 20            // must be < 256
 
 
-#define SLOW_DOWN_BEFORE_TARGET_AZ 10.0  // if slow down is enabled, slowdown will be activated within this many degrees of target azimuth
-#define AZ_SLOW_DOWN_PWM_START 200         // starting PWM value for slow down (must be < 256)
-#define	AZ_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
+#define SLOW_DOWN_BEFORE_TARGET_AZ 5.0  // if slow down is enabled, slowdown will be activated within this many degrees of target azimuth
+#define AZ_SLOW_DOWN_PWM_START 150         // starting PWM value for slow down (must be < 256)
+#define	AZ_SLOW_DOWN_PWM_STOP 10          // ending PWM value for slow down (must be < 256)
 #define AZ_SLOW_DOWN_STEPS 200 //20       // must be < 256
-#define AZ_INITIALLY_IN_SLOW_DOWN_PWM 50  // PWM value to start at if we're starting in the slow down zone (1 - 255)
+#define AZ_INITIALLY_IN_SLOW_DOWN_PWM 10  // PWM value to start at if we're starting in the slow down zone (1 - 255)
 
 //EL
-#define EL_SLOWSTART_DEFAULT 0            // 0 = off ; 1 = on
-#define EL_SLOWDOWN_DEFAULT 0             // 0 = off ; 1 = on
-#define EL_SLOW_START_UP_TIME 2000        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
-#define EL_SLOW_START_STARTING_PWM 1      // PWM starting value for slow start  (must be < 256)
+#define EL_SLOWSTART_DEFAULT 1            // 0 = off ; 1 = on
+#define EL_SLOWDOWN_DEFAULT 1            // 0 = off ; 1 = on
+#define EL_SLOW_START_UP_TIME 200        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
+#define EL_SLOW_START_STARTING_PWM 3      // PWM starting value for slow start  (must be < 256 and > 0)
 #define EL_SLOW_START_STEPS 20            // must be < 256
 
-#define SLOW_DOWN_BEFORE_TARGET_EL 10.0  // if slow down is enabled, slowdown will be activated within this many degrees of target elevation
-#define EL_SLOW_DOWN_PWM_START 200         // starting PWM value for slow down (must be < 256)
-#define	EL_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
-#define EL_SLOW_DOWN_STEPS 20
-#define EL_INITIALLY_IN_SLOW_DOWN_PWM 50  // PWM value to start at if we're starting in the slow down zone (1 - 255)
+#define SLOW_DOWN_BEFORE_TARGET_EL 20.0 //5.0  // if slow down is enabled, slowdown will be activated within this many degrees of target elevtion
+#define EL_SLOW_DOWN_PWM_START 50 //150         // starting PWM value for slow down (must be < 256 and > 0)
+#define	EL_SLOW_DOWN_PWM_STOP 1          // ending PWM value for slow down (must be < 256 and > 0)
+#define EL_SLOW_DOWN_STEPS 500 //200
+#define EL_INITIALLY_IN_SLOW_DOWN_PWM 10  // PWM value to start at if we're starting in the slow down zone (1 - 255)
 
-#define TIMED_SLOW_DOWN_TIME 2000
+#define TIMED_SLOW_DOWN_TIME 500
 
 //Variable frequency output settings - LOWEST FREQUENCY IS 31 HERTZ DUE TO ARDUINO tone() FUNCTION LIMITATIONS!
-#define AZ_VARIABLE_FREQ_OUTPUT_LOW   31     // Frequency in hertz of minimum speed
-#define AZ_VARIABLE_FREQ_OUTPUT_HIGH 5000 //100    // Frequency in hertz of maximum speed
-#define EL_VARIABLE_FREQ_OUTPUT_LOW   31     // Frequency in hertz of minimum speed
-#define EL_VARIABLE_FREQ_OUTPUT_HIGH 100    // Frequency in hertz of maximum speed
+// (Except when used with FEATURE_STEPPER_MOTOR and FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
+#define AZ_VARIABLE_FREQ_OUTPUT_LOW   32     // Frequency in hertz of minimum speed
+#define AZ_VARIABLE_FREQ_OUTPUT_HIGH 1000 //100    // Frequency in hertz of maximum speed
+#define EL_VARIABLE_FREQ_OUTPUT_LOW   5 //32     // Frequency in hertz of minimum speed
+#define EL_VARIABLE_FREQ_OUTPUT_HIGH 500    // Frequency in hertz of maximum speed
 
 // Settings for OPTION_AZ_MANUAL_ROTATE_LIMITS
-#define AZ_MANUAL_ROTATE_CCW_LIMIT 0   // if using a rotator that starts at 180 degrees, set this to something like 185
-#define AZ_MANUAL_ROTATE_CW_LIMIT 535  // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
+#define AZ_MANUAL_ROTATE_CCW_LIMIT 179   // if using a rotator that starts at 180 degrees, set this to something like 185
+#define AZ_MANUAL_ROTATE_CW_LIMIT 539  // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
 
 // Settings for OPTION_EL_MANUAL_ROTATE_LIMITS
-#define EL_MANUAL_ROTATE_DOWN_LIMIT -1
-#define EL_MANUAL_ROTATE_UP_LIMIT 181
+#define EL_MANUAL_ROTATE_DOWN_LIMIT 10
+#define EL_MANUAL_ROTATE_UP_LIMIT 170
 
 // Speed pot settings
 #define SPEED_POT_LOW 0
@@ -89,7 +90,7 @@ You can tweak these, but read the online documentation!
 #define ENCODER_PRESET_TIMEOUT 5000
 
 // various code settings
-#define AZIMUTH_TOLERANCE 3.0            // rotator will stop within X degrees when doing autorotation
+#define AZIMUTH_TOLERANCE 0.10            // rotator will stop within X degrees when doing autorotation
 #define ELEVATION_TOLERANCE 0.1 //1.0
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
@@ -126,7 +127,7 @@ You can tweak these, but read the online documentation!
 #define AZ_BRAKE_DELAY 3000            // in milliseconds
 #define EL_BRAKE_DELAY 3000            // in milliseconds
 
-#define EEPROM_MAGIC_NUMBER 104
+#define EEPROM_MAGIC_NUMBER 103
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 
@@ -285,7 +286,7 @@ You can tweak these, but read the online documentation!
 #define NNE_STRING "NNE"
 #endif //LANGUAGE_SPANISH
 
-#ifdef LANGUAGE_CZECH            // courtesy of Jan, OK2ZAW
+#ifdef LANGUAGE_CHECK            // courtesy of Jan, OK2ZAW
 #define MOON_STRING "mesic "
 #define SUN_STRING "slunce "
 #define AZ_TARGET_STRING "Az cíl "
@@ -369,48 +370,6 @@ You can tweak these, but read the online documentation!
 #define NNE_STRING "NNE"
 #endif //LANGUAGE_ITALIAN
 
-#ifdef LANGUAGE_PORTUGUESE_BRASIL // courtesy of Ismael, PY4PI
-#define MOON_STRING "lua "
-#define SUN_STRING "sol "
-#define AZ_TARGET_STRING "Objetivo Az "
-#define EL_TARGET_STRING "Objetivo El "
-#define TARGET_STRING "Objetivo "
-#define PARKED_STRING "Estacionado"
-#define ROTATING_CW_STRING "Rodando DIR"
-#define ROTATING_CCW_STRING "Rodando ESQ"
-#define ROTATING_TO_STRING "Rodando para "
-#define ELEVATING_TO_STRING "Elevando para "
-#define ELEVATING_UP_STRING "Subindo"
-#define ELEVATING_DOWN_STRING "Descendo"
-#define ROTATING_STRING "Rodando "
-#define CW_STRING "DIR"
-#define CCW_STRING "ESQ"
-#define UP_STRING "SOBE"
-#define DOWN_STRING "DESCE"
-#define AZIMUTH_STRING "Azimute "
-#define AZ_STRING "Az"
-#define AZ_SPACE_STRING "Az "
-#define SPACE_EL_STRING " El"
-#define SPACE_EL_SPACE_STRING " El "
-#define GPS_STRING "GPS"
-#define N_STRING "N"
-#define W_STRING "O"
-#define S_STRING "S"
-#define E_STRING "L"
-#define NW_STRING "NO"
-#define SW_STRING "SO"
-#define SE_STRING "SL"
-#define NE_STRING "NL"
-#define NNW_STRING "NNO"
-#define WNW_STRING "ONO"
-#define WSW_STRING "OSO"
-#define SSW_STRING "SSO"
-#define SSE_STRING "SSL"
-#define ESE_STRING "LSL"
-#define ENE_STRING "LNL"
-#define NNE_STRING "NNL"
-#endif //LANGUAGE_PORTUGUESE_BRASIL
-
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
 
@@ -429,7 +388,7 @@ You can tweak these, but read the online documentation!
 
 #define ETHERNET_MAC_ADDRESS 0xDE,0xAD,0xBE,0xEF,0xFE,0xEE  //<-DON'T FORGET TO USE DIFFERENT MAC ADDRESSES FOR MASTER AND SLAVE!!!
 #define ETHERNET_IP_ADDRESS 192,168,1,172  //<-DON'T FORGET TO USE DIFFERENT IP ADDRESSES FOR MASTER AND SLAVE!!!
-#define ETHERNET_IP_GATEWAY 192,168,1,1
+#define ETHERNET_IP_GATEWAY 192,168,1,254
 #define ETHERNET_IP_SUBNET_MASK 255,255,255,0
 #define ETHERNET_TCP_PORT_0 23
 #define ETHERNET_TCP_PORT_1 24
@@ -466,8 +425,11 @@ You can tweak these, but read the online documentation!
 //   #define AZIMUTH_CALIBRATION_TO_ARRAY {359,0}
 
 
-#define ELEVATION_CALIBRATION_FROM_ARRAY {-180,0,180}
-#define ELEVATION_CALIBRATION_TO_ARRAY {-180,0,180}
+//#define ELEVATION_CALIBRATION_FROM_ARRAY {-180,0,180}
+//#define ELEVATION_CALIBRATION_TO_ARRAY {-180,0,180}
+
+#define ELEVATION_CALIBRATION_FROM_ARRAY {0,269.9,270.0,359.9}
+#define ELEVATION_CALIBRATION_TO_ARRAY {0,269.9,-90.0,-0.1}
 
 #define ANALOG_OUTPUT_MAX_EL_DEGREES 180
 
