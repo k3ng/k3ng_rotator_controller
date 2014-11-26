@@ -284,7 +284,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2014112001"
+#define CODE_VERSION "2.0.2014112502"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -708,6 +708,11 @@ unsigned long el_stepper_pulses_remaining = 0;
 //byte el_stepper_motor_last_pin_state = LOW;
 #endif //FEATURE_ELEVATION_CONTROL
 #endif //FEATURE_STEPPER_MOTOR
+
+#if defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
+byte az_stepper_freq_pin = 0;
+unsigned int az_stepper_freq = 0;
+#endif //defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
 
 #if defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
 byte el_stepper_freq_pin = 0;
@@ -5485,6 +5490,8 @@ void update_az_variable_outputs(byte speed_voltage){
     debug_print("\taz_stepper_motor_pulse: ");
     #endif // DEBUG_VARIABLE_OUTPUTS
     az_tone = map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH);
+
+    #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
     if ((az_tone < 31) && (az_tone != 0)) {az_tone = 31;}
     if (az_tone > 20000) {az_tone = 20000;}
     if (az_tone > 0) {
@@ -5492,6 +5499,12 @@ void update_az_variable_outputs(byte speed_voltage){
     } else {
       noTone(az_stepper_motor_pulse);
     }
+    #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+    set_az_stepper_freq(az_stepper_motor_pulse,az_tone);
+    #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+
+
+
     #ifdef DEBUG_VARIABLE_OUTPUTS
     debug_print_int(az_tone);
     #endif // DEBUG_VARIABLE_OUTPUTS 
@@ -10914,13 +10927,13 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
     #if defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)   //zzzzzz
     case 'Z':
       //strcpy(return_string,"+");
-      strcpy(return_string,"=");
+      strcpy(return_string,"AZ");
       dtostrf((float)azimuth/(float)HEADING_MULTIPLIER,0,1,tempstring);
       strcat(return_string,tempstring);
-      if (elevation >= 0){
+      //if (elevation >= 0){
         //strcat(return_string,"+");
-        strcat(return_string,"=");
-      }
+        strcat(return_string," EL");
+      //}
       dtostrf((float)elevation/(float)HEADING_MULTIPLIER,0,1,tempstring);      
       strcat(return_string,tempstring);
       break;
@@ -11522,8 +11535,19 @@ void sync_master_clock_to_slave(){
 
 //------------------------------------------------------
 #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-void set_az_stepper_freq(unsigned int frequency){
+void set_az_stepper_freq(byte pin, unsigned int frequency){
 
+  if (frequency > 31) {
+    tone(pin, frequency);
+  } else {
+    if (frequency == 0) {
+      noTone(pin);
+      az_stepper_freq_pin = 0;
+    } else {
+      az_stepper_freq_pin = pin;
+      az_stepper_freq = frequency;
+    }
+  }
 
 }
 
@@ -11550,6 +11574,35 @@ void set_el_stepper_freq(byte pin, unsigned int frequency){
 //------------------------------------------------------
 #if defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
 void service_stepper_motor_pulse_pins(){
+
+  static byte az_stepper_freq_pin_active = 0;
+  static unsigned long az_stepper_freq_pin_next_transition = 0;
+  static byte az_stepper_freq_pin_last_state = 0;
+
+  // pin just got activated
+  if ((az_stepper_freq_pin) && (!az_stepper_freq_pin_active)){
+    digitalWriteEnhanced(az_stepper_freq_pin,HIGH);
+    az_stepper_freq_pin_last_state = HIGH;
+    az_stepper_freq_pin_next_transition = millis() + ((1.0/az_stepper_freq)*500);
+    az_stepper_freq_pin_active = 1;
+  }
+
+  // pin got deactivated
+  if ((az_stepper_freq_pin_active) && (!az_stepper_freq_pin)) {az_stepper_freq_pin_active = 0;}
+
+  // pin is active, are we ready for a transition?
+  if ((az_stepper_freq_pin_active) && (millis() >= az_stepper_freq_pin_next_transition)){
+    if (az_stepper_freq_pin_last_state == LOW){
+      digitalWriteEnhanced(az_stepper_freq_pin,HIGH);
+      az_stepper_freq_pin_last_state = HIGH;
+    } else {
+      digitalWriteEnhanced(az_stepper_freq_pin,LOW);
+      az_stepper_freq_pin_last_state = LOW;      
+    }
+    az_stepper_freq_pin_next_transition = millis() + ((1.0/az_stepper_freq)*500);
+  }
+
+
 
   #if defined(FEATURE_ELEVATION_CONTROL)
   static byte el_stepper_freq_pin_active = 0;
