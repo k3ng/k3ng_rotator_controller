@@ -1,6 +1,9 @@
 
 /* ---------------------- dependency checking - don't touch this unless you know what you are doing ---------------------*/
 
+#if defined(FEATURE_YAESU_EMULATION) && defined(FEATURE_EASYCOM_EMULATION)
+#error "You can't activate both FEATURE_YAESU_EMULATION and FEATURE_EASYCOM_EMULATION!"
+#endif
 
 #if (defined(FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT) || defined(FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT)) && (!defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) && !defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE))
 #error "You must activate FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE when using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT or FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT"

@@ -19,6 +19,7 @@
 //#define FEATURE_ETHERNET
 //#define FEATURE_STEPPER_MOTOR
 //#define FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+//#define FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2  // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
 
 #define LANGUAGE_ENGLISH
 //#define LANGUAGE_SPANISH
@@ -45,7 +46,7 @@
 //#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 //#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 
-//#define FEATURE_EL_POSITION_POTENTIOMETER
+#define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
 //#define FEATURE_EL_POSITION_PULSE_INPUT
 //#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
@@ -114,10 +115,10 @@
 //#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+//#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator in row 1 center
-#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
-//#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+//#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
+#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 //#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
@@ -125,6 +126,7 @@
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
 //#define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
 //#define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
+//#define OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
 
 
 
@@ -142,9 +144,9 @@
 
 
 
-#define DEFAULT_DEBUG_STATE 0// this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
-#define DEBUG_DUMP
+#define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
 // #define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
@@ -192,6 +194,7 @@
 // #define DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
 // #define DEBUG_HMC5883L
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
+// #define DEBUG_STEPPER
 
 
 

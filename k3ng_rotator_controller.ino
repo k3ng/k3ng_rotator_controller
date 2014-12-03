@@ -281,10 +281,12 @@
     configuration.az_stepper_motor_last_direction, configuration.az_stepper_motor_last_pin_state, configuration.el_stepper_motor_last_direction, configuration.el_stepper_motor_last_pin_state    
  
     OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK ; HARDWARE_WB6KCN
+    
+    FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
 
   */
 
-#define CODE_VERSION "2.0.2014112502"
+#define CODE_VERSION "2.0.2014120201"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -301,6 +303,7 @@
 #include "rotator_features.h"
 #endif
 #include "rotator_dependencies.h"
+
 
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
 #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
@@ -356,6 +359,7 @@
 #include "Ethernet.h"
 #endif
 
+
 #include "rotator.h"
 #ifdef HARDWARE_EA4TX_ARS_USB
 #include "rotator_pins_ea4tx_ars_usb.h"
@@ -373,6 +377,9 @@
 #include "rotator_settings_wb6kcn.h"
 #else
 #include "rotator_settings.h"
+#endif
+#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+#include "TimerFive.h"
 #endif
 
 
@@ -692,22 +699,15 @@ unsigned int ethernet_slave_reconnects = 0;
 unsigned long last_activity_time = 0;
 #endif //FEATURE_POWER_SWITCH
 
-#ifdef FEATURE_STEPPER_MOTOR
-//byte az_stepper_motor_last_direction = STEPPER_UNDEF;
-//byte az_stepper_motor_last_pin_state = LOW;
-#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-unsigned long az_stepper_pulse_period_us = 0;
-unsigned long az_stepper_pulses_remaining = 0;
+#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+unsigned int az_stepper_freq_count = 0;
 #ifdef FEATURE_ELEVATION_CONTROL
-unsigned long el_stepper_pulse_period_us = 0;
-unsigned long el_stepper_pulses_remaining = 0;
+unsigned int el_stepper_freq_count = 0;
 #endif //FEATURE_ELEVATION_CONTROL
-#endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-#ifdef FEATURE_ELEVATION_CONTROL
-//byte el_stepper_motor_last_direction = STEPPER_UNDEF;
-//byte el_stepper_motor_last_pin_state = LOW;
-#endif //FEATURE_ELEVATION_CONTROL
-#endif //FEATURE_STEPPER_MOTOR
+unsigned long service_stepper_motor_pulse_pins_count = 0;
+#endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+
+
 
 #if defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
 byte az_stepper_freq_pin = 0;
@@ -2468,6 +2468,9 @@ void check_buttons(){
           debug_println("check_buttons: moon tracking on");
           #endif // DEBUG_BUTTONS
           moon_tracking_active = 1;
+          #ifdef FEATURE_SUN_TRACKING
+          sun_tracking_active = 0;
+          #endif // FEATURE_SUN_TRACKING          
         } else {
           #ifdef DEBUG_BUTTONS
            debug_println("check_buttons: moon tracking off");
@@ -2497,6 +2500,9 @@ void check_buttons(){
           debug_println("check_buttons: sun tracking on");
           #endif // DEBUG_BUTTONS
           sun_tracking_active = 1;
+          #ifdef FEATURE_MOON_TRACKING
+          moon_tracking_active = 0;
+          #endif // FEATURE_MOON_TRACKING          
         } else {
           #ifdef DEBUG_BUTTONS
           debug_print("check_buttons: sun tracking off");
@@ -4796,7 +4802,12 @@ void output_debug(){
     debug_println("");
     #endif //FEATURE_GPS
 
-
+#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+//debug_print("service_stepper_motor_pulse_pins_count: ");
+//char service_stepper_motor_pulse_pins_count_temp[12];
+//dtostrf(service_stepper_motor_pulse_pins_count,0,0,service_stepper_motor_pulse_pins_count_temp);
+//debug_println(service_stepper_motor_pulse_pins_count_temp);
+#endif FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
 
     debug_println("\n\n\n");
 
@@ -4804,10 +4815,12 @@ void output_debug(){
 
     last_debug_output_time = millis();
 
-    #endif //DEBUG_DUMP
+    
 
   }
   #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+  
+  #endif //DEBUG_DUMP
 
 } /* output_debug */
 
@@ -4872,6 +4885,8 @@ void output_debug(){
 // --------------------------------------------------------------
 void print_to_port(char * print_this,byte port){
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+  
   switch(port){
     case CONTROL_PORT0: control_port->println(print_this);break;
     #ifdef FEATURE_ETHERNET
@@ -4881,6 +4896,8 @@ void print_to_port(char * print_this,byte port){
     #endif //ETHERNET_TCP_PORT_1
     #endif //FEATURE_ETHERNET
   }
+  
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
 }
 
@@ -5368,7 +5385,7 @@ void update_el_variable_outputs(byte speed_voltage){
     #endif // DEBUG_VARIABLE_OUTPUTS
     el_tone = map(speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH);
 
-    #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+    #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
     if ((el_tone < 31) && (el_tone != 0)) {el_tone = 31;}
     if (el_tone > 20000) {el_tone = 20000;}
     if (el_tone > 0) {
@@ -5376,10 +5393,16 @@ void update_el_variable_outputs(byte speed_voltage){
     } else {
       noTone(el_stepper_motor_pulse);
     }
+    #endif 
+
 //zzzzzzzz
-    #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+    #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
     set_el_stepper_freq(el_stepper_motor_pulse,el_tone);
     #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+
+    #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+    set_el_stepper_freq(el_tone);
+    #endif
 
 
 
@@ -5491,7 +5514,7 @@ void update_az_variable_outputs(byte speed_voltage){
     #endif // DEBUG_VARIABLE_OUTPUTS
     az_tone = map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH);
 
-    #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+    #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
     if ((az_tone < 31) && (az_tone != 0)) {az_tone = 31;}
     if (az_tone > 20000) {az_tone = 20000;}
     if (az_tone > 0) {
@@ -5499,9 +5522,15 @@ void update_az_variable_outputs(byte speed_voltage){
     } else {
       noTone(az_stepper_motor_pulse);
     }
-    #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+    #endif
+
+    #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
     set_az_stepper_freq(az_stepper_motor_pulse,az_tone);
     #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+
+    #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+    set_az_stepper_freq(az_tone);
+    #endif    
 
 
 
@@ -5570,11 +5599,24 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           if (rotate_ccw_freq) {
             noTone(rotate_ccw_freq);
-          }
+          }       
+          #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(az_stepper_motor_pulse);
-            digitalWriteEnhanced(az_stepper_motor_pulse, LOW);
-          }                 
+            digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_az_stepper_freq(az_stepper_motor_pulse,0);
+            digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_az_stepper_freq(0);
+            digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          }      
+          #endif //FEATURE_STEPPER_MOTOR
+
         } else {
           if (rotate_cw_pwm) {
             analogWriteEnhanced(rotate_cw_pwm, normal_az_speed_voltage);
@@ -5590,10 +5632,20 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           if (rotate_ccw_freq) {
             noTone(rotate_ccw_freq);
-          }
+          }  
+          #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(az_stepper_motor_pulse, map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
-          }          
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_az_stepper_freq(az_stepper_motor_pulse,map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_az_stepper_freq(map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          }
+          #endif //FEATURE_STEPPER_MOTOR                 
         }
         if (rotate_cw) {
           digitalWriteEnhanced(rotate_cw, ROTATE_PIN_ACTIVE_VALUE);
@@ -5647,12 +5699,23 @@ void rotator(byte rotation_action, byte rotation_type) {
         if (rotate_cw_freq) {
           noTone(rotate_cw_freq);
         }
+
         #ifdef FEATURE_STEPPER_MOTOR
         if (az_stepper_motor_pulse) {
+          #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
           noTone(az_stepper_motor_pulse);
-          digitalWriteEnhanced(az_stepper_motor_pulse, HIGH);
-        }  
-        #endif //FEATURE_STEPPER_MOTOR      
+          digitalWriteEnhanced(az_stepper_motor_pulse,HIGH);
+          #endif
+          #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+          set_az_stepper_freq(az_stepper_motor_pulse,0);
+          digitalWriteEnhanced(az_stepper_motor_pulse,HIGH);
+          #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+          #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          set_az_stepper_freq(0);
+          digitalWriteEnhanced(az_stepper_motor_pulse,HIGH);
+          #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+        }      
+        #endif //FEATURE_STEPPER_MOTOR             
       }
       break;
     case CCW:
@@ -5683,13 +5746,23 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           if (rotate_ccw_freq) {
             noTone(rotate_ccw_freq);
-          }
+          } 
           #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(az_stepper_motor_pulse);
-            digitalWriteEnhanced(az_stepper_motor_pulse, LOW);
-          }    
-          #endif //FEATURE_STEPPER_MOTOR        
+            digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_az_stepper_freq(az_stepper_motor_pulse,0);
+            digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_az_stepper_freq(0);
+            digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          }      
+          #endif //FEATURE_STEPPER_MOTOR                
         } else {
           if (rotate_cw_pwm) {
             analogWriteEnhanced(rotate_cw_pwm, 0); digitalWriteEnhanced(rotate_cw_pwm, LOW);
@@ -5705,12 +5778,20 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           if (rotate_ccw_freq) {
             tone(rotate_ccw_freq, map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
-          }
+          }  
           #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(az_stepper_motor_pulse, map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
-          }     
-          #endif //FEATURE_STEPPER_MOTOR        
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            set_az_stepper_freq(az_stepper_motor_pulse,map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_az_stepper_freq(map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          }
+          #endif //FEATURE_STEPPER_MOTOR 
         }
         if (rotate_cw) {
           digitalWriteEnhanced(rotate_cw, ROTATE_PIN_INACTIVE_VALUE);
@@ -5796,14 +5877,18 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
-            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_el_stepper_freq(el_stepper_motor_pulse,0);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_el_stepper_freq(0);
+            digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }      
           #endif //FEATURE_STEPPER_MOTOR    
         } else {
@@ -5821,12 +5906,15 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(el_stepper_motor_pulse, map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
-            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_el_stepper_freq(el_stepper_motor_pulse,map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_el_stepper_freq(map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }
           #endif //FEATURE_STEPPER_MOTOR  
           if (rotate_down_freq) {
@@ -5880,13 +5968,18 @@ void rotator(byte rotation_action, byte rotation_type) {
         }   
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
-          #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+          #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
           noTone(el_stepper_motor_pulse);
           digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
-          #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+          #endif
+          #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
           set_el_stepper_freq(el_stepper_motor_pulse,0);
           digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
           #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+          #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          set_el_stepper_freq(0);
+          digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
+          #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2         
 
         }      
         #endif //FEATURE_STEPPER_MOTOR   
@@ -5924,13 +6017,18 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
-            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_el_stepper_freq(el_stepper_motor_pulse,0);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_el_stepper_freq(0);
+            digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2           
           }      
           #endif //FEATURE_STEPPER_MOTOR             
         } else {
@@ -5951,13 +6049,18 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(el_stepper_motor_pulse, map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
-            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_el_stepper_freq(el_stepper_motor_pulse,map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE            
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE           
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_el_stepper_freq(map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
+            digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2             
           }      
           #endif //FEATURE_STEPPER_MOTOR             
         }
@@ -6008,13 +6111,18 @@ void rotator(byte rotation_action, byte rotation_type) {
         }        
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
-            #ifndef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
-            #else //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #endif
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_el_stepper_freq(el_stepper_motor_pulse,0);
             digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            set_el_stepper_freq(0);
+            digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
+            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2           
         }      
         #endif //FEATURE_STEPPER_MOTOR 
       }
@@ -6040,6 +6148,11 @@ void initialize_interrupts(){
   #ifdef FEATURE_EL_POSITION_PULSE_INPUT
   attachInterrupt(EL_POSITION_PULSE_PIN_INTERRUPT, el_position_pulse_interrupt_handler, FALLING);
   #endif // FEATURE_EL_POSITION_PULSE_INPUT
+
+  #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+  Timer5.initialize(250);  // 250 us = 4 khz rate
+  Timer5.attachInterrupt(service_stepper_motor_pulse_pins);
+  #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
 
 
 }
@@ -6330,6 +6443,7 @@ void initialize_pins(){
   digitalWriteEnhanced(pin_analog_el_out, LOW);
   #endif //FEATURE_ELEVATION_CONTROL
   #endif //FEATURE_ANALOG_OUTPUT_PINS
+
 
 
 } /* initialize_pins */
@@ -6820,7 +6934,7 @@ void service_rotation(){
 
 
 
-    #ifdef FEATURE_ELEVATION_CONTROL
+  #ifdef FEATURE_ELEVATION_CONTROL
   if (el_state == INITIALIZE_NORMAL_UP) {
     update_el_variable_outputs(normal_el_speed_voltage);
     rotator(ACTIVATE, UP);
@@ -7027,9 +7141,12 @@ void service_rotation(){
 
   // check rotation target --------------------------------------------------------------------------------------------------------
   if ((el_state != IDLE) && (el_request_queue_state == IN_PROGRESS_TO_TARGET) ) {
+    read_elevation(0);
     if ((el_state == NORMAL_UP) || (el_state == SLOW_START_UP) || (el_state == SLOW_DOWN_UP)) {
       if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation > target_elevation) && ((elevation - target_elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
+        #ifndef OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
         delay(50);
+        #endif //OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
         read_elevation(0);
         if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation > target_elevation) && ((elevation - target_elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
           rotator(DEACTIVATE, UP);
@@ -7039,7 +7156,10 @@ void service_rotation(){
           #ifdef DEBUG_SERVICE_ROTATION
           debug_print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
-
+/*control_port->println(abs(elevation - target_elevation));
+read_elevation(0);
+control_port->println(abs(elevation - target_elevation));
+control_port->println();*/
           #if defined(FEATURE_PARK)
           if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
             park_status = PARKED;
@@ -7049,10 +7169,13 @@ void service_rotation(){
         }
       }
     } else {
-      if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation < target_elevation) && ((target_elevation - elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
+      read_elevation(0);
+      if ((abs(elevation - target_elevation) <= (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation < target_elevation) && ((target_elevation - elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
+        #ifndef OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
         delay(50);
+        #endif //OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
         read_elevation(0);
-        if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation < target_elevation) && ((target_elevation - elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
+        if ((abs(elevation - target_elevation) <= (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation < target_elevation) && ((target_elevation - elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
           rotator(DEACTIVATE, UP);
           rotator(DEACTIVATE, DOWN);
           el_state = IDLE;
@@ -7060,7 +7183,10 @@ void service_rotation(){
           #ifdef DEBUG_SERVICE_ROTATION
           debug_print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
-
+/*control_port->println(abs(elevation - target_elevation));
+read_elevation(0);
+control_port->println(abs(elevation - target_elevation));
+control_port->println();*/
           #if defined(FEATURE_PARK)
           if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
             park_status = PARKED;
@@ -9680,9 +9806,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         case '1':
           sun_tracking_active = 1;
           strcpy(return_string, "Sun tracking activated.");
-  #ifdef FEATURE_MOON_TRACKING
+          #ifdef FEATURE_MOON_TRACKING
           moon_tracking_active = 0;
-  #endif // FEATURE_MOON_TRACKING
+          #endif // FEATURE_MOON_TRACKING
           break;
         default: strcpy(return_string, "Error."); break;
       }
@@ -9868,9 +9994,12 @@ char * az_el_calibrated_string(){
 // --------------------------------------------------------------
 void debug_print(char * print_string){
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+  
   if (debug_mode & CONTROL_PORT0){
     control_port->print(print_string);
   }
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
   #ifdef FEATURE_ETHERNET
   if (debug_mode & ETHERNET_PORT0){
@@ -9888,9 +10017,11 @@ void debug_print(char * print_string){
 // --------------------------------------------------------------
 void debug_println(char * print_string){
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
   if (debug_mode & CONTROL_PORT0){
     control_port->println(print_string);
   }
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
   #ifdef FEATURE_ETHERNET
   if (debug_mode & ETHERNET_PORT0){
@@ -9908,9 +10039,11 @@ void debug_println(char * print_string){
 // --------------------------------------------------------------
 void debug_print_char(char print_char){
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
   if (debug_mode & CONTROL_PORT0){
     control_port->print(print_char);
   }
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
   #ifdef FEATURE_ETHERNET
   if (debug_mode & ETHERNET_PORT0){
@@ -9927,9 +10060,11 @@ void debug_print_char(char print_char){
 // --------------------------------------------------------------
 void debug_write(char * print_string){
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
   if (debug_mode & CONTROL_PORT0){
     control_port->write(print_string);
   }
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
   #ifdef FEATURE_ETHERNET
   if (debug_mode & ETHERNET_PORT0){
@@ -9947,9 +10082,11 @@ void debug_write(char * print_string){
 // --------------------------------------------------------------
 void debug_print_int(int print_int){
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
   if (debug_mode & CONTROL_PORT0){
     control_port->print(print_int);
   }
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
   #ifdef FEATURE_ETHERNET
   if (debug_mode & ETHERNET_PORT0){
@@ -9968,9 +10105,11 @@ void debug_print_int(int print_int){
 // --------------------------------------------------------------
 void debug_write_int(int write_int){
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
   if (debug_mode & CONTROL_PORT0){
     control_port->write(write_int);
   }
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
   #ifdef FEATURE_ETHERNET
   if (debug_mode & ETHERNET_PORT0){
@@ -9992,9 +10131,11 @@ void debug_print_float(float print_float,byte places){
 
   dtostrf(print_float,0,places,tempstring);
 
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
   if (debug_mode & CONTROL_PORT0){
     control_port->print(tempstring);
   }
+  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
   #ifdef FEATURE_ETHERNET
   if (debug_mode & ETHERNET_PORT0){
@@ -11420,7 +11561,8 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
 // --------------------------------------------------------------
 void port_flush(){
 
-  #ifdef CONTROL_PORT_MAPPED_TO
+  
+  #if defined(CONTROL_PORT_MAPPED_TO) && (defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION))
   control_port->flush();
   #endif //CONTROL_PORT_MAPPED_TO
 
@@ -11571,9 +11713,108 @@ void set_el_stepper_freq(byte pin, unsigned int frequency){
 }
 
 #endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
+//------------------------------------------------------FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+#if defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+void service_stepper_motor_pulse_pins(){
+
+  service_stepper_motor_pulse_pins_count++;
+
+  static unsigned int az_stepper_pin_transition_counter = 0;
+  static byte az_stepper_pin_last_state = LOW;
+
+  if (az_stepper_freq_count > 0){
+    az_stepper_pin_transition_counter++;
+    if (az_stepper_pin_transition_counter >= az_stepper_freq_count){
+      if (az_stepper_pin_last_state == LOW){
+        digitalWrite(az_stepper_motor_pulse,HIGH);
+        az_stepper_pin_last_state = HIGH;
+      } else {
+        digitalWrite(az_stepper_motor_pulse,LOW);
+        az_stepper_pin_last_state = LOW;
+      }
+      az_stepper_pin_transition_counter = 0;
+    }
+  } else {
+    az_stepper_pin_transition_counter = 0;
+  }
+
+  #ifdef FEATURE_ELEVATION_CONTROL
+  static unsigned int el_stepper_pin_transition_counter = 0;
+  static byte el_stepper_pin_last_state = LOW;
+
+  if (el_stepper_freq_count > 0){
+    el_stepper_pin_transition_counter++;
+    if (el_stepper_pin_transition_counter >= el_stepper_freq_count){
+      if (el_stepper_pin_last_state == LOW){
+        digitalWrite(el_stepper_motor_pulse,HIGH);
+        el_stepper_pin_last_state = HIGH;
+      } else {
+        digitalWrite(el_stepper_motor_pulse,LOW);
+        el_stepper_pin_last_state = LOW;
+      }
+      el_stepper_pin_transition_counter = 0;
+    }
+  } else {
+    el_stepper_pin_transition_counter = 0;
+  }
+
+  #endif //FEATURE_ELEVATION_CONTROL
+
+}
+#endif //defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+
+//------------------------------------------------------FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+void set_az_stepper_freq(unsigned int frequency){
+
+  if (frequency > 0) {
+    az_stepper_freq_count = 2000 / frequency;
+  } else {
+    az_stepper_freq_count = 0;
+  }
+
+  #ifdef DEBUG_STEPPER
+  debug_print("set_az_stepper_freq: ");
+  debug_print_int(frequency);
+  debug_print(" az_stepper_freq_count:");
+  debug_print_int(el_stepper_freq_count);
+  debug_println("");
+  #endif //DEBUG_STEPPER
+
+}
+
+#endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+//------------------------------------------------------FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+#if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+void set_el_stepper_freq(unsigned int frequency){
+
+
+  if (frequency > 0) {
+    el_stepper_freq_count = 2000 / frequency;
+  } else {
+    el_stepper_freq_count = 0;
+  }
+
+  #ifdef DEBUG_STEPPER
+  debug_print("set_el_stepper_freq: ");
+  debug_print_int(frequency);
+  debug_print(" el_stepper_freq_count:");
+  debug_print_int(el_stepper_freq_count);
+  debug_println("");
+  #endif //DEBUG_STEPPER
+
+}
+
+#endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+
 //------------------------------------------------------
+
+
+
+
 #if defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
 void service_stepper_motor_pulse_pins(){
+
 
   static byte az_stepper_freq_pin_active = 0;
   static unsigned long az_stepper_freq_pin_next_transition = 0;

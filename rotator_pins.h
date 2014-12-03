@@ -164,7 +164,7 @@
 #ifdef FEATURE_SUN_TRACKING
 #define sun_tracking_active_pin 0    // goes high when sun tracking is active
 #define sun_tracking_activate_line 0 // ground this pin to activate sun tracking (not for use with a button)
-#define sun_tracking_button 0        // use with a normally open momentary switch to ground
+#define sun_tracking_button 0      // use with a normally open momentary switch to ground
 #endif //FEATURE_SUN_TRACKING
 
 #ifdef FEATURE_GPS

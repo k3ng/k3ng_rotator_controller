@@ -536,3 +536,5 @@ PCF8583 rtc(0xA0);
 #define LCD_ROWS 2
 #endif //HARDWARE_EA4TX_ARS_USB
 
+
+
