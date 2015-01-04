@@ -104,7 +104,7 @@ You can tweak these, but read the online documentation!
 #define GPS_MIRROR_PORT &Serial1 //3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
 
 #define LCD_COLUMNS 20 //16
-#define LCD_ROWS 2 //4 //2
+#define LCD_ROWS 4 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
 #define I2C_LCD_COLOR GREEN            // default color of I2C LCD display, including Adafruit and Yourduino; some Yourduino may want this as LED_ON
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
@@ -341,7 +341,7 @@ You can tweak these, but read the online documentation!
 #define ROTATING_TO_STRING "Ruota verso "
 #define ELEVATING_TO_STRING "Alza verso   "
 #define ELEVATING_UP_STRING "Alzo  Su    "
-#define ELEVATING_DOWN_STRING "Alzo  Giu'    "
+#define ELEVATING_DOWN_STRING "Abbasso  Giu'    "
 #define ROTATING_STRING "Ruota    "
 #define CW_STRING "DX"
 #define CCW_STRING "SX "
@@ -575,4 +575,9 @@ PCF8583 rtc(0xA0);
 #define LCD_COLUMNS 16
 #define LCD_ROWS 2
 #endif //HARDWARE_EA4TX_ARS_USB
+
+#ifdef HARDWARE_M0UPU
+#undef LCD_ROWS
+#define LCD_ROWS 2
+#endif //HARDWARE_M0UPU
 

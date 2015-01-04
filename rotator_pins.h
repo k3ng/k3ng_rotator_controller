@@ -185,5 +185,13 @@
 #define pin_analog_el_out 0
 #endif //FEATURE_ANALOG_OUTPUT_PINS
 
+#ifdef FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
+#define pin_sun_pushbutton_calibration 0             // normally HIGH, have button pull LOW
+#endif //FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
+
+#ifdef FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+#define pin_moon_pushbutton_calibration 0            // normally HIGH, have button pull LOW
+#endif //FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+
 
 

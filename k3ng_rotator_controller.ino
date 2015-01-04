@@ -15,7 +15,7 @@
   
    Non-English extensions ideas, code, and testing provided by Marcin SP5IOU, Hjalmar OZ1JHM, and Sverre LA3ZA
   
-   Testing, ideas, bug fixes, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, Paolo IT9IPQ, and many others
+   Testing, ideas, bug fixes, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, Paolo IT9IPQ, Antonio IZ7DDA and others
   
    Translations: Maximo EA1DDO, Jan OK2ZAW, Paolo IT9IPQ, Ismael PY4PI
 
@@ -289,9 +289,11 @@
 
     OPTION_BLINK_OVERLAP_LED and OPTION_OVERLAP_LED_BLINK_MS setting
 
+    FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION and FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION; pin_sun_pushbutton_calibration, pin_moon_pushbutton_calibration
+
   */
 
-#define CODE_VERSION "2.0.2015010401"
+#define CODE_VERSION "2.0.2015010402"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -634,7 +636,7 @@ HardwareSerial * (gps_mirror_port);
 #endif //GPS_MIRROR_PORT
 #endif //defined(FEATURE_GPS)
 
-#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK)
 double latitude = DEFAULT_LATITUDE;
 double longitude = DEFAULT_LONGITUDE;
 #endif
@@ -893,6 +895,13 @@ void loop() {
   service_stepper_motor_pulse_pins();
   #endif
 
+  #if defined(FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_SUN_TRACKING)
+  check_sun_pushbutton_calibration();
+  #endif //defined(FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_SUN_TRACKING)
+
+  #if defined(FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_MOON_TRACKING)
+  check_moon_pushbutton_calibration();
+  #endif //defined(FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_MOON_TRACKING)
 
 } /* loop */
 /* -------------------------------------- subroutines -----------------------------------------------
@@ -4770,7 +4779,7 @@ void output_debug(){
     debug_print("\n\tel_position_incremental_encoder_interrupt: ");
     debug_print_int(el_position_incremental_encoder_interrupt);
     debug_print("\tel_incremental_encoder_position: ");
-    debug_print(el_incremental_encoder_position);
+    debug_print_int(el_incremental_encoder_position);
     #endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
     #if (defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_AZ_POSITION_INCREMENTAL_ENCODER)) || (defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER))
     debug_println("");
@@ -6470,7 +6479,15 @@ void initialize_pins(){
   #endif //FEATURE_ELEVATION_CONTROL
   #endif //FEATURE_ANALOG_OUTPUT_PINS
 
+  #ifdef FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
+  pinModeEnhanced(pin_sun_pushbutton_calibration, INPUT);
+  digitalWriteEnhanced(pin_sun_pushbutton_calibration, HIGH);
+  #endif //FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
 
+  #ifdef FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+  pinModeEnhanced(pin_moon_pushbutton_calibration, INPUT);
+  digitalWriteEnhanced(pin_moon_pushbutton_calibration, HIGH);
+  #endif //FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
 
 } /* initialize_pins */
 
@@ -9846,7 +9863,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     case 'X':
       switch (toupper(input_buffer[2])) {
         #if defined(FEATURE_SUN_TRACKING)
-        case 'S':
+        case 'S': //YYYYYYYY
           update_sun_position();
           if (calibrate_az_el(sun_azimuth, sun_elevation)) {
             strcpy(return_string, az_el_calibrated_string());
@@ -11929,3 +11946,42 @@ void service_analog_output_pins(){
 #endif //FEATURE_ANALOG_OUTPUT_PINS
 
 
+
+//-------------------------------------------------------
+#if defined(FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_SUN_TRACKING)
+void check_sun_pushbutton_calibration(){
+
+  static unsigned long last_update_time = 0;
+
+  if ((digitalReadEnhanced(pin_sun_pushbutton_calibration) == LOW) && ((millis() - last_update_time) > 500)){
+    update_sun_position();
+    if (calibrate_az_el(sun_azimuth, sun_elevation)) {
+    } else {
+    }
+    last_update_time = millis();
+  }
+
+}
+#endif //defined(FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_SUN_TRACKING)       
+
+//-------------------------------------------------------
+
+#if defined(FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_MOON_TRACKING)
+void check_moon_pushbutton_calibration(){
+
+  static unsigned long last_update_time = 0;
+
+  if ((digitalReadEnhanced(pin_moon_pushbutton_calibration) == LOW) && ((millis() - last_update_time) > 500)){
+    update_moon_position();
+    if (calibrate_az_el(moon_azimuth, moon_elevation)) {
+    } else {
+    }
+    last_update_time = millis();
+  }
+
+}
+#endif //defined(FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_MOON_TRACKING)       
+
+//-------------------------------------------------------
+
+// that's all, folks !
