@@ -284,9 +284,14 @@
     
     FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
 
+    AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION
+    EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION
+
+    OPTION_BLINK_OVERLAP_LED and OPTION_OVERLAP_LED_BLINK_MS setting
+
   */
 
-#define CODE_VERSION "2.0.2014120201"
+#define CODE_VERSION "2.0.2015010401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -700,11 +705,11 @@ unsigned long last_activity_time = 0;
 #endif //FEATURE_POWER_SWITCH
 
 #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
-unsigned int az_stepper_freq_count = 0;
+volatile unsigned int az_stepper_freq_count = 0;
 #ifdef FEATURE_ELEVATION_CONTROL
-unsigned int el_stepper_freq_count = 0;
+volatile unsigned int el_stepper_freq_count = 0;
 #endif //FEATURE_ELEVATION_CONTROL
-unsigned long service_stepper_motor_pulse_pins_count = 0;
+volatile unsigned long service_stepper_motor_pulse_pins_count = 0;
 #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
 
 
@@ -1605,12 +1610,20 @@ void check_overlap(){
 
   static byte overlap_led_status = 0;
   static unsigned long last_check_time;
+  #ifdef OPTION_BLINK_OVERLAP_LED
+  static unsigned long last_overlap_led_transition = 0;
+  static byte blink_status = 0;
+  #endif //OPTION_BLINK_OVERLAP_LED
 
   if ((overlap_led) && ((millis() - last_check_time) > 500)) {
     // if ((analog_az > (500*HEADING_MULTIPLIER)) && (azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
     if ((raw_azimuth > (ANALOG_AZ_OVERLAP_DEGREES * HEADING_MULTIPLIER)) && (!overlap_led_status)) {
       digitalWriteEnhanced(overlap_led, HIGH);
       overlap_led_status = 1;
+      #ifdef OPTION_BLINK_OVERLAP_LED
+      last_overlap_led_transition = millis();
+      blink_status = 1;
+      #endif //OPTION_BLINK_OVERLAP_LED
       #ifdef DEBUG_OVERLAP
       debug_println("check_overlap: in overlap");
       #endif // DEBUG_OVERLAP
@@ -1627,6 +1640,19 @@ void check_overlap(){
     last_check_time = millis();
 
   }
+
+  #ifdef OPTION_BLINK_OVERLAP_LED
+  if ((overlap_led_status) && ((millis() - last_overlap_led_transition) >= OPTION_OVERLAP_LED_BLINK_MS)){
+    if (blink_status){
+      digitalWriteEnhanced(overlap_led, LOW);
+      blink_status = 0;
+    } else {
+      digitalWriteEnhanced(overlap_led, HIGH);
+      blink_status = 1;
+    }
+    last_overlap_led_transition = millis();
+  }
+  #endif //OPTION_BLINK_OVERLAP_LED
 
 } /* check_overlap */
 
@@ -8720,7 +8746,7 @@ void az_position_incremental_encoder_interrupt_handler(){
 
     if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
       if ((az_incremental_encoder_position < int((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (az_incremental_encoder_position > int((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
-        az_incremental_encoder_position = 0;
+        az_incremental_encoder_position = AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
       } else {
         az_incremental_encoder_position = int(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.);
       }
@@ -8777,7 +8803,7 @@ void el_position_incremental_encoder_interrupt_handler(){
 
 
     if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
-      el_incremental_encoder_position = 0;
+      el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
     } else {
 
       if (el_incremental_encoder_position < 0) {

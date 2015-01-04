@@ -23,7 +23,7 @@ You can tweak these, but read the online documentation!
                                               // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
                                               // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED
                                               // turning on when going CW and crossing 180, ANALOG_AZ_OVERLAP_DEGREES should be set for 540 (180 + 360)
-                                              
+#define OPTION_OVERLAP_LED_BLINK_MS 100                                             
 
 // PWM speed voltage settings
 #define PWM_SPEED_VOLTAGE_X1  64         // 0 to 255
@@ -104,7 +104,7 @@ You can tweak these, but read the online documentation!
 #define GPS_MIRROR_PORT &Serial1 //3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
 
 #define LCD_COLUMNS 20 //16
-#define LCD_ROWS 4 //2
+#define LCD_ROWS 2 //4 //2
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
 #define I2C_LCD_COLOR GREEN            // default color of I2C LCD display, including Adafruit and Yourduino; some Yourduino may want this as LED_ON
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
@@ -182,6 +182,8 @@ You can tweak these, but read the online documentation!
 
 #define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
 #define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
+#define AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION 0  // can be 0 to 4 x AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV
+#define EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION 0  // can be 0 to 4 x EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV
 
 #define SERIAL_LED_TIME_MS 250
 
