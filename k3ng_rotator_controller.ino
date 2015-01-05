@@ -293,9 +293,11 @@
 
     Rolled FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2 into FEATURE_STEPPER_MOTOR
 
+    Working on FEATURE_AUTOCORRECT
+
   */
 
-#define CODE_VERSION "2.0.2015010403"
+#define CODE_VERSION "2.0.2015010405"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -720,6 +722,17 @@ float azimuth_calibration_to[]    = AZIMUTH_CALIBRATION_TO_ARRAY;
 float elevation_calibration_from[]  = ELEVATION_CALIBRATION_FROM_ARRAY;
 float elevation_calibration_to[]    = ELEVATION_CALIBRATION_TO_ARRAY;
 #endif // FEATURE_ELEVATION_CORRECTION
+
+#ifdef FEATURE_AUTOCORRECT
+byte autocorrect_state_az = AUTOCORRECT_INACTIVE;
+float autocorrect_az = 0;
+unsigned long autocorrect_az_submit_time = 0;
+#ifdef FEATURE_ELEVATION_CONTROL
+byte autocorrect_state_el = AUTOCORRECT_INACTIVE;
+float autocorrect_el = 0;
+unsigned long autocorrect_el_submit_time = 0;
+#endif //FEATURE_ELEVATION_CONTROL
+#endif //FEATURE_AUTOCORRECT
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 
@@ -4827,6 +4840,26 @@ void output_debug(){
 //dtostrf(service_stepper_motor_pulse_pins_count,0,0,service_stepper_motor_pulse_pins_count_temp);
 //debug_println(service_stepper_motor_pulse_pins_count_temp);
 #endif FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+
+    #ifdef FEATURE_AUTOCORRECT
+    debug_print("\t\Autocorrect: AZ:");
+    switch(autocorrect_state_az){
+      case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
+      case AUTOCORRECT_WAITING_AZ: debug_print("AUTOCORRECT_WAITING_AZ: "); debug_print_float(autocorrect_az,2); break;
+      case AUTOCORRECT_WATCHING_AZ: debug_print("AUTOCORRECT_WATCHING_AZ: "); debug_print_float(autocorrect_az,2); break;
+    }
+
+    #ifdef FEATURE_ELEVATION_CONTROL
+    debug_print(" EL:");
+    switch(autocorrect_state_el){
+      case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
+      case AUTOCORRECT_WAITING_EL: debug_print("AUTOCORRECT_WAITING_EL: "); debug_print_float(autocorrect_el,2); break;
+      case AUTOCORRECT_WATCHING_EL: debug_print("AUTOCORRECT_WATCHING_EL: "); debug_print_float(autocorrect_el,2); break;
+    }
+    #endif //FEATURE_ELEVATION_CONTROL
+    #endif //DEBUG_AUTOCORRECT
+
+
 
     debug_println("\n\n\n");
 
@@ -11973,6 +12006,47 @@ void check_moon_pushbutton_calibration(){
 
 }
 #endif //defined(FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_MOON_TRACKING)       
+
+//-------------------------------------------------------
+#ifdef FEATURE_AUTOCORRECT
+void submit_autocorrect(byte axis,float heading){
+
+  #ifdef DEBUG_AUTOCORRECT
+  debug_print("submit_autocorrect: ");
+  #endif //DEBUG_AUTOCORRECT
+
+  if (axis == AZ){
+    autocorrect_state_az = AUTOCORRECT_WATCHING_AZ;
+    autocorrect_az = heading;
+    autocorrect_az_submit_time = millis();
+
+    #ifdef DEBUG_AUTOCORRECT
+    debug_print("AZ: ");
+    #endif //DEBUG_AUTOCORRECT
+
+  }
+
+
+  #ifdef FEATURE_ELEVATION_CONTROL
+  if (axis == EL){
+    autocorrect_state_el = AUTOCORRECT_WATCHING_EL;
+    autocorrect_el = heading;
+    autocorrect_el_submit_time = millis();
+
+    #ifdef DEBUG_AUTOCORRECT
+    debug_print("EL: ");
+    #endif //DEBUG_AUTOCORRECT
+
+  }
+  #endif //FEATURE_ELEVATION_CONTROL
+
+  #ifdef DEBUG_AUTOCORRECT
+  debug_print_float(heading,2);
+  debug_println("");
+  #endif //DEBUG_AUTOCORRECT
+
+}
+#endif //FEATURE_AUTOCORRECT
 
 //-------------------------------------------------------
 

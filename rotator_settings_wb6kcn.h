@@ -455,6 +455,9 @@ You can tweak these, but read the online documentation!
 #define POLOLU_LSM_303_MIN_ARRAY {+59, +19, -731}
 #define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14}
 
+#define AUTOCORRECT_TIME_MS_AZ 1000
+#define AUTOCORRECT_TIME_MS_EL 1000   
+
 
 
 /* ---------------------------- object declarations ----------------------------------------------

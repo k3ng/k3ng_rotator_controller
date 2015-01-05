@@ -18,7 +18,7 @@
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
 #define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
- 
+#define FEATURE_AUTOCORRECT 
 
 #define LANGUAGE_ENGLISH
 //#define LANGUAGE_SPANISH
@@ -194,7 +194,7 @@
 // #define DEBUG_HMC5883L
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER
-
+#define DEBUG_AUTOCORRECT
 
 
 

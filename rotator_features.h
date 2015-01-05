@@ -6,7 +6,7 @@
 */
 
 /* main features */
-#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
+//#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 //#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
@@ -17,7 +17,8 @@
 //#define FEATURE_RTC_DS1307
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
-#define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
+//#define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
+//#define FEATURE_AUTOCORRECT
 
 #define LANGUAGE_ENGLISH
 //#define LANGUAGE_SPANISH
@@ -33,7 +34,7 @@
 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
-//#define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+#define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 //#define FEATURE_AZ_POSITION_ROTARY_ENCODER
 //#define FEATURE_AZ_POSITION_PULSE_INPUT
 //#define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
@@ -41,9 +42,9 @@
 //#define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 //#define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
 //#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
-#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+//#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 
-//#define FEATURE_EL_POSITION_POTENTIOMETER
+#define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
 //#define FEATURE_EL_POSITION_PULSE_INPUT
 //#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
@@ -52,7 +53,7 @@
 //#define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 //#define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
 //#define FEATURE_EL_POSITION_HH12_AS5045_SSI
-#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
+//#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 //#define FEATURE_EL_POSITION_MEMSIC_2125
 
 //#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
@@ -194,6 +195,7 @@
 // #define DEBUG_HMC5883L
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER
+// #define DEBUG_AUTOCORRECT
 
 
 
