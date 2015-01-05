@@ -291,9 +291,11 @@
 
     FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION and FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION; pin_sun_pushbutton_calibration, pin_moon_pushbutton_calibration
 
+    Rolled FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2 into FEATURE_STEPPER_MOTOR
+
   */
 
-#define CODE_VERSION "2.0.2015010402"
+#define CODE_VERSION "2.0.2015010403"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -385,7 +387,7 @@
 #else
 #include "rotator_settings.h"
 #endif
-#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+#ifdef FEATURE_STEPPER_MOTOR
 #include "TimerFive.h"
 #endif
 
@@ -510,11 +512,6 @@ byte elevation_button_was_pushed = 0;
 unsigned long last_lcd_update = 0;
 String last_row_0_string;  // this is only used in update_display(), however if you make it a static within the funtion, the compiler errors out with a strange error
 byte push_lcd_update = 0;
-
-
-//#ifdef FEATURE_I2C_LCD
-//byte lcdcolor = I2C_LCD_COLOR;  
-//#endif // FEATURE_I2C_LCD
 #endif // FEATURE_LCD_DISPLAY
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT
@@ -706,26 +703,13 @@ unsigned int ethernet_slave_reconnects = 0;
 unsigned long last_activity_time = 0;
 #endif //FEATURE_POWER_SWITCH
 
-#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+#ifdef FEATURE_STEPPER_MOTOR
 volatile unsigned int az_stepper_freq_count = 0;
 #ifdef FEATURE_ELEVATION_CONTROL
 volatile unsigned int el_stepper_freq_count = 0;
 #endif //FEATURE_ELEVATION_CONTROL
 volatile unsigned long service_stepper_motor_pulse_pins_count = 0;
-#endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
-
-
-
-#if defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
-byte az_stepper_freq_pin = 0;
-unsigned int az_stepper_freq = 0;
-#endif //defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
-
-#if defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
-byte el_stepper_freq_pin = 0;
-unsigned int el_stepper_freq = 0;
-#endif //defined(FEATURE_STEPPER_MOTOR) && defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
-
+#endif //FEATURE_STEPPER_MOTOR
 
 #ifdef FEATURE_AZIMUTH_CORRECTION
 float azimuth_calibration_from[]  = AZIMUTH_CALIBRATION_FROM_ARRAY;    
@@ -5419,7 +5403,7 @@ void update_el_variable_outputs(byte speed_voltage){
     debug_print("\tel_stepper_motor_pulse: ");
     #endif // DEBUG_VARIABLE_OUTPUTS
     el_tone = map(speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH);
-
+/*
     #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
     if ((el_tone < 31) && (el_tone != 0)) {el_tone = 31;}
     if (el_tone > 20000) {el_tone = 20000;}
@@ -5434,8 +5418,8 @@ void update_el_variable_outputs(byte speed_voltage){
     #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
     set_el_stepper_freq(el_stepper_motor_pulse,el_tone);
     #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-
-    #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+*/
+    #ifdef FEATURE_STEPPER_MOTOR
     set_el_stepper_freq(el_tone);
     #endif
 
@@ -5548,7 +5532,7 @@ void update_az_variable_outputs(byte speed_voltage){
     debug_print("\taz_stepper_motor_pulse: ");
     #endif // DEBUG_VARIABLE_OUTPUTS
     az_tone = map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH);
-
+/*
     #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
     if ((az_tone < 31) && (az_tone != 0)) {az_tone = 31;}
     if (az_tone > 20000) {az_tone = 20000;}
@@ -5562,8 +5546,8 @@ void update_az_variable_outputs(byte speed_voltage){
     #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
     set_az_stepper_freq(az_stepper_motor_pulse,az_tone);
     #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-
-    #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+*/
+    #ifdef FEATURE_STEPPER_MOTOR
     set_az_stepper_freq(az_tone);
     #endif    
 
@@ -5637,7 +5621,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           }       
           #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(az_stepper_motor_pulse);
             digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
             #endif
@@ -5645,10 +5629,10 @@ void rotator(byte rotation_action, byte rotation_type) {
             set_az_stepper_freq(az_stepper_motor_pulse,0);
             digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2*/
             set_az_stepper_freq(0);
             digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+   //         #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }      
           #endif //FEATURE_STEPPER_MOTOR
 
@@ -5670,15 +5654,15 @@ void rotator(byte rotation_action, byte rotation_type) {
           }  
           #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+ /*           #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(az_stepper_motor_pulse, map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
             #endif
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_az_stepper_freq(az_stepper_motor_pulse,map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2 */
             set_az_stepper_freq(map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+ //           #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }
           #endif //FEATURE_STEPPER_MOTOR                 
         }
@@ -5737,7 +5721,7 @@ void rotator(byte rotation_action, byte rotation_type) {
 
         #ifdef FEATURE_STEPPER_MOTOR
         if (az_stepper_motor_pulse) {
-          #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*          #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
           noTone(az_stepper_motor_pulse);
           digitalWriteEnhanced(az_stepper_motor_pulse,HIGH);
           #endif
@@ -5745,10 +5729,10 @@ void rotator(byte rotation_action, byte rotation_type) {
           set_az_stepper_freq(az_stepper_motor_pulse,0);
           digitalWriteEnhanced(az_stepper_motor_pulse,HIGH);
           #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-          #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2 */
           set_az_stepper_freq(0);
           digitalWriteEnhanced(az_stepper_motor_pulse,HIGH);
-          #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+ //         #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
         }      
         #endif //FEATURE_STEPPER_MOTOR             
       }
@@ -5784,7 +5768,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           } 
           #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(az_stepper_motor_pulse);
             digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
             #endif
@@ -5793,9 +5777,10 @@ void rotator(byte rotation_action, byte rotation_type) {
             digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            */
             set_az_stepper_freq(0);
             digitalWriteEnhanced(az_stepper_motor_pulse,LOW);
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+ //           #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }      
           #endif //FEATURE_STEPPER_MOTOR                
         } else {
@@ -5816,15 +5801,16 @@ void rotator(byte rotation_action, byte rotation_type) {
           }  
           #ifdef FEATURE_STEPPER_MOTOR
           if (az_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(az_stepper_motor_pulse, map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
             #endif
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_az_stepper_freq(az_stepper_motor_pulse,map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            */
             set_az_stepper_freq(map(normal_az_speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+//            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }
           #endif //FEATURE_STEPPER_MOTOR 
         }
@@ -5912,7 +5898,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif
@@ -5921,9 +5907,10 @@ void rotator(byte rotation_action, byte rotation_type) {
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            */
             set_el_stepper_freq(0);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+       //     #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }      
           #endif //FEATURE_STEPPER_MOTOR    
         } else {
@@ -5941,15 +5928,16 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(el_stepper_motor_pulse, map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             #endif
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             set_el_stepper_freq(el_stepper_motor_pulse,map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            */
             set_el_stepper_freq(map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+//            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
           }
           #endif //FEATURE_STEPPER_MOTOR  
           if (rotate_down_freq) {
@@ -6003,7 +5991,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         }   
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
-          #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*          #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
           noTone(el_stepper_motor_pulse);
           digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
           #endif
@@ -6012,9 +6000,10 @@ void rotator(byte rotation_action, byte rotation_type) {
           digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
           #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
           #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+          */
           set_el_stepper_freq(0);
           digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
-          #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2         
+  //        #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2         
 
         }      
         #endif //FEATURE_STEPPER_MOTOR   
@@ -6052,7 +6041,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+/*            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif
@@ -6061,9 +6050,10 @@ void rotator(byte rotation_action, byte rotation_type) {
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            */
             set_el_stepper_freq(0);
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2           
+//            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2           
           }      
           #endif //FEATURE_STEPPER_MOTOR             
         } else {
@@ -6084,7 +6074,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
           #ifdef FEATURE_STEPPER_MOTOR
           if (el_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+ /*           #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             tone(el_stepper_motor_pulse, map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif
@@ -6093,9 +6083,10 @@ void rotator(byte rotation_action, byte rotation_type) {
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE           
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            */
             set_el_stepper_freq(map(normal_el_speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
             digitalWriteEnhanced(el_stepper_motor_pulse,LOW);
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2             
+//            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2             
           }      
           #endif //FEATURE_STEPPER_MOTOR             
         }
@@ -6146,7 +6137,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         }        
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
-            #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
+ /*           #if !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && !defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2)
             noTone(el_stepper_motor_pulse);
             digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
             #endif
@@ -6155,9 +6146,10 @@ void rotator(byte rotation_action, byte rotation_type) {
             digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
             #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
             #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+            */
             set_el_stepper_freq(0);
             digitalWriteEnhanced(el_stepper_motor_pulse,HIGH);
-            #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2           
+ //           #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2           
         }      
         #endif //FEATURE_STEPPER_MOTOR 
       }
@@ -6184,10 +6176,10 @@ void initialize_interrupts(){
   attachInterrupt(EL_POSITION_PULSE_PIN_INTERRUPT, el_position_pulse_interrupt_handler, FALLING);
   #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
-  #ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+  #ifdef FEATURE_STEPPER_MOTOR
   Timer5.initialize(250);  // 250 us = 4 khz rate
   Timer5.attachInterrupt(service_stepper_motor_pulse_pins);
-  #endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+  #endif //FEATURE_STEPPER_MOTOR
 
 
 }
@@ -11756,8 +11748,8 @@ void set_el_stepper_freq(byte pin, unsigned int frequency){
 }
 
 #endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
-//------------------------------------------------------FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
-#if defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+//------------------------------------------------------
+#if defined(FEATURE_STEPPER_MOTOR)
 void service_stepper_motor_pulse_pins(){
 
   service_stepper_motor_pulse_pins_count++;
@@ -11804,10 +11796,10 @@ void service_stepper_motor_pulse_pins(){
   #endif //FEATURE_ELEVATION_CONTROL
 
 }
-#endif //defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+#endif //defined(FEATURE_STEPPER_MOTOR)
 
-//------------------------------------------------------FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
-#ifdef FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
+//------------------------------------------------------
+#ifdef FEATURE_STEPPER_MOTOR
 void set_az_stepper_freq(unsigned int frequency){
 
   if (frequency > 0) {
@@ -11826,9 +11818,9 @@ void set_az_stepper_freq(unsigned int frequency){
 
 }
 
-#endif //FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
-//------------------------------------------------------FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
-#if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+#endif //FEATURE_STEPPER_MOTOR
+//------------------------------------------------------
+#if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR)
 void set_el_stepper_freq(unsigned int frequency){
 
 
@@ -11848,11 +11840,11 @@ void set_el_stepper_freq(unsigned int frequency){
 
 }
 
-#endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2) && defined(FEATURE_STEPPER_MOTOR)
+#endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR)
 
 //------------------------------------------------------
 
-
+/*
 
 
 #if defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
@@ -11920,7 +11912,7 @@ void service_stepper_motor_pulse_pins(){
 }
 #endif //defined(FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE) && defined(FEATURE_STEPPER_MOTOR)
 
-
+*/
 
 //-------------------------------------------------------
 #ifdef FEATURE_ANALOG_OUTPUT_PINS

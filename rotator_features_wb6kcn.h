@@ -17,9 +17,8 @@
 //#define FEATURE_RTC_DS1307
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
-#define FEATURE_STEPPER_MOTOR
-//#define FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE
-#define FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2  // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
+#define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
+ 
 
 #define LANGUAGE_ENGLISH
 //#define LANGUAGE_SPANISH
