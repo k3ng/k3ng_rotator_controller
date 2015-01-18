@@ -435,6 +435,8 @@ You can tweak these, but read the online documentation!
 
 #define ANALOG_OUTPUT_MAX_EL_DEGREES 180
 
+#define EL_POSITION_PULSE_DEBOUNCE 500  // in ms 
+
 
 /* Pololu LSM303 Calibration tables
  *

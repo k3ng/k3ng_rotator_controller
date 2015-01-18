@@ -3,23 +3,35 @@
    K3NG
    anthony.good@gmail.com
   
-   Contributions: 
-   
-   John Eigenbode, W3SA, w3sa@arrl.net : AZ/EL testing and debugging, AZ/EL LCD Enhancements, original North center code, Az/El Rotator Control Connector Pins
-  
-   Jim Balls, M0CKE, makidoja@gmail.com: Rotary Encoder Preset Support
-   
-   FEATURE_ADAFRUIT_BUTTONS code provided by Gord VO1GPK
-  
-   Moon2 and sunpos libraries courtesy of Pete Hardie, VE5VA
-  
-   Non-English extensions ideas, code, and testing provided by Marcin SP5IOU, Hjalmar OZ1JHM, and Sverre LA3ZA
-  
-   Testing, ideas, bug fixes, and hardware provided by Anthony M0UPU, Bent OZ1CT, Eric WB6KCN, Norm N3YKF, Jan OK2ZAW, Jim M0CKE, Paolo IT9IPQ, Antonio IZ7DDA and others
-  
-   Translations: Maximo EA1DDO, Jan OK2ZAW, Paolo IT9IPQ, Ismael PY4PI
 
-   Pololu library LSM303 code provided by Mike AD0CZ
+  
+   Code contributions, testing, ideas, bug fixes, hardware, support, encouragement, and/or bourbon provided by:
+     John Eigenbode W3SA
+     Gord VO1GPK
+     Anthony M0UPU
+     Pete VE5VA
+     Marcin SP5IOU
+     Hjalmar OZ1JHM
+     Sverre LA3ZA
+     Bent OZ1CT
+     Erick WB6KCN
+     Norm N3YKF
+     Jan OK2ZAW
+     Jim M0CKE
+     Mike AD0CZ
+     Paolo IT9IPQ
+     Antonio IZ7DDA
+     Johan PA3FPQ
+     Jurgen PE1LWT
+     Gianfranco IZ8EWD 
+     ...and others
+  
+   Translations provided by
+     Maximo EA1DDO
+     Jan OK2ZAW
+     Paolo IT9IPQ
+     Ismael PY4PI
+
 
    (If you contributed something and I forgot to put your name and call in here, please email me!)
   
@@ -295,9 +307,15 @@
 
     Working on FEATURE_AUTOCORRECT
 
+    Bug fix involving FEATURE_AZ_POSITION_HH12_AS5045_SSI and azimuth_offset (thanks Johan, PA3FPQ and Jurgen, PE1LWT)
+    Bug fix - wasn't initializing rotate_cw_ccw (thanks Erick, WB6KCN)
+    Bug fix with OPTION_DISPLAY_VERSION_ON_STARTUP and 2 row displays (thanks Gianfranco, IZ8EWD)
+    OPTION_EL_PULSE_DEBOUNCE code - (thanks Gianfranco, IZ8EWD)
+    #define EL_POSITION_PULSE_DEBOUNCE 500  // in ms
+
   */
 
-#define CODE_VERSION "2.0.2015010405"
+#define CODE_VERSION "2.0.2015011802"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -562,6 +580,10 @@ volatile byte last_known_az_state = 0;
 #ifdef FEATURE_EL_POSITION_PULSE_INPUT
 volatile float el_position_pulse_input_elevation = 0;
 volatile byte last_known_el_state = 0;
+#ifdef OPTION_EL_PULSE_DEBOUNCE
+unsigned long last_el_pulse_debounce = 0;
+#endif //OPTION_EL_PULSE_DEBOUNCE
+
 #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) 
@@ -4390,7 +4412,15 @@ void read_azimuth(byte force_read){
     raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
-    azimuth = raw_azimuth;
+    if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
+      azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+    } else {
+      if (raw_azimuth < 0) {
+        azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
+      } else {
+        azimuth = raw_azimuth;
+      }
+    }
     #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI
 
     #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
@@ -5332,13 +5362,13 @@ void read_elevation(byte force_read){
       last_hh12_debug = millis();
     }
     #endif // DEBUG_HH12
-    if (elevation > (180 * HEADING_MULTIPLIER)) {
-      elevation = elevation - (360 * HEADING_MULTIPLIER);
-    }
     #ifdef FEATURE_ELEVATION_CORRECTION
     elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+    if (elevation > (180 * HEADING_MULTIPLIER)) {
+      elevation = elevation - (360 * HEADING_MULTIPLIER);
+    }   
     #endif // FEATURE_EL_POSITION_HH12_AS5045_SSI
 
 
@@ -6283,6 +6313,11 @@ void initialize_pins(){
     pinModeEnhanced(rotate_ccw_freq, OUTPUT);
   }
 
+  if (rotate_cw_ccw) {
+    pinModeEnhanced(rotate_cw_ccw, OUTPUT);
+  }
+
+
   rotator(DEACTIVATE, CW);
   rotator(DEACTIVATE, CCW);
 
@@ -6578,8 +6613,11 @@ void initialize_display(){
   #ifdef OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
   if (LCD_ROWS == 4) {
     lcd.setCursor(0, start_row + 3);
-    lcd.print("Ver: "); lcd.print(CODE_VERSION);
   }
+  if (LCD_ROWS == 2) {
+    lcd.setCursor(0, 1);
+  }
+  lcd.print("Ver: "); lcd.print(CODE_VERSION);
   #endif //OPTION_DISPLAY_VERSION_ON_STARTUP
   last_lcd_update = millis();
 
@@ -7978,6 +8016,39 @@ void el_position_pulse_interrupt_handler(){
   el_pulse_counter++;
   #endif // DEBUG_POSITION_PULSE_INPUT
 
+
+
+  #ifdef OPTION_EL_PULSE_DEBOUNCE //---------------------------------------------
+  if ((millis()-last_el_pulse_debounce) > EL_POSITION_PULSE_DEBOUNCE) {
+    if (current_el_state() == ROTATING_UP) {
+      el_position_pulse_input_elevation += EL_POSITION_PULSE_DEG_PER_PULSE;
+      last_known_el_state = ROTATING_UP;
+    } else {
+      if (current_el_state() == ROTATING_DOWN) {
+        el_position_pulse_input_elevation -= EL_POSITION_PULSE_DEG_PER_PULSE;
+        last_known_el_state = ROTATING_DOWN;
+      } else {
+        #ifndef OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
+        if (last_known_el_state == ROTATING_UP) {
+          el_position_pulse_input_elevation += EL_POSITION_PULSE_DEG_PER_PULSE;
+        } else {
+          if (last_known_el_state == ROTATING_DOWN) {
+            el_position_pulse_input_elevation -= EL_POSITION_PULSE_DEG_PER_PULSE;
+          }
+        }
+        #endif // OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
+        #ifdef DEBUG_POSITION_PULSE_INPUT
+        el_pulse_counter_ambiguous++;
+        #endif // DEBUG_POSITION_PULSE_INPUT
+      }
+    }
+    last_el_pulse_debounce = millis();
+  }
+
+  #else //OPTION_EL_PULSE_DEBOUNCE -----------------------
+
+
+
   if (current_el_state() == ROTATING_UP) {
     el_position_pulse_input_elevation += EL_POSITION_PULSE_DEG_PER_PULSE;
     last_known_el_state = ROTATING_UP;
@@ -7986,7 +8057,7 @@ void el_position_pulse_interrupt_handler(){
       el_position_pulse_input_elevation -= EL_POSITION_PULSE_DEG_PER_PULSE;
       last_known_el_state = ROTATING_DOWN;
     } else {
-          #ifndef OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
+      #ifndef OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
       if (last_known_el_state == ROTATING_UP) {
         el_position_pulse_input_elevation += EL_POSITION_PULSE_DEG_PER_PULSE;
       } else {
@@ -7994,21 +8065,22 @@ void el_position_pulse_interrupt_handler(){
           el_position_pulse_input_elevation -= EL_POSITION_PULSE_DEG_PER_PULSE;
         }
       }
-            #endif // OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
-            #ifdef DEBUG_POSITION_PULSE_INPUT
+      #endif // OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
+      #ifdef DEBUG_POSITION_PULSE_INPUT
       el_pulse_counter_ambiguous++;
-            #endif // DEBUG_POSITION_PULSE_INPUT
+      #endif // DEBUG_POSITION_PULSE_INPUT
     }
   }
+  #endif //OPTION_EL_PULSE_DEBOUNCE --------------------------
 
-        #ifdef OPTION_EL_POSITION_PULSE_HARD_LIMIT
+  #ifdef OPTION_EL_POSITION_PULSE_HARD_LIMIT
   if (el_position_pulse_input_elevation < 0) {
     el_position_pulse_input_elevation = 0;
   }
   if (el_position_pulse_input_elevation > ELEVATION_MAXIMUM_DEGREES) {
     el_position_pulse_input_elevation = ELEVATION_MAXIMUM_DEGREES;
   }
-        #endif // OPTION_EL_POSITION_PULSE_HARD_LIMIT
+  #endif // OPTION_EL_POSITION_PULSE_HARD_LIMIT
 
 
 } /* el_position_pulse_interrupt_handler */
