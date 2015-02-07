@@ -9,6 +9,8 @@
 
 Code adapted from here: http://www.madscientisthut.com/forum_php/viewtopic.php?f=11&t=7
 
+Updated 2015-02-07 for 12 bit readings - Thanks Johan PA3FPQ
+
 
 */
 
@@ -21,7 +23,11 @@ int inputstream = 0; //one bit read from pin
 long packeddata = 0; //two bytes concatenated from inputstream
 long angle = 0; //holds processed angle value
 float floatangle = 0;
+#ifdef OPTION_HH12_10_BIT_READINGS
 long anglemask = 65472; //0x1111111111000000: mask to obtain first 10 digits with position info
+#else
+long anglemask = 262080; // 0x111111111111000000: mask to obtain first 12 digits with position info
+#endif //OPTION_HH12_10_BIT_READINGS
 long statusmask = 63; //0x000000000111111; mask to obtain last 6 digits containing status info
 long statusbits; //holds status/error information
 int DECn; //bit holding decreasing magnet field error data

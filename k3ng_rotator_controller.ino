@@ -313,9 +313,11 @@
     OPTION_EL_PULSE_DEBOUNCE code - (thanks Gianfranco, IZ8EWD)
     #define EL_POSITION_PULSE_DEBOUNCE 500  // in ms
 
+    OPTION_HH12_10_BIT_READINGS in hh12.h (thanks Johan PA3FPQ)
+
   */
 
-#define CODE_VERSION "2.0.2015011802"
+#define CODE_VERSION "2.0.2015020702"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
