@@ -315,9 +315,11 @@
 
     OPTION_HH12_10_BIT_READINGS in hh12.h (thanks Johan PA3FPQ)
 
+    Correction from Johan PA3FPQ on OPTION_HH12_10_BIT_READINGS
+
   */
 
-#define CODE_VERSION "2.0.2015020702"
+#define CODE_VERSION "2.0.2015020801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>

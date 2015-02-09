@@ -4,6 +4,7 @@
 #define HH12_DELAY 100 // microseconds
 //#define OPTION_HH12_10_BIT_READINGS
 
+
 class hh12 {
 
   public:

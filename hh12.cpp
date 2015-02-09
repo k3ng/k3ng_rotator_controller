@@ -63,7 +63,11 @@ float hh12::heading(){
   delayMicroseconds(HH12_DELAY); // delay for chip initialization
   digitalWrite(hh12_clock_pin, LOW); // CLK goes low: start clocking
   delayMicroseconds(HH12_DELAY); // hold low
+#ifdef OPTION_HH12_10_BIT_READINGS
   for (int x=0; x <16; x++) // clock signal, 16 transitions, output to clock pin
+#else
+  for (int x=0; x <18; x++) // clock signal, 18 transitions, output to clock pin
+#endif //OPTION_HH12_10_BIT_READINGS
   {
     digitalWrite(hh12_clock_pin, HIGH); //clock goes high
     delayMicroseconds(HH12_DELAY); // 
@@ -106,7 +110,11 @@ float hh12::heading(){
   Serial.println(angle, DEC);
   #endif
 
+#ifdef OPTION_HH12_10_BIT_READINGS
   floatangle = angle * 0.3515; // angle * (360/1024) == actual degrees
+#else
+  floatangle = angle * 0.08789; // angle * (360/4096) == actual degrees
+#endif //OPTION_HH12_10_BIT_READINGS
   
   #ifdef DEBUG_HH12
   statusbits = packeddata & statusmask;
