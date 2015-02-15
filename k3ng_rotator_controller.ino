@@ -24,6 +24,7 @@
      Johan PA3FPQ
      Jurgen PE1LWT
      Gianfranco IZ8EWD 
+     Jasper PA2J
      ...and others
   
    Translations provided by
@@ -317,9 +318,14 @@
 
     Correction from Johan PA3FPQ on OPTION_HH12_10_BIT_READINGS
 
+    #define BRAKE_ACTIVE_STATE HIGH
+    #define BRAKE_INACTIVE_STATE LOW
+
+    OPTION_SCANCON_2RMHF3600_INC_ENCODER - thanks Jasper, PA2J
+
   */
 
-#define CODE_VERSION "2.0.2015020801"
+#define CODE_VERSION "2.0.2015021501"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1603,13 +1609,13 @@ void brake_release(byte az_or_el, byte operation){
   if (az_or_el == AZ) {
     if (brake_az) {
       if (operation == BRAKE_RELEASE_ON) {
-        digitalWriteEnhanced(brake_az, HIGH);
+        digitalWriteEnhanced(brake_az, BRAKE_ACTIVE_STATE);
         brake_az_engaged = 1;
         #ifdef DEBUG_BRAKE
         debug_println("brake_release: brake_az BRAKE_RELEASE_ON");
         #endif // DEBUG_BRAKE
       } else {
-        digitalWriteEnhanced(brake_az, LOW);
+        digitalWriteEnhanced(brake_az, BRAKE_INACTIVE_STATE);
         brake_az_engaged = 0;
         #ifdef DEBUG_BRAKE
         debug_println("brake_release: brake_az BRAKE_RELEASE_OFF");
@@ -1620,13 +1626,13 @@ void brake_release(byte az_or_el, byte operation){
     #ifdef FEATURE_ELEVATION_CONTROL
     if (operation == BRAKE_RELEASE_ON) { 
       if (brake_el) {
-        digitalWriteEnhanced(brake_el, HIGH);
+        digitalWriteEnhanced(brake_el, BRAKE_ACTIVE_STATE);
         brake_el_engaged = 1;
         #ifdef DEBUG_BRAKE
         debug_println("brake_release: brake_el BRAKE_RELEASE_ON");
         #endif // DEBUG_BRAKE
       } else {
-        digitalWriteEnhanced(brake_el, LOW);
+        digitalWriteEnhanced(brake_el, BRAKE_INACTIVE_STATE);
         brake_el_engaged = 0;
         #ifdef DEBUG_BRAKE
         debug_println("brake_release: brake_el BRAKE_RELEASE_OFF");
@@ -6265,7 +6271,7 @@ void initialize_pins(){
 
   if (brake_az) {
     pinModeEnhanced(brake_az, OUTPUT);
-    digitalWriteEnhanced(brake_az, LOW);
+    digitalWriteEnhanced(brake_az, BRAKE_INACTIVE_STATE);
   }
 
   if (az_speed_pot) {
@@ -6291,7 +6297,7 @@ void initialize_pins(){
   #ifdef FEATURE_ELEVATION_CONTROL
   if (brake_el) {
     pinModeEnhanced(brake_el, OUTPUT);
-    digitalWriteEnhanced(brake_el, LOW);
+    digitalWriteEnhanced(brake_el, BRAKE_INACTIVE_STATE);
   }
   #endif // FEATURE_ELEVATION_CONTROL
 
@@ -8862,6 +8868,7 @@ void az_position_incremental_encoder_interrupt_handler(){
       az_incremental_encoder_position = ((int(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1) * 2);
     }
 
+    #ifndef OPTION_SCANCON_2RMHF3600_INC_ENCODER
     if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
       if ((az_incremental_encoder_position < int((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (az_incremental_encoder_position > int((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
         az_incremental_encoder_position = AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
@@ -8869,6 +8876,15 @@ void az_position_incremental_encoder_interrupt_handler(){
         az_incremental_encoder_position = int(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.);
       }
     }
+    #else
+    if ((current_phase_a == HIGH) && (current_phase_b == HIGH) && (current_phase_z == HIGH)) {
+      if ((az_incremental_encoder_position < int((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (az_incremental_encoder_position > int((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
+        az_incremental_encoder_position = AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
+      } else {
+        az_incremental_encoder_position = int(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.);
+      }
+    }    
+    #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
 
     az_3_phase_encoder_last_phase_a_state = current_phase_a;
     az_3_phase_encoder_last_phase_b_state = current_phase_b;
@@ -8919,7 +8935,8 @@ void el_position_incremental_encoder_interrupt_handler(){
       case B1000: el_incremental_encoder_position--; break;
     }
 
-
+    
+    #ifndef OPTION_SCANCON_2RMHF3600_INC_ENCODER
     if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
       el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
     } else {
@@ -8933,6 +8950,21 @@ void el_position_incremental_encoder_interrupt_handler(){
       }  
 
     } 
+    #else
+    if ((current_phase_a == HIGH) && (current_phase_b == HIGH) && (current_phase_z == HIGH)) {
+      el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
+    } else {
+
+      if (el_incremental_encoder_position < 0) {
+        el_incremental_encoder_position = int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1);
+      }
+
+      if (el_incremental_encoder_position >= int(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
+        el_incremental_encoder_position = 0;
+      }  
+
+    } 
+    #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
 
     /*
 
