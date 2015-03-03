@@ -325,9 +325,11 @@
 
     Fixed compile bug with OPTION_EL_MANUAL_ROTATE_LIMITS) when FEATURE_ELEVATION_CONTROL is not enabled
 
+    Eliminated az_stepper_motor_direction and el_stepper_motor_direction.  Use rotate_* pins instead!
+
   */
 
-#define CODE_VERSION "2.0.2015022701"
+#define CODE_VERSION "2.0.2015030201"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -5644,6 +5646,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         if (rotate_cw_ccw){
           digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_ACTIVE_VALUE);
         }
+        /*
         #ifdef FEATURE_STEPPER_MOTOR
         if (az_stepper_motor_direction){
           if (configuration.az_stepper_motor_last_direction != STEPPER_CW){
@@ -5659,6 +5662,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
         }
         #endif //FEATURE_STEPPER_MOTOR
+        */
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
           control_port->print(F("rotator: normal_az_speed_voltage:"));
@@ -5761,7 +5765,8 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_cw_ccw){
           digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_ACTIVE_VALUE);
-        }       
+        }      
+        /* 
         #ifdef FEATURE_STEPPER_MOTOR
         if (az_stepper_motor_direction){
           if (configuration.az_stepper_motor_last_direction != STEPPER_CCW){
@@ -5777,7 +5782,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
         }
         #endif //FEATURE_STEPPER_MOTOR
-
+        */
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
           control_port->print(F("rotator: normal_az_speed_voltage:"));
@@ -5872,6 +5877,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         if (rotate_up_or_down) {
           digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_ACTIVE_VALUE);
         } 
+        /*
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_direction){
           if (configuration.el_stepper_motor_last_direction != STEPPER_UP){
@@ -5886,7 +5892,8 @@ void rotator(byte rotation_action, byte rotation_type) {
              configuration_dirty = 1;
           }
         }
-        #endif //FEATURE_STEPPER_MOTOR           
+        #endif //FEATURE_STEPPER_MOTOR  
+        */         
       } else {
       #ifdef DEBUG_ROTATOR
         if (debug_mode) {
@@ -5983,7 +5990,8 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_up_or_down) {
           digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_ACTIVE_VALUE);
-        }         
+        }      
+        /*   
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_direction){
           if (configuration.el_stepper_motor_last_direction != STEPPER_DOWN){
@@ -5998,7 +6006,8 @@ void rotator(byte rotation_action, byte rotation_type) {
              configuration_dirty = 1;
           }
         }
-        #endif //FEATURE_STEPPER_MOTOR  
+        #endif //FEATURE_STEPPER_MOTOR
+        */  
       } else {
           #ifdef DEBUG_ROTATOR
         if (debug_mode) {
@@ -6316,23 +6325,24 @@ void initialize_pins(){
     pinModeEnhanced(az_stepper_motor_pulse, OUTPUT);
     digitalWriteEnhanced(az_stepper_motor_pulse, HIGH);
   }
-
+  /*
   if (az_stepper_motor_direction){
     pinModeEnhanced(az_stepper_motor_direction, OUTPUT);
     digitalWriteEnhanced(az_stepper_motor_direction, configuration.az_stepper_motor_last_pin_state);
   }
-
+  */
 
   #ifdef FEATURE_ELEVATION_CONTROL
   if (el_stepper_motor_pulse){
     pinModeEnhanced(el_stepper_motor_pulse, OUTPUT);
     digitalWriteEnhanced(el_stepper_motor_pulse, HIGH);
   }
-
+  /*
   if (el_stepper_motor_direction){
     pinModeEnhanced(el_stepper_motor_direction, OUTPUT);
     digitalWriteEnhanced(el_stepper_motor_direction, configuration.el_stepper_motor_last_pin_state);
   }
+  */
   #endif //FEATURE_ELEVATION_CONTROL
   #endif //FEATURE_STEPPER_MOTOR
 
