@@ -62,7 +62,7 @@ You can tweak these, but read the online documentation!
 
 //Variable frequency output settings - LOWEST FREQUENCY IS 31 HERTZ DUE TO ARDUINO tone() FUNCTION LIMITATIONS!
 // (Except when used with FEATURE_STEPPER_MOTOR and FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
-#define AZ_VARIABLE_FREQ_OUTPUT_LOW   32     // Frequency in hertz of minimum speed
+#define AZ_VARIABLE_FREQ_OUTPUT_LOW   5 //32     // Frequency in hertz of minimum speed
 #define AZ_VARIABLE_FREQ_OUTPUT_HIGH 1000 //100    // Frequency in hertz of maximum speed
 #define EL_VARIABLE_FREQ_OUTPUT_LOW   5 //32     // Frequency in hertz of minimum speed
 #define EL_VARIABLE_FREQ_OUTPUT_HIGH 500    // Frequency in hertz of maximum speed
@@ -126,6 +126,9 @@ You can tweak these, but read the online documentation!
 
 #define AZ_BRAKE_DELAY 3000            // in milliseconds
 #define EL_BRAKE_DELAY 3000            // in milliseconds
+
+#define BRAKE_ACTIVE_STATE HIGH
+#define BRAKE_INACTIVE_STATE LOW
 
 #define EEPROM_MAGIC_NUMBER 103
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds

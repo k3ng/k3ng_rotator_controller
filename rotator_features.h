@@ -6,7 +6,7 @@
 */
 
 /* main features */
-//#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
+#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 //#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
@@ -17,7 +17,7 @@
 //#define FEATURE_RTC_DS1307
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
-//#define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
+//#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 //#define FEATURE_AUTOCORRECT
 
 #define LANGUAGE_ENGLISH

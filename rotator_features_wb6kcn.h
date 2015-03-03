@@ -18,7 +18,7 @@
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
 #define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
-#define FEATURE_AUTOCORRECT 
+//#define FEATURE_AUTOCORRECT 
 
 #define LANGUAGE_ENGLISH
 //#define LANGUAGE_SPANISH
@@ -97,7 +97,7 @@
 #define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 //#define FEATURE_TWO_DECIMAL_PLACE_HEADINGS  // under development - not working yet!
 //#define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
-#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
+//#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
 //#define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
 //#define FEATURE_JOYSTICK_CONTROL          // analog joystick support
 //#define OPTION_JOYSTICK_REVERSE_X_AXIS
@@ -124,7 +124,7 @@
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
 #define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
 //#define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
-#define OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
+//#define OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
 
 
 
@@ -194,7 +194,7 @@
 // #define DEBUG_HMC5883L
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER
-#define DEBUG_AUTOCORRECT
+// #define DEBUG_AUTOCORRECT
 
 
 
