@@ -106,7 +106,7 @@
 #define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED    // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
 //#define OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES // for azimuth and elevation position pulse input feature, ignore pulses that arrive when no rotation is active
 //#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
-#define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, syncronize realtime clock to GPS
+#define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
 //#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock on LCD row 1 (set position with #define LCD_HHMM_CLOCK_POSITION)
 #define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock on LCD row 1 (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 //#define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)

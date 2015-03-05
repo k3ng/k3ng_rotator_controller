@@ -327,9 +327,12 @@
 
     Eliminated az_stepper_motor_direction and el_stepper_motor_direction.  Use rotate_* pins instead!
 
+    Self-resetting functionality
+    Fixed bug with OPTION_DISPLAY_DIRECTION_STATUS updating
+
   */
 
-#define CODE_VERSION "2.0.2015030201"
+#define CODE_VERSION "2.0.2015030401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -433,6 +436,8 @@
 /*----------------------- variables -------------------------------------*/
 
 byte incoming_serial_byte = 0;
+
+byte reset_the_unit = 0;
 
 #ifdef FEATURE_TWO_DECIMAL_PLACE_HEADINGS
 long azimuth = 0;
@@ -995,10 +1000,18 @@ void service_blink_led(){
   }
   #endif // blink_led
 
+  check_for_reset_flag();
 
 
 } /* service_blink_led */
 
+
+// --------------------------------------------------------------
+void check_for_reset_flag(){
+
+  if (reset_the_unit){delay(500);asm volatile ("jmp 0");}
+
+}
 
 // --------------------------------------------------------------
 #ifdef DEBUG_PROFILE_LOOP_TIME
@@ -2757,7 +2770,7 @@ void update_display(){
     } else {
     #endif // FEATURE_AZ_PRESET_ENCODER
 
-    if (last_az_state != az_state){
+    if ((last_az_state != az_state) || (last_azimuth != azimuth)){
       if (az_state != IDLE) {
         if (az_request_queue_state == IN_PROGRESS_TO_TARGET) {
           clear_display_row(0);
@@ -2987,7 +3000,7 @@ void update_display(){
     #endif // FEATURE_EL_PRESET_ENCODER
 
 
-  if ((az_state != last_az_state) || (el_state != last_el_state) || push_lcd_update){
+  if ((az_state != last_az_state) || (el_state != last_el_state) || push_lcd_update || (last_azimuth != azimuth)){
 
     if ((az_state != IDLE) && (el_state == IDLE)) {
       if (az_request_queue_state == IN_PROGRESS_TO_TARGET) {
@@ -9684,7 +9697,8 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     case 'E':                                                                      // E - Initialize eeprom
       initialize_eeprom_with_defaults();
-      strcpy(return_string, "Initialized eeprom, please reset...");
+      strcpy(return_string, "Initialized eeprom, resetting unit...");
+      reset_the_unit = 1;
       break;
 
     case 'L':                                                                      // L - rotate to long path
