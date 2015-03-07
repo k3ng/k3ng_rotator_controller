@@ -330,9 +330,11 @@
     Self-resetting functionality
     Fixed bug with OPTION_DISPLAY_DIRECTION_STATUS updating
 
+    Improved the self reset with a non-blocking 5 second delay
+
   */
 
-#define CODE_VERSION "2.0.2015030401"
+#define CODE_VERSION "2.0.2015030701"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1009,7 +1011,17 @@ void service_blink_led(){
 // --------------------------------------------------------------
 void check_for_reset_flag(){
 
-  if (reset_the_unit){delay(500);asm volatile ("jmp 0");}
+  static unsigned long detected_reset_flag_time = 0;
+
+  if (reset_the_unit){
+    if (detected_reset_flag_time == 0){
+      detected_reset_flag_time = millis();
+    } else {
+      if ((millis()-detected_reset_flag_time) > 5000){  // let things run for 5 seconds
+        asm volatile ("jmp 0");  // reboot!
+      }
+    }
+  }
 
 }
 
@@ -3956,8 +3968,6 @@ void initialize_eeprom_with_defaults(){
   configuration.analog_az_full_cw = ANALOG_AZ_FULL_CW;
   configuration.analog_el_0_degrees = ANALOG_EL_0_DEGREES;
   configuration.analog_el_max_elevation = ANALOG_EL_MAX_ELEVATION;
-  // azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
-  // azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
   configuration.last_azimuth = raw_azimuth;
   configuration.last_az_incremental_encoder_position = 0;
   configuration.last_el_incremental_encoder_position = 0;
@@ -9697,7 +9707,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     case 'E':                                                                      // E - Initialize eeprom
       initialize_eeprom_with_defaults();
-      strcpy(return_string, "Initialized eeprom, resetting unit...");
+      strcpy(return_string, "Initialized eeprom, resetting unit in 5 seconds...");
       reset_the_unit = 1;
       break;
 
