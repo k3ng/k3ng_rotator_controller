@@ -332,9 +332,15 @@
 
     Improved the self reset with a non-blocking 5 second delay
 
+    Added remote slave commands:
+      RC - read coordinates (returns RCxx.xxxx -xxx.xxxx)
+      GS - query GPS status (returns GS0 (no sync) or GS1 (sync))  
+
+    OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE 
+
   */
 
-#define CODE_VERSION "2.0.2015030701"
+#define CODE_VERSION "2.0.2015031101"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -629,6 +635,9 @@ float remote_unit_command_result_float = 0;
 byte remote_port_rx_sniff = 0;
 byte remote_port_tx_sniff = 0;
 byte suspend_remote_commands = 0;
+#if defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE) && defined(FEATURE_CLOCK)
+byte clock_synced_to_remote = 0;
+#endif
 #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
 
@@ -691,7 +700,7 @@ HardwareSerial * (gps_mirror_port);
 #endif //GPS_MIRROR_PORT
 #endif //defined(FEATURE_GPS)
 
-#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK)
+#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || (defined(FEATURE_GPS) && defined(FEATURE_REMOTE_UNIT_SLAVE))
 double latitude = DEFAULT_LATITUDE;
 double longitude = DEFAULT_LONGITUDE;
 #endif
@@ -879,9 +888,10 @@ void loop() {
   #endif //DEBUG_DUMP
 
   read_headings();
-#ifndef FEATURE_REMOTE_UNIT_SLAVE
-service_rotation();
-#endif  
+
+  #ifndef FEATURE_REMOTE_UNIT_SLAVE
+  service_rotation();
+  #endif  
 
   check_for_dirty_configuration();
 
@@ -928,9 +938,10 @@ service_rotation();
   #endif // FEATURE_GPS
 
   read_headings();
-#ifndef FEATURE_REMOTE_UNIT_SLAVE
-service_rotation();
-#endif  
+
+  #ifndef FEATURE_REMOTE_UNIT_SLAVE
+  service_rotation();
+  #endif  
 
   #ifdef FEATURE_RTC
   service_rtc();
@@ -947,6 +958,11 @@ service_rotation();
   #if defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE) && (defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE))
   sync_master_clock_to_slave();
   #endif
+
+  #if defined(OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE) && (defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE))
+  sync_master_coordinates_to_slave();
+  #endif
+
 
   service_blink_led();
 
@@ -1780,6 +1796,7 @@ byte get_analog_pin(byte pin_number){
 #ifdef FEATURE_REMOTE_UNIT_SLAVE
 void service_remote_unit_serial_buffer(){
 
+// Goody 2015-03-09 - this may be dead code - all done in check_serial() and proces_remote_slave_command?
 
 /*
  *
@@ -1858,6 +1875,7 @@ void service_remote_unit_serial_buffer(){
       }
 
       if (control_port_buffer_index == 3) {
+
         if (command_string == "PG") {
           control_port->println(F("PG")); command_good = 1;
         }                                                                        // PG - ping
@@ -3543,7 +3561,7 @@ void update_display(){
       } else {
         lcd.setCursor(LCD_COLUMNS-3,LCD_GPS_INDICATOR_ROW-1);
       }
-      if (clock_status == GPS_SYNC){
+      if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)){
         lcd.print(GPS_STRING);
       } else {
         lcd.print("   ");
@@ -8076,6 +8094,31 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
         break;
 
+      case REMOTE_UNIT_GS_COMMAND:
+        #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
+        remote_unit_port->println("GS");
+        #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
+        #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
+        ethernet_slave_link_send("GS");
+        #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
+        #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+        if (remote_port_tx_sniff) {control_port->println("GS");}
+        #endif
+        remote_unit_command_submitted = REMOTE_UNIT_GS_COMMAND;
+        break;
+
+      case REMOTE_UNIT_RC_COMMAND:    
+        #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
+        remote_unit_port->println("RC");
+        #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
+        #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
+        ethernet_slave_link_send("RC");
+        #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
+        #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+        if (remote_port_tx_sniff) {control_port->println("RC");}
+        #endif
+        remote_unit_command_submitted = REMOTE_UNIT_RC_COMMAND;
+        break;
 
     } /* switch */
     last_remote_unit_command_time = millis();
@@ -8116,6 +8159,9 @@ void service_remote_communications_incoming_buffer(){
   byte temp_sec = 0;
   #endif // defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
 
+  float temp_float_latitude = 0;
+  float temp_float_longitude = 0;
+
 
 
   byte good_data = 0;
@@ -8134,6 +8180,38 @@ void service_remote_communications_incoming_buffer(){
 
     if (remote_unit_command_submitted) {   // this was a solicited response
       switch (remote_unit_command_submitted) {
+        case REMOTE_UNIT_RC_COMMAND:  //zzzzzzzz   //RC+40.9946 -075.6596
+          if ((remote_unit_port_buffer[0] == 'R') && (remote_unit_port_buffer[1] == 'C') && (remote_unit_port_buffer[5] == '.') && (remote_unit_port_buffer[10] == ' ') && (remote_unit_port_buffer[15] == '.')){
+            temp_float_latitude = ((remote_unit_port_buffer[3]-48)*10) + (remote_unit_port_buffer[4]-48) + ((remote_unit_port_buffer[6]-48)/10.0) + ((remote_unit_port_buffer[7]-48)/100.0) + ((remote_unit_port_buffer[8]-48)/1000.0) + ((remote_unit_port_buffer[9]-48)/10000.0);
+            if (remote_unit_port_buffer[2] == '-') {
+              temp_float_latitude = temp_float_latitude * -1;
+            }
+            temp_float_longitude = ((remote_unit_port_buffer[12]-48)*100) + ((remote_unit_port_buffer[13]-48)*10) + (remote_unit_port_buffer[14]-48) + ((remote_unit_port_buffer[16]-48)/10.0)+ ((remote_unit_port_buffer[17]-48)/100.0) + ((remote_unit_port_buffer[18]-48)/1000.0) + ((remote_unit_port_buffer[19]-48)/10000.0);
+            if (remote_unit_port_buffer[11] == '-') {
+              temp_float_longitude = temp_float_longitude * -1;
+            }
+            if ((temp_float_latitude <= 90) && (temp_float_latitude >= -90) && (temp_float_longitude <= 180) && (temp_float_longitude >= -180)){
+              latitude = temp_float_latitude;
+              longitude = temp_float_longitude;
+              #ifdef DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
+              debug_println("service_remote_communications_incoming_buffer: coordinates synced to slave");
+              #endif //DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE              
+            }         
+            good_data = 1;
+          }
+          break;
+
+        case REMOTE_UNIT_GS_COMMAND:
+          if ((remote_unit_port_buffer[0] == 'G') && (remote_unit_port_buffer[1] == 'S')){
+            if (remote_unit_port_buffer[2] == '1'){
+              if (clock_status == SLAVE_SYNC) {clock_status = SLAVE_SYNC_GPS;}
+              good_data = 1;
+            } else {
+              if (remote_unit_port_buffer[2] == '0') {good_data = 1;}
+            }
+          }
+          break;
+
 
         case REMOTE_UNIT_CL_COMMAND:
           if ((remote_unit_port_buffer[0] == 'C') && (remote_unit_port_buffer[1] == 'L') &&
@@ -8164,13 +8242,14 @@ void service_remote_communications_incoming_buffer(){
               debug_println("service_remote_communications_incoming_buffer: clock synced to slave clock");
               #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
               good_data = 1;
+              clock_synced_to_remote = 1;
               if (clock_status == FREE_RUNNING) {clock_status = SLAVE_SYNC;}
             } else {
 
               #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
               debug_println("service_remote_communications_incoming_buffer: slave clock sync error");
               #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE  
-              if (clock_status == SLAVE_SYNC) {clock_status = FREE_RUNNING;}   
+              if ((clock_status == SLAVE_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {clock_status = FREE_RUNNING;}   
             }
             #endif // defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
 
@@ -8184,7 +8263,7 @@ void service_remote_communications_incoming_buffer(){
             debug_print_int(remote_unit_port_buffer_index);
             debug_println("");
             #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE 
-            if (clock_status == SLAVE_SYNC) {clock_status = FREE_RUNNING;} 
+            if ((clock_status == SLAVE_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {clock_status = FREE_RUNNING;} 
             #endif // defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)          
           }
           break;
@@ -8264,7 +8343,7 @@ void service_remote_communications_incoming_buffer(){
   if ((remote_unit_command_submitted) && ((millis() - last_remote_unit_command_time) > REMOTE_UNIT_COMMAND_TIMEOUT_MS)) {
 
     #if defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
-    if ((remote_unit_command_submitted == REMOTE_UNIT_CL_COMMAND) && (clock_status == SLAVE_SYNC)){
+    if ((remote_unit_command_submitted == REMOTE_UNIT_CL_COMMAND) && ((clock_status == SLAVE_SYNC) || (clock_status == SLAVE_SYNC_GPS))){
       clock_status = FREE_RUNNING;
     }
     #endif //defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
@@ -9285,7 +9364,7 @@ void service_gps(){
       #endif // defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_PCF8583)
 
 
-      #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+      #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_REMOTE_UNIT_SLAVE)
       if (SYNC_COORDINATES_WITH_GPS) {
         latitude = float(gps_lat) / 1000000.0;
         longitude = float(gps_lon) / 1000000.0;
@@ -10249,6 +10328,7 @@ char * clock_status_string(){
     case GPS_SYNC: return("GPS_SYNC"); break;
     case RTC_SYNC: return("RTC_SYNC"); break;
     case SLAVE_SYNC: return("SLAVE_SYNC"); break;
+    case SLAVE_SYNC_GPS: return("SLAVE_SYNC_GPS"); break;
   }
 }
 #endif //FEATURE_CLOCK
@@ -11248,6 +11328,8 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
  *  PG - ping
  *  AZ - read azimuth  (returns AZxxx.xxxxxx)
  *  EL - read elevation (returns ELxxx.xxxxxx)
+ *  RC - read coordinates (returns RC+xx.xxxx -xxx.xxxx)
+ *  GS - query GPS status (returns GS0 (no sync) or GS1 (sync))
  *  DOxx - digital pin initialize as output;
  *  DIxx - digital pin initialize as input
  *  DPxx - digital pin initialize as input with pullup
@@ -11324,6 +11406,33 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
         command_good = 1;
       }
       #endif //FEATURE_CLOCK
+
+
+      #ifdef FEATURE_GPS
+      if ((slave_command_buffer[0] == 'R') && (slave_command_buffer[1] == 'C')) {                    // RC - read coordinates
+        strcpy(return_string,"RC");
+        if (latitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+        dtostrf(abs(latitude),0,4,tempstring);
+        strcat(return_string,tempstring);         
+        strcat(return_string," ");
+        if (longitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+        if (longitude < 100){strcat(return_string,"0");}
+        dtostrf(abs(longitude),0,4,tempstring);
+        strcat(return_string,tempstring);        
+        command_good = 1;
+      }   
+      #ifdef FEATURE_CLOCK
+      if ((slave_command_buffer[0] == 'G') && (slave_command_buffer[1] == 'S')) {                    // GS - query GPS sync
+        strcpy(return_string,"GS");
+        if (clock_status == GPS_SYNC){                
+          strcat(return_string,"1");
+        } else {
+          strcat(return_string,"0");
+        }        
+        command_good = 1;
+      }
+      #endif //FEATURE_CLOCK                 
+      #endif //FEATURE_GPS      
 
       if ((slave_command_buffer[0] == 'P') && (slave_command_buffer[1] == 'G')) {
         strcpy(return_string,"PG"); command_good = 1;
@@ -11692,7 +11801,24 @@ byte ethernet_slave_link_send(char * string_to_send){
 #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
 //------------------------------------------------------
+#if defined(OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE) && (defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE))
+void sync_master_coordinates_to_slave(){
 
+  static unsigned long last_sync_master_coordinates_to_slave = 10000; //zzzzzz
+
+  if ((millis() - last_sync_master_coordinates_to_slave) >= (SYNC_MASTER_COORDINATES_TO_SLAVE_SECS * 1000)){
+    if (submit_remote_command(REMOTE_UNIT_RC_COMMAND, 0, 0)) {
+      #ifdef DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
+      debug_println("sync_master_coordinates_to_slave: submitted REMOTE_UNIT_RC_COMMAND");
+      #endif //DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
+      last_sync_master_coordinates_to_slave = millis();  
+    }  
+  }
+
+
+}
+#endif //defined(OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE) && (defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE))
+//------------------------------------------------------
 
 #if defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE) && (defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE))
 void sync_master_clock_to_slave(){
@@ -11706,6 +11832,16 @@ void sync_master_clock_to_slave(){
       #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
       last_sync_master_clock_to_slave = millis();  
     }  
+  }
+
+  // if REMOTE_UNIT_CL_COMMAND above was successful, issue a GS (query GPS sync command) to get GPS sync status on the remote
+  if (clock_synced_to_remote){
+    if (submit_remote_command(REMOTE_UNIT_GS_COMMAND, 0, 0)) {
+      #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
+      debug_println("sync_master_clock_to_slave: submitted REMOTE_UNIT_GS_COMMAND");
+      #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
+      clock_synced_to_remote = 0; 
+    }      
   }
 
 }

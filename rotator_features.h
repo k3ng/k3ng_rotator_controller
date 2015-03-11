@@ -121,7 +121,8 @@
 //#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
-//#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
+//#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
+//#define OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE  // use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
 //#define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
 //#define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
@@ -195,6 +196,7 @@
 // #define DEBUG_PROCESS_SLAVE
 // #define DEBUG_MEMSIC_2125
 // #define DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
+// #define DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
 // #define DEBUG_HMC5883L
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER

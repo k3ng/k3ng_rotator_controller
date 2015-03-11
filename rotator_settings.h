@@ -101,7 +101,7 @@ You can tweak these, but read the online documentation!
 #define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
 //#define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port
 #define GPS_PORT_MAPPED_TO &Serial2  // change this line to map the GPS port to a different serial port
-#define GPS_MIRROR_PORT &Serial1 //3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
+//#define GPS_MIRROR_PORT &Serial1 //3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
 
 #define LCD_COLUMNS 20 //16
 #define LCD_ROWS 4 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
@@ -431,6 +431,8 @@ You can tweak these, but read the online documentation!
 #define SYNC_RTC_TO_GPS_SECONDS 12  // synchronize realtime clock to GPS every x seconds
 
 #define SYNC_MASTER_CLOCK_TO_SLAVE_CLOCK_SECS 10 // for OPTION_SYNC_MASTER_CLOCK_TO_SLAVE - use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit clock
+#define SYNC_MASTER_COORDINATES_TO_SLAVE_SECS 20 // for OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE - use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
+
 
 #define ETHERNET_MAC_ADDRESS 0xDE,0xAD,0xBE,0xEF,0xFE,0xEE  //<-DON'T FORGET TO USE DIFFERENT MAC ADDRESSES FOR MASTER AND SLAVE!!!
 #define ETHERNET_IP_ADDRESS 192,168,1,172  //<-DON'T FORGET TO USE DIFFERENT IP ADDRESSES FOR MASTER AND SLAVE!!!

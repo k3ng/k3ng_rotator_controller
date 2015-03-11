@@ -17,7 +17,7 @@
 //#define FEATURE_RTC_DS1307
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
-#define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
+//#define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
 //#define FEATURE_AUTOCORRECT 
 
 #define LANGUAGE_ENGLISH
@@ -29,7 +29,7 @@
 //#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit
                                    
 
-//#define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
+#define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
 //#define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
 
 
@@ -191,6 +191,7 @@
 // #define DEBUG_PROCESS_SLAVE
 // #define DEBUG_MEMSIC_2125
 // #define DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
+// #define DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
 // #define DEBUG_HMC5883L
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER
