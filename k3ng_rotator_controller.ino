@@ -263,7 +263,7 @@
 
     Fixed compilation error when FEATURE_JOYSTICK_CONTROL is activated and FEATURE_ELEVATION_CONTROL is disabled
 
-  Not documented yet:
+  Not documented yet: ---------------------------------------------------------------------------------------------
 
     FEATURE_ANALOG_OUTPUT_PINS (rotator_features.h)
     FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303 (rotator_features.h)
@@ -338,9 +338,13 @@
 
     OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE 
 
+    reset_pin
+
+    Updated for Arduino 1.6.1
+
   */
 
-#define CODE_VERSION "2.0.2015031101"
+#define CODE_VERSION "2.0.2015032301"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1034,7 +1038,13 @@ void check_for_reset_flag(){
       detected_reset_flag_time = millis();
     } else {
       if ((millis()-detected_reset_flag_time) > 5000){  // let things run for 5 seconds
-        asm volatile ("jmp 0");  // reboot!
+        //wdt_enable(WDTO_30MS); while(1) {};  //doesn't work on Mega
+//zzzzzz
+        #ifdef reset_pin
+        digitalWrite(reset_pin,HIGH);
+        #else // reset_pin
+        asm volatile ("  jmp 0"); // reboot!     // doesn't work on Arduino Mega but works on SainSmart Mega.
+        #endif //reset_pin
       }
     }
   }
@@ -6112,6 +6122,11 @@ void initialize_interrupts(){
 
 void initialize_pins(){
 
+  #ifdef reset_pin
+  pinMode(reset_pin, OUTPUT);
+  digitalWrite(reset_pin, LOW);
+  #endif //reset_pin
+
   if (serial_led) {
     pinModeEnhanced(serial_led, OUTPUT);
   }
@@ -8180,7 +8195,7 @@ void service_remote_communications_incoming_buffer(){
 
     if (remote_unit_command_submitted) {   // this was a solicited response
       switch (remote_unit_command_submitted) {
-        case REMOTE_UNIT_RC_COMMAND:  //zzzzzzzz   //RC+40.9946 -075.6596
+        case REMOTE_UNIT_RC_COMMAND:  //RC+40.9946 -075.6596
           if ((remote_unit_port_buffer[0] == 'R') && (remote_unit_port_buffer[1] == 'C') && (remote_unit_port_buffer[5] == '.') && (remote_unit_port_buffer[10] == ' ') && (remote_unit_port_buffer[15] == '.')){
             temp_float_latitude = ((remote_unit_port_buffer[3]-48)*10) + (remote_unit_port_buffer[4]-48) + ((remote_unit_port_buffer[6]-48)/10.0) + ((remote_unit_port_buffer[7]-48)/100.0) + ((remote_unit_port_buffer[8]-48)/1000.0) + ((remote_unit_port_buffer[9]-48)/10000.0);
             if (remote_unit_port_buffer[2] == '-') {
@@ -11804,7 +11819,7 @@ byte ethernet_slave_link_send(char * string_to_send){
 #if defined(OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE) && (defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE))
 void sync_master_coordinates_to_slave(){
 
-  static unsigned long last_sync_master_coordinates_to_slave = 10000; //zzzzzz
+  static unsigned long last_sync_master_coordinates_to_slave = 10000;
 
   if ((millis() - last_sync_master_coordinates_to_slave) >= (SYNC_MASTER_COORDINATES_TO_SLAVE_SECS * 1000)){
     if (submit_remote_command(REMOTE_UNIT_RC_COMMAND, 0, 0)) {

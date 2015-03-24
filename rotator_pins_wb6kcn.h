@@ -183,5 +183,7 @@
 #define pin_analog_el_out 0
 #endif //FEATURE_ANALOG_OUTPUT_PINS
 
+//#define reset_pin 22 // if defined, goes HIGH to reset unit
+
 
 

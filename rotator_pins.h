@@ -192,5 +192,5 @@
 #define pin_moon_pushbutton_calibration 0            // normally HIGH, have button pull LOW
 #endif //FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
 
-
+//#define reset_pin 22 // if defined, goes HIGH to reset unit
 
