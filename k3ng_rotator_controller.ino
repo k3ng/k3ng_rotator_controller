@@ -342,9 +342,11 @@
 
     Updated for Arduino 1.6.1
 
+    Fixed compilation isse with FEATURE_ELEVATION_CORRECTION and Arduino 1.6.x
+
   */
 
-#define CODE_VERSION "2.0.2015032301"
+#define CODE_VERSION "2.0.2015032601"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -8403,7 +8405,12 @@ float correct_elevation(float elevation_in){
   }
   for (unsigned int x = 0; x < (sizeof(elevation_calibration_from) - 2); x++) {
     if ((elevation_in >= elevation_calibration_from[x]) && (elevation_in <= elevation_calibration_from[x + 1])) {
-      return (map(elevation_in * 10, elevation_calibration_from[x] * 10, elevation_calibration_from[x + 1] * 10, elevation_calibration_to[x] * 10, elevation_calibration_to[x + 1] * 10)) / 10.0;
+      long x = (elevation_in*10);
+      long in_min = (elevation_calibration_from[x]*10);
+      long in_max = (elevation_calibration_from[x+1]*10);
+      long out_min = (elevation_calibration_to[x]*10);
+      long out_max =(elevation_calibration_to[x+1]*10);
+      return (map(x,in_min,in_max,out_min,out_max)) / 10.0;
     }
   }
   return(elevation_in);
