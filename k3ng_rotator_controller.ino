@@ -1,4 +1,5 @@
 /* Arduino Rotator Controller
+
    Anthony Good
    K3NG
    anthony.good@gmail.com
@@ -6,7 +7,7 @@
 
   
    Code contributions, testing, ideas, bug fixes, hardware, support, encouragement, and/or bourbon provided by:
-     John Eigenbode W3SA
+     John W3SA
      Gord VO1GPK
      Anthony M0UPU
      Pete VE5VA
@@ -34,7 +35,7 @@
      Ismael PY4PI
 
 
-   (If you contributed something and I forgot to put your name and call in here, please email me!)
+   (If you contributed something and I forgot to put your name and call in here, *please* email me!)
   
  ***************************************************************************************************************
  *
@@ -342,24 +343,34 @@
 
     Updated for Arduino 1.6.1
 
-    Fixed compilation isse with FEATURE_ELEVATION_CORRECTION and Arduino 1.6.x
+    Fixed compilation issue with FEATURE_ELEVATION_CORRECTION and Arduino 1.6.x
+
+    OPTION_RESET_METHOD_JMP_ASM_0
+    Change /E command to do setup() for system reset
+
+    Fixed calculation issues with FEATURE_ELEVATION_CORRECTION
 
   */
 
-#define CODE_VERSION "2.0.2015032601"
+#define CODE_VERSION "2.0.2015032801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <math.h>
 #include <avr/wdt.h>
+
 #include "rotator_hardware.h"
+
 #ifdef HARDWARE_EA4TX_ARS_USB
 #include "rotator_features_ea4tx_ars_usb.h"
 #endif
 #ifdef HARDWARE_WB6KCN
 #include "rotator_features_wb6kcn.h"
 #endif
-#if !defined(HARDWARE_EA4TX_ARS_USB) && !defined(HARDWARE_WB6KCN)
+#ifdef HARDWARE_M0UPU
+#include "rotator_features_m0upu.h"
+#endif
+#if !defined(HARDWARE_CUSTOM)
 #include "rotator_features.h"
 #endif
 #include "rotator_dependencies.h"
@@ -421,6 +432,7 @@
 
 
 #include "rotator.h"
+
 #ifdef HARDWARE_EA4TX_ARS_USB
 #include "rotator_pins_ea4tx_ars_usb.h"
 #endif
@@ -431,14 +443,23 @@
 //#include "rotator_pins_wb6kcn_az_test_setup.h"
 #include "rotator_pins_wb6kcn.h"
 #endif
-#if !defined(HARDWARE_M0UPU) && !defined(HARDWARE_EA4TX_ARS_USB) &&!defined(HARDWARE_WB6KCN)
+#if !defined(HARDWARE_CUSTOM)
 #include "rotator_pins.h"
+#endif
+
+#ifdef HARDWARE_EA4TX_ARS_USB
+#include "rotator_settings_ea4tx_ars_usb.h"
 #endif
 #ifdef HARDWARE_WB6KCN
 #include "rotator_settings_wb6kcn.h"
-#else
+#endif
+#ifdef HARDWARE_M0UPU
+#include "rotator_settings_m0upu.h"
+#endif
+#if !defined(HARDWARE_CUSTOM)
 #include "rotator_settings.h"
 #endif
+
 #ifdef FEATURE_STEPPER_MOTOR
 #include "TimerFive.h"
 #endif
@@ -985,6 +1006,8 @@ void loop() {
   check_moon_pushbutton_calibration();
   #endif //defined(FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_MOON_TRACKING)
 
+  check_for_reset_flag();
+
 } /* loop */
 /* -------------------------------------- subroutines -----------------------------------------------
  
@@ -1024,7 +1047,7 @@ void service_blink_led(){
   }
   #endif // blink_led
 
-  check_for_reset_flag();
+  
 
 
 } /* service_blink_led */
@@ -1040,12 +1063,20 @@ void check_for_reset_flag(){
       detected_reset_flag_time = millis();
     } else {
       if ((millis()-detected_reset_flag_time) > 5000){  // let things run for 5 seconds
-        //wdt_enable(WDTO_30MS); while(1) {};  //doesn't work on Mega
-//zzzzzz
+
+
         #ifdef reset_pin
         digitalWrite(reset_pin,HIGH);
         #else // reset_pin
+
+        #ifdef OPTION_RESET_METHOD_JMP_ASM_0
         asm volatile ("  jmp 0"); // reboot!     // doesn't work on Arduino Mega but works on SainSmart Mega.
+        //wdt_enable(WDTO_30MS); while(1) {};  //doesn't work on Mega
+        #else //OPTION_RESET_METHOD_JMP_ASM_0
+        setup();
+        reset_the_unit = 0;
+        #endif //OPTION_RESET_METHOD_JMP_ASM_0
+        
         #endif //reset_pin
       }
     }
@@ -1085,7 +1116,7 @@ void check_az_speed_pot() {
   byte new_azimuth_speed_voltage = 0;
 
 
-  if (az_speed_pot && azimuth_speed_voltage && ((millis() - last_pot_check_time) > 500)) {
+  if (az_speed_pot /*&& azimuth_speed_voltage*/ && ((millis() - last_pot_check_time) > 500)) {
     pot_read = analogReadEnhanced(az_speed_pot);
     new_azimuth_speed_voltage = map(pot_read, SPEED_POT_LOW, SPEED_POT_HIGH, SPEED_POT_LOW_MAP, SPEED_POT_HIGH_MAP);
     if (new_azimuth_speed_voltage != normal_az_speed_voltage) {
@@ -1098,7 +1129,6 @@ void check_az_speed_pot() {
         debug_println("");
       }
       #endif // DEBUG_AZ_SPEED_POT
-      // analogWriteEnhanced(azimuth_speed_voltage, new_azimuth_speed_voltage);
       normal_az_speed_voltage = new_azimuth_speed_voltage;
       update_az_variable_outputs(normal_az_speed_voltage);
       #if defined(OPTION_EL_SPEED_FOLLOWS_AZ_SPEED) && defined(FEATURE_ELEVATION_CONTROL)
@@ -1856,7 +1886,7 @@ void service_remote_unit_serial_buffer(){
  */
 
 
-  String command_string;
+  static String command_string; // changed to static 2013-03-27
   byte command_good = 0;
 
   if (control_port_buffer_carriage_return_flag) {
@@ -2746,11 +2776,11 @@ void update_display(){
   static byte lcd_state_row_0 = 0;
   static byte lcd_state_row_1 = 0;
 
-  String row_0_string;
+  static String row_0_string; // changed to static 2013-03-27 to see if it helps display stability
 
   static int last_azimuth = -1;
 
-  char workstring[10] = "";
+  static char workstring[10] = ""; // changed to static 2013-03-27 to see if it helps display stability
 
   unsigned int target = 0;
 
@@ -5513,7 +5543,7 @@ void update_el_variable_outputs(byte speed_voltage){
 void update_az_variable_outputs(byte speed_voltage){
 
 
-  #ifdef DEBUG_VARIABLE_OUTPUTS
+  #ifdef DEBUG_VARIABLE_OUTPUTS  
   int temp_int = 0;
 
   debug_print("update_az_variable_outputs: az_state: ");
@@ -8389,7 +8419,8 @@ float correct_azimuth(float azimuth_in){
   }
   for (unsigned int x = 0; x < (sizeof(azimuth_calibration_from) - 2); x++) {
     if ((azimuth_in >= azimuth_calibration_from[x]) && (azimuth_in <= azimuth_calibration_from[x + 1])) {
-      return (map(azimuth_in * 10, azimuth_calibration_from[x] * 10, azimuth_calibration_from[x + 1] * 10, azimuth_calibration_to[x] * 10, azimuth_calibration_to[x + 1] * 10)) / 10.0;
+      //return (map(azimuth_in * 10, azimuth_calibration_from[x] * 10, azimuth_calibration_from[x + 1] * 10, azimuth_calibration_to[x] * 10, azimuth_calibration_to[x + 1] * 10)) / 10.0;
+      return (azimuth_in - azimuth_calibration_from[x]) * (azimuth_calibration_to[x+1] - azimuth_calibration_to[x]) / (azimuth_calibration_from[x + 1] - azimuth_calibration_from[x]) + azimuth_calibration_to[x];
     }
   }
   return(azimuth_in);
@@ -8400,20 +8431,21 @@ float correct_azimuth(float azimuth_in){
 #ifdef FEATURE_ELEVATION_CORRECTION
 float correct_elevation(float elevation_in){
 
+
   if (sizeof(elevation_calibration_from) != sizeof(elevation_calibration_to)) {
     return elevation_in;
   }
-  for (unsigned int x = 0; x < (sizeof(elevation_calibration_from) - 2); x++) {
+  for (int x = 0; x < (sizeof(elevation_calibration_from) - 2); x++) {
     if ((elevation_in >= elevation_calibration_from[x]) && (elevation_in <= elevation_calibration_from[x + 1])) {
-      long x = (elevation_in*10);
-      long in_min = (elevation_calibration_from[x]*10);
-      long in_max = (elevation_calibration_from[x+1]*10);
-      long out_min = (elevation_calibration_to[x]*10);
-      long out_max =(elevation_calibration_to[x+1]*10);
-      return (map(x,in_min,in_max,out_min,out_max)) / 10.0;
+      // changed this from map() 2015-03-28 due to it blowing up at compile time in Arduino 1.6.1
+      return (elevation_in - elevation_calibration_from[x]) * (elevation_calibration_to[x+1] - elevation_calibration_to[x]) / (elevation_calibration_from[x + 1] - elevation_calibration_from[x]) + elevation_calibration_to[x];
     }
   }
   return(elevation_in);
+
+
+
+  //return 123;
 
 }
 #endif // FEATURE_ELEVATION_CORRECTION
@@ -11778,23 +11810,20 @@ void service_power_switch(){
 
 
 //------------------------------------------------------
-char * coordinates_to_maidenhead(float latitude_degrees,float longitude_degrees){
+char *coordinates_to_maidenhead(float latitude_degrees,float longitude_degrees){
 
-  char temp_string[8] = "";
-
-  const char* asciiuppercase[] = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R"};
-  const char* asciinumbers[] = {"0","1","2","3","4","5","6","7","8","9"};
-  const char* asciilowercase[] = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x"};
+  static char temp_string[8] = "";  // I had to declare this static in Arduino 1.6, otherwise this won't work (it worked before)
 
   latitude_degrees += 90.0;
   longitude_degrees += 180.0;
 
-  strcat(temp_string,asciiuppercase[int(longitude_degrees/20)]);
-  strcat(temp_string,asciiuppercase[int(latitude_degrees/10)]);  
-  strcat(temp_string,asciinumbers[int((longitude_degrees - int(longitude_degrees/20)*20)/2)]);
-  strcat(temp_string,asciinumbers[int(latitude_degrees - int(latitude_degrees/10)*10)]);
-  strcat(temp_string,asciilowercase[int((longitude_degrees - (int(longitude_degrees/2)*2)) / (5.0/60.0))]);
-  strcat(temp_string,asciilowercase[int((latitude_degrees - (int(latitude_degrees/1)*1)) / (2.5/60.0))]);
+  temp_string[0] = (int(longitude_degrees/20)) + 65;
+  temp_string[1] = (int(latitude_degrees/10)) + 65;
+  temp_string[2] = (int((longitude_degrees - int(longitude_degrees/20)*20)/2)) + 48;
+  temp_string[3] = (int(latitude_degrees - int(latitude_degrees/10)*10)) + 48;
+  temp_string[4] = (int((longitude_degrees - (int(longitude_degrees/2)*2)) / (5.0/60.0))) + 97;
+  temp_string[5] = (int((latitude_degrees - (int(latitude_degrees/1)*1)) / (2.5/60.0))) + 97;
+  temp_string[6] = 0;
 
   return temp_string;
 
