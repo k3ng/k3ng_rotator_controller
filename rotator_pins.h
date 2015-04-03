@@ -109,9 +109,9 @@
 #endif //FEATURE_AZ_POSITION_HH_12
 
 #ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
-#define el_hh12_clock_pin 11 //53 //11
-#define el_hh12_cs_pin 12 //52 //12
-#define el_hh12_data_pin 13 //51 //13
+#define el_hh12_clock_pin 53 //11
+#define el_hh12_cs_pin 52 //12
+#define el_hh12_data_pin 51 //13
 #endif //FEATURE_EL_POSITION_HH_12
 
 #ifdef FEATURE_PARK

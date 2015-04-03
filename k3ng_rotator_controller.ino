@@ -349,10 +349,13 @@
     Change /E command to do setup() for system reset
 
     Fixed calculation issues with FEATURE_ELEVATION_CORRECTION
+    Fixed bug with FEATURE_AZIMUTH_CORRECTION and FEATURE_ELEVATION_CORRECTION rounding off to nearest degree
+
+    Change configuration.azimuth_offset to use raw_azimuth rather than azimuth for calculation
 
   */
 
-#define CODE_VERSION "2.0.2015032801"
+#define CODE_VERSION "2.0.2015040401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4249,7 +4252,7 @@ void read_azimuth(byte force_read){
     //raw_azimuth = map(analog_az* HEADING_MULTIPLIER, configuration.analog_az_full_ccw* HEADING_MULTIPLIER, configuration.analog_az_full_cw* HEADING_MULTIPLIER, (azimuth_starting_point * HEADING_MULTIPLIER), ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER));
 
     #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
     if (AZIMUTH_SMOOTHING_FACTOR > 0) {
@@ -4292,7 +4295,7 @@ void read_azimuth(byte force_read){
 
 
       #ifdef FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif // FEATURE_AZIMUTH_CORRECTION
 
       raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
@@ -4365,7 +4368,7 @@ void read_azimuth(byte force_read){
 
 
       #ifdef FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif // FEATURE_AZIMUTH_CORRECTION
 
       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
@@ -4399,7 +4402,7 @@ void read_azimuth(byte force_read){
       raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
     }
     #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
     azimuth = raw_azimuth;
@@ -4418,7 +4421,7 @@ void read_azimuth(byte force_read){
     if (heading > 2 * PI) heading -= 2 * PI;
     raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; // radians to degree
     #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
     if (AZIMUTH_SMOOTHING_FACTOR > 0) {
@@ -4474,7 +4477,7 @@ void read_azimuth(byte force_read){
     */
     raw_azimuth = heading * HEADING_MULTIPLIER ;  // pololu library returns float value of actual heading.
     #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
     if (AZIMUTH_SMOOTHING_FACTOR > 0) {
@@ -4510,7 +4513,7 @@ void read_azimuth(byte force_read){
       last_az_position_pulse_input_azimuth = az_position_pulse_input_azimuth;
       raw_azimuth = int(configuration.last_azimuth * HEADING_MULTIPLIER);
       #ifdef FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif // FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
@@ -4531,7 +4534,7 @@ void read_azimuth(byte force_read){
     }
     #endif // DEBUG_HH12
     #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
     if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
@@ -4556,7 +4559,7 @@ void read_azimuth(byte force_read){
       }
     }
     #ifdef FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = (correct_azimuth(raw_azimuth / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_AZIMUTH_CORRECTION
     raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
     if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
@@ -5202,7 +5205,7 @@ void read_elevation(byte force_read){
     analog_el = analogReadEnhanced(rotator_analog_el);
     elevation = (map(analog_el, configuration.analog_el_0_degrees, configuration.analog_el_max_elevation, 0, (ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER)));
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     if (ELEVATION_SMOOTHING_FACTOR > 0) {
@@ -5245,7 +5248,7 @@ void read_elevation(byte force_read){
       #endif
       elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
       #ifdef FEATURE_ELEVATION_CORRECTION
-      elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif // FEATURE_ELEVATION_CORRECTION
       configuration_dirty = 1;
     }
@@ -5263,7 +5266,7 @@ void read_elevation(byte force_read){
     #endif // DEBUG_ACCEL
     elevation = (atan2(scaled.YAxis, scaled.ZAxis) * 180 * HEADING_MULTIPLIER) / M_PI;
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     if (ELEVATION_SMOOTHING_FACTOR > 0) {
@@ -5282,7 +5285,7 @@ void read_elevation(byte force_read){
     #endif // DEBUG_ACCEL
     elevation = (atan2(event.acceleration.y, event.acceleration.z) * 180 * HEADING_MULTIPLIER) / M_PI;
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     #endif // FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
@@ -5301,7 +5304,7 @@ void read_elevation(byte force_read){
     #endif // DEBUG_ACCEL
     elevation = (atan2(lsm.accelData.y, lsm.accelData.z) * 180 * HEADING_MULTIPLIER) / M_PI;
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303
@@ -5318,7 +5321,7 @@ void read_elevation(byte force_read){
     #endif // DEBUG_ACCEL
     elevation = (atan2(compass.a.x, compass.a.z) * -180 * HEADING_MULTIPLIER) / M_PI; //lsm.accelData.y
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     #endif // FEATURE_EL_POSITION_POLOLU_LSM303
@@ -5347,7 +5350,7 @@ void read_elevation(byte force_read){
       last_el_position_pulse_input_elevation = el_position_pulse_input_elevation;
       elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
       #ifdef FEATURE_ELEVATION_CORRECTION
-      elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     }
@@ -5373,7 +5376,7 @@ void read_elevation(byte force_read){
       #endif // DEBUG_HEADING_READING_TIME
       elevation = remote_unit_command_result_float * HEADING_MULTIPLIER;
       #ifdef FEATURE_ELEVATION_CORRECTION
-      elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
@@ -5402,19 +5405,19 @@ void read_elevation(byte force_read){
     }
     #endif // DEBUG_HH12
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     if (elevation > (180 * HEADING_MULTIPLIER)) {
       elevation = elevation - (360 * HEADING_MULTIPLIER);
-    }   
+    }
     #endif // FEATURE_EL_POSITION_HH12_AS5045_SSI
 
 
     #ifdef FEATURE_EL_POSITION_INCREMENTAL_ENCODER
     elevation = ((((el_incremental_encoder_position) / (EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0) * HEADING_MULTIPLIER);
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif // FEATURE_ELEVATION_CORRECTION
     if (incremental_encoder_previous_elevation != elevation) {
       configuration.last_el_incremental_encoder_position = el_incremental_encoder_position;
@@ -5435,7 +5438,7 @@ void read_elevation(byte force_read){
     #endif //DEBUG_MEMSIC_2125
     elevation = Yangle * HEADING_MULTIPLIER;    
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
     #endif //FEATURE_ELEVATION_CORRECTION
     #endif //FEATURE_EL_POSITION_MEMSIC_2125
 
@@ -8441,11 +8444,9 @@ float correct_elevation(float elevation_in){
       return (elevation_in - elevation_calibration_from[x]) * (elevation_calibration_to[x+1] - elevation_calibration_to[x]) / (elevation_calibration_from[x + 1] - elevation_calibration_from[x]) + elevation_calibration_to[x];
     }
   }
+
   return(elevation_in);
 
-
-
-  //return 123;
 
 }
 #endif // FEATURE_ELEVATION_CORRECTION
@@ -9498,7 +9499,7 @@ byte calibrate_az_el(float new_az, float new_el){
     #endif // DEBUG_OFFSET
 
 
-    configuration.azimuth_offset = new_az - (float(azimuth) / float(HEADING_MULTIPLIER));
+    configuration.azimuth_offset = new_az - (float(raw_azimuth) / float(HEADING_MULTIPLIER));
     #if defined(FEATURE_ELEVATION_CONTROL)
     configuration.elevation_offset = new_el - (float(elevation) / float(HEADING_MULTIPLIER));
     #endif
@@ -9699,7 +9700,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       if ((tempfloat >= 0) && (tempfloat <= 360)) {
         configuration.azimuth_offset = 0;
         read_azimuth(1);
-        configuration.azimuth_offset = tempfloat - float(azimuth / HEADING_MULTIPLIER);
+        configuration.azimuth_offset = tempfloat - float(raw_azimuth / HEADING_MULTIPLIER);
         configuration_dirty = 1;
         strcpy(return_string, "Azimuth calibrated to ");
         dtostrf(tempfloat, 0, 2, temp_string);
