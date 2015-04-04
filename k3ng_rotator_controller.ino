@@ -351,11 +351,13 @@
     Fixed calculation issues with FEATURE_ELEVATION_CORRECTION
     Fixed bug with FEATURE_AZIMUTH_CORRECTION and FEATURE_ELEVATION_CORRECTION rounding off to nearest degree
 
-    Change configuration.azimuth_offset to use raw_azimuth rather than azimuth for calculation
+    2.0.2015040401 Changed configuration.azimuth_offset to use raw_azimuth rather than azimuth for calculation
+
+    2.0.2015040402 Fixed bug with compiling FEATURE_MASTER_WITH_ETHERNET_SLAVE without FEATURE_CLOCK
 
   */
 
-#define CODE_VERSION "2.0.2015040401"
+#define CODE_VERSION "2.0.2015040402"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -587,6 +589,7 @@ byte elevation_button_was_pushed = 0;
 #endif // FEATURE_ELEVATION_CONTROL
 
 #ifdef FEATURE_LCD_DISPLAY
+String row_0_string; // changed to static 2013-03-27 to see if it helps display stability / changed to global 2014-04-04 due to compile issues
 unsigned long last_lcd_update = 0;
 String last_row_0_string;  // this is only used in update_display(), however if you make it a static within the funtion, the compiler errors out with a strange error
 byte push_lcd_update = 0;
@@ -2779,7 +2782,7 @@ void update_display(){
   static byte lcd_state_row_0 = 0;
   static byte lcd_state_row_1 = 0;
 
-  static String row_0_string; // changed to static 2013-03-27 to see if it helps display stability
+
 
   static int last_azimuth = -1;
 
@@ -8230,6 +8233,7 @@ void service_remote_communications_incoming_buffer(){
 
     if (remote_unit_command_submitted) {   // this was a solicited response
       switch (remote_unit_command_submitted) {
+        #ifdef OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE
         case REMOTE_UNIT_RC_COMMAND:  //RC+40.9946 -075.6596
           if ((remote_unit_port_buffer[0] == 'R') && (remote_unit_port_buffer[1] == 'C') && (remote_unit_port_buffer[5] == '.') && (remote_unit_port_buffer[10] == ' ') && (remote_unit_port_buffer[15] == '.')){
             temp_float_latitude = ((remote_unit_port_buffer[3]-48)*10) + (remote_unit_port_buffer[4]-48) + ((remote_unit_port_buffer[6]-48)/10.0) + ((remote_unit_port_buffer[7]-48)/100.0) + ((remote_unit_port_buffer[8]-48)/1000.0) + ((remote_unit_port_buffer[9]-48)/10000.0);
@@ -8250,7 +8254,8 @@ void service_remote_communications_incoming_buffer(){
             good_data = 1;
           }
           break;
-
+        #endif //OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE
+        #ifdef OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
         case REMOTE_UNIT_GS_COMMAND:
           if ((remote_unit_port_buffer[0] == 'G') && (remote_unit_port_buffer[1] == 'S')){
             if (remote_unit_port_buffer[2] == '1'){
@@ -8261,7 +8266,7 @@ void service_remote_communications_incoming_buffer(){
             }
           }
           break;
-
+        #endif //OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
 
         case REMOTE_UNIT_CL_COMMAND:
           if ((remote_unit_port_buffer[0] == 'C') && (remote_unit_port_buffer[1] == 'L') &&
