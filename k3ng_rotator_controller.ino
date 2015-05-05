@@ -266,15 +266,15 @@
 
   Not documented yet: ---------------------------------------------------------------------------------------------
 
-    FEATURE_ANALOG_OUTPUT_PINS (rotator_features.h)
-    FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303 (rotator_features.h)
-    FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303 (rotator_features.h)
-    LANGUAGE_CZECH (rotator_features.h)
+    FEATURE_ANALOG_OUTPUT_PINS (rotator_features.h)   (documented 2015-04-16)
+    FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303 (rotator_features.h) (documented 2015-04-16)
+    FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303 (rotator_features.h) (documented 2015-04-16)
+    LANGUAGE_CZECH (rotator_features.h) (documented)
 
-    FEATURE_AZ_POSITION_POLOLU_LSM303 (rotator_features.h)  (code contributed by AD0CZ)
-    FEATURE_EL_POSITION_POLOLU_LSM303 (rotator_features.h)
-    #define POLOLU_LSM_303_MIN_ARRAY {+59, +19, -731} (rotator_settings.h)
-    #define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14} (rotator_settings.h)
+    FEATURE_AZ_POSITION_POLOLU_LSM303 (rotator_features.h)  (code contributed by AD0CZ) (documented 2015-04-16)
+    FEATURE_EL_POSITION_POLOLU_LSM303 (rotator_features.h)  (documented 2015-04-16)
+    #define POLOLU_LSM_303_MIN_ARRAY {+59, +19, -731} (rotator_settings.h) (documented 2015-04-16)
+    #define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14} (rotator_settings.h) (documented 2015-04-16)
     DEBUG_POLOLU_LSM303_CALIBRATION (rotator_features.h)
 
     bug fixed with brake_release() affecting elevation brake (thanks Paolo, IT9IPQ)
@@ -355,9 +355,11 @@
 
     2.0.2015040402 Fixed bug with compiling FEATURE_MASTER_WITH_ETHERNET_SLAVE without FEATURE_CLOCK
 
+    2.0.2015050401 Fixed bug with WNW being display on LCD direction indicator rather than WSW (Thanks Radek, OK2NMA)
+
   */
 
-#define CODE_VERSION "2.0.2015040402"
+#define CODE_VERSION "2.0.2015050401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2737,7 +2739,7 @@ char * azimuth_direction(int azimuth_in){
     return W_STRING;
   }
   if (azimuth_in > 236) {
-    return WNW_STRING;
+    return WSW_STRING;
   }
   if (azimuth_in > 213) {
     return SW_STRING;
