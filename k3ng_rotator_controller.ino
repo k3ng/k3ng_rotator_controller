@@ -357,9 +357,13 @@
 
     2.0.2015050401 Fixed bug with WNW being display on LCD direction indicator rather than WSW (Thanks Radek, OK2NMA)
 
+    2.0.2015051301
+      Fixed bug with remote slave AZ and EL commands not returning decimal places (i.e. xxx.000000)
+      Working on remote unit double backslash commands
+
   */
 
-#define CODE_VERSION "2.0.2015050401"
+#define CODE_VERSION "2.0.2015051301"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -10090,6 +10094,99 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   #endif // FEATURE_ANCILLARY_PIN_CONTROL
 
 
+/*
+
+
+\\AZ - query AZ
+\\EL - query EL
+\\AS - AZ status
+\\ES - EL Status
+\\PG - Ping
+\\GA - go to AZ
+\\GE - go to EL
+\\RL - rotate left
+\\RR - rotate right
+\\RU - elevate up
+\\RD - elevate down
+\\SA - stop azimuth rotation
+\\SE - stop elevation rotation
+\\SS - stop all rotation
+\\DOxx - digital pin initialize as output; xx = pin # (01, 02, A0,etc.)
+\\DIxx - digital pin initialize as input; xx = pin #
+\\DPxx - digital pin initialize as input with pullup; xx = pin #
+\\DRxx - digital pin read; xx = pin #
+\\DLxx - digital pin write low; xx = pin #
+\\DHxx - digital pin write high; xx = pin #
+\\DTxxyyyy - digital pin tone output; xx = pin #, yyyy = frequency
+\\NTxx - no tone; xx = pin #
+\\ARxx - analog pin read; xx = pin #
+\\AWxxyyy - analog pin write; xx = pin #, yyy = value to write (0 - 255)
+\\SWxy - serial write byte; x = serial port # (0, 1, 2, 3), y = byte to write
+\\SDx - deactivate serial read event; x = port #
+\\SSxyyyyyy... - serial write string; x = port #, yyyy = string of characters to send (variable length)
+\\SAx - activate serial read event; x = port #
+\\RB - reboot
+\\CL - read the clock
+\\ZZxxyyyyyyyyyy - successful response back from a command
+\\??xxyy - failed response back
+
+
+*/
+
+
+// zzzzzzz
+
+  #ifdef UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS
+    case '\\':
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'A') && (input_buffer[3] == 'Z')) {  // \\AZ - report azimuth
+        strcpy(return_string, "\\\\ZZAZ");
+        dtostrf(azimuth/(float)HEADING_MULTIPLIER, 0, 4, temp_string);
+        strcat(return_string, temp_string);        
+      }
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'E') && (input_buffer[3] == 'L')) {  // \\AZ - report elevation
+
+      }
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'A') && (input_buffer[3] == 'S')) {  // 
+
+      }  
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'E') && (input_buffer[3] == 'S')) {  // 
+
+      }   
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'P') && (input_buffer[3] == 'G')) {  // 
+
+      }      
+      if ((input_buffer_index > 4) && (input_buffer[2] == 'G') && (input_buffer[3] == 'A')) {  // 
+
+      }  
+      if ((input_buffer_index > 4) && (input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // 
+
+      }   
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'R') && (input_buffer[3] == 'L')) {  // 
+
+      }     
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'R') && (input_buffer[3] == 'R')) {  // 
+
+      }   
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'R') && (input_buffer[3] == 'U')) {  // 
+
+      } 
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'R') && (input_buffer[3] == 'D')) {  // 
+
+      }  
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'S') && (input_buffer[3] == 'A')) {  // 
+
+      }   
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'S') && (input_buffer[3] == 'E')) {  // 
+
+      } 
+      if ((input_buffer_index == 4) && (input_buffer[2] == 'S') && (input_buffer[3] == 'S')) {  // 
+
+      }                                                        
+      break; //case '\\'
+
+  #endif  //UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS
+
+
     default: strcpy(return_string, "Error.");
 
 
@@ -11514,7 +11611,7 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
         if ((raw_azimuth/HEADING_MULTIPLIER) < 10) {
           strcat(return_string,"0");
         }
-        dtostrf(float(raw_azimuth/HEADING_MULTIPLIER),0,6,tempstring);
+        dtostrf(float(raw_azimuth/(float)HEADING_MULTIPLIER),0,6,tempstring);
         strcat(return_string,tempstring);          
         command_good = 1;
       }
@@ -11535,7 +11632,7 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
         if (abs(elevation/HEADING_MULTIPLIER) < 10) {
           strcat(return_string,"0");
         }
-        dtostrf(float(abs(elevation/HEADING_MULTIPLIER)),0,6,tempstring);
+        dtostrf(float(abs(elevation/(float)HEADING_MULTIPLIER)),0,6,tempstring);
         strcat(return_string,tempstring);            
         command_good = 1;
       }
