@@ -146,6 +146,7 @@
 
 #define LEFT 1
 #define RIGHT 2
+#define CENTER 3
 
 #define STEPPER_UNDEF 0
 #define STEPPER_CW 1

@@ -418,6 +418,7 @@ You can tweak these, but read the online documentation!
 
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
+#define DISPLAY_DEGREES_STRING "\xDF"
 
 #define INTERNAL_CLOCK_CORRECTION 0.00145
 
@@ -513,28 +514,29 @@ You can tweak these, but read the online documentation!
    
 
 */
+#if !defined(UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY)
+  #if defined(FEATURE_4_BIT_LCD_DISPLAY)
+    LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin); 
+  #endif //FEATURE_4_BIT_LCD_DISPLAY
 
+  #ifdef FEATURE_ADAFRUIT_I2C_LCD
+    Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
+  #endif //FEATURE_ADAFRUIT_I2C_LCD
 
-#ifdef FEATURE_4_BIT_LCD_DISPLAY 
-LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin); 
-#endif //FEATURE_4_BIT_LCD_DISPLAY
+  #ifdef FEATURE_YOURDUINO_I2C_LCD
+    #define I2C_ADDR 0x20
+    #define BACKLIGHT_PIN 3
+    #define LED_OFF 1
+    #define LED_ON 0            
+    LiquidCrystal_I2C  lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
+  #endif //FEATURE_YOURDUINO_I2C_LCD
 
-
-#ifdef FEATURE_ADAFRUIT_I2C_LCD
-Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
-#endif //FEATURE_ADAFRUIT_I2C_LCD
-
-#ifdef FEATURE_YOURDUINO_I2C_LCD
-#define I2C_ADDR 0x20
-#define BACKLIGHT_PIN 3
-#define LED_OFF 1
-#define LED_ON 0            
-LiquidCrystal_I2C  lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
-#endif //FEATURE_YOURDUINO_I2C_LCD
-
-#ifdef FEATURE_RFROBOT_I2C_DISPLAY
-LiquidCrystal_I2C lcd(0x27,16,2); 
-#endif //FEATURE_RFROBOT_I2C_DISPLAY
+  #ifdef FEATURE_RFROBOT_I2C_DISPLAY
+    LiquidCrystal_I2C lcd(0x27,16,2); 
+  #endif //FEATURE_RFROBOT_I2C_DISPLAY
+#else
+  K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);    
+#endif //!defined(UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY)
 
 #ifdef FEATURE_AZ_POSITION_HMC5883L
 HMC5883L compass;

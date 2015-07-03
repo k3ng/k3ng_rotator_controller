@@ -377,6 +377,7 @@ You can tweak these, but read the online documentation!
 
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
+#define DISPLAY_DEGREES_STRING "\xDF"
 
 #define INTERNAL_CLOCK_CORRECTION 0.00145
 

@@ -111,8 +111,8 @@ You can tweak these, but read the online documentation!
 #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION LEFT
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1
-#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION LEFT
-#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 1
+#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION CENTER
+#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 3
 #define LCD_BIG_CLOCK_ROW 4
 #define LCD_GPS_INDICATOR_POSITION RIGHT //LEFT or RIGHT
 #define LCD_GPS_INDICATOR_ROW 1
@@ -416,8 +416,53 @@ You can tweak these, but read the online documentation!
 #define NNE_STRING "NNL"
 #endif //LANGUAGE_PORTUGUESE_BRASIL
 
+
+#ifdef LANGUAGE_GERMAN               // courtesy of Ronny DM2RM
+#define MOON_STRING "MOND "
+#define SUN_STRING "SONNE "
+#define AZ_TARGET_STRING "Az Ziel "
+#define EL_TARGET_STRING "El Ziel "
+#define TARGET_STRING "Ziel "
+#define PARKED_STRING "Parken"
+#define ROTATING_CW_STRING "Drehen CW"
+#define ROTATING_CCW_STRING "Drehen CCW"
+#define ROTATING_TO_STRING "Drehen nach "
+#define ELEVATING_TO_STRING "Elevation nach "
+#define ELEVATING_UP_STRING "Elevation Auf"
+#define ELEVATING_DOWN_STRING "Elevation Ab"
+#define ROTATING_STRING "Drehen "
+#define CW_STRING "CW"
+#define CCW_STRING "CCW"
+#define UP_STRING "AUF"
+#define DOWN_STRING "AB"
+#define AZIMUTH_STRING "Azimuth "   //--------------------------------------------------------------------------------------------------------------
+#define AZ_STRING "Az"
+#define AZ_SPACE_STRING "Az "
+#define SPACE_EL_STRING " El"
+#define SPACE_EL_SPACE_STRING " El "
+#define GPS_STRING "GPS"
+#define N_STRING "N  (KL)"
+#define W_STRING "W  (HK)"
+#define S_STRING "S  (ZS)"
+#define E_STRING "O  (YB)"
+#define NW_STRING "NW  (W8)"
+#define SW_STRING "SW  (PY)"
+#define SE_STRING "SO  (HZ)"
+#define NE_STRING "NO  (JA"
+#define NNW_STRING "NNW (VE)"
+#define WNW_STRING "WNW (XE)"
+#define WSW_STRING "WSW (OA)"
+#define SSW_STRING "SSW  (ZD7)"
+#define SSE_STRING "SSO (5R)"
+#define ESE_STRING "OSO (8Q)"
+#define ENE_STRING "ONO (ZL)"
+#define NNE_STRING "NNO (UA0)"
+#endif //LANGUAGE_GERMAN
+
+
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
+#define DISPLAY_DEGREES_STRING "\xDF"
 
 #define INTERNAL_CLOCK_CORRECTION 0.00145
 
@@ -518,27 +563,30 @@ You can tweak these, but read the online documentation!
 
 */
 
+#if !defined(UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY)
+  #if defined(FEATURE_4_BIT_LCD_DISPLAY)
+    LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin); 
+  #endif //FEATURE_4_BIT_LCD_DISPLAY
 
-#ifdef FEATURE_4_BIT_LCD_DISPLAY 
-LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin); 
-#endif //FEATURE_4_BIT_LCD_DISPLAY
+  #ifdef FEATURE_ADAFRUIT_I2C_LCD
+    Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
+  #endif //FEATURE_ADAFRUIT_I2C_LCD
 
+  #ifdef FEATURE_YOURDUINO_I2C_LCD
+    #define I2C_ADDR 0x20
+    #define BACKLIGHT_PIN 3
+    #define LED_OFF 1
+    #define LED_ON 0            
+    LiquidCrystal_I2C  lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
+  #endif //FEATURE_YOURDUINO_I2C_LCD
 
-#ifdef FEATURE_ADAFRUIT_I2C_LCD
-Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
-#endif //FEATURE_ADAFRUIT_I2C_LCD
+  #ifdef FEATURE_RFROBOT_I2C_DISPLAY
+    LiquidCrystal_I2C lcd(0x27,16,2); 
+  #endif //FEATURE_RFROBOT_I2C_DISPLAY
+#else
+  K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);    
+#endif //!defined(UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY)
 
-#ifdef FEATURE_YOURDUINO_I2C_LCD
-#define I2C_ADDR 0x20
-#define BACKLIGHT_PIN 3
-#define LED_OFF 1
-#define LED_ON 0            
-LiquidCrystal_I2C  lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
-#endif //FEATURE_YOURDUINO_I2C_LCD
-
-#ifdef FEATURE_RFROBOT_I2C_DISPLAY
-LiquidCrystal_I2C lcd(0x27,16,2); 
-#endif //FEATURE_RFROBOT_I2C_DISPLAY
 
 #ifdef FEATURE_AZ_POSITION_HMC5883L
 HMC5883L compass;
@@ -573,26 +621,47 @@ hh12 elevation_hh12;
 #endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
 
 #ifdef FEATURE_GPS
-TinyGPS gps;
+  TinyGPS gps;
 #endif //FEATURE_GPS
 
 #ifdef FEATURE_RTC_DS1307
-RTC_DS1307 rtc;
+  RTC_DS1307 rtc;
 #endif //FEATURE_RTC_DS1307
 
 #ifdef FEATURE_RTC_PCF8583
-PCF8583 rtc(0xA0);
+  PCF8583 rtc(0xA0);
 #endif //FEATURE_RTC_PCF8583
 
 #ifdef HARDWARE_EA4TX_ARS_USB
-#undef LCD_COLUMNS
-#undef LCD_ROWS
-#define LCD_COLUMNS 16
-#define LCD_ROWS 2
+  #undef LCD_COLUMNS
+  #undef LCD_ROWS
+  #define LCD_COLUMNS 16
+  #define LCD_ROWS 2
 #endif //HARDWARE_EA4TX_ARS_USB
 
 #ifdef HARDWARE_M0UPU
-#undef LCD_ROWS
-#define LCD_ROWS 2
+  #undef LCD_ROWS
+  #define LCD_ROWS 2
 #endif //HARDWARE_M0UPU
+
+#ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
+  #define AZ_A2_ENCODER_RESOLUTION 32767 //36000
+  #define AZ_A2_ENCODER_ADDRESS 0x00
+  #define AZ_QUERY_FREQUENCY_MS 250
+  #define AZ_A2_ENCODER_MODE MODE_TWO_BYTE_POSITION/*|MODE_MULTITURN*/
+#endif  //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
+
+#ifdef FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
+  #define EL_A2_ENCODER_RESOLUTION 32767 //36000
+  #define EL_A2_ENCODER_ADDRESS 0x00
+  #define EL_QUERY_FREQUENCY_MS 250
+  #define EL_A2_ENCODER_MODE /*MODE_TWO_BYTE_POSITION|*/MODE_MULTITURN
+#endif  //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
+
+#if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
+  #include "sei_bus.h"
+  SEIbus SEIbus1(&Serial1,9600,pin_sei_bus_busy,pin_sei_bus_send_receive);
+  //             (Serial Port,Baud Rate,Busy Pin,Send/Receive Pin)
+  #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
+#endif
 

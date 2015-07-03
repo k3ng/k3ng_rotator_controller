@@ -25,6 +25,7 @@
 //#define LANGUAGE_CZECH
 //#define LANGUAGE_ITALIAN
 //#define LANGUAGE_PORTUGUESE_BRASIL
+//#define LANGUAGE_GERMAN  
 
 /* master and remote slave unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
@@ -43,8 +44,9 @@
 //#define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
 //#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 //#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+//#define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
-//#define FEATURE_EL_POSITION_POTENTIOMETER
+#define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
 //#define FEATURE_EL_POSITION_PULSE_INPUT
 //#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
@@ -55,6 +57,7 @@
 //#define FEATURE_EL_POSITION_HH12_AS5045_SSI
 //#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 //#define FEATURE_EL_POSITION_MEMSIC_2125
+//#define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
 //#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
 //#define FEATURE_ADAFRUIT_I2C_LCD
@@ -107,18 +110,20 @@
 //#define OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES // for azimuth and elevation position pulse input feature, ignore pulses that arrive when no rotation is active
 //#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
 #define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
-//#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock on LCD row 1 (set position with #define LCD_HHMM_CLOCK_POSITION)
-#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock on LCD row 1 (set position with #define LCD_HHMMSS_CLOCK_POSITION)
+
+//#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
+//#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 //#define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
 //#define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
 //#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+//#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
+//#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator in row 1 center
-#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
+//#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 //#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
+
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 //#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
@@ -132,7 +137,25 @@
 //#define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 //#define OPTION_RESET_METHOD_JMP_ASM_0
 
-//#define UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS
+
+/**************** this section is for code under development ********************************/
+//#define UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS   
+//#define UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY
+#define OPTION_DISPLAY_STATUS_TERSE     // TODO - rename this
+#define OPTION_DISPLAY_HEADING
+#define LCD_HEADING_ROW 2
+#define LCD_HEADING_FIELD_SIZE 20
+//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+#define LCD_STATUS_ROW 1
+#define LCD_STATUS_FIELD_SIZE 20
+#define LCD_DIRECTION_ROW 1
+#define LCD_HHMMSS_CLOCK_ROW 1
+#define LCD_HHMM_CLOCK_ROW 1
+#define PARKING_STRING "PARKING"
+#define PARKED_STRING "PARKED"
+#define PARKING_STATUS_DISPLAY_TIME_MS 5000
+/**************** end of section ifor code under development ********************************/
+
 
 
 
@@ -153,6 +176,7 @@
 #define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
+// #define DEBUG_LOOP
 // #define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
@@ -203,6 +227,8 @@
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER
 // #define DEBUG_AUTOCORRECT
+// #define DEBUG_A2_ENCODER
+// #define DEBUG_A2_ENCODER_LOOPBACK_TEST
 
 
 
