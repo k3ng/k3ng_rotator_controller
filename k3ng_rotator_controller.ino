@@ -377,9 +377,12 @@
       Fixed compile error involving clock_temp_string in display code when compiling multiple clock display widgets is attempted  
       Still working on new display code and local/remote unit code
 
+    2.0.2015070302
+      FEATURE_AZ_POSITION_INCREMENTAL_ENCODER conversion to long data types 
+
   */
 
-#define CODE_VERSION "2.0.2015070301"
+#define CODE_VERSION "2.0.2015070302"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4861,7 +4864,7 @@ void read_settings_from_eeprom(){
         debug_print("\nlast_elevation:");
         debug_print_float(configuration.last_elevation, 1);
         debug_print("\nlast_az_incremental_encoder_position:");
-        debug_print_int(configuration.last_az_incremental_encoder_position);
+        debug_print_float(configuration.last_az_incremental_encoder_position);
         debug_print("\nlast_el_incremental_encoder_position:");
         debug_print_int(configuration.last_el_incremental_encoder_position);
         debug_print("\naz_offset:");
@@ -5841,7 +5844,7 @@ void output_debug(){
     debug_print("\taz_position_incremental_encoder_interrupt: ");
     debug_print_int(az_position_incremental_encoder_interrupt);
     debug_print("\taz_incremental_encoder_position: ");
-    debug_print_int(az_incremental_encoder_position);
+    debug_print_float(az_incremental_encoder_position);
     #endif // DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
     #if defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER)
     debug_print("\n\tel_position_incremental_encoder_interrupt: ");
@@ -9760,7 +9763,7 @@ void az_position_incremental_encoder_interrupt_handler(){
   byte current_phase_z = digitalReadEnhanced(az_incremental_encoder_pin_phase_z);
 
   #ifdef DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
-  az_position_incremental_encoder_interrupt++;
+    az_position_incremental_encoder_interrupt++;
   #endif // DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
 
   if ((az_3_phase_encoder_last_phase_a_state != current_phase_a) || (az_3_phase_encoder_last_phase_b_state != current_phase_b)) {
@@ -9800,6 +9803,10 @@ void az_position_incremental_encoder_interrupt_handler(){
     }
 */
 
+
+
+/* 2015070302 Update
+
     if (az_incremental_encoder_position > ((((long)AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4L) - 1L) * 2L)) {
       az_incremental_encoder_position = 0;
     }
@@ -9824,6 +9831,33 @@ void az_position_incremental_encoder_interrupt_handler(){
       }
     }    
     #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
+*/
+
+
+    if (az_incremental_encoder_position > ((long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1) * 2)) {
+      az_incremental_encoder_position = 0;
+    }
+    if (az_incremental_encoder_position < 0) {
+      az_incremental_encoder_position = ((long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1) * 2);
+    }
+
+    #ifndef OPTION_SCANCON_2RMHF3600_INC_ENCODER
+      if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
+        if ((az_incremental_encoder_position < long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (az_incremental_encoder_position > long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
+          az_incremental_encoder_position = AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
+        } else {
+          az_incremental_encoder_position =long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.);
+        }
+      }
+    #else
+      if ((current_phase_a == HIGH) && (current_phase_b == HIGH) && (current_phase_z == HIGH)) {
+        if ((az_incremental_encoder_position < long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (az_incremental_encoder_position > long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
+          az_incremental_encoder_position = AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
+        } else {
+          az_incremental_encoder_position = long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.);
+        }
+      }   
+    #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
 
     az_3_phase_encoder_last_phase_a_state = current_phase_a;
     az_3_phase_encoder_last_phase_b_state = current_phase_b;
@@ -9840,7 +9874,7 @@ void az_position_incremental_encoder_interrupt_handler(){
 
 
 } /* az_position_incremental_encoder_interrupt_handler */
-  #endif // FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+#endif // FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // --------------------------------------------------------------
 
 #if defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(FEATURE_ELEVATION_CONTROL)
@@ -9852,7 +9886,7 @@ void el_position_incremental_encoder_interrupt_handler(){
   byte current_phase_z = digitalReadEnhanced(el_incremental_encoder_pin_phase_z);
 
   #ifdef DEBUG_EL_POSITION_INCREMENTAL_ENCODER
-  el_position_incremental_encoder_interrupt++;
+    el_position_incremental_encoder_interrupt++;
   #endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
 
   if ((el_3_phase_encoder_last_phase_a_state != current_phase_a) || (el_3_phase_encoder_last_phase_b_state != current_phase_b)) {
@@ -9885,53 +9919,31 @@ void el_position_incremental_encoder_interrupt_handler(){
 
     
     #ifndef OPTION_SCANCON_2RMHF3600_INC_ENCODER
-    if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
-      el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
-    } else {
-
-      if (el_incremental_encoder_position < 0) {
-        el_incremental_encoder_position = int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1);
-      }
-
-      if (el_incremental_encoder_position >= int(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
-        el_incremental_encoder_position = 0;
-      }  
-
-    } 
-    #else
-    if ((current_phase_a == HIGH) && (current_phase_b == HIGH) && (current_phase_z == HIGH)) {
-      el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
-    } else {
-
-      if (el_incremental_encoder_position < 0) {
-        el_incremental_encoder_position = int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1);
-      }
-
-      if (el_incremental_encoder_position >= int(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
-        el_incremental_encoder_position = 0;
-      }  
-
-    } 
-    #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
-
-    /*
-
-    if (el_incremental_encoder_position > ((int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) - 1) * 2)) {
-      el_incremental_encoder_position = 0;
-    }
-    if (el_incremental_encoder_position < 0) {
-      el_incremental_encoder_position = ((int(((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)*4.)) - 1) * 2);
-    }
-
-    if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
-      if ((el_incremental_encoder_position < int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (el_incremental_encoder_position > int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
-        el_incremental_encoder_position = 0;
+      if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
+        el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
       } else {
-        el_incremental_encoder_position = int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.));
-      }
-    }
 
-    */
+        if (el_incremental_encoder_position < 0) {
+          el_incremental_encoder_position = int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1);
+        }
+
+        if (el_incremental_encoder_position >= int(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
+          el_incremental_encoder_position = 0;
+        }  
+
+      } 
+    #else
+      if ((current_phase_a == HIGH) && (current_phase_b == HIGH) && (current_phase_z == HIGH)) {
+        el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
+      } else {
+        if (el_incremental_encoder_position < 0) {
+          el_incremental_encoder_position = int((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1);
+        }
+        if (el_incremental_encoder_position >= int(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
+          el_incremental_encoder_position = 0;
+        }  
+      } 
+    #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
 
     el_3_phase_encoder_last_phase_a_state = current_phase_a;
     el_3_phase_encoder_last_phase_b_state = current_phase_b;
@@ -9954,13 +9966,13 @@ void el_position_incremental_encoder_interrupt_handler(){
 void pinModeEnhanced(uint8_t pin, uint8_t mode){
 
   #if !defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) && !defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-  pinMode(pin, mode);
-  #else
-  if (pin < 100) {
     pinMode(pin, mode);
-  } else {
-    submit_remote_command(REMOTE_UNIT_DHL_COMMAND, pin, mode);
-  }
+  #else
+    if (pin < 100) {
+      pinMode(pin, mode);
+    } else {
+      submit_remote_command(REMOTE_UNIT_DHL_COMMAND, pin, mode);
+    }
   #endif // !defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) && !defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 
 }
@@ -9972,13 +9984,13 @@ void digitalWriteEnhanced(uint8_t pin, uint8_t writevalue){
 
 
   #if !defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) && !defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-  digitalWrite(pin, writevalue);
-  #else
-  if (pin < 100) {
     digitalWrite(pin, writevalue);
-  } else {
-    submit_remote_command(REMOTE_UNIT_DHL_COMMAND, pin, writevalue);
-  }
+  #else
+    if (pin < 100) {
+      digitalWrite(pin, writevalue);
+    } else {
+      submit_remote_command(REMOTE_UNIT_DHL_COMMAND, pin, writevalue);
+    }
   #endif // !defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) && !defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 
 }
@@ -9996,7 +10008,7 @@ int digitalReadEnhanced(uint8_t pin){
 int analogReadEnhanced(uint8_t pin){
 
   #ifdef OPTION_EXTERNAL_ANALOG_REFERENCE
-  analogReference(EXTERNAL);
+    analogReference(EXTERNAL);
   #endif //OPTION_EXTERNAL_ANALOG_REFERENCE
   return analogRead(pin);
 
@@ -10009,13 +10021,13 @@ void analogWriteEnhanced(uint8_t pin, int writevalue){
 
 
   #if !defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) && !defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-  analogWrite(pin, writevalue);
-  #else
-  if (pin < 100) {
     analogWrite(pin, writevalue);
-  } else {
-    submit_remote_command(REMOTE_UNIT_AW_COMMAND, pin, writevalue);
-  }
+  #else
+    if (pin < 100) {
+      analogWrite(pin, writevalue);
+    } else {
+      submit_remote_command(REMOTE_UNIT_AW_COMMAND, pin, writevalue);
+    }
   #endif // !defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) && !defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 
 }

@@ -154,7 +154,7 @@
 #define PARKING_STRING "PARKING"
 #define PARKED_STRING "PARKED"
 #define PARKING_STATUS_DISPLAY_TIME_MS 5000
-/**************** end of section ifor code under development ********************************/
+/**************** end of section for code under development ********************************/
 
 
 
