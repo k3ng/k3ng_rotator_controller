@@ -378,7 +378,7 @@
       Still working on new display code and local/remote unit code
 
     2.0.2015070302
-      FEATURE_AZ_POSITION_INCREMENTAL_ENCODER conversion to long data types 
+      FEATURE_AZ_POSITION_INCREMENTAL_ENCODER conversion to long data types (Thanks Daniel Cussen)
 
   */
 
@@ -10321,26 +10321,26 @@ void service_gps(){
     gps.get_position(&gps_lat, &gps_lon, &fix_age);
     gps.crack_datetime(&gps_year, &gps_month, &gps_day, &gps_hours, &gps_minutes, &gps_seconds, &gps_hundredths, &fix_age);
     #ifdef DEBUG_GPS
-    #ifdef DEBUG_GPS_SERIAL
-    debug_println("");
-    #endif //DEBUG_GPS_SERIAL    
-    debug_print("service_gps: fix_age:");
-    debug_print_int(fix_age);
-    debug_print(" lat:");
-    debug_print_float(gps_lat,4);
-    debug_print(" long:");
-    debug_print_float(gps_lon,4);
-    debug_print(" ");
-    debug_print_int(gps_year);
-    debug_print("-");
-    debug_print_int(gps_month);
-    debug_print("-");
-    debug_print_int(gps_day);
-    debug_print(" ");
-    debug_print_int(gps_hours);
-    debug_print(":");
-    debug_print_int(gps_minutes);
-    debug_println("");
+      #ifdef DEBUG_GPS_SERIAL
+        debug_println("");
+      #endif //DEBUG_GPS_SERIAL    
+      debug_print("service_gps: fix_age:");
+      debug_print_int(fix_age);
+      debug_print(" lat:");
+      debug_print_float(gps_lat,4);
+      debug_print(" long:");
+      debug_print_float(gps_lon,4);
+      debug_print(" ");
+      debug_print_int(gps_year);
+      debug_print("-");
+      debug_print_int(gps_month);
+      debug_print("-");
+      debug_print_int(gps_day);
+      debug_print(" ");
+      debug_print_int(gps_hours);
+      debug_print(":");
+      debug_print_int(gps_minutes);
+      debug_println("");
     #endif // DEBUG_GPS
 
     if (fix_age < GPS_VALID_FIX_AGE_MS) {
@@ -10355,57 +10355,57 @@ void service_gps(){
         millis_at_last_calibration = millis() - GPS_UPDATE_LATENCY_COMPENSATION_MS;
         update_time();
         #ifdef DEBUG_GPS
-        #ifdef DEBUG_GPS_SERIAL
-        debug_println("");
-        #endif //DEBUG_GPS_SERIAL        
-        debug_print("service_gps: clock sync:");
-        sprintf(tempstring,"%s",clock_string());
-        debug_print(tempstring);
-        debug_println("");
+          #ifdef DEBUG_GPS_SERIAL
+            debug_println("");
+          #endif //DEBUG_GPS_SERIAL        
+          debug_print("service_gps: clock sync:");
+          sprintf(tempstring,"%s",clock_string());
+          debug_print(tempstring);
+          debug_println("");
         #endif // DEBUG_GPS
       }
 
       #if defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_DS1307)
-      static unsigned long last_rtc_gps_sync_time;
-      if ((millis() - last_rtc_gps_sync_time) >= (SYNC_RTC_TO_GPS_SECONDS * 1000)) {
-        rtc.adjust(DateTime(gps_year, gps_month, gps_day, gps_hours, gps_minutes, gps_seconds));
-        #ifdef DEBUG_RTC
-        debug_println("service_gps: synced RTC");
-        #endif // DEBUG_RTC
-        last_rtc_gps_sync_time = millis();
-      }
+        static unsigned long last_rtc_gps_sync_time;
+        if ((millis() - last_rtc_gps_sync_time) >= (SYNC_RTC_TO_GPS_SECONDS * 1000)) {
+          rtc.adjust(DateTime(gps_year, gps_month, gps_day, gps_hours, gps_minutes, gps_seconds));
+          #ifdef DEBUG_RTC
+            debug_println("service_gps: synced RTC");
+          #endif // DEBUG_RTC
+          last_rtc_gps_sync_time = millis();
+        }
       #endif // defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_DS1307)
 
       #if defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_PCF8583)
-      static unsigned long last_rtc_gps_sync_time;
-      if ((millis() - last_rtc_gps_sync_time) >= (SYNC_RTC_TO_GPS_SECONDS * 1000)) {
-        rtc.year = gps_year;
-        rtc.month = gps_month;
-        rtc.day = gps_day;
-        rtc.hour  = gps_hours;
-        rtc.minute = gps_minutes;
-        rtc.second = gps_seconds;
-        rtc.set_time();
-        #ifdef DEBUG_RTC
-        debug_println("service_gps: synced RTC");
-        #endif // DEBUG_RTC
-        last_rtc_gps_sync_time = millis();
-      }
+        static unsigned long last_rtc_gps_sync_time;
+        if ((millis() - last_rtc_gps_sync_time) >= (SYNC_RTC_TO_GPS_SECONDS * 1000)) {
+          rtc.year = gps_year;
+          rtc.month = gps_month;
+          rtc.day = gps_day;
+          rtc.hour  = gps_hours;
+          rtc.minute = gps_minutes;
+          rtc.second = gps_seconds;
+          rtc.set_time();
+          #ifdef DEBUG_RTC
+            debug_println("service_gps: synced RTC");
+          #endif // DEBUG_RTC
+          last_rtc_gps_sync_time = millis();
+        }
       #endif // defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_PCF8583)
 
 
       #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_REMOTE_UNIT_SLAVE)
-      if (SYNC_COORDINATES_WITH_GPS) {
-        latitude = float(gps_lat) / 1000000.0;
-        longitude = float(gps_lon) / 1000000.0;
-        #ifdef DEBUG_GPS
-        debug_print("service_gps: coord sync:");
-        debug_print_float(latitude,2);
-        debug_print(" ");
-        debug_print_float(longitude,2);
-        debug_println("");
-        #endif // DEBUG_GPS
-      }
+        if (SYNC_COORDINATES_WITH_GPS) {
+          latitude = float(gps_lat) / 1000000.0;
+          longitude = float(gps_lon) / 1000000.0;
+          #ifdef DEBUG_GPS
+            debug_print("service_gps: coord sync:");
+            debug_print_float(latitude,2);
+            debug_print(" ");
+            debug_print_float(longitude,2);
+            debug_println("");
+          #endif // DEBUG_GPS
+        }
       #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
       last_sync = millis();
@@ -10432,7 +10432,7 @@ void service_gps(){
 
 
 } /* service_gps */
-  #endif // FEATURE_GPS
+#endif // FEATURE_GPS
 // --------------------------------------------------------------
 #ifdef FEATURE_MOON_TRACKING
 
