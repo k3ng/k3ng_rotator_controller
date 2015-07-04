@@ -11,5 +11,5 @@
 // do not modify anything below this line
 
 #if defined(HARDWARE_M0UPU) || defined(HARDWARE_EA4TX_ARS_USB) || defined(HARDWARE_WB6KCN)
-#define HARDWARE_CUSTOM
+  #define HARDWARE_CUSTOM
 #endif
