@@ -583,6 +583,13 @@ You can tweak these, but read the online documentation!
   #ifdef FEATURE_RFROBOT_I2C_DISPLAY
     LiquidCrystal_I2C lcd(0x27,16,2); 
   #endif //FEATURE_RFROBOT_I2C_DISPLAY
+
+  #ifdef FEATURE_YWROBOT_I2C_DISPLAY
+    #include <Wire.h>
+    #include <LiquidCrystal_I2C.h>
+    LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); 
+  #endif //FEATURE_YWROBOT_I2C_DISPLAY
+
 #else
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);    
 #endif //!defined(UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY)

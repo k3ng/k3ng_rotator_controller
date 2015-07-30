@@ -26,6 +26,8 @@
      Jurgen PE1LWT
      Gianfranco IZ8EWD 
      Jasper PA2J
+     Pablo EA4TX
+     Máximo EA1DDO
      ...and others
   
    Translations provided by
@@ -55,7 +57,7 @@
   
  
  
- Full documentation is currently located here: https://docs.google.com/document/d/1Q4_X2XdndylohjhZWsaAUNl1UIqYGt9Kxp1VM70XJGM/edit?usp=sharing
+ Full documentation is currently located here: https://github.com/k3ng/k3ng_rotator_controller/wiki
 
       Rules for using this code:
 
@@ -264,8 +266,6 @@
 
     Fixed compilation error when FEATURE_JOYSTICK_CONTROL is activated and FEATURE_ELEVATION_CONTROL is disabled
 
-  Not documented yet: ---------------------------------------------------------------------------------------------
-
     FEATURE_ANALOG_OUTPUT_PINS (rotator_features.h)   (documented 2015-04-16)
     FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303 (rotator_features.h) (documented 2015-04-16)
     FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303 (rotator_features.h) (documented 2015-04-16)
@@ -383,9 +383,14 @@
     2.0.2015070401
       gps_sync pin bug fixed  
 
+    2.0.2015071201
+      FEATURE_YWROBOT_I2C_DISPLAY (code provided by Máximo EA1DDO)
+
+    2.0.2015071701  
+      FEATURE_AZ_POSITION_INCREMENTAL_ENCODER code fixed (Thanks Daniel Cussen)
   */
 
-#define CODE_VERSION "2.0.2015070401"
+#define CODE_VERSION "2.0.2015071701"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -403,6 +408,9 @@
 #ifdef HARDWARE_M0UPU
   #include "rotator_features_m0upu.h"
 #endif
+#ifdef HARDWARE_TEST
+  #include "rotator_features_test.h"
+#endif    
 #if !defined(HARDWARE_CUSTOM)
   #include "rotator_features.h" 
 #endif      
@@ -424,7 +432,9 @@
     #include <LCD.h>   // required for YourDuino.com I2C LCD display
   #endif
 #else
-  #include "k3ngdisplay.h"
+  #ifdef FEATURE_LCD_DISPLAY
+    #include "k3ngdisplay.h"
+  #endif    
 #endif //UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY
 
 
@@ -483,6 +493,9 @@
   //#include "rotator_pins_wb6kcn_az_test_setup.h"
   #include "rotator_pins_wb6kcn.h"
 #endif
+#ifdef HARDWARE_TEST
+  #include "rotator_pins_test.h"
+#endif
 #if !defined(HARDWARE_CUSTOM)
   #include "rotator_pins.h"
 #endif
@@ -496,6 +509,9 @@
 #ifdef HARDWARE_M0UPU
   #include "rotator_settings_m0upu.h"
 #endif
+#ifdef HARDWARE_TEST
+  #include "rotator_settings_test.h"
+#endif      
 #if !defined(HARDWARE_CUSTOM)
   #include "rotator_settings.h"
 #endif
@@ -727,22 +743,21 @@ byte park_serial_initiated = 0;
 #endif // FEATURE_PARK
 
 #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-//volatile int az_incremental_encoder_position = 0;
-volatile long az_incremental_encoder_position = 0;
-volatile byte az_3_phase_encoder_last_phase_a_state = 0;
-volatile byte az_3_phase_encoder_last_phase_b_state = 0;
-#ifdef DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
-volatile int az_position_incremental_encoder_interrupt = 0;
-#endif // DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
+  volatile long az_incremental_encoder_position = 0;
+  volatile byte az_3_phase_encoder_last_phase_a_state = 0;
+  volatile byte az_3_phase_encoder_last_phase_b_state = 0;
+  #ifdef DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
+    volatile long az_position_incremental_encoder_interrupt = 0;
+  #endif // DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
 #endif // FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 
 #ifdef FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-volatile int el_incremental_encoder_position = 0;
-volatile byte el_3_phase_encoder_last_phase_a_state = 0;
-volatile byte el_3_phase_encoder_last_phase_b_state = 0;
-#ifdef DEBUG_EL_POSITION_INCREMENTAL_ENCODER
-volatile int el_position_incremental_encoder_interrupt = 0;
-#endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
+  volatile long el_incremental_encoder_position = 0;
+  volatile byte el_3_phase_encoder_last_phase_a_state = 0;
+  volatile byte el_3_phase_encoder_last_phase_b_state = 0;
+  #ifdef DEBUG_EL_POSITION_INCREMENTAL_ENCODER
+    volatile long el_position_incremental_encoder_interrupt = 0;
+  #endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
 #endif // FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 
 #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
@@ -1615,19 +1630,19 @@ void initialize_rotary_encoders(){
 
 
   #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-  pinMode(az_incremental_encoder_pin_phase_a, INPUT);
-  pinMode(az_incremental_encoder_pin_phase_b, INPUT);
-  pinMode(az_incremental_encoder_pin_phase_z, INPUT);
-  #ifdef OPTION_INCREMENTAL_ENCODER_PULLUPS
-  digitalWrite(az_incremental_encoder_pin_phase_a, HIGH);
-  digitalWrite(az_incremental_encoder_pin_phase_b, HIGH);
-  digitalWrite(az_incremental_encoder_pin_phase_z, HIGH);
-  #endif // OPTION_INCREMENTAL_ENCODER_PULLUPS
-  attachInterrupt(AZ_POSITION_INCREMENTAL_ENCODER_A_PIN_INTERRUPT, az_position_incremental_encoder_interrupt_handler, CHANGE);
-  attachInterrupt(AZ_POSITION_INCREMENTAL_ENCODER_B_PIN_INTERRUPT, az_position_incremental_encoder_interrupt_handler, CHANGE);
-  delay(250);
-  az_3_phase_encoder_last_phase_a_state = digitalRead(az_incremental_encoder_pin_phase_a);
-  az_3_phase_encoder_last_phase_b_state = digitalRead(az_incremental_encoder_pin_phase_b);
+    pinMode(az_incremental_encoder_pin_phase_a, INPUT);
+    pinMode(az_incremental_encoder_pin_phase_b, INPUT);
+    pinMode(az_incremental_encoder_pin_phase_z, INPUT);
+    #ifdef OPTION_INCREMENTAL_ENCODER_PULLUPS
+      digitalWrite(az_incremental_encoder_pin_phase_a, HIGH);
+      digitalWrite(az_incremental_encoder_pin_phase_b, HIGH);
+      digitalWrite(az_incremental_encoder_pin_phase_z, HIGH);
+    #endif // OPTION_INCREMENTAL_ENCODER_PULLUPS
+    attachInterrupt(AZ_POSITION_INCREMENTAL_ENCODER_A_PIN_INTERRUPT, az_position_incremental_encoder_interrupt_handler, CHANGE);
+    attachInterrupt(AZ_POSITION_INCREMENTAL_ENCODER_B_PIN_INTERRUPT, az_position_incremental_encoder_interrupt_handler, CHANGE);
+    delay(250);
+    az_3_phase_encoder_last_phase_a_state = digitalRead(az_incremental_encoder_pin_phase_a);
+    az_3_phase_encoder_last_phase_b_state = digitalRead(az_incremental_encoder_pin_phase_b);
   #endif // FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 
   #if defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(FEATURE_ELEVATION_CONTROL)
@@ -3232,37 +3247,68 @@ void update_display(){
         static byte last_park_status = NOT_PARKED;
         static unsigned long last_park_message_update_time = 0;
         static byte park_message_in_effect = 0;
-
         if (park_status != last_park_status){
-          if ((millis() - last_park_message_update_time) < PARKING_STATUS_DISPLAY_TIME_MS){
-            if (!park_message_in_effect){
-              last_park_message_update_time = millis(); 
+          switch(park_status){
+            case PARKED: 
+              k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
               park_message_in_effect = 1;
-            }
+              break;              
+            case PARK_INITIATED:
+              k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              park_message_in_effect = 1;
+              break;
+            case NOT_PARKED: 
+              park_message_in_effect = 0;
+              break;
+          }
+          last_park_status = park_status;
+          last_park_message_update_time = millis();
+        }
+       
+        if (park_message_in_effect){
+          if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
+            park_message_in_effect = 0;
+          } else {
+            row_override[LCD_STATUS_ROW] = 1;
             switch(park_status){
               case PARKED: 
-                k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-                row_override[LCD_STATUS_ROW] = 1;
+                k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
                 break;              
               case PARK_INITIATED:
                 k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-                row_override[LCD_STATUS_ROW] = 1;
-                break;
-              case NOT_PARKED: 
-                last_park_status = park_status; 
-                park_message_in_effect = 0;
                 break;
             }
-          } else {
-            last_park_status = park_status;
-            last_park_message_update_time = millis();
-            park_message_in_effect = 0;
           }
         }
       #endif // FEATURE_PARK
 
+//zzzzzz
+        
+      #ifdef FEATURE_AZ_PRESET_ENCODER 
+        float target = 0; 
+        if (preset_encoders_state == ENCODER_AZ_PENDING) {
+          target = az_encoder_raw_degrees;
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          strcpy(workstring,TARGET_STRING);
+          dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,DISPLAY_DEGREES_STRING);
+          k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+          row_override[LCD_STATUS_ROW] = 1;
+        }
+      #endif //FEATURE_AZ_PRESET_ENCODER
 
     #else                          // az & el ----------------------------------------------------------------------------
+
+
+
       strcpy(workstring,"");
       if (az_state != IDLE) {
         if (az_request_queue_state == IN_PROGRESS_TO_TARGET) { 
@@ -3310,9 +3356,116 @@ void update_display(){
 
       if ((az_state != IDLE) || (el_state != IDLE)){ 
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-      }
+      } //<added
 
-    #endif
+      #if defined(FEATURE_PARK)
+        static byte last_park_status = NOT_PARKED;
+        static unsigned long last_park_message_update_time = 0;
+        static byte park_message_in_effect = 0;
+        if (park_status != last_park_status){
+          switch(park_status){
+            case PARKED: 
+              k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              park_message_in_effect = 1;
+              break;              
+            case PARK_INITIATED:
+              k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              park_message_in_effect = 1;
+              break;
+            case NOT_PARKED: 
+              park_message_in_effect = 0;
+              break;
+          }
+          last_park_status = park_status;
+          last_park_message_update_time = millis();
+        }
+       
+        if (park_message_in_effect){
+          if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
+            park_message_in_effect = 0;
+          } else {
+            row_override[LCD_STATUS_ROW] = 1;
+            switch(park_status){
+              case PARKED: 
+                k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
+                break;              
+              case PARK_INITIATED:
+                k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+                break;
+            }
+          }
+        }
+      #endif // FEATURE_PARK
+
+      #if defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER)
+        float target = 0; 
+        if (preset_encoders_state == ENCODER_AZ_PENDING) {
+            target = az_encoder_raw_degrees;
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          strcpy(workstring,TARGET_STRING);
+          dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,DISPLAY_DEGREES_STRING);
+          k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+          row_override[LCD_STATUS_ROW] = 1;
+        }
+      #endif //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER) 
+
+//zzzzz
+
+      #if defined(FEATURE_AZ_PRESET_ENCODER) && defined(FEATURE_EL_PRESET_ENCODER)  
+        float target = az_encoder_raw_degrees;
+        if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+          target = target - (360 * LCD_HEADING_MULTIPLIER);
+        }
+        if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+          target = target - (360 * LCD_HEADING_MULTIPLIER);
+        }
+
+        if (preset_encoders_state != ENCODER_IDLE) {
+          switch (preset_encoders_state) {
+            case ENCODER_AZ_PENDING:
+              strcpy(workstring,AZ_TARGET_STRING);
+              dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);
+              k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              break;
+            case ENCODER_EL_PENDING:
+              strcpy(workstring,EL_TARGET_STRING);
+              dtostrf(el_encoder_degrees / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);
+              k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              break;
+            case ENCODER_AZ_EL_PENDING:
+              strcpy(workstring,TARGET_STRING);
+              dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);
+              strcat(workstring," ");
+              dtostrf(el_encoder_degrees / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);              
+              k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              break;
+          } // switch 
+        } //if (preset_encoders_state != ENCODER_IDLE)
+      #endif  //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER)
+/*
+*/
+    #endif //!defined(FEATURE_ELEVATION_CONTROL)
+
   #endif //defined(OPTION_DISPLAY_STATUS)
 
   // OPTION_DISPLAY_HHMMSS_CLOCK **************************************************************************************************
@@ -3663,7 +3816,7 @@ void update_display(){
 
 // TODO: develop status row with HH:MM time, rotation status, direction, and GPS status?
 
-// TODO: FEATURE_PARK {done, need to test}, FEATURE_AZ_PRESET_ENCODER, FEATURE_EL_PRESET_ENCODER in status widget
+// TODO: FEATURE_PARK {done, need to test}, FEATURE_AZ_PRESET_ENCODER {az only coded}, FEATURE_EL_PRESET_ENCODER in status widget
   
 
 //zzzzzz
@@ -5427,7 +5580,7 @@ void read_azimuth(byte force_read){
         }
       }
     #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI
-
+/*
     #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
       if (AZIMUTH_STARTING_POINT_DEFAULT == 0) {
         raw_azimuth = (((((az_incremental_encoder_position) / ((long)AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4L)) * 360L)) * (long)HEADING_MULTIPLIER);
@@ -5454,7 +5607,33 @@ void read_azimuth(byte force_read){
         incremental_encoder_previous_raw_azimuth = raw_azimuth;
       }
     #endif // FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+*/
 
+    #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+      if (AZIMUTH_STARTING_POINT_DEFAULT == 0) {
+        raw_azimuth = (((((az_incremental_encoder_position) / (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0)) * HEADING_MULTIPLIER);
+      } else {
+        if (az_incremental_encoder_position > (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
+          raw_azimuth = (((((az_incremental_encoder_position - (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) / (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0)) * HEADING_MULTIPLIER);
+        } else {
+          raw_azimuth = (((((az_incremental_encoder_position + (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) / (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0)) * HEADING_MULTIPLIER);
+        }
+      }
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+        raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+      if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
+        azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+      } else {
+        azimuth = raw_azimuth;
+      }
+      if (raw_azimuth != incremental_encoder_previous_raw_azimuth) {
+        configuration.last_az_incremental_encoder_position = az_incremental_encoder_position;
+        configuration_dirty = 1;
+        incremental_encoder_previous_raw_azimuth = raw_azimuth;
+      }
+    #endif // FEATURE_AZ_POSITION_INCREMENTAL_ENCODER      
 
     last_measurement_time = millis();
   }
@@ -5483,498 +5662,436 @@ void output_debug(){
 
   #ifdef DEBUG_DUMP
 
-  char tempstring[32] = "";
+    char tempstring[32] = "";
 
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
+    #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
 
-  if (((millis() - last_debug_output_time) >= 3000) && (debug_mode)) {
+      if (((millis() - last_debug_output_time) >= 3000) && (debug_mode)) {
 
-    #ifdef DEBUG_GPS_SERIAL
-    debug_println("");
-    #endif //DEBUG_GPS_SERIAL
+        #ifdef DEBUG_GPS_SERIAL
+          debug_println("");
+        #endif //DEBUG_GPS_SERIAL
 
-    //port_flush();
+        //port_flush();
 
-    debug_print("debug: \t");
-    debug_print(CODE_VERSION);
-    #ifdef HARDWARE_WB6KCN
-    debug_print(" HARDWARE_WB6KCN");
-    #endif
-    #ifdef HARDWARE_M0UPU
-    debug_print(" HARDWARE_M0UPU");
-    #endif    
-    #ifdef HARDWARE_EA4TX_ARS_USB
-    debug_print(" HARDWARE_EA4TX_ARS_USB");
-    #endif      
-    debug_print("\t\t");
-
-    #ifdef FEATURE_CLOCK
-    update_time();
-    sprintf(tempstring, "%s", clock_string());
-    debug_print(tempstring);
-    #else // FEATURE_CLOCK
-    dtostrf((millis() / 1000),0,0,tempstring);
-    debug_print(tempstring);
-    #endif // FEATURE_CLOCK
-
-    #if defined(FEATURE_GPS) || defined(FEATURE_RTC) || (defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE))
-    debug_print("\t");
-    debug_print(clock_status_string());
-    #endif // defined(FEATURE_GPS) || defined(FEATURE_RTC) || (defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE))
-
-    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
-    debug_print("\t");
-    sprintf(tempstring, "%s", coordinate_string());
-    debug_print(tempstring); 
-    debug_print(" ");
-    debug_print(coordinates_to_maidenhead(latitude,longitude));
-    #endif
-
-    debug_print("\t\t");
-    #ifdef DEBUG_MEMORY
-    void * HP = malloc(4);
-    if (HP) {free(HP);}
-    unsigned long free = (unsigned long)SP - (unsigned long)HP;
-    sprintf(tempstring,"%lu",(unsigned long)free);
-    debug_print(tempstring);
-    debug_print("b free");
-    #endif //DEBUG_MEMORY
-
-    #ifdef FEATURE_YAESU_EMULATION
-    debug_print("\t\tGS-232");
-    #ifdef OPTION_GS_232B_EMULATION
-    debug_print("B");
-    #else
-    debug_print("A");
-    #endif
-    #endif // FEATURE_YAESU_EMULATION
-
-    #ifdef FEATURE_PARK
-    switch (park_status) {
-      case NOT_PARKED: debug_print("\tNOT_PARKED"); break;
-      case PARK_INITIATED: debug_print("\tPARK_INITIATED"); break;
-      case PARKED: debug_print("\tPARKED"); break;
-    }
-    #endif // FEATURE_PARK
-
-
-    debug_print("\n");
-
-    debug_print("\tAZ: ");
-    switch (az_state) {
-      case IDLE: debug_print("IDLE"); break;
-      #ifndef HARDWARE_EA4TX_ARS_USB
-      case SLOW_START_CW: debug_print("SLOW_START_CW"); break;
-      case SLOW_START_CCW: debug_print("SLOW_START_CCW"); break;
-      #endif //ifndef HARDWARE_EA4TX_ARS_USB
-      case NORMAL_CW: debug_print("NORMAL_CW"); break;
-      case NORMAL_CCW: debug_print("NORMAL_CCW"); break;
-      #ifndef HARDWARE_EA4TX_ARS_USB
-      case SLOW_DOWN_CW: debug_print("SLOW_DOWN_CW"); break;
-      case SLOW_DOWN_CCW: debug_print("SLOW_DOWN_CCW"); break;
-      case INITIALIZE_SLOW_START_CW: debug_print("INITIALIZE_SLOW_START_CW"); break;
-      case INITIALIZE_SLOW_START_CCW: debug_print("INITIALIZE_SLOW_START_CCW"); break;
-      case INITIALIZE_TIMED_SLOW_DOWN_CW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CW"); break;
-      case INITIALIZE_TIMED_SLOW_DOWN_CCW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CCW"); break;
-      case TIMED_SLOW_DOWN_CW: debug_print("TIMED_SLOW_DOWN_CW"); break;
-      case TIMED_SLOW_DOWN_CCW: debug_print("TIMED_SLOW_DOWN_CCW"); break;
-      case INITIALIZE_DIR_CHANGE_TO_CW: debug_print("INITIALIZE_DIR_CHANGE_TO_CW"); break;
-      case INITIALIZE_DIR_CHANGE_TO_CCW: debug_print("INITIALIZE_DIR_CHANGE_TO_CCW"); break;
-      case INITIALIZE_NORMAL_CW: debug_print("INITIALIZE_NORMAL_CW"); break;
-      case INITIALIZE_NORMAL_CCW: debug_print("INITIALIZE_NORMAL_CCW"); break; 
-      #endif //ifndef HARDWARE_EA4TX_ARS_USB     
-    }
-
-    debug_print("\tQ: ");
-    switch (az_request_queue_state) {
-      case NONE: debug_print("-"); break;
-      case IN_QUEUE: debug_print("IN_QUEUE"); break;
-      case IN_PROGRESS_TIMED: debug_print("IN_PROGRESS_TIMED"); break;
-      case IN_PROGRESS_TO_TARGET: debug_print("IN_PROGRESS_TO_TARGET"); break;
-    }
-
-    debug_print(" AZ: ");
-    debug_print_float((azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
-    debug_print(" (raw: ");
-    debug_print_float((raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
-    debug_print(")");
-
-
-    if (az_state != IDLE) {
-      debug_print("  Target: ");
-      debug_print_float((target_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
-   
-
-      debug_print(" (raw: ");
-
-      debug_print_float((target_raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
-      debug_print(")");
-
-      debug_print("  Secs_left: ");
-      debug_print_int((OPERATION_TIMEOUT - (millis() - az_last_rotate_initiation)) / 1000);
-    }
-
-    #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
-    debug_print("  Analog: ");
-    dtostrf(analog_az,0,0,tempstring);
-    debug_print(tempstring);
-    debug_print(" (");
-    dtostrf(configuration.analog_az_full_ccw,0,0,tempstring);
-    debug_print(tempstring);
-    debug_print("-");
-    dtostrf(configuration.analog_az_full_cw,0,0,tempstring);
-    debug_print(tempstring);
-    debug_print(") ");
-    #endif // FEATURE_AZ_POSITION_POTENTIOMETER
-
-    debug_print("\t[");
-    debug_print_int(azimuth_starting_point);
-    debug_print("+");
-    debug_print_int(azimuth_rotation_capability);
-    debug_print("]");
-
-    #ifndef HARDWARE_EA4TX_ARS_USB
-    debug_print("  AZ Speed Norm: ");
-    debug_print_int(normal_az_speed_voltage);
-
-    debug_print(" Current: ");
-    debug_print_int(current_az_speed_voltage);
-
-
-    if (az_speed_pot) {
-      debug_print("  AZ Speed Pot: ");
-      debug_print_int(analogReadEnhanced(az_speed_pot));
-    }
-    if (az_preset_pot) {
-      debug_print(" AZ Preset Pot Analog: ");
-      debug_print_int(analogReadEnhanced(az_preset_pot));
-      debug_print("  AZ Preset Pot Setting: ");
-      dtostrf((map(analogReadEnhanced(az_preset_pot), AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP)),0,0,tempstring);
-      debug_print(tempstring);
-    }
-
-    debug_print("\tOffset: ");
-    dtostrf(configuration.azimuth_offset,0,2,tempstring);
-    debug_print(tempstring);
-    #endif // ndef HARDWARE_EA4TX_ARS_USB
-    debug_println("");
-
-
-    #ifdef FEATURE_ELEVATION_CONTROL
-    debug_print("\tEL: ");
-    switch (el_state) {
-      case IDLE: debug_print("IDLE"); break;
-      #ifndef HARDWARE_EA4TX_ARS_USB
-      case SLOW_START_UP: debug_print("SLOW_START_UP"); break;
-      case SLOW_START_DOWN: debug_print("SLOW_START_DOWN"); break;
-      #endif //ifndef HARDWARE_EA4TX_ARS_USB
-      case NORMAL_UP: debug_print("NORMAL_UP"); break;
-      case NORMAL_DOWN: debug_print("NORMAL_DOWN"); break;
-      #ifndef HARDWARE_EA4TX_ARS_USB
-      case SLOW_DOWN_DOWN: debug_print("SLOW_DOWN_DOWN"); break;
-      case SLOW_DOWN_UP: debug_print("SLOW_DOWN_UP"); break;
-      case TIMED_SLOW_DOWN_UP: debug_print("TIMED_SLOW_DOWN_UP"); break;
-      case TIMED_SLOW_DOWN_DOWN: debug_print("TIMED_SLOW_DOWN_DOWN"); break;
-      #endif //ifndef HARDWARE_EA4TX_ARS_USB
-    }
-
-    debug_print("\tQ: ");
-    switch (el_request_queue_state) {
-      case NONE: debug_print("-"); break;
-      case IN_QUEUE: debug_print("IN_QUEUE"); break;
-      case IN_PROGRESS_TIMED: debug_print("IN_PROGRESS_TIMED"); break;
-      case IN_PROGRESS_TO_TARGET: debug_print("IN_PROGRESS_TO_TARGET"); break;
-    }
-    debug_print(" EL: ");
-    dtostrf(elevation / LCD_HEADING_MULTIPLIER, 0, LCD_DECIMAL_PLACES,tempstring);
-    debug_print(tempstring);
-    if (el_state != IDLE) {
-      debug_print("\tTarget: ");
-      dtostrf(target_elevation / LCD_HEADING_MULTIPLIER, 0, LCD_DECIMAL_PLACES,tempstring);
-      debug_print(tempstring);
-    }
-
-    #ifdef FEATURE_EL_POSITION_POTENTIOMETER
-    debug_print("\tEL Analog: ");
-    dtostrf(analog_el,0,0,tempstring);
-    debug_print(tempstring);
-    debug_print(" (");
-    dtostrf(configuration.analog_el_0_degrees,0,0,tempstring);
-    debug_print(tempstring);
-    debug_print("-");
-    dtostrf(configuration.analog_el_max_elevation,0,0,tempstring);
-    debug_print(tempstring);
-    debug_print(") ");
-    #endif // FEATURE_EL_POSITION_POTENTIOMETER
-   
-    #ifndef HARDWARE_EA4TX_ARS_USB
-    debug_print("  EL Speed Norm: ");
-    debug_print_int(normal_el_speed_voltage);
-
-
-    debug_print(" Current: ");
-    debug_print_int(current_el_speed_voltage);
-
-    debug_print("\tOffset: ");
-    debug_print_float(configuration.elevation_offset, 2);
-    #endif //ifndef HARDWARE_EA4TX_ARS_USB
-    debug_println("");
-    #endif // FEATURE_ELEVATION_CONTROL
-
-    //port_flush();
-
-    #ifdef FEATURE_TIMED_BUFFER
-    if (timed_buffer_status != EMPTY) {
-      debug_print("\tTimed interval buff: ");
-      switch (timed_buffer_status) {
-        // case EMPTY: debug_print("EMPTY"); break;
-        case LOADED_AZIMUTHS: debug_print("LOADED_AZIMUTHS"); break;
-        case RUNNING_AZIMUTHS: debug_print("RUNNING_AZIMUTHS"); break;
-        #ifdef FEATURE_ELEVATION_CONTROL
-        case LOADED_AZIMUTHS_ELEVATIONS: debug_print("LOADED_AZIMUTHS_ELEVATIONS"); break;
-        case RUNNING_AZIMUTHS_ELEVATIONS: debug_print("RUNNING_AZIMUTHS_ELEVATIONS"); break;
+        debug_print("debug: \t");
+        debug_print(CODE_VERSION);
+        #ifdef HARDWARE_WB6KCN
+          debug_print(" HARDWARE_WB6KCN");
         #endif
-      }
+        #ifdef HARDWARE_M0UPU
+          debug_print(" HARDWARE_M0UPU");
+        #endif    
+        #ifdef HARDWARE_EA4TX_ARS_USB
+          debug_print(" HARDWARE_EA4TX_ARS_USB");
+        #endif      
+        debug_print("\t\t");
 
-      debug_print("\tInterval (secs): ");
-      debug_print_int(timed_buffer_interval_value_seconds);
-      debug_print("\tEntries: ");
-      debug_print_int(timed_buffer_number_entries_loaded);
-      debug_print("\tEntry ptr: ");
-      debug_print_int(timed_buffer_entry_pointer);
-      debug_print("\tSecs since last action: ");
-      debug_print_int((millis() - last_timed_buffer_action_time) / 1000);
+        #ifdef FEATURE_CLOCK
+          update_time();
+          sprintf(tempstring, "%s", clock_string());
+          debug_print(tempstring);
+        #else // FEATURE_CLOCK
+          dtostrf((millis() / 1000),0,0,tempstring);
+          debug_print(tempstring);
+        #endif // FEATURE_CLOCK
 
-      if (timed_buffer_number_entries_loaded > 0) {
-        for (int x = 0; x < timed_buffer_number_entries_loaded; x++) {
-          debug_print_int(x + 1);
-          debug_print("\t:");
-          debug_print_int(timed_buffer_azimuths[x] / HEADING_MULTIPLIER);
-        #ifdef FEATURE_ELEVATION_CONTROL
-          debug_print("\t- ");
-          debug_print_int(timed_buffer_elevations[x] / HEADING_MULTIPLIER);
+        #if defined(FEATURE_GPS) || defined(FEATURE_RTC) || (defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE))
+          debug_print("\t");
+          debug_print(clock_status_string());
+        #endif // defined(FEATURE_GPS) || defined(FEATURE_RTC) || (defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE))
+
+        #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+          debug_print("\t");
+          sprintf(tempstring, "%s", coordinate_string());
+          debug_print(tempstring); 
+          debug_print(" ");
+          debug_print(coordinates_to_maidenhead(latitude,longitude));
         #endif
-          debug_print("\n");
+
+        debug_print("\t\t");
+        #ifdef DEBUG_MEMORY
+          void * HP = malloc(4);
+          if (HP) {free(HP);}
+          unsigned long free = (unsigned long)SP - (unsigned long)HP;
+          sprintf(tempstring,"%lu",(unsigned long)free);
+          debug_print(tempstring);
+          debug_print("b free");
+        #endif //DEBUG_MEMORY
+
+        #ifdef FEATURE_YAESU_EMULATION
+          debug_print("\t\tGS-232");
+          #ifdef OPTION_GS_232B_EMULATION
+            debug_print("B");
+          #else
+            debug_print("A");
+          #endif
+        #endif // FEATURE_YAESU_EMULATION
+
+        #ifdef FEATURE_PARK
+          switch (park_status) {
+            case NOT_PARKED: debug_print("\tNOT_PARKED"); break;
+            case PARK_INITIATED: debug_print("\tPARK_INITIATED"); break;
+            case PARKED: debug_print("\tPARKED"); break;
+          }
+        #endif // FEATURE_PARK
+
+        debug_print("\n");
+
+        debug_print("\tAZ: ");
+        switch (az_state) {
+          case IDLE: debug_print("IDLE"); break;
+          #ifndef HARDWARE_EA4TX_ARS_USB
+            case SLOW_START_CW: debug_print("SLOW_START_CW"); break;
+            case SLOW_START_CCW: debug_print("SLOW_START_CCW"); break;
+          #endif //ifndef HARDWARE_EA4TX_ARS_USB
+          case NORMAL_CW: debug_print("NORMAL_CW"); break;
+          case NORMAL_CCW: debug_print("NORMAL_CCW"); break;
+          #ifndef HARDWARE_EA4TX_ARS_USB
+            case SLOW_DOWN_CW: debug_print("SLOW_DOWN_CW"); break;
+            case SLOW_DOWN_CCW: debug_print("SLOW_DOWN_CCW"); break;
+            case INITIALIZE_SLOW_START_CW: debug_print("INITIALIZE_SLOW_START_CW"); break;
+            case INITIALIZE_SLOW_START_CCW: debug_print("INITIALIZE_SLOW_START_CCW"); break;
+            case INITIALIZE_TIMED_SLOW_DOWN_CW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CW"); break;
+            case INITIALIZE_TIMED_SLOW_DOWN_CCW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CCW"); break;
+            case TIMED_SLOW_DOWN_CW: debug_print("TIMED_SLOW_DOWN_CW"); break;
+            case TIMED_SLOW_DOWN_CCW: debug_print("TIMED_SLOW_DOWN_CCW"); break;
+            case INITIALIZE_DIR_CHANGE_TO_CW: debug_print("INITIALIZE_DIR_CHANGE_TO_CW"); break;
+            case INITIALIZE_DIR_CHANGE_TO_CCW: debug_print("INITIALIZE_DIR_CHANGE_TO_CCW"); break;
+            case INITIALIZE_NORMAL_CW: debug_print("INITIALIZE_NORMAL_CW"); break;
+            case INITIALIZE_NORMAL_CCW: debug_print("INITIALIZE_NORMAL_CCW"); break; 
+          #endif //ifndef HARDWARE_EA4TX_ARS_USB     
         }
+
+        debug_print("\tQ: ");
+        switch (az_request_queue_state) {
+          case NONE: debug_print("-"); break;
+          case IN_QUEUE: debug_print("IN_QUEUE"); break;
+          case IN_PROGRESS_TIMED: debug_print("IN_PROGRESS_TIMED"); break;
+          case IN_PROGRESS_TO_TARGET: debug_print("IN_PROGRESS_TO_TARGET"); break;
+        }
+
+        debug_print(" AZ: ");
+        debug_print_float((azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+        debug_print(" (raw: ");
+        debug_print_float((raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+        debug_print(")");
+
+
+        if (az_state != IDLE) {
+          debug_print("  Target: ");
+          debug_print_float((target_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+       
+
+          debug_print(" (raw: ");
+
+          debug_print_float((target_raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+          debug_print(")");
+
+          debug_print("  Secs_left: ");
+          debug_print_int((OPERATION_TIMEOUT - (millis() - az_last_rotate_initiation)) / 1000);
+        }
+
+        #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
+          debug_print("  Analog: ");
+          dtostrf(analog_az,0,0,tempstring);
+          debug_print(tempstring);
+          debug_print(" (");
+          dtostrf(configuration.analog_az_full_ccw,0,0,tempstring);
+          debug_print(tempstring);
+          debug_print("-");
+          dtostrf(configuration.analog_az_full_cw,0,0,tempstring);
+          debug_print(tempstring);
+          debug_print(") ");
+        #endif // FEATURE_AZ_POSITION_POTENTIOMETER
+
+        debug_print("\t[");
+        debug_print_int(azimuth_starting_point);
+        debug_print("+");
+        debug_print_int(azimuth_rotation_capability);
+        debug_print("]");
+
+        #ifndef HARDWARE_EA4TX_ARS_USB
+          debug_print("  AZ Speed Norm: ");
+          debug_print_int(normal_az_speed_voltage);
+          debug_print(" Current: ");
+          debug_print_int(current_az_speed_voltage);
+          if (az_speed_pot) {
+            debug_print("  AZ Speed Pot: ");
+            debug_print_int(analogReadEnhanced(az_speed_pot));
+          }
+          if (az_preset_pot) {
+            debug_print(" AZ Preset Pot Analog: ");
+            debug_print_int(analogReadEnhanced(az_preset_pot));
+            debug_print("  AZ Preset Pot Setting: ");
+            dtostrf((map(analogReadEnhanced(az_preset_pot), AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP)),0,0,tempstring);
+            debug_print(tempstring);
+          }
+          debug_print("\tOffset: ");
+          dtostrf(configuration.azimuth_offset,0,2,tempstring);
+          debug_print(tempstring);
+        #endif // ndef HARDWARE_EA4TX_ARS_USB
         debug_println("");
+
+
+        #ifdef FEATURE_ELEVATION_CONTROL
+          debug_print("\tEL: ");
+          switch (el_state) {
+            case IDLE: debug_print("IDLE"); break;
+            #ifndef HARDWARE_EA4TX_ARS_USB
+              case SLOW_START_UP: debug_print("SLOW_START_UP"); break;
+              case SLOW_START_DOWN: debug_print("SLOW_START_DOWN"); break;
+            #endif //ifndef HARDWARE_EA4TX_ARS_USB
+            case NORMAL_UP: debug_print("NORMAL_UP"); break;
+            case NORMAL_DOWN: debug_print("NORMAL_DOWN"); break;
+            #ifndef HARDWARE_EA4TX_ARS_USB
+              case SLOW_DOWN_DOWN: debug_print("SLOW_DOWN_DOWN"); break;
+              case SLOW_DOWN_UP: debug_print("SLOW_DOWN_UP"); break;
+              case TIMED_SLOW_DOWN_UP: debug_print("TIMED_SLOW_DOWN_UP"); break;
+              case TIMED_SLOW_DOWN_DOWN: debug_print("TIMED_SLOW_DOWN_DOWN"); break;
+            #endif //ifndef HARDWARE_EA4TX_ARS_USB
+          }
+
+          debug_print("\tQ: ");
+          switch (el_request_queue_state) {
+            case NONE: debug_print("-"); break;
+            case IN_QUEUE: debug_print("IN_QUEUE"); break;
+            case IN_PROGRESS_TIMED: debug_print("IN_PROGRESS_TIMED"); break;
+            case IN_PROGRESS_TO_TARGET: debug_print("IN_PROGRESS_TO_TARGET"); break;
+          }
+          debug_print(" EL: ");
+          dtostrf(elevation / LCD_HEADING_MULTIPLIER, 0, LCD_DECIMAL_PLACES,tempstring);
+          debug_print(tempstring);
+          if (el_state != IDLE) {
+            debug_print("\tTarget: ");
+            dtostrf(target_elevation / LCD_HEADING_MULTIPLIER, 0, LCD_DECIMAL_PLACES,tempstring);
+            debug_print(tempstring);
+          }
+
+          #ifdef FEATURE_EL_POSITION_POTENTIOMETER
+            debug_print("\tEL Analog: ");
+            dtostrf(analog_el,0,0,tempstring);
+            debug_print(tempstring);
+            debug_print(" (");
+            dtostrf(configuration.analog_el_0_degrees,0,0,tempstring);
+            debug_print(tempstring);
+            debug_print("-");
+            dtostrf(configuration.analog_el_max_elevation,0,0,tempstring);
+            debug_print(tempstring);
+            debug_print(") ");
+          #endif // FEATURE_EL_POSITION_POTENTIOMETER
+         
+          #ifndef HARDWARE_EA4TX_ARS_USB
+            debug_print("  EL Speed Norm: ");
+            debug_print_int(normal_el_speed_voltage);
+
+
+            debug_print(" Current: ");
+            debug_print_int(current_el_speed_voltage);
+
+            debug_print("\tOffset: ");
+            debug_print_float(configuration.elevation_offset, 2);
+          #endif //ifndef HARDWARE_EA4TX_ARS_USB
+          debug_println("");
+        #endif // FEATURE_ELEVATION_CONTROL
+
+        //port_flush();
+
+        #ifdef FEATURE_TIMED_BUFFER
+          if (timed_buffer_status != EMPTY) {
+            debug_print("\tTimed interval buff: ");
+            switch (timed_buffer_status) {
+              // case EMPTY: debug_print("EMPTY"); break;
+              case LOADED_AZIMUTHS: debug_print("LOADED_AZIMUTHS"); break;
+              case RUNNING_AZIMUTHS: debug_print("RUNNING_AZIMUTHS"); break;
+              #ifdef FEATURE_ELEVATION_CONTROL
+                case LOADED_AZIMUTHS_ELEVATIONS: debug_print("LOADED_AZIMUTHS_ELEVATIONS"); break;
+                case RUNNING_AZIMUTHS_ELEVATIONS: debug_print("RUNNING_AZIMUTHS_ELEVATIONS"); break;
+              #endif
+            }
+
+            debug_print("\tInterval (secs): ");
+            debug_print_int(timed_buffer_interval_value_seconds);
+            debug_print("\tEntries: ");
+            debug_print_int(timed_buffer_number_entries_loaded);
+            debug_print("\tEntry ptr: ");
+            debug_print_int(timed_buffer_entry_pointer);
+            debug_print("\tSecs since last action: ");
+            debug_print_int((millis() - last_timed_buffer_action_time) / 1000);
+
+            if (timed_buffer_number_entries_loaded > 0) {
+              for (int x = 0; x < timed_buffer_number_entries_loaded; x++) {
+                debug_print_int(x + 1);
+                debug_print("\t:");
+                debug_print_int(timed_buffer_azimuths[x] / HEADING_MULTIPLIER);
+              #ifdef FEATURE_ELEVATION_CONTROL
+                debug_print("\t- ");
+                debug_print_int(timed_buffer_elevations[x] / HEADING_MULTIPLIER);
+              #endif
+                debug_print("\n");
+              }
+              debug_println("");
+            }
+
+          } // if (timed_buffer_status != EMPTY)
+        #endif // FEATURE_TIMED_BUFFER
+
+
+        #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
+          /*debug_print("\tRemote Slave: Command: ");
+          debug_print_int(remote_unit_command_submitted);*/
+          debug_print("\tRemote Slave: Good: ");
+          debug_print_float(remote_unit_good_results,0);
+          debug_print(" Bad: ");
+          debug_print_int(remote_unit_bad_results);
+          /*debug_print(" Index: ");
+          debug_print_int(remote_unit_port_buffer_index);*/
+          debug_print(" CmdTouts: ");
+          debug_print_int(remote_unit_command_timeouts);
+          debug_print(" BuffTouts: ");
+          debug_print_int(remote_unit_incoming_buffer_timeouts);
+          /*debug_print(" Result: ");
+          debug_print_float(remote_unit_command_result_float,2);*/
+          debug_println("");
+        #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
+
+        #if defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
+          debug_print("\tEthernet Slave TCP Link State: ");
+          switch(ethernetslavelinkclient0_state){
+            case ETHERNET_SLAVE_DISCONNECTED: debug_print("DIS");
+            case ETHERNET_SLAVE_CONNECTED: debug_print("CONNECTED");
+          }
+          debug_print(" Reconnects: ");
+          debug_print_int(ethernet_slave_reconnects);  
+          debug_println("");
+        #endif // defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)  
+
+        #ifdef DEBUG_POSITION_PULSE_INPUT
+          static unsigned long last_pulse_count_time = 0;
+          static unsigned long last_az_pulse_counter = 0;
+          static unsigned long last_el_pulse_counter = 0;
+          debug_print("\tPulse counters: AZ: ");
+          debug_print_int(az_pulse_counter);
+          debug_print(" AZ Ambiguous: ");
+          debug_print_int(az_pulse_counter_ambiguous);
+          debug_print(" EL: ");
+          debug_print_int(el_pulse_counter);
+          debug_print(" EL Ambiguous: ");
+          debug_print_int(el_pulse_counter_ambiguous);
+          debug_print(" Rate per sec: AZ: ");
+          debug_print_float(((az_pulse_counter - last_az_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
+          debug_print(" EL: ");
+          debug_print_float(((el_pulse_counter - last_el_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
+          debug_println("");
+          last_az_pulse_counter = az_pulse_counter;
+          last_el_pulse_counter = el_pulse_counter;
+          last_pulse_count_time = millis();
+        #endif // DEBUG_POSITION_PULSE_INPUT
+
+
+        #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_AZ_POSITION_INCREMENTAL_ENCODER)
+          debug_print("\taz_position_incremental_encoder_interrupt: ");
+          debug_print_int(az_position_incremental_encoder_interrupt);
+          debug_print("\taz_incremental_encoder_position: ");
+          debug_print_float(az_incremental_encoder_position,0);
+        #endif // DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
+        #if defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER)
+          debug_print("\n\tel_position_incremental_encoder_interrupt: ");
+          debug_print_float(el_position_incremental_encoder_interrupt,0);
+          debug_print("\tel_incremental_encoder_position: ");
+          debug_print_int(el_incremental_encoder_position);
+        #endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
+        #if (defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_AZ_POSITION_INCREMENTAL_ENCODER)) || (defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER))
+          debug_println("");
+        #endif
+
+
+
+
+        #ifdef FEATURE_MOON_TRACKING
+          update_moon_position();
+          debug_print(moon_status_string());
+        #endif // FEATURE_MOON_TRACKING
+
+        #ifdef FEATURE_SUN_TRACKING
+          update_sun_position();
+          debug_print(sun_status_string());
+        #endif // FEATURE_SUN_TRACKING
+
+        #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+          debug_println("");
+        #endif //defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+
+        #ifdef FEATURE_GPS
+          unsigned long gps_chars = 0;
+          unsigned short gps_good_sentences = 0;
+          unsigned short gps_failed_checksum = 0;
+          char gps_temp_string[12] = "";
+          float gps_lat_temp = 0;
+          float gps_long_temp = 0;
+
+          debug_print("\tGPS: satellites: ");
+          gps_chars = gps.satellites();
+          if (gps_chars == 255){gps_chars = 0;}
+          dtostrf(gps_chars,0,0,gps_temp_string);
+          debug_print(gps_temp_string);  
+          unsigned long gps_fix_age_temp = 0;
+          gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp); 
+          debug_print(" lat: ");
+          debug_print_float(gps_lat_temp,4);
+          debug_print(" long: ");
+          debug_print_float(gps_long_temp,4);
+          debug_print(" fix age (mS): ");
+          dtostrf(gps_fix_age_temp,0,0,gps_temp_string);
+          debug_print(gps_temp_string);   
+          gps.stats(&gps_chars,&gps_good_sentences,&gps_failed_checksum);     
+          debug_print(" data chars: ");
+          dtostrf(gps_chars,0,0,gps_temp_string);
+          debug_print(gps_temp_string);
+          debug_print(" good sentences: ");
+          dtostrf(gps_good_sentences,0,0,gps_temp_string);
+          debug_print(gps_temp_string);    
+          debug_print(" failed checksum: ");
+          dtostrf(gps_failed_checksum,0,0,gps_temp_string);
+          debug_print(gps_temp_string);    
+          debug_println("");
+        #endif //FEATURE_GPS
+
+
+        #ifdef FEATURE_AUTOCORRECT
+          debug_print("\t\tAutocorrect: AZ:");
+          switch(autocorrect_state_az){
+            case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
+            case AUTOCORRECT_WAITING_AZ: debug_print("AUTOCORRECT_WAITING_AZ: "); debug_print_float(autocorrect_az,2); break;
+            case AUTOCORRECT_WATCHING_AZ: debug_print("AUTOCORRECT_WATCHING_AZ: "); debug_print_float(autocorrect_az,2); break;
+          }
+
+          #ifdef FEATURE_ELEVATION_CONTROL
+            debug_print(" EL:");
+            switch(autocorrect_state_el){
+              case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
+              case AUTOCORRECT_WAITING_EL: debug_print("AUTOCORRECT_WAITING_EL: "); debug_print_float(autocorrect_el,2); break;
+              case AUTOCORRECT_WATCHING_EL: debug_print("AUTOCORRECT_WATCHING_EL: "); debug_print_float(autocorrect_el,2); break;
+            }
+          #endif //FEATURE_ELEVATION_CONTROL
+        #endif //DEBUG_AUTOCORRECT
+
+
+
+        debug_println("\n\n\n");
+
+        //port_flush();
+
+        last_debug_output_time = millis();
+
+        
+
       }
-
-    } // if (timed_buffer_status != EMPTY)
-    #endif // FEATURE_TIMED_BUFFER
-
-
-    #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-    /*debug_print("\tRemote Slave: Command: ");
-    debug_print_int(remote_unit_command_submitted);*/
-    debug_print("\tRemote Slave: Good: ");
-    debug_print_float(remote_unit_good_results,0);
-    debug_print(" Bad: ");
-    debug_print_int(remote_unit_bad_results);
-    /*debug_print(" Index: ");
-    debug_print_int(remote_unit_port_buffer_index);*/
-    debug_print(" CmdTouts: ");
-    debug_print_int(remote_unit_command_timeouts);
-    debug_print(" BuffTouts: ");
-    debug_print_int(remote_unit_incoming_buffer_timeouts);
-    /*debug_print(" Result: ");
-    debug_print_float(remote_unit_command_result_float,2);*/
-    debug_println("");
-    #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-
-    #if defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-    debug_print("\tEthernet Slave TCP Link State: ");
-    switch(ethernetslavelinkclient0_state){
-      case ETHERNET_SLAVE_DISCONNECTED: debug_print("DIS");
-      case ETHERNET_SLAVE_CONNECTED: debug_print("CONNECTED");
-    }
-    debug_print(" Reconnects: ");
-    debug_print_int(ethernet_slave_reconnects);  
-    debug_println("");
-    #endif // defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)  
-
-    #ifdef DEBUG_POSITION_PULSE_INPUT
-    static unsigned long last_pulse_count_time = 0;
-    static unsigned long last_az_pulse_counter = 0;
-    static unsigned long last_el_pulse_counter = 0;
-    debug_print("\tPulse counters: AZ: ");
-    debug_print_int(az_pulse_counter);
-    debug_print(" AZ Ambiguous: ");
-    debug_print_int(az_pulse_counter_ambiguous);
-    debug_print(" EL: ");
-    debug_print_int(el_pulse_counter);
-    debug_print(" EL Ambiguous: ");
-    debug_print_int(el_pulse_counter_ambiguous);
-    debug_print(" Rate per sec: AZ: ");
-    debug_print_float(((az_pulse_counter - last_az_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
-    debug_print(" EL: ");
-    debug_print_float(((el_pulse_counter - last_el_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
-    debug_println("");
-    last_az_pulse_counter = az_pulse_counter;
-    last_el_pulse_counter = el_pulse_counter;
-    last_pulse_count_time = millis();
-    #endif // DEBUG_POSITION_PULSE_INPUT
-
-
-    #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_AZ_POSITION_INCREMENTAL_ENCODER)
-    debug_print("\taz_position_incremental_encoder_interrupt: ");
-    debug_print_int(az_position_incremental_encoder_interrupt);
-    debug_print("\taz_incremental_encoder_position: ");
-    debug_print_float(az_incremental_encoder_position);
-    #endif // DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
-    #if defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER)
-    debug_print("\n\tel_position_incremental_encoder_interrupt: ");
-    debug_print_int(el_position_incremental_encoder_interrupt);
-    debug_print("\tel_incremental_encoder_position: ");
-    debug_print_int(el_incremental_encoder_position);
-    #endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
-    #if (defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_AZ_POSITION_INCREMENTAL_ENCODER)) || (defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER))
-    debug_println("");
-    #endif
-
-
-
-
-    #ifdef FEATURE_MOON_TRACKING
-    update_moon_position();
-    debug_print(moon_status_string());
-    #endif // FEATURE_MOON_TRACKING
-
-    #ifdef FEATURE_SUN_TRACKING
-    update_sun_position();
-    debug_print(sun_status_string());
-    #endif // FEATURE_SUN_TRACKING
-
-    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
-    debug_println("");
-    #endif //defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
-
-    #ifdef FEATURE_GPS
-    unsigned long gps_chars = 0;
-    unsigned short gps_good_sentences = 0;
-    unsigned short gps_failed_checksum = 0;
-    char gps_temp_string[12] = "";
-    float gps_lat_temp = 0;
-    float gps_long_temp = 0;
-
-    debug_print("\tGPS: satellites: ");
-    gps_chars = gps.satellites();
-    if (gps_chars == 255){gps_chars = 0;}
-    dtostrf(gps_chars,0,0,gps_temp_string);
-    debug_print(gps_temp_string);  
-    unsigned long gps_fix_age_temp = 0;
-    gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp); 
-    debug_print(" lat: ");
-    debug_print_float(gps_lat_temp,4);
-    debug_print(" long: ");
-    debug_print_float(gps_long_temp,4);
-    debug_print(" fix age (mS): ");
-    dtostrf(gps_fix_age_temp,0,0,gps_temp_string);
-    debug_print(gps_temp_string);   
-    gps.stats(&gps_chars,&gps_good_sentences,&gps_failed_checksum);     
-    debug_print(" data chars: ");
-    dtostrf(gps_chars,0,0,gps_temp_string);
-    debug_print(gps_temp_string);
-    debug_print(" good sentences: ");
-    dtostrf(gps_good_sentences,0,0,gps_temp_string);
-    debug_print(gps_temp_string);    
-    debug_print(" failed checksum: ");
-    dtostrf(gps_failed_checksum,0,0,gps_temp_string);
-    debug_print(gps_temp_string);    
-    debug_println("");
-    #endif //FEATURE_GPS
-
-
-    #ifdef FEATURE_AUTOCORRECT
-    debug_print("\t\tAutocorrect: AZ:");
-    switch(autocorrect_state_az){
-      case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
-      case AUTOCORRECT_WAITING_AZ: debug_print("AUTOCORRECT_WAITING_AZ: "); debug_print_float(autocorrect_az,2); break;
-      case AUTOCORRECT_WATCHING_AZ: debug_print("AUTOCORRECT_WATCHING_AZ: "); debug_print_float(autocorrect_az,2); break;
-    }
-
-    #ifdef FEATURE_ELEVATION_CONTROL
-    debug_print(" EL:");
-    switch(autocorrect_state_el){
-      case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
-      case AUTOCORRECT_WAITING_EL: debug_print("AUTOCORRECT_WAITING_EL: "); debug_print_float(autocorrect_el,2); break;
-      case AUTOCORRECT_WATCHING_EL: debug_print("AUTOCORRECT_WATCHING_EL: "); debug_print_float(autocorrect_el,2); break;
-    }
-    #endif //FEATURE_ELEVATION_CONTROL
-    #endif //DEBUG_AUTOCORRECT
-
-
-
-    debug_println("\n\n\n");
-
-    //port_flush();
-
-    last_debug_output_time = millis();
-
+    #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
     
-
-  }
-  #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-  
   #endif //DEBUG_DUMP
 
 } /* output_debug */
-
-// --------------------------------------------------------------
-
-
-// void report_current_azimuth() {
-
-//   #ifdef FEATURE_YAESU_EMULATION
-//   // The C command that reports azimuth
-
-//   String azimuth_string;
-
-//   #ifndef OPTION_GS_232B_EMULATION
-//   control_port->print(F("+0"));
-//   #endif
-//   #ifdef OPTION_GS_232B_EMULATION
-//   control_port->print(F("AZ="));
-//   #endif
-//   // control_port->write("report_current_azimith: azimuth=");
-//   // control_port->println(azimuth);
-//   azimuth_string = String(int(azimuth / HEADING_MULTIPLIER), DEC);
-//   if (azimuth_string.length() == 1) {
-//     control_port->print(F("00"));
-//   } else {
-//     if (azimuth_string.length() == 2) {
-//       control_port->print(F("0"));
-//     }
-//   }
-//   control_port->print(azimuth_string);
-
-//     #ifdef FEATURE_ELEVATION_CONTROL
-//     #ifndef OPTION_C_COMMAND_SENDS_AZ_AND_EL
-//   if ((control_port_buffer[1] == '2') && (control_port_buffer_index > 1)) {     // did we get the C2 command?
-//     #endif
-//   report_current_elevation();
-//     #ifndef OPTION_C_COMMAND_SENDS_AZ_AND_EL
-// } else {
-//   control_port->println();
-// }
-//     #endif // OPTION_C_COMMAND_SENDS_AZ_AND_EL
-//   #endif // FEATURE_ELEVATION_CONTROL
-
-//   #ifndef FEATURE_ELEVATION_CONTROL
-//   if ((control_port_buffer[1] == '2') && (control_port_buffer_index > 1)) {     // did we get the C2 command?
-//     #ifndef OPTION_GS_232B_EMULATION
-//     control_port->println(F("+0000"));    // return a dummy elevation since we don't have the elevation feature turned on
-//     #else
-//     control_port->println(F("EL=000"));
-//     #endif
-//   } else {
-//     control_port->println();
-//   }
-//     #endif // FEATURE_ELEVATION_CONTROL
-
-
-
-//   #endif // FEATURE_YAESU_EMULATION
-// }
 
 
 // --------------------------------------------------------------
@@ -6003,30 +6120,30 @@ void print_help(byte port){
   // The H command
 
   #if defined(OPTION_SERIAL_HELP_TEXT) && defined(FEATURE_YAESU_EMULATION)
-  print_to_port("R Rotate Azimuth Clockwise\n",port);
-  print_to_port("L Rotate Azimuth Counter Clockwise\n",port);
-  print_to_port("A Stop\n",port);
-  print_to_port("C Report Azimuth in Degrees\n",port);
-  print_to_port("M### Rotate to ### degrees\n",port);
-  print_to_port("MTTT XXX XXX XXX ... Timed Interval Direction Setting  (TTT = Step value in seconds, XXX = Azimuth in degrees)\n",port);
-  print_to_port("T Start Timed Interval Tracking\n",port);
-  print_to_port("N Report Total Number of M Timed Interval Azimuths\n",port);
-  print_to_port("X1 Horizontal Rotation Low Speed\n",port);
-  print_to_port("X2 Horizontal Rotation Middle 1 Speed\n",port);
-  print_to_port("X3 Horizontal Rotation Middle 2 Speed\n",port);
-  print_to_port("X4 Horizontal Rotation High Speed\n",port);
-  print_to_port("S Stop\n",port);
-  print_to_port("O Offset Calibration\n",port);
-  print_to_port("F Full Scale Calibration\n",port);
-  #ifdef FEATURE_ELEVATION_CONTROL
-  print_to_port("U Rotate Elevation Up\n",port);
-  print_to_port("D Rotate Elevation Down\n",port);
-  print_to_port("E Stop Elevation Rotation\n",port);
-  print_to_port("B Report Elevation in Degrees\n",port);
-  print_to_port("Wxxx yyy Rotate Azimuth to xxx Degrees and Elevation to yyy Degrees\n",port);
-  print_to_port("O2 Elevation Offset Calibration (0 degrees)\n",port);
-  print_to_port("F2 Elevation Full Scale Calibration (180 degrees (or maximum))\n",port);
-  #endif // FEATURE_ELEVATION_CONTROL
+    print_to_port("R Rotate Azimuth Clockwise\n",port);
+    print_to_port("L Rotate Azimuth Counter Clockwise\n",port);
+    print_to_port("A Stop\n",port);
+    print_to_port("C Report Azimuth in Degrees\n",port);
+    print_to_port("M### Rotate to ### degrees\n",port);
+    print_to_port("MTTT XXX XXX XXX ... Timed Interval Direction Setting  (TTT = Step value in seconds, XXX = Azimuth in degrees)\n",port);
+    print_to_port("T Start Timed Interval Tracking\n",port);
+    print_to_port("N Report Total Number of M Timed Interval Azimuths\n",port);
+    print_to_port("X1 Horizontal Rotation Low Speed\n",port);
+    print_to_port("X2 Horizontal Rotation Middle 1 Speed\n",port);
+    print_to_port("X3 Horizontal Rotation Middle 2 Speed\n",port);
+    print_to_port("X4 Horizontal Rotation High Speed\n",port);
+    print_to_port("S Stop\n",port);
+    print_to_port("O Offset Calibration\n",port);
+    print_to_port("F Full Scale Calibration\n",port);
+    #ifdef FEATURE_ELEVATION_CONTROL
+      print_to_port("U Rotate Elevation Up\n",port);
+      print_to_port("D Rotate Elevation Down\n",port);
+      print_to_port("E Stop Elevation Rotation\n",port);
+      print_to_port("B Report Elevation in Degrees\n",port);
+      print_to_port("Wxxx yyy Rotate Azimuth to xxx Degrees and Elevation to yyy Degrees\n",port);
+      print_to_port("O2 Elevation Offset Calibration (0 degrees)\n",port);
+      print_to_port("F2 Elevation Full Scale Calibration (180 degrees (or maximum))\n",port);
+    #endif // FEATURE_ELEVATION_CONTROL
   #endif // defined(OPTION_SERIAL_HELP_TEXT) && defined(FEATURE_YAESU_EMULATION)
 
 
@@ -6042,9 +6159,9 @@ void el_check_operation_timeout(){
   if (((millis() - el_last_rotate_initiation) > OPERATION_TIMEOUT) && (el_state != IDLE)) {
     submit_request(EL, REQUEST_KILL, 0, 85);
     #ifdef DEBUG_EL_CHECK_OPERATION_TIMEOUT
-    if (debug_mode) {
-      control_port->println(F("el_check_operation_timeout: timeout reached, aborting rotation"));
-    }
+      if (debug_mode) {
+        control_port->println(F("el_check_operation_timeout: timeout reached, aborting rotation"));
+      }
     #endif // DEBUG_EL_CHECK_OPERATION_TIMEOUT
   }
 }
@@ -9783,13 +9900,15 @@ void az_position_incremental_encoder_interrupt_handler(){
       case B1110: //az_incremental_encoder_position--; break;
       case B1000: az_incremental_encoder_position--; break;
     }
-
+/*
     if (az_incremental_encoder_position > ((long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1) * 2)) {
       az_incremental_encoder_position = 0;
     }
     if (az_incremental_encoder_position < 0) {
       az_incremental_encoder_position = ((long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1) * 2);
     }
+
+
 
     #ifndef OPTION_SCANCON_2RMHF3600_INC_ENCODER
       if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
@@ -9808,9 +9927,35 @@ void az_position_incremental_encoder_interrupt_handler(){
         }
       }   
     #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
+*/
 
-    az_3_phase_encoder_last_phase_a_state = current_phase_a;
-    az_3_phase_encoder_last_phase_b_state = current_phase_b;
+
+  if (az_incremental_encoder_position > ((long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1) * 2)) {
+    az_incremental_encoder_position = 0;
+  }
+  if (az_incremental_encoder_position < 0) {
+    az_incremental_encoder_position = ((long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1) * 2);
+  }
+
+  #ifndef OPTION_SCANCON_2RMHF3600_INC_ENCODER
+    if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
+      if ((az_incremental_encoder_position < long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (az_incremental_encoder_position > long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
+        az_incremental_encoder_position = AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
+      } else {
+        az_incremental_encoder_position = long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.);
+      }
+    }
+  #else
+    if ((current_phase_a == HIGH) && (current_phase_b == HIGH) && (current_phase_z == HIGH)) {
+      if ((az_incremental_encoder_position < long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) / 2)) || (az_incremental_encoder_position > long((AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) * 1.5))) {
+        az_incremental_encoder_position = AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
+      } else {
+        az_incremental_encoder_position = long(AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.);
+      }
+    }
+  #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER      
+  az_3_phase_encoder_last_phase_a_state = current_phase_a;
+  az_3_phase_encoder_last_phase_b_state = current_phase_b;
 
   }
 
