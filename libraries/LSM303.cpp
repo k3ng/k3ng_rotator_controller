@@ -1,4 +1,4 @@
-#include <LSM303.h>
+#include "LSM303.h"
 #include <Wire.h>
 #include <math.h>
 

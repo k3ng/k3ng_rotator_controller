@@ -2,7 +2,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015070401"
+// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015071201"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -82,7 +82,7 @@ unsigned long next_blink_state_transition_time = TEXT_BLINK_MS;
 K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_time = 1000){
 
 
-  lcd.begin(_display_columns, _display_rows);
+  
   display_columns = _display_columns;
   display_rows = _display_rows;
   update_time_ms = _update_time;
@@ -93,6 +93,8 @@ K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_ti
 
 void K3NGdisplay::initialize(){
 
+
+  lcd.begin(display_columns, display_rows);
 
   #ifdef FEATURE_YOURDUINO_I2C_LCD
   lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);

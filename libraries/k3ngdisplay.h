@@ -6,10 +6,41 @@
 #endif
 
 
-#include "rotator_pins.h"
-#include "rotator_features.h"
 
-#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015070401"
+#ifdef HARDWARE_EA4TX_ARS_USB
+  #include "rotator_features_ea4tx_ars_usb.h"
+#endif
+#ifdef HARDWARE_WB6KCN
+  #include "rotator_features_wb6kcn.h"
+#endif
+#ifdef HARDWARE_M0UPU
+  #include "rotator_features_m0upu.h"
+#endif
+#ifdef HARDWARE_TEST
+  #include "rotator_features_test.h"
+#endif    
+#if !defined(HARDWARE_CUSTOM)
+  #include "rotator_features.h" 
+#endif   
+
+#ifdef HARDWARE_EA4TX_ARS_USB
+  #include "rotator_pins_ea4tx_ars_usb.h"
+#endif
+#ifdef HARDWARE_M0UPU
+  #include "rotator_pins_m0upu.h"
+#endif
+#ifdef HARDWARE_WB6KCN
+  //#include "rotator_pins_wb6kcn_az_test_setup.h"
+  #include "rotator_pins_wb6kcn.h"
+#endif
+#ifdef HARDWARE_TEST
+  #include "rotator_pins_test.h"
+#endif
+#if !defined(HARDWARE_CUSTOM)
+  #include "rotator_pins.h"
+#endif
+
+#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015071201"
 #define MAX_SCREEN_BUFFER_COLUMNS 20
 #define MAX_SCREEN_BUFFER_ROWS 4
 
