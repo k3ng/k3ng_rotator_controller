@@ -1,30 +1,30 @@
 /* 
 
 
-  TEST Hardware !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  TEST Hardware !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 */
 
-/* main features */
 #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 //#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-//#define FEATURE_MOON_TRACKING
-//#define FEATURE_SUN_TRACKING
-//#define FEATURE_CLOCK
-//#define FEATURE_GPS
-//#define FEATURE_RTC_DS1307
+#define FEATURE_MOON_TRACKING
+#define FEATURE_SUN_TRACKING
+#define FEATURE_CLOCK
+#define FEATURE_GPS
+#define FEATURE_RTC_DS1307
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
 //#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 //#define FEATURE_AUTOCORRECT
 
-#define LANGUAGE_ENGLISH
+#define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 //#define LANGUAGE_SPANISH
 //#define LANGUAGE_CZECH
 //#define LANGUAGE_ITALIAN
 //#define LANGUAGE_PORTUGUESE_BRASIL
+//#define LANGUAGE_GERMAN  
 
 /* master and remote slave unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
@@ -43,6 +43,7 @@
 //#define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
 //#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 //#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+//#define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
 #define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
@@ -55,21 +56,24 @@
 //#define FEATURE_EL_POSITION_HH12_AS5045_SSI
 //#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 //#define FEATURE_EL_POSITION_MEMSIC_2125
+//#define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
-#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
+                                    // All displays require k3ngdisplay.h and k3ngdisplay.cpp in the ino directory!
+#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 //#define FEATURE_ADAFRUIT_I2C_LCD
 //#define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
 //#define FEATURE_YOURDUINO_I2C_LCD
 //#define FEATURE_RFROBOT_I2C_DISPLAY
-//#define FEATURE_ANALOG_OUTPUT_PINS
 //#define FEATURE_YWROBOT_I2C_DISPLAY
+
+//#define FEATURE_ANALOG_OUTPUT_PINS
 
 //#define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
 //#define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
 
 /* preset rotary encoder features and options */
-//#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
-//#define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
+#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
+#define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 #define OPTION_ENCODER_HALF_STEP_MODE
 #define OPTION_ENCODER_ENABLE_PULLUPS          // define to enable weak pullups on rotary encoder pins
 #define OPTION_INCREMENTAL_ENCODER_PULLUPS  // define to enable weak pullups on 3 phase incremental rotary encoder pins
@@ -108,18 +112,23 @@
 //#define OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES // for azimuth and elevation position pulse input feature, ignore pulses that arrive when no rotation is active
 //#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
 #define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
-//#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock on LCD row 1 (set position with #define LCD_HHMM_CLOCK_POSITION)
-//#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock on LCD row 1 (set position with #define LCD_HHMMSS_CLOCK_POSITION)
+
+#define OPTION_DISPLAY_STATUS
+#define OPTION_DISPLAY_HEADING
+#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
+//#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 //#define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
 //#define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
 //#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-//#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-//#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
-//#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator in row 1 center
-//#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
+#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
+#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+//#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
+#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
-//#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
+#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
+//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 //#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
@@ -132,36 +141,8 @@
 //#define OPTION_EL_PULSE_DEBOUNCE
 //#define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 //#define OPTION_RESET_METHOD_JMP_ASM_0
+//#define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
 
-/**************** this section is for code under development ********************************/
-//#define UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS   
-#define UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY
-#define OPTION_DISPLAY_STATUS
-#define OPTION_DISPLAY_HEADING
-#define LCD_HEADING_ROW 2
-#define LCD_HEADING_FIELD_SIZE 16//20
-//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-#define LCD_STATUS_ROW 1
-#define LCD_STATUS_FIELD_SIZE 16//20
-#define LCD_DIRECTION_ROW 1
-#define LCD_HHMMSS_CLOCK_ROW 1
-#define LCD_HHMM_CLOCK_ROW 1
-#define PARKING_STRING "PARKING"
-#define PARKED_STRING "PARKED"
-#define PARKING_STATUS_DISPLAY_TIME_MS 5000
-  // TODO - eliminate unused strings from settings files
-/**************** end of section for code under development ********************************/
-
-
-  /*
-  
-  Note:
-  
-  Ham Radio Deluxe expects AZ and EL in output for Yaesu C command in AZ/EL mode.  I'm not sure if this is default behavior for
-  the Yaesu interface since the C2 command is supposed to be for AZ and EL.  If you have problems with other software with this code in AZ/EL mode,
-  uncomment #define OPTION_C_COMMAND_SENDS_AZ_AND_EL.
-  
-  */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
 
@@ -170,6 +151,7 @@
 #define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
+// #define DEBUG_LOOP
 // #define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
@@ -220,6 +202,8 @@
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER
 // #define DEBUG_AUTOCORRECT
+// #define DEBUG_A2_ENCODER
+// #define DEBUG_A2_ENCODER_LOOPBACK_TEST
 
 
 

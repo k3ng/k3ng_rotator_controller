@@ -6,14 +6,14 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   static unsigned long serial_led_time = 0;
   float tempfloat = 0;
 
-  #ifdef UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS
+  #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
     float heading = 0;
   #endif
 
-  #if !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+  //#if !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT)
     long place_multiplier = 0;
     byte decimalplace = 0;
-  #endif
+  //#endif
 
   #ifdef FEATURE_CLOCK
     int temp_year = 0;
@@ -472,136 +472,207 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
 // TODO : one big status query command (get rid of all these little commands)      
 
-  #ifdef UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS
+  #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
 
     case '?':
       strcpy(return_string, "\\!??");  //  \\??xxyy - failed response back
       if (input_buffer_index == 4){
-        if ((input_buffer[2] == 'A') && (input_buffer[3] == 'Z')) {  // \\AZ - query AZ
+        if ((input_buffer[2] == 'F') && (input_buffer[3] == 'S')) {  // \?FS - Full Status
+          strcpy(return_string, "\\!OKFS");
+          // AZ
+          if ((raw_azimuth/HEADING_MULTIPLIER) < 100) {
+            strcat(return_string,"0");
+          }
+          if ((raw_azimuth/HEADING_MULTIPLIER) < 10) {
+            strcat(return_string,"0");
+          }
+          dtostrf(float(raw_azimuth/(float)HEADING_MULTIPLIER),0,6,temp_string);
+          strcat(return_string,temp_string);
+          strcat(return_string,",");
+          // EL
+          #if defined(FEATURE_ELEVATION_CONTROL)
+            if ((elevation/HEADING_MULTIPLIER) >= 0) {
+              strcat(return_string,"+");
+            } else {
+              strcat(return_string,"-");
+            }
+            if (abs(elevation/HEADING_MULTIPLIER) < 100) {
+              strcat(return_string,"0");
+            }
+            if (abs(elevation/HEADING_MULTIPLIER) < 10) {
+              strcat(return_string,"0");
+            }
+            dtostrf(float(abs(elevation/(float)HEADING_MULTIPLIER)),0,6,temp_string);
+            strcat(return_string,temp_string); 
+          #endif //  FEATURE_ELEVATION_CONTROL
+          strcat(return_string,",");
+          // AS
+          dtostrf(az_state, 0, 0, temp_string);
+          strcat(return_string, temp_string); 
+          strcat(return_string,",");
+          // ES
+          #if defined(FEATURE_ELEVATION_CONTROL)
+          dtostrf(el_state, 0, 0, temp_string);
+          strcat(return_string, temp_string); 
+          #endif
+          strcat(return_string,",");                    
+
+          // RC
+          #ifdef FEATURE_GPS
+            if (latitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+            dtostrf(abs(latitude),0,4,temp_string);
+            strcat(return_string,temp_string);         
+            strcat(return_string,",");
+            if (longitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+            if (longitude < 100){strcat(return_string,"0");}
+            dtostrf(abs(longitude),0,4,temp_string);
+            strcat(return_string,temp_string); 
+          #endif //FEATURE_GPS
+          strcat(return_string,","); 
+           // GS    
+          #ifdef FEATURE_CLOCK
+            if (clock_status == GPS_SYNC){                
+              strcat(return_string,"1");
+            } else {
+              strcat(return_string,"0");
+            }        
+          #endif //FEATURE_CLOCK 
+          strcat(return_string,","); 
+
+          #ifdef FEATURE_CLOCK
+            update_time();
+            strcat(return_string,clock_string());
+          #endif //FEATURE_CLOCK 
+
+          strcat(return_string,";");
+
+
+        }
+        if ((input_buffer[2] == 'A') && (input_buffer[3] == 'Z')) {  // \?AZ - query AZ
           strcpy(return_string, "\\!OKAZ");
           if ((raw_azimuth/HEADING_MULTIPLIER) < 100) {
             strcat(return_string,"0");
+          }
+          if ((raw_azimuth/HEADING_MULTIPLIER) < 10) {
+            strcat(return_string,"0");
+          }
+          dtostrf(float(raw_azimuth/(float)HEADING_MULTIPLIER),0,6,temp_string);
+          strcat(return_string,temp_string); 
+        }
+        if ((input_buffer[2] == 'E') && (input_buffer[3] == 'L')) {  // \?EL - query EL
+          #ifdef FEATURE_ELEVATION_CONTROL
+            strcpy(return_string, "\\!OKEL");
+            if ((elevation/HEADING_MULTIPLIER) >= 0) {
+              strcat(return_string,"+");
+            } else {
+              strcat(return_string,"-");
             }
-            if ((raw_azimuth/HEADING_MULTIPLIER) < 10) {
+            if (abs(elevation/HEADING_MULTIPLIER) < 100) {
               strcat(return_string,"0");
             }
-            dtostrf(float(raw_azimuth/(float)HEADING_MULTIPLIER),0,6,temp_string);
+            if (abs(elevation/HEADING_MULTIPLIER) < 10) {
+              strcat(return_string,"0");
+            }
+            dtostrf(float(abs(elevation/(float)HEADING_MULTIPLIER)),0,6,temp_string);
+            strcat(return_string,temp_string); 
+          #else // FEATURE_ELEVATION_CONTROL
+            strcpy(return_string, "\\!??EL");
+          #endif //FEATURE_ELEVATION_CONTROL 
+        }
+        if ((input_buffer[2] == 'A') && (input_buffer[3] == 'S')) {  // \?AS - AZ status
+          strcpy(return_string, "\\!OKAS");
+          dtostrf(az_state, 0, 0, temp_string);
+          strcat(return_string, temp_string); 
+        }  
+        if ((input_buffer[2] == 'E') && (input_buffer[3] == 'S')) {  // \?ES - EL Status
+          #ifdef FEATURE_ELEVATION_CONTROL
+            strcpy(return_string, "\\!OKES");
+            dtostrf(el_state, 0, 0, temp_string);
+            strcat(return_string, temp_string);
+          #else // FEATURE_ELEVATION_CONTROL  
+            strcpy(return_string, "\\!??ES");
+          #endif //FEATURE_ELEVATION_CONTROL              
+        }   
+        if ((input_buffer[2] == 'P') && (input_buffer[3] == 'G')) {  // \?PG - Ping
+          strcpy(return_string, "\\!OKPG");     
+        }      
+        if ((input_buffer[2] == 'R') && (input_buffer[3] == 'L')) {  // \?RL - rotate left
+          submit_request(AZ, REQUEST_CCW, 0, 121);
+          strcpy(return_string, "\\!OKRL");
+        }     
+        if ((input_buffer[2] == 'R') && (input_buffer[3] == 'R')) {  // \?RR - rotate right
+          submit_request(AZ, REQUEST_CW, 0, 122);
+          strcpy(return_string, "\\!OKRR");
+        }   
+        if ((input_buffer[2] == 'R') && (input_buffer[3] == 'U')) {  //  \?RU - elevate up
+          submit_request(EL, REQUEST_UP, 0, 129);
+          strcpy(return_string, "\\!OKRU");
+        } 
+        if ((input_buffer[2] == 'R') && (input_buffer[3] == 'D')) {  // \?RD - elevate down
+          submit_request(EL, REQUEST_DOWN, 0, 130);
+          strcpy(return_string, "\\!OKRD");
+        }  
+        #ifdef FEATURE_GPS
+          if ((input_buffer[2] == 'R') && (input_buffer[3] == 'C')) {  // \?RC - Read coordinates
+            strcpy(return_string,"\\!OKRC");
+            if (latitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+            dtostrf(abs(latitude),0,4,temp_string);
+            strcat(return_string,temp_string);         
+            strcat(return_string," ");
+            if (longitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+            if (longitude < 100){strcat(return_string,"0");}
+            dtostrf(abs(longitude),0,4,temp_string);
             strcat(return_string,temp_string); 
           }
-          if ((input_buffer[2] == 'E') && (input_buffer[3] == 'L')) {  // \\EL - query EL
-            #ifdef FEATURE_ELEVATION_CONTROL
-              strcpy(return_string, "\\!OKEL");
-              if ((elevation/HEADING_MULTIPLIER) >= 0) {
-                strcat(return_string,"+");
-              } else {
-                strcat(return_string,"-");
-              }
-              if (abs(elevation/HEADING_MULTIPLIER) < 100) {
-                strcat(return_string,"0");
-              }
-              if (abs(elevation/HEADING_MULTIPLIER) < 10) {
-                strcat(return_string,"0");
-              }
-              dtostrf(float(abs(elevation/(float)HEADING_MULTIPLIER)),0,6,temp_string);
-              strcat(return_string,temp_string); 
-            #else // FEATURE_ELEVATION_CONTROL
-              strcpy(return_string, "\\!??EL");
-            #endif //FEATURE_ELEVATION_CONTROL 
+        #endif //FEATURE_GPS
+        #ifdef FEATURE_CLOCK
+          if ((input_buffer[2] == 'G') && (input_buffer[3] == 'S')) { // \?GS - query GPS sync
+            strcpy(return_string,"\\!OKGS");
+            if (clock_status == GPS_SYNC){                
+              strcat(return_string,"1");
+            } else {
+              strcat(return_string,"0");
+            }        
           }
-          if ((input_buffer[2] == 'A') && (input_buffer[3] == 'S')) {  // \\AS - AZ status
-            strcpy(return_string, "\\!OKAS");
-            dtostrf(az_state, 0, 0, temp_string);
-            strcat(return_string, temp_string); 
-          }  
-          if ((input_buffer[2] == 'E') && (input_buffer[3] == 'S')) {  // \\ES - EL Status
-            #ifdef FEATURE_ELEVATION_CONTROL
-              strcpy(return_string, "\\!OKES");
-              dtostrf(el_state, 0, 0, temp_string);
-              strcat(return_string, temp_string);
-            #else // FEATURE_ELEVATION_CONTROL  
-              strcpy(return_string, "\\!??ES");
-            #endif //FEATURE_ELEVATION_CONTROL              
-          }   
-          if ((input_buffer[2] == 'P') && (input_buffer[3] == 'G')) {  // \\PG - Ping
-            strcpy(return_string, "\\!OKPG");     
-          }      
-          if ((input_buffer[2] == 'R') && (input_buffer[3] == 'L')) {  // \\RL - rotate left
-            submit_request(AZ, REQUEST_CCW, 0, 121);
-            strcpy(return_string, "\\!OKRL");
-          }     
-          if ((input_buffer[2] == 'R') && (input_buffer[3] == 'R')) {  // \\RR - rotate right
-            submit_request(AZ, REQUEST_CW, 0, 122);
-            strcpy(return_string, "\\!OKRL");
-          }   
-          if ((input_buffer[2] == 'R') && (input_buffer[3] == 'U')) {  //  \\RU - elevate up
-            submit_request(EL, REQUEST_UP, 0, 129);
-            strcpy(return_string, "\\!OKRU");
-          } 
-          if ((input_buffer[2] == 'R') && (input_buffer[3] == 'D')) {  // \\RD - elevate down
-            submit_request(EL, REQUEST_DOWN, 0, 130);
-            strcpy(return_string, "\\!OKRD");
-          }  
-          #ifdef FEATURE_GPS
-              if ((input_buffer[2] == 'R') && (input_buffer[3] == 'C')) {  // \\RC - Read coordinates
-                strcpy(return_string,"\\!OKRC");
-                if (latitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
-                dtostrf(abs(latitude),0,4,temp_string);
-                strcat(return_string,temp_string);         
-                strcat(return_string," ");
-                if (longitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
-                if (longitude < 100){strcat(return_string,"0");}
-                dtostrf(abs(longitude),0,4,temp_string);
-                strcat(return_string,temp_string); 
-              }
-          #endif //FEATURE_GPS
+        #endif //FEATURE_CLOCK 
+
+        if ((input_buffer[2] == 'S') && (input_buffer[3] == 'A')) {  // \?SA - stop azimuth rotation
+          submit_request(AZ, REQUEST_STOP, 0, 124);
+          strcpy(return_string,"\\!OKSA");
+        }   
+        if ((input_buffer[2] == 'S') && (input_buffer[3] == 'E')) {  // \?SE - stop elevation rotation
+          #ifdef FEATURE_ELEVATION_CONTROL
+            submit_request(EL, REQUEST_STOP, 0, 125);
+          #endif
+          strcpy(return_string,"\\!OKSE");
+        } 
+        if ((input_buffer[2] == 'S') && (input_buffer[3] == 'S')) {  // \?SS - stop all rotation
+          submit_request(AZ, REQUEST_STOP, 0, 124);
+          #ifdef FEATURE_ELEVATION_CONTROL
+            submit_request(EL, REQUEST_STOP, 0, 125);
+          #endif
+          strcpy(return_string,"\\!OKSS");
+        }   
+
+        if ((input_buffer[2] == 'C') && (input_buffer[3] == 'L')) {  // \?CL - read the clock
           #ifdef FEATURE_CLOCK
-              if ((input_buffer[2] == 'G') && (input_buffer[3] == 'S')) { // \\GS - query GPS sync
-                strcpy(return_string,"\\!OKGS");
-                if (clock_status == GPS_SYNC){                
-                  strcat(return_string,"1");
-                } else {
-                  strcat(return_string,"0");
-                }        
-              }
-          #endif //FEATURE_CLOCK 
+            strcpy(return_string,"\\!OKCL");
+            update_time();
+            strcat(return_string,clock_string());
+          #else //FEATURE_CLOCK
+            strcpy(return_string,"\\!??CL");
+          #endif //FEATURE_CLOCK
+        }
 
-          if ((input_buffer[2] == 'S') && (input_buffer[3] == 'A')) {  // \\SA - stop azimuth rotation
-            submit_request(AZ, REQUEST_STOP, 0, 124);
-            strcpy(return_string,"\\!OKSA");
-          }   
-          if ((input_buffer[2] == 'S') && (input_buffer[3] == 'E')) {  // \\SE - stop elevation rotation
-            #ifdef FEATURE_ELEVATION_CONTROL
-              submit_request(EL, REQUEST_STOP, 0, 125);
-            #endif
-            strcpy(return_string,"\\!OKSE");
-          } 
-          if ((input_buffer[2] == 'S') && (input_buffer[3] == 'S')) {  // \\SS - stop all rotation
-            submit_request(AZ, REQUEST_STOP, 0, 124);
-            #ifdef FEATURE_ELEVATION_CONTROL
-              submit_request(EL, REQUEST_STOP, 0, 125);
-            #endif
-            strcpy(return_string,"\\!OKSS");
-          }   
-
-          if ((input_buffer[2] == 'C') && (input_buffer[3] == 'L')) {  // \\CL - read the clock
-            #ifdef FEATURE_CLOCK
-              strcpy(return_string,"\\!OKCL");
-              update_time();
-              strcat(return_string,clock_string());
-            #else //FEATURE_CLOCK
-              strcpy(return_string,"\\!??CL");
-            #endif //FEATURE_CLOCK
-          }
-
-          if ((input_buffer[2] == 'R') && (input_buffer[3] == 'B')) {  // \\RB - reboot
-            wdt_enable(WDTO_30MS); while (1) {}  //ZZZZZZ - TODO - change to reboot flag
-          }
+        if ((input_buffer[2] == 'R') && (input_buffer[3] == 'B')) {  // \?RB - reboot
+          wdt_enable(WDTO_30MS); while (1) {}  //ZZZZZZ - TODO - change to reboot flag
+        }
 
 
-        } //if (input_buffer_index == 4)
+      } //if (input_buffer_index == 4)
 
     if (input_buffer_index == 6){
-      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'O')) {  // \\DOxx - digital pin initialize as output; xx = pin # (01, 02, A0,etc.)
+      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'O')) {  // \?DOxx - digital pin initialize as output; xx = pin # (01, 02, A0,etc.)
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -614,7 +685,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
       }
 
-      if ((input_buffer[2] == 'D') && ((input_buffer[3] == 'H') || (input_buffer[3] == 'L'))) { // \\DLxx - digital pin write low; xx = pin #   \\DHxx - digital pin write high; xx = pin # 
+      if ((input_buffer[2] == 'D') && ((input_buffer[3] == 'H') || (input_buffer[3] == 'L'))) { // \?DLxx - digital pin write low; xx = pin #   \\DHxx - digital pin write high; xx = pin # 
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -647,7 +718,7 @@ Not implemented yet:
 
 */
 
-     if ((input_buffer[2] == 'D') && (input_buffer[3] == 'I')) {  // \\DIxx - digital pin initialize as input; xx = pin #
+     if ((input_buffer[2] == 'D') && (input_buffer[3] == 'I')) {  // \?DIxx - digital pin initialize as input; xx = pin #
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -660,7 +731,7 @@ Not implemented yet:
         }
       }
 
-      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'P')) {  // \\DPxx - digital pin initialize as input with pullup; xx = pin #
+      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'P')) {  // \?DPxx - digital pin initialize as input with pullup; xx = pin #
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -674,7 +745,7 @@ Not implemented yet:
         }
       }
 
-      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'R')) {  // \\DRxx - digital pin read; xx = pin #
+      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'R')) {  // \?DRxx - digital pin read; xx = pin #
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -695,7 +766,7 @@ Not implemented yet:
           }
         }
       }
-      if ((input_buffer[2] == 'A') && (input_buffer[3] == 'R')) {  //  \\ARxx - analog pin read; xx = pin #
+      if ((input_buffer[2] == 'A') && (input_buffer[3] == 'R')) {  //  \?ARxx - analog pin read; xx = pin #
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -728,7 +799,7 @@ Not implemented yet:
         }
       }
 
-      if ((input_buffer[2] == 'N') && (input_buffer[3] == 'T')) { // \\NTxx - no tone; xx = pin #
+      if ((input_buffer[2] == 'N') && (input_buffer[3] == 'T')) { // \?NTxx - no tone; xx = pin #
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
             pin_value = get_analog_pin(input_buffer[5] - 48);
@@ -745,7 +816,7 @@ Not implemented yet:
 
     if (input_buffer_index == 9) {
 
-      if ((input_buffer[2] == 'G') && (input_buffer[3] == 'A')) {  // \\GAxxx.x - go to AZ xxx.x
+      if ((input_buffer[2] == 'G') && (input_buffer[3] == 'A')) {  // \?GAxxx.x - go to AZ xxx.x
         heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[6] - 48.) + ((input_buffer[8] - 48) / 10.);     
         if (((heading >= 0) && (heading < 451))  && (input_buffer[7] == '.')) {
           submit_request(AZ, REQUEST_AZIMUTH, (heading * HEADING_MULTIPLIER), 136);
@@ -754,7 +825,7 @@ Not implemented yet:
           strcpy(return_string,"\\!??GA");
         }
       }  
-      if ((input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // \\GExxx.x - go to EL
+      if ((input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // \?GExxx.x - go to EL
         #ifdef FEATURE_ELEVATION_CONTROL
           heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[5] - 48) + ((input_buffer[8] - 48) / 10.);
           if (((heading >= 0) && (heading < 181)) && (input_buffer[7] == '.')) {
@@ -769,7 +840,7 @@ Not implemented yet:
       } 
 
 
-      if ((input_buffer[2] == 'A') && (input_buffer[3] == 'W')) {  // \\AWxxyyy - analog pin write; xx = pin #, yyy = value to write (0 - 255)
+      if ((input_buffer[2] == 'A') && (input_buffer[3] == 'W')) {  // \?AWxxyyy - analog pin write; xx = pin #, yyy = value to write (0 - 255)
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -787,7 +858,7 @@ Not implemented yet:
     } //if (input_buffer_index == 9)
 
     if (input_buffer_index == 10) {
-      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'T')) { // \\DTxxyyyy - digital pin tone output; xx = pin #, yyyy = frequency
+      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'T')) { // \?DTxxyyyy - digital pin tone output; xx = pin #, yyyy = frequency
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -812,15 +883,15 @@ Not implemented yet:
 
 
 
-  #endif  //UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS
+  #endif  //!defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
 
 
     default: strcpy(return_string, "Error.");
 
 
 
-  } /* switch */
-} /* process_backslash_command */
+  } // switch 
+} // process_backslash_command
 
 //-----------------------------------------------------------------------
 

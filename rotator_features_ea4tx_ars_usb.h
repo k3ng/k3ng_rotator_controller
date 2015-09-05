@@ -38,20 +38,10 @@
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 #define OPTION_DISPLAY_DIRECTION_STATUS
+#define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
 
 
 
-
-
-  /*
-  
-  Note:
-  
-  Ham Radio Deluxe expects AZ and EL in output for Yaesu C command in AZ/EL mode.  I'm not sure if this is default behavior for
-  the Yaesu interface since the C2 command is supposed to be for AZ and EL.  If you have problems with other software with this code in AZ/EL mode,
-  uncomment #define OPTION_C_COMMAND_SENDS_AZ_AND_EL.
-  
-  */
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
 

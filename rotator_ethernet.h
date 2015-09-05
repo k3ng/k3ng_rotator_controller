@@ -11,7 +11,7 @@ void service_ethernet(){
   static long last_received_byte0 = 0;
 
   #ifdef FEATURE_REMOTE_UNIT_SLAVE
-  static byte preamble_received = 0;
+    static byte preamble_received = 0;
   #endif //FEATURE_REMOTE_UNIT_SLAVE
 
   /*  this is the server side (receiving bytes from a client such as a master unit receiving commands from a computer
@@ -24,7 +24,7 @@ void service_ethernet(){
   if ((ethernet_port_buffer_index0) && ((millis()-last_received_byte0) > ETHERNET_MESSAGE_TIMEOUT_MS)){
     ethernet_port_buffer_index0 = 0;
     #ifdef FEATURE_REMOTE_UNIT_SLAVE
-    preamble_received = 0;
+      preamble_received = 0;
     #endif //FEATURE_REMOTE_UNIT_SLAVE
   }
 
@@ -58,27 +58,27 @@ void service_ethernet(){
       char ethernet_preamble[] = ETHERNET_PREAMBLE;
 
       #ifdef FEATURE_REMOTE_UNIT_SLAVE
-      if (preamble_received < 254){         // the master/slave ethernet link has each message prefixed with a preamble
-        if (ethernet_preamble[preamble_received] == 0){
-          preamble_received = 254;
-        } else {
-          if (incoming_byte == ethernet_preamble[preamble_received]){
-            preamble_received++;
+        if (preamble_received < 254){         // the master/slave ethernet link has each message prefixed with a preamble
+          if (ethernet_preamble[preamble_received] == 0){
+            preamble_received = 254;
           } else {
-            preamble_received = 0;
+            if (incoming_byte == ethernet_preamble[preamble_received]){
+              preamble_received++;
+            } else {
+              preamble_received = 0;
+            }
           }
         }
-      }
-      // add it to the buffer if it's not a line feed or carriage return and we've received the preamble
-      if ((incoming_byte != 10) && (incoming_byte != 13) && (preamble_received == 254)) { 
-        ethernet_port_buffer0[ethernet_port_buffer_index0] = incoming_byte;
-        ethernet_port_buffer_index0++;
+        // add it to the buffer if it's not a line feed or carriage return and we've received the preamble
+        if ((incoming_byte != 10) && (incoming_byte != 13) && (preamble_received == 254)) { 
+          ethernet_port_buffer0[ethernet_port_buffer_index0] = incoming_byte;
+          ethernet_port_buffer_index0++;
       }
       #else 
-      if ((incoming_byte != 10) && (incoming_byte != 13)) { // add it to the buffer if it's not a line feed or carriage return
-        ethernet_port_buffer0[ethernet_port_buffer_index0] = incoming_byte;
-        ethernet_port_buffer_index0++;
-      }
+        if ((incoming_byte != 10) && (incoming_byte != 13)) { // add it to the buffer if it's not a line feed or carriage return
+          ethernet_port_buffer0[ethernet_port_buffer_index0] = incoming_byte;
+          ethernet_port_buffer_index0++;
+        }
       #endif //FEATURE_REMOTE_UNIT_SLAVE
 
 

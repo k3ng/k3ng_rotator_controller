@@ -123,6 +123,15 @@ You can tweak these, but read the online documentation!
 #define LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW 3                // LCD display row for OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define SPLASH_SCREEN_TIME 3000
 
+#define LCD_HEADING_ROW 2
+#define LCD_HEADING_FIELD_SIZE 20
+#define LCD_STATUS_ROW 1
+#define LCD_STATUS_FIELD_SIZE 20
+#define LCD_DIRECTION_ROW 1
+#define LCD_HHMMSS_CLOCK_ROW 1
+#define LCD_HHMM_CLOCK_ROW 1
+#define PARKING_STATUS_DISPLAY_TIME_MS 5000
+
 #define AZ_BRAKE_DELAY 3000            // in milliseconds
 #define EL_BRAKE_DELAY 3000            // in milliseconds
 
@@ -205,216 +214,6 @@ You can tweak these, but read the online documentation!
 #define SUN_AOS_AZIMUTH_MAX 360
 #define SUN_AOS_ELEVATION_MIN 0
 #define SUN_AOS_ELEVATION_MAX 180
-
-#ifdef LANGUAGE_ENGLISH               // English language support (copy leading and trailing spaces when making your own language section)
-#define MOON_STRING "moon "
-#define SUN_STRING "sun "
-#define AZ_TARGET_STRING "Az Target "
-#define EL_TARGET_STRING "El Target "
-#define TARGET_STRING "Target "
-#define PARKED_STRING "Parked"
-#define ROTATING_CW_STRING "Rotating CW"
-#define ROTATING_CCW_STRING "Rotating CCW"
-#define ROTATING_TO_STRING "Rotating to "
-#define ELEVATING_TO_STRING "Elevating to "
-#define ELEVATING_UP_STRING "Elevating Up"
-#define ELEVATING_DOWN_STRING "Elevating Down"
-#define ROTATING_STRING "Rotating "
-#define CW_STRING "CW"
-#define CCW_STRING "CCW"
-#define UP_STRING "UP"
-#define DOWN_STRING "DOWN"
-#define AZIMUTH_STRING "Azimuth "
-#define AZ_STRING "Az"
-#define AZ_SPACE_STRING "Az "
-#define SPACE_EL_STRING " El"
-#define SPACE_EL_SPACE_STRING " El "
-#define GPS_STRING "GPS"
-#define N_STRING "N"
-#define W_STRING "W"
-#define S_STRING "S"
-#define E_STRING "E"
-#define NW_STRING "NW"
-#define SW_STRING "SW"
-#define SE_STRING "SE"
-#define NE_STRING "NE"
-#define NNW_STRING "NNW"
-#define WNW_STRING "WNW"
-#define WSW_STRING "WSW"
-#define SSW_STRING "SSW"
-#define SSE_STRING "SSE"
-#define ESE_STRING "ESE"
-#define ENE_STRING "ENE"
-#define NNE_STRING "NNE"
-#endif //LANGUAGE_ENGLISH
-
-#ifdef LANGUAGE_SPANISH               // Courtesy of Maximo, EA1DDO
-#define MOON_STRING "Luna "
-#define SUN_STRING "Sol "
-#define AZ_TARGET_STRING "Az Objetivo "
-#define EL_TARGET_STRING "El Objetivo "
-#define TARGET_STRING "Objetivo "
-#define PARKED_STRING "Aparcado"
-#define ROTATING_CW_STRING "Girando Dcha"
-#define ROTATING_CCW_STRING "Girando Izq"
-#define ROTATING_TO_STRING "Girando a "
-#define ELEVATING_TO_STRING "Elevando a "
-#define ELEVATING_UP_STRING "Subiendo"
-#define ELEVATING_DOWN_STRING "Bajando"
-#define ROTATING_STRING "Girando "
-#define CW_STRING "Dcha"
-#define CCW_STRING "Izq"
-#define UP_STRING "Arriba"
-#define DOWN_STRING "Abajo"
-#define AZIMUTH_STRING "Azimuth "
-#define AZ_STRING "Az"
-#define AZ_SPACE_STRING "Az "
-#define SPACE_EL_STRING " El"
-#define SPACE_EL_SPACE_STRING " El "
-#define GPS_STRING "GPS"
-#define N_STRING "N"
-#define W_STRING "O"
-#define S_STRING "S"
-#define E_STRING "E"
-#define NW_STRING "NO"
-#define SW_STRING "SO"
-#define SE_STRING "SE"
-#define NE_STRING "NE"
-#define NNW_STRING "NNO"
-#define WNW_STRING "ONO"
-#define WSW_STRING "OSO"
-#define SSW_STRING "SSO"
-#define SSE_STRING "SSE"
-#define ESE_STRING "ESE"
-#define ENE_STRING "ENE"
-#define NNE_STRING "NNE"
-#endif //LANGUAGE_SPANISH
-
-#ifdef LANGUAGE_CZECH            // courtesy of Jan, OK2ZAW
-#define MOON_STRING "mesic "
-#define SUN_STRING "slunce "
-#define AZ_TARGET_STRING "Az cíl "
-#define EL_TARGET_STRING "El cíl "
-#define TARGET_STRING "Cil "
-#define PARKED_STRING "Parkovat"
-#define ROTATING_CW_STRING "Otacim CW"
-#define ROTATING_CCW_STRING "Otacim CCW"
-#define ROTATING_TO_STRING "Otacim na "
-#define ELEVATING_TO_STRING "Elevovat na "
-#define ELEVATING_UP_STRING "Elevovat nahoru"
-#define ELEVATING_DOWN_STRING "Elevovat dolu"
-#define ROTATING_STRING "Otacet "
-#define CW_STRING "CW"
-#define CCW_STRING "CCW"
-#define UP_STRING "Nahoru"
-#define DOWN_STRING "Dolu"
-#define AZIMUTH_STRING "Azimut "
-#define AZ_STRING "Az"
-#define AZ_SPACE_STRING "Az "
-#define SPACE_EL_STRING " El"
-#define SPACE_EL_SPACE_STRING " El "
-#define GPS_STRING "GPS"
-#define N_STRING "smer   ^   KL"
-#define W_STRING "smer   <   HK"
-#define S_STRING "smer   v   ZS"
-#define E_STRING "smer   >   VK"
-#define NW_STRING "smer   <    W"
-#define SW_STRING "smer   v  VP8"
-#define SE_STRING "smer   >   HZ"
-#define NE_STRING "smer   ^   JA"
-#define NNW_STRING "smer   ^   VE"
-#define WNW_STRING "smer   <   CO"
-#define WSW_STRING "smer   <   PY"
-#define SSW_STRING "smer   v  ZD9"
-#define SSE_STRING "smer   v   5R"
-#define ESE_STRING "smer   >   8Q"
-#define ENE_STRING "smer   >   ZL"
-#define NNE_STRING "smer   ^  UA0"
-#endif //LANGUAGE_CZECH
-
-#ifdef LANGUAGE_ITALIAN    // courtesy of Paolo, IT9IPQ           
-#define MOON_STRING "luna"
-#define SUN_STRING "sole "
-#define AZ_TARGET_STRING "Punta Az  "
-#define EL_TARGET_STRING "Punta El  "
-#define TARGET_STRING "Punta  "
-#define PARKED_STRING "Posa  "
-#define ROTATING_CW_STRING "Ruota DX > "
-#define ROTATING_CCW_STRING "Ruota SX <  "
-#define ROTATING_TO_STRING "Ruota verso "
-#define ELEVATING_TO_STRING "Alza verso   "
-#define ELEVATING_UP_STRING "Alzo  Su    "
-#define ELEVATING_DOWN_STRING "Abbasso  Giu'    "
-#define ROTATING_STRING "Ruota    "
-#define CW_STRING "DX"
-#define CCW_STRING "SX "
-#define UP_STRING "SU"
-#define DOWN_STRING "GIU'"
-#define AZIMUTH_STRING "Azimuth "
-#define AZ_STRING "Az"
-#define AZ_SPACE_STRING "Az "
-#define SPACE_EL_STRING " El"
-#define SPACE_EL_SPACE_STRING " El "
-#define GPS_STRING "GPS"
-#define N_STRING "N"
-#define W_STRING "W"
-#define S_STRING "S"
-#define E_STRING "E"
-#define NW_STRING "NW"
-#define SW_STRING "SW"
-#define SE_STRING "SE"
-#define NE_STRING "NE"
-#define NNW_STRING "NNW"
-#define WNW_STRING "WNW"
-#define WSW_STRING "WSW"
-#define SSW_STRING "SSW"
-#define SSE_STRING "SSE"
-#define ESE_STRING "ESE"
-#define ENE_STRING "ENE"
-#define NNE_STRING "NNE"
-#endif //LANGUAGE_ITALIAN
-
-#ifdef LANGUAGE_PORTUGUESE_BRASIL // courtesy of Ismael, PY4PI
-#define MOON_STRING "lua "
-#define SUN_STRING "sol "
-#define AZ_TARGET_STRING "Objetivo Az "
-#define EL_TARGET_STRING "Objetivo El "
-#define TARGET_STRING "Objetivo "
-#define PARKED_STRING "Estacionado"
-#define ROTATING_CW_STRING "Rodando DIR"
-#define ROTATING_CCW_STRING "Rodando ESQ"
-#define ROTATING_TO_STRING "Rodando para "
-#define ELEVATING_TO_STRING "Elevando para "
-#define ELEVATING_UP_STRING "Subindo"
-#define ELEVATING_DOWN_STRING "Descendo"
-#define ROTATING_STRING "Rodando "
-#define CW_STRING "DIR"
-#define CCW_STRING "ESQ"
-#define UP_STRING "SOBE"
-#define DOWN_STRING "DESCE"
-#define AZIMUTH_STRING "Azimute "
-#define AZ_STRING "Az"
-#define AZ_SPACE_STRING "Az "
-#define SPACE_EL_STRING " El"
-#define SPACE_EL_SPACE_STRING " El "
-#define GPS_STRING "GPS"
-#define N_STRING "N"
-#define W_STRING "O"
-#define S_STRING "S"
-#define E_STRING "L"
-#define NW_STRING "NO"
-#define SW_STRING "SO"
-#define SE_STRING "SL"
-#define NE_STRING "NL"
-#define NNW_STRING "NNO"
-#define WNW_STRING "ONO"
-#define WSW_STRING "OSO"
-#define SSW_STRING "SSO"
-#define SSE_STRING "SSL"
-#define ESE_STRING "LSL"
-#define ENE_STRING "LNL"
-#define NNE_STRING "NNL"
-#endif //LANGUAGE_PORTUGUESE_BRASIL
 
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
@@ -516,80 +315,63 @@ You can tweak these, but read the online documentation!
 */
 
 
-#ifdef FEATURE_4_BIT_LCD_DISPLAY 
-LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin); 
-#endif //FEATURE_4_BIT_LCD_DISPLAY
-
-
-#ifdef FEATURE_ADAFRUIT_I2C_LCD
-Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
-#endif //FEATURE_ADAFRUIT_I2C_LCD
-
-#ifdef FEATURE_YOURDUINO_I2C_LCD
-#define I2C_ADDR 0x20
-#define BACKLIGHT_PIN 3
-#define LED_OFF 1
-#define LED_ON 0            
-LiquidCrystal_I2C  lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
-#endif //FEATURE_YOURDUINO_I2C_LCD
-
-#ifdef FEATURE_RFROBOT_I2C_DISPLAY
-LiquidCrystal_I2C lcd(0x27,16,2); 
-#endif //FEATURE_RFROBOT_I2C_DISPLAY
+#if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
+  K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME); 
+#endif  
 
 #ifdef FEATURE_AZ_POSITION_HMC5883L
-HMC5883L compass;
+  HMC5883L compass;
 #endif //FEATURE_AZ_POSITION_HMC5883L
 
 #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-ADXL345 accel;
+  ADXL345 accel;
 #endif //FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
 
 #ifdef FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
+  Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 #endif //FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
 
 #if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
-Adafruit_LSM303 lsm;
+  Adafruit_LSM303 lsm;
 #endif
 
 #if defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
-LSM303 compass;
-LSM303::vector<int16_t> running_min = {32767, 32767, 32767}, running_max = {-32768, -32768, -32768};
-char report[80];
+  LSM303 compass;
+  LSM303::vector<int16_t> running_min = {32767, 32767, 32767}, running_max = {-32768, -32768, -32768};
+  char report[80];
 #endif //FEATURE_AZ_POSITION_POLOLU_LSM303
 
 #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
-#include "hh12.h"
-hh12 azimuth_hh12;
+  #include "hh12.h"
+  hh12 azimuth_hh12;
 #endif //FEATURE_AZ_POSITION_HH12_AS5045_SSI
 
 #ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
-#include "hh12.h"
-hh12 elevation_hh12;
+  #include "hh12.h"
+  hh12 elevation_hh12;
 #endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
 
 #ifdef FEATURE_GPS
-TinyGPS gps;
+  TinyGPS gps;
 #endif //FEATURE_GPS
 
 #ifdef FEATURE_RTC_DS1307
-RTC_DS1307 rtc;
+  RTC_DS1307 rtc;
 #endif //FEATURE_RTC_DS1307
 
 #ifdef FEATURE_RTC_PCF8583
-PCF8583 rtc(0xA0);
+  PCF8583 rtc(0xA0);
 #endif //FEATURE_RTC_PCF8583
 
 #ifdef HARDWARE_EA4TX_ARS_USB
-#undef LCD_COLUMNS
-#undef LCD_ROWS
-#define LCD_COLUMNS 16
-#define LCD_ROWS 2
+  #undef LCD_COLUMNS
+  #undef LCD_ROWS
+  #define LCD_COLUMNS 16
+  #define LCD_ROWS 2
 #endif //HARDWARE_EA4TX_ARS_USB
 
 #ifdef HARDWARE_M0UPU
-#undef LCD_ROWS
-#define LCD_ROWS 2
+  #undef LCD_ROWS
+  #define LCD_ROWS 2
 #endif //HARDWARE_M0UPU
 

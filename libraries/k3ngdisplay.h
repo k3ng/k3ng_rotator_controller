@@ -5,7 +5,7 @@
 #include "WProgram.h"
 #endif
 
-
+#include "rotator_hardware.h"
 
 #ifdef HARDWARE_EA4TX_ARS_USB
   #include "rotator_features_ea4tx_ars_usb.h"
@@ -30,7 +30,6 @@
   #include "rotator_pins_m0upu.h"
 #endif
 #ifdef HARDWARE_WB6KCN
-  //#include "rotator_pins_wb6kcn_az_test_setup.h"
   #include "rotator_pins_wb6kcn.h"
 #endif
 #ifdef HARDWARE_TEST
@@ -40,7 +39,7 @@
   #include "rotator_pins.h"
 #endif
 
-#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015071201"
+#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015090401"
 #define MAX_SCREEN_BUFFER_COLUMNS 20
 #define MAX_SCREEN_BUFFER_ROWS 4
 

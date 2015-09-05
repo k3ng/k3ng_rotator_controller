@@ -5,21 +5,22 @@
 */
 
 /* main features */
-#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
-#define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
-//#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-#define FEATURE_MOON_TRACKING
-#define FEATURE_SUN_TRACKING
-#define FEATURE_CLOCK
-#define FEATURE_GPS
-#define FEATURE_RTC_DS1307
+//#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
+#define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
+//#define FEATURE_EASYCOM_EMULATION       // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
+
+//#define FEATURE_MOON_TRACKING
+//#define FEATURE_SUN_TRACKING
+//#define FEATURE_CLOCK
+//#define FEATURE_GPS
+//#define FEATURE_RTC_DS1307
 //#define FEATURE_RTC_PCF8583
-#define FEATURE_ETHERNET
-#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
+//#define FEATURE_ETHERNET
+//#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 //#define FEATURE_AUTOCORRECT
 
-#define LANGUAGE_ENGLISH
+#define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 //#define LANGUAGE_SPANISH
 //#define LANGUAGE_CZECH
 //#define LANGUAGE_ITALIAN
@@ -45,7 +46,7 @@
 //#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 //#define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
-#define FEATURE_EL_POSITION_POTENTIOMETER
+//#define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER
 //#define FEATURE_EL_POSITION_PULSE_INPUT
 //#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
@@ -58,7 +59,8 @@
 //#define FEATURE_EL_POSITION_MEMSIC_2125
 //#define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
-#define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
+                                    // All displays require k3ngdisplay.h and k3ngdisplay.cpp in the ino directory!
+//#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 //#define FEATURE_ADAFRUIT_I2C_LCD
 //#define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
 //#define FEATURE_YOURDUINO_I2C_LCD
@@ -112,6 +114,8 @@
 //#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
 #define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
 
+#define OPTION_DISPLAY_STATUS
+#define OPTION_DISPLAY_HEADING
 #define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
 //#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 //#define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
@@ -124,6 +128,7 @@
 #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
+//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
@@ -137,39 +142,7 @@
 //#define OPTION_EL_PULSE_DEBOUNCE
 //#define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 //#define OPTION_RESET_METHOD_JMP_ASM_0
-
-
-/**************** this section is for code under development ********************************/
-//#define UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS   
-#define UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY
-#define OPTION_DISPLAY_STATUS
-#define OPTION_DISPLAY_HEADING
-#define LCD_HEADING_ROW 2
-#define LCD_HEADING_FIELD_SIZE 20
-//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-#define LCD_STATUS_ROW 1
-#define LCD_STATUS_FIELD_SIZE 20
-#define LCD_DIRECTION_ROW 1
-#define LCD_HHMMSS_CLOCK_ROW 1
-#define LCD_HHMM_CLOCK_ROW 1
-#define PARKING_STRING "PARKING"
-#define PARKED_STRING "PARKED"
-#define PARKING_STATUS_DISPLAY_TIME_MS 5000
-  // TODO - eliminate unused strings from settings files
-/**************** end of section for code under development ********************************/
-
-
-
-
-  /*
-  
-  Note:
-  
-  Ham Radio Deluxe expects AZ and EL in output for Yaesu C command in AZ/EL mode.  I'm not sure if this is default behavior for
-  the Yaesu interface since the C2 command is supposed to be for AZ and EL.  If you have problems with other software with this code in AZ/EL mode,
-  uncomment #define OPTION_C_COMMAND_SENDS_AZ_AND_EL.
-  
-  */
+//#define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
 

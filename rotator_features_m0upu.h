@@ -132,33 +132,7 @@
 //#define OPTION_EL_PULSE_DEBOUNCE
 //#define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 //#define OPTION_RESET_METHOD_JMP_ASM_0
-
-//#define UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS
-#define UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY
-//#define OPTION_DISPLAY_STATUS_TERSE     // TODO - rename this
-#define OPTION_DISPLAY_HEADING
-#define LCD_HEADING_ROW 2
-#define LCD_HEADING_FIELD_SIZE 20
-//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-#define LCD_STATUS_ROW 1
-#define LCD_STATUS_FIELD_SIZE 20
-#define LCD_DIRECTION_ROW 1
-#define LCD_HHMMSS_CLOCK_ROW 1
-#define LCD_HHMM_CLOCK_ROW 1
-#define PARKING_STRING "PARKING"
-#define PARKED_STRING "PARKED"
-#define PARKING_STATUS_DISPLAY_TIME_MS 5000
-
-
-  /*
-  
-  Note:
-  
-  Ham Radio Deluxe expects AZ and EL in output for Yaesu C command in AZ/EL mode.  I'm not sure if this is default behavior for
-  the Yaesu interface since the C2 command is supposed to be for AZ and EL.  If you have problems with other software with this code in AZ/EL mode,
-  uncomment #define OPTION_C_COMMAND_SENDS_AZ_AND_EL.
-  
-  */
+#define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
 

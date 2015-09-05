@@ -2,7 +2,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015071201"
+// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015090401"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -80,8 +80,6 @@ unsigned long next_blink_state_transition_time = TEXT_BLINK_MS;
 //-----------------------------------------------------------------------------------------------------
 
 K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_time = 1000){
-
-
   
   display_columns = _display_columns;
   display_rows = _display_rows;
