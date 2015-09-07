@@ -45,10 +45,10 @@ void service_ethernet(){
       last_incoming_byte_receive_time = millis();
 
       #ifdef DEBUG_ETHERNET
-      debug_print("service_ethernet: client:") ;
-      debug_print(" char:");
-      debug_print_char((char) incoming_byte);
-      debug_print("\n");
+      debug.print("service_ethernet: client:") ;
+      debug.print(" char:");
+      debug.print((char) incoming_byte);
+      debug.print("\n");
       #endif //DEBUG_ETHERNET  
 
       if ((incoming_byte > 96) && (incoming_byte < 123)) {  // uppercase it
@@ -120,10 +120,10 @@ void service_ethernet(){
       last_incoming_byte_receive_time = millis();
 
       #ifdef DEBUG_ETHERNET
-      debug_print("service_ethernet: client:") ;
-      debug_print(" char:");
-      debug_print_char((char) incoming_byte);
-      debug_print("\n");
+      debug.print("service_ethernet: client:") ;
+      debug.print(" char:");
+      debug.print((char) incoming_byte);
+      debug.print("\n");
       #endif //DEBUG_ETHERNET  
 
       if ((incoming_byte > 96) && (incoming_byte < 123)) {  // uppercase it
@@ -165,7 +165,7 @@ void service_ethernet(){
   if ((ethernetslavelinkclient0_state == ETHERNET_SLAVE_DISCONNECTED)  && (((millis()-last_connect_try) >= ETHERNET_SLAVE_RECONNECT_TIME_MS) || (last_connect_try == 0))){
 
     #ifdef DEBUG_ETHERNET
-    debug_println("service_ethernet: master_slave_ethernet: connecting");
+    debug.println("service_ethernet: master_slave_ethernet: connecting");
     #endif //DEBUG_ETHERNET
 
     if (ethernetslavelinkclient0.connect(slave_unit_ip, ETHERNET_SLAVE_TCP_PORT)){
@@ -177,7 +177,7 @@ void service_ethernet(){
     } else {
       ethernetslavelinkclient0.stop();
       #ifdef DEBUG_ETHERNET
-      debug_println("service_ethernet: master_slave_ethernet: connect failed");
+      debug.println("service_ethernet: master_slave_ethernet: connect failed");
       #endif //DEBUG_ETHERNET
     }
 
@@ -190,11 +190,11 @@ void service_ethernet(){
     incoming_ethernet_byte = ethernetslavelinkclient0.read();
 
     #ifdef DEBUG_ETHERNET
-    debug_print("service_ethernet: slave rx: ");
-    debug_print_char(incoming_ethernet_byte);
-    debug_print(" : ");
-    debug_print_int(incoming_ethernet_byte);
-    debug_println("");
+    debug.print("service_ethernet: slave rx: ");
+    debug.print(incoming_ethernet_byte);
+    debug.print(" : ");
+    debug.print(incoming_ethernet_byte);
+    debug.println("");
     #endif //DEBUG_ETHERNET      
 
     if (remote_port_rx_sniff) {
@@ -207,7 +207,7 @@ void service_ethernet(){
       if ((incoming_ethernet_byte == 13) || (remote_unit_port_buffer_index >= COMMAND_BUFFER_SIZE)) {
         remote_unit_port_buffer_carriage_return_flag = 1;
         #ifdef DEBUG_ETHERNET
-        debug_println("service_ethernet: remote_unit_port_buffer_carriage_return_flag");
+        debug.println("service_ethernet: remote_unit_port_buffer_carriage_return_flag");
         #endif //DEBUG_ETHERNET          
       }
     }
@@ -218,7 +218,7 @@ void service_ethernet(){
   if (((millis() - last_received_byte_time) >= ETHERNET_MESSAGE_TIMEOUT_MS) && (remote_unit_port_buffer_index > 1) && (!remote_unit_port_buffer_carriage_return_flag)){
     remote_unit_port_buffer_index = 0;
     #ifdef DEBUG_ETHERNET
-    debug_println("service_ethernet: master_slave_ethernet: remote_unit_incoming_buffer_timeout");
+    debug.println("service_ethernet: master_slave_ethernet: remote_unit_incoming_buffer_timeout");
     #endif //DEBUG_ETHERNET    
     remote_unit_incoming_buffer_timeouts++;
   }
@@ -228,7 +228,7 @@ void service_ethernet(){
     ethernetslavelinkclient0_state = ETHERNET_SLAVE_DISCONNECTED;
     remote_unit_port_buffer_index = 0;
     #ifdef DEBUG_ETHERNET
-    debug_println("service_ethernet: master_slave_ethernet: lost connection");
+    debug.println("service_ethernet: master_slave_ethernet: lost connection");
     #endif //DEBUG_ETHERNET    
   }
 
@@ -246,14 +246,14 @@ byte ethernet_slave_link_send(char * string_to_send){
     ethernetslavelinkclient0.print(ETHERNET_PREAMBLE);
     ethernetslavelinkclient0.println(string_to_send);
     #ifdef DEBUG_ETHERNET
-    debug_print("ethernet_slave_link_send: ");
-    debug_println(string_to_send);
+    debug.print("ethernet_slave_link_send: ");
+    debug.println(string_to_send);
     #endif //DEBUG_ETHERNET
     return 1;
   } else {
     #ifdef DEBUG_ETHERNET
-    debug_print("ethernet_slave_link_send: link down not sending:");
-    debug_println(string_to_send);
+    debug.print("ethernet_slave_link_send: link down not sending:");
+    debug.println(string_to_send);
     #endif //DEBUG_ETHERNET    
     return 0;
   }

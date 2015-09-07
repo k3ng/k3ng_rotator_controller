@@ -70,7 +70,7 @@ void service_gps(){
   byte gps_month, gps_day, gps_hours, gps_minutes, gps_seconds, gps_hundredths;
   static byte gps_sync_pin_active = 0;
   #ifdef DEBUG_GPS
-  char tempstring[10] = "";
+    char tempstring[10] = "";
   #endif //#ifdef DEBUG_GPS
 
   static unsigned long last_sync = 0;
@@ -81,25 +81,25 @@ void service_gps(){
     gps.crack_datetime(&gps_year, &gps_month, &gps_day, &gps_hours, &gps_minutes, &gps_seconds, &gps_hundredths, &fix_age);
     #ifdef DEBUG_GPS
       #ifdef DEBUG_GPS_SERIAL
-        debug_println("");
+        debug.println("");
       #endif //DEBUG_GPS_SERIAL    
-      debug_print("service_gps: fix_age:");
-      debug_print_int(fix_age);
-      debug_print(" lat:");
-      debug_print_float(gps_lat,4);
-      debug_print(" long:");
-      debug_print_float(gps_lon,4);
-      debug_print(" ");
-      debug_print_int(gps_year);
-      debug_print("-");
-      debug_print_int(gps_month);
-      debug_print("-");
-      debug_print_int(gps_day);
-      debug_print(" ");
-      debug_print_int(gps_hours);
-      debug_print(":");
-      debug_print_int(gps_minutes);
-      debug_println("");
+      debug.print("service_gps: fix_age:");
+      debug.print(fix_age);
+      debug.print(" lat:");
+      debug.print(gps_lat,4);
+      debug.print(" long:");
+      debug.print(gps_lon,4);
+      debug.print(" ");
+      debug.print(gps_year);
+      debug.print("-");
+      debug.print(gps_month);
+      debug.print("-");
+      debug.print(gps_day);
+      debug.print(" ");
+      debug.print(gps_hours);
+      debug.print(":");
+      debug.print(gps_minutes);
+      debug.println("");
     #endif // DEBUG_GPS
 
     if (fix_age < GPS_VALID_FIX_AGE_MS) {
@@ -115,12 +115,12 @@ void service_gps(){
         update_time();
         #ifdef DEBUG_GPS
           #ifdef DEBUG_GPS_SERIAL
-            debug_println("");
+            debug.println("");
           #endif //DEBUG_GPS_SERIAL        
-          debug_print("service_gps: clock sync:");
+          debug.print("service_gps: clock sync:");
           sprintf(tempstring,"%s",clock_string());
-          debug_print(tempstring);
-          debug_println("");
+          debug.print(tempstring);
+          debug.println("");
         #endif // DEBUG_GPS
       }
 
@@ -129,7 +129,7 @@ void service_gps(){
         if ((millis() - last_rtc_gps_sync_time) >= (SYNC_RTC_TO_GPS_SECONDS * 1000)) {
           rtc.adjust(DateTime(gps_year, gps_month, gps_day, gps_hours, gps_minutes, gps_seconds));
           #ifdef DEBUG_RTC
-            debug_println("service_gps: synced RTC");
+            debug.println("service_gps: synced RTC");
           #endif // DEBUG_RTC
           last_rtc_gps_sync_time = millis();
         }
@@ -146,7 +146,7 @@ void service_gps(){
           rtc.second = gps_seconds;
           rtc.set_time();
           #ifdef DEBUG_RTC
-            debug_println("service_gps: synced RTC");
+            debug.println("service_gps: synced RTC");
           #endif // DEBUG_RTC
           last_rtc_gps_sync_time = millis();
         }
@@ -158,11 +158,11 @@ void service_gps(){
           latitude = float(gps_lat) / 1000000.0;
           longitude = float(gps_lon) / 1000000.0;
           #ifdef DEBUG_GPS
-            debug_print("service_gps: coord sync:");
-            debug_print_float(latitude,2);
-            debug_print(" ");
-            debug_print_float(longitude,2);
-            debug_println("");
+            debug.print("service_gps: coord sync:");
+            debug.print(latitude,2);
+            debug.print(" ");
+            debug.print(longitude,2);
+            debug.println("");
           #endif // DEBUG_GPS
         }
       #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
@@ -207,7 +207,7 @@ void sync_master_coordinates_to_slave(){
   if ((millis() - last_sync_master_coordinates_to_slave) >= (SYNC_MASTER_COORDINATES_TO_SLAVE_SECS * 1000)){
     if (submit_remote_command(REMOTE_UNIT_RC_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
-      debug_println("sync_master_coordinates_to_slave: submitted REMOTE_UNIT_RC_COMMAND");
+      debug.println("sync_master_coordinates_to_slave: submitted REMOTE_UNIT_RC_COMMAND");
       #endif //DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
       last_sync_master_coordinates_to_slave = millis();  
     }  
@@ -226,7 +226,7 @@ void sync_master_clock_to_slave(){
   if ((millis() - last_sync_master_clock_to_slave) >= (SYNC_MASTER_CLOCK_TO_SLAVE_CLOCK_SECS * 1000)){
     if (submit_remote_command(REMOTE_UNIT_CL_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
-      debug_println("sync_master_clock_to_slave: submitted REMOTE_UNIT_CL_COMMAND");
+      debug.println("sync_master_clock_to_slave: submitted REMOTE_UNIT_CL_COMMAND");
       #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
       last_sync_master_clock_to_slave = millis();  
     }  
@@ -236,7 +236,7 @@ void sync_master_clock_to_slave(){
   if (clock_synced_to_remote){
     if (submit_remote_command(REMOTE_UNIT_GS_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
-      debug_println("sync_master_clock_to_slave: submitted REMOTE_UNIT_GS_COMMAND");
+      debug.println("sync_master_clock_to_slave: submitted REMOTE_UNIT_GS_COMMAND");
       #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
       clock_synced_to_remote = 0; 
     }      
@@ -321,7 +321,7 @@ void service_rtc(){
     #ifdef FEATURE_GPS
       if (clock_status == GPS_SYNC) { // if we're also equipped with GPS and we're synced to it, don't sync to realtime clock
         #ifdef DEBUG_RTC
-          debug_println("service_rtc: synced to GPS already.  Exiting.");
+          debug.println("service_rtc: synced to GPS already.  Exiting.");
         #endif // DEBUG_RTC
         return;
       }
@@ -332,19 +332,19 @@ void service_rtc(){
       if (rtc.isrunning()) {
         DateTime now = rtc.now();
         #ifdef DEBUG_RTC
-          debug_print("service_rtc: syncing: ");
-          debug_print_int(now.year());
-          debug_print("/");
-          debug_print_int(now.month());
-          debug_print("/");
-          debug_print_int(now.day());
-          debug_print(" ");
-          debug_print_int(now.hour());
-          debug_print(":");
-          debug_print_int(now.minute());
-          debug_print(":");
-          debug_print_int(now.second());
-          debug_println("");
+          debug.print("service_rtc: syncing: ");
+          debug.print(now.year());
+          debug.print("/");
+          debug.print(now.month());
+          debug.print("/");
+          debug.print(now.day());
+          debug.print(" ");
+          debug.print(now.hour());
+          debug.print(":");
+          debug.print(now.minute());
+          debug.print(":");
+          debug.print(now.second());
+          debug.println("");
         #endif // DEBUG_RTC
         clock_year_set = now.year();
         clock_month_set = now.month();
@@ -358,7 +358,7 @@ void service_rtc(){
       } else {
         clock_status = FREE_RUNNING;
         #ifdef DEBUG_RTC
-          debug_println("service_rtc: error: RTC not running");
+          debug.println("service_rtc: error: RTC not running");
         #endif // DEBUG_RTC
       }
     #endif //#FEATURE_RTC_DS1307

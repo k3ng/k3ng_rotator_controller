@@ -60,11 +60,11 @@ void set_az_stepper_freq(unsigned int frequency){
   }
 
   #ifdef DEBUG_STEPPER
-  debug_print("set_az_stepper_freq: ");
-  debug_print_int(frequency);
-  debug_print(" az_stepper_freq_count:");
-  debug_print_int(az_stepper_freq_count);
-  debug_println("");
+  debug.print("set_az_stepper_freq: ");
+  debug.print(frequency);
+  debug.print(" az_stepper_freq_count:");
+  debug.print(az_stepper_freq_count);
+  debug.println("");
   #endif //DEBUG_STEPPER
 
 }
@@ -82,11 +82,11 @@ void set_el_stepper_freq(unsigned int frequency){
   }
 
   #ifdef DEBUG_STEPPER
-  debug_print("set_el_stepper_freq: ");
-  debug_print_int(frequency);
-  debug_print(" el_stepper_freq_count:");
-  debug_print_int(el_stepper_freq_count);
-  debug_println("");
+  debug.print("set_el_stepper_freq: ");
+  debug.print(frequency);
+  debug.print(" el_stepper_freq_count:");
+  debug.print(el_stepper_freq_count);
+  debug.println("");
   #endif //DEBUG_STEPPER
 
 }

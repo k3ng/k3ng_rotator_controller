@@ -35,14 +35,14 @@ void service_moon_tracking(){
     update_moon_position();
 
     #ifdef DEBUG_MOON_TRACKING
-    control_port->print(F("service_moon_tracking: AZ: "));
-    control_port->print(moon_azimuth);
-    control_port->print(" EL: ");
-    control_port->print(moon_elevation);
-    control_port->print(" lat: ");
-    control_port->print(latitude);
-    control_port->print(" long: ");
-    control_port->println(longitude);
+    debug.print(F("service_moon_tracking: AZ: "));
+    debug.print(moon_azimuth);
+    debug.print(" EL: ");
+    debug.print(moon_elevation);
+    debug.print(" lat: ");
+    debug.print(latitude);
+    debug.print(" long: ");
+    debug.println(longitude);
     #endif // DEBUG_MOON_TRACKING
 
     if ((moon_azimuth >= MOON_AOS_AZIMUTH_MIN) && (moon_azimuth <= MOON_AOS_AZIMUTH_MAX) && (moon_elevation >= MOON_AOS_ELEVATION_MIN) && (moon_elevation <= MOON_AOS_ELEVATION_MAX)) {
@@ -51,18 +51,18 @@ void service_moon_tracking(){
       if (!moon_visible) {
         moon_visible = 1;
         #ifdef DEBUG_MOON_TRACKING
-        control_port->println(F("service_moon_tracking: moon AOS"));
+        debug.println("service_moon_tracking: moon AOS");
         #endif // DEBUG_MOON_TRACKING
       }
     } else {
       if (moon_visible) {
         moon_visible = 0;
           #ifdef DEBUG_MOON_TRACKING
-        control_port->println(F("service_moon_tracking: moon loss of AOS"));
+        debug.println("service_moon_tracking: moon loss of AOS");
           #endif // DEBUG_MOON_TRACKING
       } else {
             #ifdef DEBUG_MOON_TRACKING
-        control_port->println(F("service_moon_tracking: moon out of AOS limits"));
+        debug.println("service_moon_tracking: moon out of AOS limits");
             #endif // DEBUG_MOON_TRACKING
       }
     }
@@ -113,14 +113,14 @@ void service_sun_tracking(){
 
 
     #ifdef DEBUG_SUN_TRACKING
-    control_port->print(F("service_sun_tracking: AZ: "));
-    control_port->print(sun_azimuth);
-    control_port->print(" EL: ");
-    control_port->print(sun_elevation);
-    control_port->print(" lat: ");
-    control_port->print(latitude);
-    control_port->print(" long: ");
-    control_port->println(longitude);
+    debug.print(F("service_sun_tracking: AZ: "));
+    debug.print(sun_azimuth);
+    debug.print(" EL: ");
+    debug.print(sun_elevation);
+    debug.print(" lat: ");
+    debug.print(latitude);
+    debug.print(" long: ");
+    debug.println(longitude);
     #endif // DEBUG_SUN_TRACKING
 
     if ((sun_azimuth >= SUN_AOS_AZIMUTH_MIN) && (sun_azimuth <= SUN_AOS_AZIMUTH_MAX) && (sun_elevation >= SUN_AOS_ELEVATION_MIN) && (sun_elevation <= SUN_AOS_ELEVATION_MAX)) {
@@ -129,18 +129,18 @@ void service_sun_tracking(){
       if (!sun_visible) {
         sun_visible = 1;
         #ifdef DEBUG_SUN_TRACKING
-        control_port->println(F("service_sun_tracking: sun AOS"));
+        debug.println("service_sun_tracking: sun AOS");
         #endif // DEBUG_SUN_TRACKING
       }
     } else {
       if (sun_visible) {
         sun_visible = 0;
           #ifdef DEBUG_SUN_TRACKING
-        control_port->println(F("service_sun_tracking: sun loss of AOS"));
+        debug.println("service_sun_tracking: sun loss of AOS");
           #endif // DEBUG_SUN_TRACKING
       } else {
             #ifdef DEBUG_SUN_TRACKING
-        control_port->println(F("service_sun_tracking: sun out of AOS limits"));
+        debug.println("service_sun_tracking: sun out of AOS limits");
             #endif // DEBUG_SUN_TRACKING
       }
     }

@@ -49,7 +49,7 @@
 #define AZ_TARGET_STRING "Az Objetivo "
 #define EL_TARGET_STRING "El Objetivo "
 #define TARGET_STRING "Objetivo "
-#define PARKING_STRING "Parking"
+#define PARKING_STRING "Aparcando"
 #define PARKED_STRING "Aparcado"
 /*
 #define ROTATING_CW_STRING "Girando Dcha"
@@ -139,8 +139,8 @@
 #define AZ_TARGET_STRING "Punta Az  "
 #define EL_TARGET_STRING "Punta El  "
 #define TARGET_STRING "Punta  "
-#define PARKING_STRING "Parking"
-#define PARKED_STRING "Posa  "
+#define PARKING_STRING "Posando"
+#define PARKED_STRING "Posato"
 /*
 #define ROTATING_CW_STRING "Ruota DX > "
 #define ROTATING_CCW_STRING "Ruota SX <  "
@@ -230,8 +230,8 @@
 #define AZ_TARGET_STRING "Az Ziel "
 #define EL_TARGET_STRING "El Ziel "
 #define TARGET_STRING "Ziel "
-#define PARKING_STRING "Parking"
-#define PARKED_STRING "Parken"
+#define PARKING_STRING "Parken"
+#define PARKED_STRING "Geparkt"
 /*
 #define ROTATING_CW_STRING "Drehen CW"
 #define ROTATING_CCW_STRING "Drehen CCW"

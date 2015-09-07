@@ -39,6 +39,8 @@
   #include "rotator_pins.h"
 #endif
 
+
+
 #define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015090401"
 #define MAX_SCREEN_BUFFER_COLUMNS 20
 #define MAX_SCREEN_BUFFER_ROWS 4

@@ -13,8 +13,6 @@
 
 #include "k3ngdisplay.h"
 
-
-
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
   #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
   LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin);
@@ -34,7 +32,6 @@
   #include <LCD.h>   // required for YourDuino.com I2C LCD display
 #endif  
 
-
 #ifdef FEATURE_ADAFRUIT_I2C_LCD
   Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
 #endif //FEATURE_ADAFRUIT_I2C_LCD
@@ -50,6 +47,7 @@
 #ifdef FEATURE_RFROBOT_I2C_DISPLAY
   LiquidCrystal_I2C lcd(0x27,16,2); 
 #endif //FEATURE_RFROBOT_I2C_DISPLAY
+
 
 
 

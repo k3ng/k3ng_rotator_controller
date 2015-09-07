@@ -3,6 +3,7 @@
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  TEST Hardware !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
 */
 
 #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
@@ -16,7 +17,7 @@
 #define FEATURE_RTC_DS1307
 //#define FEATURE_RTC_PCF8583
 //#define FEATURE_ETHERNET
-//#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
+#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 //#define FEATURE_AUTOCORRECT
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
@@ -66,10 +67,10 @@
 //#define FEATURE_RFROBOT_I2C_DISPLAY
 //#define FEATURE_YWROBOT_I2C_DISPLAY
 
-//#define FEATURE_ANALOG_OUTPUT_PINS
+#define FEATURE_ANALOG_OUTPUT_PINS
 
-//#define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
-//#define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+#define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
+#define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
 
 /* preset rotary encoder features and options */
 #define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
@@ -89,22 +90,22 @@
 
 /* less often used features and options */
 #define OPTION_GS_232B_EMULATION          // comment this out to default to Yaesu GS-232A emulation when using FEATURE_YAESU_EMULATION above
-//#define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
-//#define FEATURE_LIMIT_SENSE
-//#define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
-//#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
+#define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
+#define FEATURE_LIMIT_SENSE
+#define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
+#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 #define FEATURE_PARK
-//#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
-//#define OPTION_EL_MANUAL_ROTATE_LIMITS
+#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
+#define OPTION_EL_MANUAL_ROTATE_LIMITS
 #define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
 #define OPTION_EASYCOM_EL_QUERY_COMMAND // Adds non-standard Easycom command: EL with no parm returns current elevation
 //#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 //#define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 #define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 //#define FEATURE_TWO_DECIMAL_PLACE_HEADINGS  // under development - not working yet!
-//#define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
-//#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
-//#define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
+#define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
+#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
+#define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
 //#define FEATURE_JOYSTICK_CONTROL          // analog joystick support
 //#define OPTION_JOYSTICK_REVERSE_X_AXIS
 //#define OPTION_JOYSTICK_REVERSE_Y_AXIS
@@ -188,7 +189,7 @@
 // #define DEBUG_EL_POSITION_INCREMENTAL_ENCODER
 // #define DEBUG_MOON_TRACKING
 // #define DEBUG_SUN_TRACKING
-// #define DEBUG_GPS
+//#define DEBUG_GPS  // issue
 // #define DEBUG_GPS_SERIAL
 // #define DEBUG_OFFSET
 // #define DEBUG_RTC

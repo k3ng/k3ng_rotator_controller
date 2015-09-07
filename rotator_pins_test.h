@@ -189,3 +189,23 @@
 #define pin_memsic_2125_y 0
 #endif //FEATURE_EL_POSITION_MEMSIC_2125
 
+#ifdef FEATURE_ANALOG_OUTPUT_PINS
+  #define pin_analog_az_out 0
+  #define pin_analog_el_out 0
+#endif //FEATURE_ANALOG_OUTPUT_PINS
+
+#ifdef FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
+  #define pin_sun_pushbutton_calibration 0             // normally HIGH, have button pull LOW
+#endif //FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
+
+#ifdef FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+  #define pin_moon_pushbutton_calibration 0            // normally HIGH, have button pull LOW
+#endif //FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+
+//#define reset_pin 22 // if defined, goes HIGH to reset unit
+
+#if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
+  #define pin_sei_bus_busy 24
+  #define pin_sei_bus_send_receive 22  
+#endif
+

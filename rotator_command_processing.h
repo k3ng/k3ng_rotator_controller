@@ -1124,11 +1124,11 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
   } else {
 
     #ifdef DEBUG_PROCESS_SLAVE
-    debug_print("serial_serial_buffer: command_string: ");
-    debug_print((char*)slave_command_buffer);
-    debug_print("$ slave_command_buffer_index: ");
-    debug_print_int(slave_command_buffer_index);
-    debug_print("\n");
+    debug.print("serial_serial_buffer: command_string: ");
+    debug.print((char*)slave_command_buffer);
+    debug.print("$ slave_command_buffer_index: ");
+    debug.print(slave_command_buffer_index);
+    debug.print("\n");
     #endif // DEBUG_PROCESS_SLAVE
 
     if (((slave_command_buffer[0] == 'S') && (slave_command_buffer[1] == 'S')) && (slave_command_buffer[2] > 47) && (slave_command_buffer[2] < 53)) { // this is a variable length command
@@ -1264,8 +1264,8 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
             pin_value = ((slave_command_buffer[2] - 48) * 10) + (slave_command_buffer[3] - 48);
           }
           #ifdef DEBUG_PROCESS_SLAVE
-          debug_print("service_serial_buffer: pin_value: ");
-          debug_print_int(pin_value);
+          debug.print("service_serial_buffer: pin_value: ");
+          debug.print(pin_value);
           #endif // DEBUG_PROCESS_SLAVE
           strcpy(return_string,"OK");
           pinModeEnhanced(pin_value, OUTPUT);
@@ -1474,7 +1474,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'C':                                // C - return current azimuth
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: C\n");
+          debug.print("yaesu_serial_command: C\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef OPTION_DELAY_C_CMD_OUTPUT
@@ -1547,7 +1547,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'F': // F - full scale calibration
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: F\n");
+          debug.print("yaesu_serial_command: F\n");
         }
         #endif // DEBUG_PROCESS_YAESU
       
@@ -1583,7 +1583,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'L':  // L - manual left (CCW) rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: L\n");
+          debug.print("yaesu_serial_command: L\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         submit_request(AZ, REQUEST_CCW, 0, 21);
@@ -1597,7 +1597,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'O':  // O - offset calibration
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: O\n");
+          debug.print("yaesu_serial_command: O\n");
         }
         #endif // DEBUG_PROCESS_YAESU
 
@@ -1631,7 +1631,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'R':  // R - manual right (CW) rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: R\n");
+          debug.print("yaesu_serial_command: R\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         submit_request(AZ, REQUEST_CW, 0, 22);
@@ -1644,7 +1644,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'A':  // A - CW/CCW rotation stop
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: A\n");
+          debug.print("yaesu_serial_command: A\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         submit_request(AZ, REQUEST_STOP, 0, 23);
@@ -1657,7 +1657,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'S':         // S - all stop
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: S\n");
+          debug.print("yaesu_serial_command: S\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         submit_request(AZ, REQUEST_STOP, 0, 24);
@@ -1676,7 +1676,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'M': // M - auto azimuth rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: M\n");
+          debug.print("yaesu_serial_command: M\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
@@ -1735,7 +1735,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'N': // N - number of loaded timed interval entries
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: N\n");
+          debug.print("yaesu_serial_command: N\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
@@ -1757,7 +1757,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'X':  // X - azimuth speed change
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: X\n");
+          debug.print("yaesu_serial_command: X\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         
@@ -1811,7 +1811,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'U':  // U - manual up rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: U\n");
+          debug.print("yaesu_serial_command: U\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
@@ -1824,7 +1824,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'D':  // D - manual down rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: D\n");
+          debug.print("yaesu_serial_command: D\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
@@ -1837,7 +1837,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'E':  // E - stop elevation rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: E\n");
+          debug.print("yaesu_serial_command: E\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
@@ -1872,7 +1872,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'W':  // W - auto elevation rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("yaesu_serial_command: W\n");
+          debug.print("yaesu_serial_command: W\n");
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
@@ -1927,7 +1927,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         } else {
           #ifdef DEBUG_PROCESS_YAESU
           if (debug_mode) {
-            debug_print("process_yaesu_command: W cmd az error");
+            debug.print("process_yaesu_command: W cmd az error");
           }
           #endif // DEBUG_PROCESS_YAESU
           strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
@@ -1940,7 +1940,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         } else {
           #ifdef DEBUG_PROCESS_YAESU
           if (debug_mode) {
-            debug_print("process_yaesu_command: W cmd az/el error");
+            debug.print("process_yaesu_command: W cmd az/el error");
           }
           #endif // DEBUG_PROCESS_YAESU
           strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
@@ -1986,16 +1986,16 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         strcpy(return_string,"?>");
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug_print("process_yaesu_command: yaesu_command_buffer_index: ");
-          debug_print_int(yaesu_command_buffer_index);
+          debug.print("process_yaesu_command: yaesu_command_buffer_index: ");
+          debug.print(yaesu_command_buffer_index);
           for (int debug_x = 0; debug_x < yaesu_command_buffer_index; debug_x++) {
-            debug_print("process_yaesu_command: yaesu_command_buffer[");
-            debug_print_int(debug_x);
-            debug_print("]: ");
-            debug_print_int(yaesu_command_buffer[debug_x]);
-            debug_print(" ");
-            debug_write_int(yaesu_command_buffer[debug_x]);
-            debug_print("\n");;
+            debug.print("process_yaesu_command: yaesu_command_buffer[");
+            debug.print(debug_x);
+            debug.print("]: ");
+            debug.print(yaesu_command_buffer[debug_x]);
+            debug.print(" ");
+            debug.write(yaesu_command_buffer[debug_x]);
+            debug.print("\n");;
           }
         }
         #endif // DEBUG_PROCESS_YAESU

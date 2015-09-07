@@ -28,13 +28,15 @@
      Jasper PA2J
      Pablo EA4TX
      Máximo EA1DDO
+     Matt VK5ZM
      ...and others
   
    Translations provided by
-     Maximo EA1DDO
+     Máximo EA1DDO
      Jan OK2ZAW
      Paolo IT9IPQ
      Ismael PY4PI
+     Robert DL5ROB
 
 
    (If you contributed something and I forgot to put your name and call in here, *please* email me!)
@@ -401,14 +403,21 @@
         #include "rotator_language.h"
         OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
         /?FS command - Full Status Report
+
+    2.0.2015090601
+      Updates to rotator_language.h
+      Fixed k3ngdisplay.h / LiquidCrystal.h compilation problems with Arduino IDE
+      Integrated DebugClass (debug.h and debug.cpp) contributed from Matt VK5ZM
+      
   */
 
-#define CODE_VERSION "2.0.2015090402"
+#define CODE_VERSION "2.0.2015090601"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <math.h>
 #include <avr/wdt.h>
+
 
 #include "rotator_hardware.h"
 
@@ -429,6 +438,25 @@
 #endif      
   
 #include "rotator_dependencies.h"
+
+#include "debug.h"
+
+#ifdef FEATURE_4_BIT_LCD_DISPLAY
+  #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
+#endif // FEATURE_4_BIT_LCD_DISPLAY
+
+#if defined(FEATURE_ADAFRUIT_I2C_LCD)
+  #include <Adafruit_MCP23017.h> // required for Adafruit I2C LCD display
+  #include <Adafruit_RGBLCDShield.h> // required for Adafruit I2C LCD display
+#endif
+
+#if defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_RFROBOT_I2C_DISPLAY)
+  #include <LiquidCrystal_I2C.h> // required for YourDuino.com or DFRobot I2C LCD display
+#endif
+
+#if defined(FEATURE_YOURDUINO_I2C_LCD)
+  #include <LCD.h>   // required for YourDuino.com I2C LCD display
+#endif  
 
 #ifdef FEATURE_LCD_DISPLAY
  #include "k3ngdisplay.h"
@@ -514,6 +542,10 @@
 #ifdef FEATURE_STEPPER_MOTOR
   #include "TimerFive.h"
 #endif
+
+
+
+
 
 
 
@@ -880,6 +912,8 @@ byte current_az_speed_voltage = 0;
   float el_a2_encoder = 0;
 #endif //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER 
 
+DebugClass debug;
+
 //yyyyyyyyy
 
 #include "rotator_clock_and_gps.h"
@@ -920,7 +954,7 @@ void setup() {
 void loop() {
 
   #ifdef DEBUG_LOOP
-    debug_print("loop()\n");
+    debug.print("loop()\n");
     Serial.flush();
   #endif // DEBUG_LOOP
 
@@ -1109,7 +1143,7 @@ void loop() {
       if (!did_loopback_tests){
         debug_mode = 1;
         #ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
-          debug_print("service_a2_encoders: Starting az encoder loopback test...");
+          debug.print("service_a2_encoders: Starting az encoder loopback test...");
           if (SEIbus1.a2_encoder_loopback_test(AZ_A2_ENCODER_ADDRESS)){
             Serial.println("completed successfully!");
           } else {
@@ -1117,7 +1151,7 @@ void loop() {
           }
         #endif //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
         #ifdef FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
-          debug_print("service_a2_encoders: Starting el encoder loopback test...");
+          debug.print("service_a2_encoders: Starting el encoder loopback test...");
           if (SEIbus1.a2_encoder_loopback_test(EL_A2_ENCODER_ADDRESS)){
             Serial.println("completed successfully!");
           } else {
@@ -1138,11 +1172,11 @@ void loop() {
           executed_az_change_resolution = 1;
           last_command_encoder_address = AZ_A2_ENCODER_ADDRESS;
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_resolution submitted: az");
+            debug.println("service_a2_encoders: a2_encoder_change_resolution submitted: az");
           #endif           
         } else {
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_resolution unsuccesfully submitted: az");
+            debug.println("service_a2_encoders: a2_encoder_change_resolution unsuccesfully submitted: az");
           #endif
         }
         last_sei_bus_command_submit_time = millis();
@@ -1156,11 +1190,11 @@ void loop() {
           executed_el_change_resolution = 1;
           last_command_encoder_address = EL_A2_ENCODER_ADDRESS;
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_resolution submitted: el");
+            debug.println("service_a2_encoders: a2_encoder_change_resolution submitted: el");
           #endif          
         } else {
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_resolution unsuccesfully submitted: el");
+            debug.println("service_a2_encoders: a2_encoder_change_resolution unsuccesfully submitted: el");
           #endif
         }
         last_sei_bus_command_submit_time = millis();
@@ -1174,11 +1208,11 @@ void loop() {
           executed_az_change_mode_power_up = 1;
           last_command_encoder_address = AZ_A2_ENCODER_ADDRESS;
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_mode_power_up submitted: az");
+            debug.println("service_a2_encoders: a2_encoder_change_mode_power_up submitted: az");
           #endif             
         } else {
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_mode_power_up unsuccesfully submitted: az");
+            debug.println("service_a2_encoders: a2_encoder_change_mode_power_up unsuccesfully submitted: az");
           #endif  
         }
         last_sei_bus_command_submit_time = millis();
@@ -1192,11 +1226,11 @@ void loop() {
           executed_el_change_mode_power_up = 1;
           last_command_encoder_address = EL_A2_ENCODER_ADDRESS;
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_mode_power_up submitted: el");
+            debug.println("service_a2_encoders: a2_encoder_change_mode_power_up submitted: el");
           #endif           
         } else {
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders: a2_encoder_change_mode_power_up unsuccesfully submitted: el");
+            debug.println("service_a2_encoders: a2_encoder_change_mode_power_up unsuccesfully submitted: el");
           #endif  
         }
         last_sei_bus_command_submit_time = millis();
@@ -1213,11 +1247,11 @@ void loop() {
           last_encoder_queried_resolution = AZ_A2_ENCODER_RESOLUTION;
           az_a2_position_queried = 1;
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders:  a2_encoder_read_position submitted: az");
+            debug.println("service_a2_encoders:  a2_encoder_read_position submitted: az");
           #endif           
         } else {
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders:  a2_encoder_read_position unsuccesfully submitted: az");
+            debug.println("service_a2_encoders:  a2_encoder_read_position unsuccesfully submitted: az");
           #endif 
         }
         last_sei_bus_command_submit_time = millis();
@@ -1233,11 +1267,11 @@ void loop() {
           last_encoder_queried_resolution = EL_A2_ENCODER_RESOLUTION;
           el_a2_position_queried = 1;
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders:  a2_encoder_read_position submitted: el");
+            debug.println("service_a2_encoders:  a2_encoder_read_position submitted: el");
           #endif           
         } else {
           #ifdef DEBUG_A2_ENCODER
-            debug_println("service_a2_encoders:  a2_encoder_read_position unsuccesfully submitted: el");
+            debug.println("service_a2_encoders:  a2_encoder_read_position unsuccesfully submitted: el");
           #endif 
         }
         last_sei_bus_command_submit_time = millis();
@@ -1252,88 +1286,88 @@ void loop() {
       switch(SEIbus1.last_command[last_command_encoder_address]){
         #ifdef DEBUG_A2_ENCODER
           case SEI_BUS_A2_ENCODER_READ_FACTORY_INFO:
-            debug_print("service_a2_encoders: Model:");
-            debug_print_int(SEIbus1.model_number);
-            debug_print(" Version:");
-            debug_print_float(SEIbus1.version_number,2);
-            debug_print(" Serial:");
-            debug_print_float(SEIbus1.serial_number,0);
-            debug_print(" ");
-            debug_print_int(SEIbus1.year);
-            debug_print("-");
-            debug_print_int(SEIbus1.month);
-            debug_print("-");
-            debug_print_int(SEIbus1.day);    
-            debug_println("");
+            debug.print("service_a2_encoders: Model:");
+            debug.print(SEIbus1.model_number);
+            debug.print(" Version:");
+            debug.print(SEIbus1.version_number,2);
+            debug.print(" Serial:");
+            debug.print(SEIbus1.serial_number,0);
+            debug.print(" ");
+            debug.print(SEIbus1.year);
+            debug.print("-");
+            debug.print(SEIbus1.month);
+            debug.print("-");
+            debug.print(SEIbus1.day);    
+            debug.println("");
             break;
           case SEI_BUS_A2_ENCODER_CMD_READ_POS_TIME_STATUS:
-            debug_print("service_a2_encoders: Time: ");
-            debug_print_float(SEIbus1.time,0);
-            debug_println("");
+            debug.print("service_a2_encoders: Time: ");
+            debug.print(SEIbus1.time,0);
+            debug.println("");
           case SEI_BUS_A2_ENCODER_CMD_READ_POS_STATUS:
-            debug_print("service_a2_encoders: Status: ");
+            debug.print("service_a2_encoders: Status: ");
             switch(SEIbus1.status & B11110000){
-              case STATUS_NO_ERROR: debug_println("OK"); break;
-              case STATUS_NOT_ENOUGH_LIGHT: debug_println("NOT_ENOUGH_LIGHT"); break;
-              case STATUS_TOO_MUCH_LIGHT: debug_println("TOO_MUCH_LIGHT"); break;
-              case STATUS_MISALIGNMENT_OR_DUST_1: debug_println("MISALIGNMENT_OR_DUST_1"); break;
-              case STATUS_MISALIGNMENT_OR_DUST_2: debug_println("MISALIGNMENT_OR_DUST_2"); break;
-              case STATUS_MISALIGNMENT_OR_DUST_3: debug_println("MISALIGNMENT_OR_DUST_3"); break;
-              case STATUS_HARDWARE_PROBLEM: debug_println("HARDWARE_PROBLEM"); break;
-              case STATUS_FAST_MODE_ERROR: debug_println("FAST_MODE_ERROR"); break;
-              case STATUS_MULTITURN_NOT_INIT: debug_println("MULTITURN_NOT_INIT"); break;
+              case STATUS_NO_ERROR: debug.println("OK"); break;
+              case STATUS_NOT_ENOUGH_LIGHT: debug.println("NOT_ENOUGH_LIGHT"); break;
+              case STATUS_TOO_MUCH_LIGHT: debug.println("TOO_MUCH_LIGHT"); break;
+              case STATUS_MISALIGNMENT_OR_DUST_1: debug.println("MISALIGNMENT_OR_DUST_1"); break;
+              case STATUS_MISALIGNMENT_OR_DUST_2: debug.println("MISALIGNMENT_OR_DUST_2"); break;
+              case STATUS_MISALIGNMENT_OR_DUST_3: debug.println("MISALIGNMENT_OR_DUST_3"); break;
+              case STATUS_HARDWARE_PROBLEM: debug.println("HARDWARE_PROBLEM"); break;
+              case STATUS_FAST_MODE_ERROR: debug.println("FAST_MODE_ERROR"); break;
+              case STATUS_MULTITURN_NOT_INIT: debug.println("MULTITURN_NOT_INIT"); break;
             }
           case SEI_BUS_A2_ENCODER_READ_RESOLUTION:
-            debug_print("service_a2_encoders: Resolution: ");
-            debug_print_float(SEIbus1.resolution,0);
-            debug_println("");
+            debug.print("service_a2_encoders: Resolution: ");
+            debug.print(SEIbus1.resolution,0);
+            debug.println("");
             break;
           case SEI_BUS_A2_ENCODER_CHANGE_RESOLUTION:
-            debug_println("service_a2_encoders: Resolution set.");
+            debug.println("service_a2_encoders: Resolution set.");
             break;      
           case SEI_BUS_A2_ENCODER_READ_SERIAL_NUMBER:
-            debug_print("service_a2_encoders: Serial number is ");
-            debug_print_float(SEIbus1.serial_number,0);
-            debug_println("");
+            debug.print("service_a2_encoders: Serial number is ");
+            debug.print(SEIbus1.serial_number,0);
+            debug.println("");
             break;      
           case SEI_BUS_A2_ENCODER_SET_ABSOLUTE_POSITION:
-            debug_println("service_a2_encoders: Set absolute position.");
+            debug.println("service_a2_encoders: Set absolute position.");
             break;
           case SEI_BUS_A2_ENCODER_SET_ORIGIN:
-            debug_println("service_a2_encoders: Set origin executed.");
+            debug.println("service_a2_encoders: Set origin executed.");
             break;
           case SEI_BUS_A2_ENCODER_CHANGE_MODE_TEMPORARY:
-            debug_println("service_a2_encoders: Changed mode temporarily.");
+            debug.println("service_a2_encoders: Changed mode temporarily.");
             break;
           case SEI_BUS_A2_ENCODER_CHANGE_MODE_POWER_UP:
-            debug_println("service_a2_encoders: Changed power up mode.");
+            debug.println("service_a2_encoders: Changed power up mode.");
             break;      
           case SEI_BUS_A2_ENCODER_READ_MODE:
-            debug_print("service_a2_encoders: Modes set: ");
-            if (SEIbus1.mode & MODE_REVERSE){debug_print("MODE_REVERSE ");}
-            if (SEIbus1.mode & MODE_STROBE){debug_print("MODE_STROBE ");}
-            if (SEIbus1.mode & MODE_MULTITURN){debug_print("MODE_MULTITURN ");}
-            if (SEIbus1.mode & MODE_TWO_BYTE_POSITION){debug_print("MODE_TWO_BYTE_POSITION ");}
-            if (SEIbus1.mode & MODE_INCREMENTAL){debug_print("MODE_INCREMENTAL ");}
-            if (SEIbus1.mode & MODE_DIVIDE_BY_256){debug_print("MODE_DIVIDE_BY_256 ");}
-            debug_println("");
+            debug.print("service_a2_encoders: Modes set: ");
+            if (SEIbus1.mode & MODE_REVERSE){debug.print("MODE_REVERSE ");}
+            if (SEIbus1.mode & MODE_STROBE){debug.print("MODE_STROBE ");}
+            if (SEIbus1.mode & MODE_MULTITURN){debug.print("MODE_MULTITURN ");}
+            if (SEIbus1.mode & MODE_TWO_BYTE_POSITION){debug.print("MODE_TWO_BYTE_POSITION ");}
+            if (SEIbus1.mode & MODE_INCREMENTAL){debug.print("MODE_INCREMENTAL ");}
+            if (SEIbus1.mode & MODE_DIVIDE_BY_256){debug.print("MODE_DIVIDE_BY_256 ");}
+            debug.println("");
             break;
           case SEI_BUS_A2_ENCODER_RESET:
-            debug_println("service_a2_encoders: Completed reset.");
+            debug.println("service_a2_encoders: Completed reset.");
             break;
         #endif //#DEBUG_A2_ENCODER
         
         case SEI_BUS_A2_ENCODER_CMD_READ_POS:
           #ifdef DEBUG_A2_ENCODER
-            debug_print("service_a2_encoders: Position Raw: ");
-            debug_print_float(SEIbus1.position,0);
-            debug_print("\tNormalized: ");
+            debug.print("service_a2_encoders: Position Raw: ");
+            debug.print(SEIbus1.position,0);
+            debug.print("\tNormalized: ");
             normalized_position = (SEIbus1.position/(float(last_encoder_queried_resolution)/360.0));
-            debug_print_float(normalized_position,4);
-            debug_print("\tRollover Compensated: ");
+            debug.print(normalized_position,4);
+            debug.print("\tRollover Compensated: ");
             normalized_position = (SEIbus1.position_rollover_compensated/(float(last_encoder_queried_resolution)/360.0));
-            debug_print_float(normalized_position, 4);
-            debug_println("");
+            debug.print(normalized_position, 4);
+            debug.println("");
           #endif //#DEBUG_A2_ENCODER
 
           #ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
@@ -1353,7 +1387,7 @@ void loop() {
 
         #ifdef DEBUG_A2_ENCODER
           default:
-            debug_println("service_a2_encoders: Unknown command completed.");
+            debug.println("service_a2_encoders: Unknown command completed.");
             break;
         #endif //#DEBUG_A2_ENCODER  
       }
@@ -1366,7 +1400,7 @@ void loop() {
     if (((millis() - last_sei_bus_command_submit_time) > SEI_BUS_COMMAND_TIMEOUT_MS) && (submitted_sei_bus_command)) {
       submitted_sei_bus_command = 0;
       #ifdef DEBUG_A2_ENCODER
-        debug_println("service_a2_encoders: command timeout");
+        debug.println("service_a2_encoders: command timeout");
       #endif         
     }
 
@@ -1379,7 +1413,7 @@ void loop() {
 void read_headings(){
 
   #ifdef DEBUG_LOOP
-    debug_print("read_headings()\n");
+    debug.print("read_headings()\n");
   #endif // DEBUG_LOOP
 
   read_azimuth(0);
@@ -1462,9 +1496,9 @@ void profile_loop_time(){
 
   if (debug_mode) {
     if ((millis() - last_print_time) > 1000) {
-      debug_print("avg loop time: ");
-      debug_print_float(average_loop_time, 2);
-      debug_println("");
+      debug.print("avg loop time: ");
+      debug.print(average_loop_time, 2);
+      debug.println("");
       last_print_time = millis();
     }
   }
@@ -1487,11 +1521,11 @@ void check_az_speed_pot() {
     if (new_azimuth_speed_voltage != normal_az_speed_voltage) {
       #ifdef DEBUG_AZ_SPEED_POT
         if (debug_mode) {
-          debug_print("check_az_speed_pot: normal_az_speed_voltage: ");
-          debug_print_int(normal_az_speed_voltage);
-          debug_print(" new_azimuth_speed_voltage:");
-          debug_print_int(new_azimuth_speed_voltage);
-          debug_println("");
+          debug.print("check_az_speed_pot: normal_az_speed_voltage: ");
+          debug.print(normal_az_speed_voltage);
+          debug.print(" new_azimuth_speed_voltage:");
+          debug.print(new_azimuth_speed_voltage);
+          debug.println("");
         }
       #endif // DEBUG_AZ_SPEED_POT
       normal_az_speed_voltage = new_azimuth_speed_voltage;
@@ -1540,7 +1574,7 @@ void check_az_preset_potentiometer() {
           pot_changed_waiting = 1;
           #ifdef DEBUG_AZ_PRESET_POT
           if (debug_mode) {
-            debug_println("check_az_preset_potentiometer: in pot_changed_waiting");
+            debug.println("check_az_preset_potentiometer: in pot_changed_waiting");
           }
           #endif // DEBUG_AZ_PRESET_POT
           last_pot_read = pot_read;
@@ -1557,11 +1591,11 @@ void check_az_preset_potentiometer() {
           new_pot_azimuth = map(pot_read, AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP);
           #ifdef DEBUG_AZ_PRESET_POT
           if (debug_mode) {
-            debug_print("check_az_preset_potentiometer: pot change - current raw_azimuth: ");
-            debug_print_float(raw_azimuth / HEADING_MULTIPLIER,0);
-            debug_print(" new_azimuth: ");
-            debug_print_int(new_pot_azimuth);
-            debug_println("");
+            debug.print("check_az_preset_potentiometer: pot change - current raw_azimuth: ");
+            debug.print(raw_azimuth / HEADING_MULTIPLIER,0);
+            debug.print(" new_azimuth: ");
+            debug.print(new_pot_azimuth);
+            debug.println("");
           }
           #endif // DEBUG_AZ_PRESET_POT
           submit_request(AZ, REQUEST_AZIMUTH_RAW, new_pot_azimuth * HEADING_MULTIPLIER, 44);
@@ -1579,7 +1613,7 @@ void initialize_rotary_encoders(){
 
 
   #ifdef DEBUG_LOOP
-    debug_print("initialize_rotary_encoders()\n");
+    debug.print("initialize_rotary_encoders()\n");
     Serial.flush();
   #endif // DEBUG_LOOP
 
@@ -1687,13 +1721,13 @@ void check_preset_encoders(){
   static byte last_az_rotary_preset_pin2 = 0;
 
   if ((debug_mode) && (( last_az_rotary_preset_pin1 != digitalReadEnhanced(az_rotary_preset_pin1)) || ( last_az_rotary_preset_pin2 != digitalReadEnhanced(az_rotary_preset_pin2)))) {
-    debug_print("check_preset_encoders: az_rotary_preset_pin1: ");
-    debug_print_int(digitalReadEnhanced(az_rotary_preset_pin1));
-    debug_print(" az_rotary_preset_pin2: ");
-    debug_print_int(digitalReadEnhanced(az_rotary_preset_pin2));
-    debug_print(" encoder_result: ");
-    debug_print_int(az_encoder_result);
-    debug_println("");
+    debug.print("check_preset_encoders: az_rotary_preset_pin1: ");
+    debug.print(digitalReadEnhanced(az_rotary_preset_pin1));
+    debug.print(" az_rotary_preset_pin2: ");
+    debug.print(digitalReadEnhanced(az_rotary_preset_pin2));
+    debug.print(" encoder_result: ");
+    debug.print(az_encoder_result);
+    debug.println("");
   }
   last_az_rotary_preset_pin1 = digitalReadEnhanced(az_rotary_preset_pin1);
   last_az_rotary_preset_pin2 = digitalReadEnhanced(az_rotary_preset_pin2);
@@ -1720,13 +1754,13 @@ void check_preset_encoders(){
     #ifdef DEBUG_PRESET_ENCODERS
     char tempchar[12] = "";
     if (debug_mode) {
-      debug_print("check_preset_encoders: az_timestamps:");
+      debug.print("check_preset_encoders: az_timestamps:");
       for (int y = 0; y < 5; y++) {
-        debug_print(" ");
+        debug.print(" ");
         dtostrf(az_timestamp[y],0,0,tempchar);
-        debug_print(tempchar);
+        debug.print(tempchar);
       }
-      debug_println("");
+      debug.println("");
     }
     #endif // DEBUG_PRESET_ENCODERS
 
@@ -1747,7 +1781,7 @@ void check_preset_encoders(){
     #ifndef OPTION_PRESET_ENCODER_0_360_DEGREES
     if (az_encoder_result == DIR_CW) {
       #ifdef DEBUG_PRESET_ENCODERS
-      debug_print("check_preset_encoders: az CW");
+      debug.print("check_preset_encoders: az CW");
       #endif // DEBUG_PRESET_ENCODERS
       if (az_elapsed_time < 250 /* mSec */) {
         az_encoder_raw_degrees += (5 * HEADING_MULTIPLIER);
@@ -1761,7 +1795,7 @@ void check_preset_encoders(){
     }
     if (az_encoder_result == DIR_CCW) {
       #ifdef DEBUG_PRESET_ENCODERS
-      debug_print("check_preset_encoders: az CCW");
+      debug.print("check_preset_encoders: az CCW");
       #endif // DEBUG_PRESET_ENCODERS
       if (az_elapsed_time < 250 /* mSec */) {
         az_encoder_raw_degrees -= (5 * HEADING_MULTIPLIER);
@@ -1775,7 +1809,7 @@ void check_preset_encoders(){
     #else //ndef OPTION_PRESET_ENCODER_0_360_DEGREES
     if (az_encoder_result == DIR_CW) {
       #ifdef DEBUG_PRESET_ENCODERS
-      debug_print("check_preset_encoders: az CW");
+      debug.print("check_preset_encoders: az CW");
       #endif // DEBUG_PRESET_ENCODERS
       if (az_elapsed_time < 250) {  // Single deg increase unless encoder turned quickly then 10's step
         az_encoder_raw_degrees += (5 * HEADING_MULTIPLIER);
@@ -1793,7 +1827,7 @@ void check_preset_encoders(){
     }
     if (az_encoder_result == DIR_CCW) {
       #ifdef DEBUG_PRESET_ENCODERS
-      debug_print("check_preset_encoders: az CCW");
+      debug.print("check_preset_encoders: az CCW");
       #endif // DEBUG_PRESET_ENCODERS
       if (az_elapsed_time < 250) {  // Single deg decrease unless encoder turned quickly then 10's step
         az_encoder_raw_degrees -= (5 * HEADING_MULTIPLIER);
@@ -1822,9 +1856,9 @@ void check_preset_encoders(){
     }
 
     #ifdef DEBUG_PRESET_ENCODERS
-    debug_print("check_preset_encoders: az target: ");
+    debug.print("check_preset_encoders: az target: ");
     dtostrf((az_encoder_raw_degrees / HEADING_MULTIPLIER),0,1,tempchar);
-    debug_println(tempchar);
+    debug.println(tempchar);
     #endif // DEBUG_PRESET_ENCODERS
 
   } // if (az_encoder_result)
@@ -1855,7 +1889,7 @@ void check_preset_encoders(){
 
     if (el_encoder_result == DIR_CW) {                      // Rotary Encoder CW 0 - 359 Deg
       #ifdef DEBUG_PRESET_ENCODERS
-      debug_println("check_preset_encoders: el CW");
+      debug.println("check_preset_encoders: el CW");
       #endif // DEBUG_PRESET_ENCODERS
       if (el_elapsed_time < 250) {
         el_encoder_degrees += (5 * HEADING_MULTIPLIER);
@@ -1867,7 +1901,7 @@ void check_preset_encoders(){
     }
     if (el_encoder_result == DIR_CCW) {
       #ifdef DEBUG_PRESET_ENCODERS
-      debug_println("check_preset_encoders: el CCW");
+      debug.println("check_preset_encoders: el CCW");
       #endif // DEBUG_PRESET_ENCODERS
       // Rotary Encoder CCW 359 - 0 Deg
       if (el_elapsed_time < 250) {
@@ -1889,9 +1923,10 @@ void check_preset_encoders(){
     }
 
     #ifdef DEBUG_PRESET_ENCODERS
-    debug_print("check_preset_encoders: el target: ");
-    dtostrf(el_encoder_degrees / HEADING_MULTIPLIER,0,1,tempchar);
-    debug_println(tempchar);
+      debug.print("check_preset_encoders: el target: ");
+      char tempchar[16];
+      dtostrf(el_encoder_degrees / HEADING_MULTIPLIER,0,1,tempchar);
+      debug.println(tempchar);
     #endif // DEBUG_PRESET_ENCODERS
 
 
@@ -1908,13 +1943,13 @@ void check_preset_encoders(){
         last_preset_start_button_start = millis();
 
         #ifdef DEBUG_PRESET_ENCODERS
-        debug_println("check_preset_encoders: preset_start_button submit_encoder_change");
+        debug.println("check_preset_encoders: preset_start_button submit_encoder_change");
         #endif // DEBUG_PRESET_ENCODERS
       }
     } else {
       if ((millis() - last_encoder_change_time) > 2000) {       // if enc not changed for more than 2 sec, rotate to target
         #ifdef DEBUG_PRESET_ENCODERS
-        debug_println("check_preset_encoders: timer submit_encoder_change");
+        debug.println("check_preset_encoders: timer submit_encoder_change");
         #endif // DEBUG_PRESET_ENCODERS
         submit_encoder_change = 1;
       }
@@ -1927,7 +1962,7 @@ void check_preset_encoders(){
     if ((button_read == BUTTON_ACTIVE_STATE) && (!submit_encoder_change) && ((millis() - last_preset_start_button_start) > 250)
         && ((millis() - last_preset_start_button_kill) > 250) && (preset_encoders_state == ENCODER_IDLE)) {
       #ifdef DEBUG_PRESET_ENCODERS
-      debug_println("check_preset_encoders: preset button kill");
+      debug.println("check_preset_encoders: preset button kill");
       #endif // DEBUG_PRESET_ENCODERS
       #ifdef FEATURE_AZ_PRESET_ENCODER
       if (az_state != IDLE) {
@@ -1945,7 +1980,7 @@ void check_preset_encoders(){
 
   if ((submit_encoder_change) && (button_read == BUTTON_INACTIVE_STATE)) {
     #ifdef DEBUG_PRESET_ENCODERS
-    debug_println("check_preset_encoders: submit_encoder_change ");
+    debug.println("check_preset_encoders: submit_encoder_change ");
     #endif // DEBUG_PRESET_ENCODERS
 
 
@@ -1985,17 +2020,17 @@ void check_az_manual_rotate_limit() {
 
   if ((current_az_state() == ROTATING_CCW) && (raw_azimuth <= (AZ_MANUAL_ROTATE_CCW_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    debug_print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CCW_LIMIT of ");
-    debug_print_int(AZ_MANUAL_ROTATE_CCW_LIMIT);
-    debug_println("");
+    debug.print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CCW_LIMIT of ");
+    debug.print(AZ_MANUAL_ROTATE_CCW_LIMIT);
+    debug.println("");
     #endif // DEBUG_AZ_MANUAL_ROTATE_LIMITS
     submit_request(AZ, REQUEST_KILL, 0, 49);
   }
   if ((current_az_state() == ROTATING_CW) && (raw_azimuth >= (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    debug_print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CW_LIMIT of ");
-    debug_print_int(AZ_MANUAL_ROTATE_CW_LIMIT);
-    debug_println("");
+    debug.print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CW_LIMIT of ");
+    debug.print(AZ_MANUAL_ROTATE_CW_LIMIT);
+    debug.println("");
     #endif // DEBUG_AZ_MANUAL_ROTATE_LIMITS
     submit_request(AZ, REQUEST_KILL, 0, 50);
   }
@@ -2009,17 +2044,17 @@ void check_el_manual_rotate_limit() {
 
   if ((current_el_state() == ROTATING_DOWN) && (elevation <= (EL_MANUAL_ROTATE_DOWN_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_EL_MANUAL_ROTATE_LIMITS
-    debug_print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_DOWN_LIMIT of ");
-    debug_print_int(EL_MANUAL_ROTATE_DOWN_LIMIT);
-    debug_println("");
+    debug.print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_DOWN_LIMIT of ");
+    debug.print(EL_MANUAL_ROTATE_DOWN_LIMIT);
+    debug.println("");
     #endif // DEBUG_EL_MANUAL_ROTATE_LIMITS
     submit_request(EL, REQUEST_KILL, 0, 51);
   }
   if ((current_el_state() == ROTATING_UP) && (elevation >= (EL_MANUAL_ROTATE_UP_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_EL_MANUAL_ROTATE_LIMITS
-    debug_print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_UP_LIMIT of ");
-    debug_print_int(EL_MANUAL_ROTATE_UP_LIMIT);
-    debug_println("");
+    debug.print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_UP_LIMIT of ");
+    debug.print(EL_MANUAL_ROTATE_UP_LIMIT);
+    debug.println("");
     #endif // DEBUG_EL_MANUAL_ROTATE_LIMITS
     submit_request(EL, REQUEST_KILL, 0, 52);
   }
@@ -2080,13 +2115,13 @@ void brake_release(byte az_or_el, byte operation){
         digitalWriteEnhanced(brake_az, BRAKE_ACTIVE_STATE);
         brake_az_engaged = 1;
         #ifdef DEBUG_BRAKE
-        debug_println("brake_release: brake_az BRAKE_RELEASE_ON");
+        debug.println("brake_release: brake_az BRAKE_RELEASE_ON");
         #endif // DEBUG_BRAKE
       } else {
         digitalWriteEnhanced(brake_az, BRAKE_INACTIVE_STATE);
         brake_az_engaged = 0;
         #ifdef DEBUG_BRAKE
-        debug_println("brake_release: brake_az BRAKE_RELEASE_OFF");
+        debug.println("brake_release: brake_az BRAKE_RELEASE_OFF");
         #endif // DEBUG_BRAKE
       }
     }
@@ -2097,13 +2132,13 @@ void brake_release(byte az_or_el, byte operation){
         digitalWriteEnhanced(brake_el, BRAKE_ACTIVE_STATE);
         brake_el_engaged = 1;
         #ifdef DEBUG_BRAKE
-        debug_println("brake_release: brake_el BRAKE_RELEASE_ON");
+        debug.println("brake_release: brake_el BRAKE_RELEASE_ON");
         #endif // DEBUG_BRAKE
       } else {
         digitalWriteEnhanced(brake_el, BRAKE_INACTIVE_STATE);
         brake_el_engaged = 0;
         #ifdef DEBUG_BRAKE
-        debug_println("brake_release: brake_el BRAKE_RELEASE_OFF");
+        debug.println("brake_release: brake_el BRAKE_RELEASE_OFF");
         #endif // DEBUG_BRAKE
       }
     }
@@ -2131,7 +2166,7 @@ void check_overlap(){
       blink_status = 1;
       #endif //OPTION_BLINK_OVERLAP_LED
       #ifdef DEBUG_OVERLAP
-      debug_println("check_overlap: in overlap");
+      debug.println("check_overlap: in overlap");
       #endif // DEBUG_OVERLAP
     } else {
       // if (((analog_az < (500*HEADING_MULTIPLIER)) || (azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER))) && (overlap_led_status)) {
@@ -2139,7 +2174,7 @@ void check_overlap(){
         digitalWriteEnhanced(overlap_led, LOW);
         overlap_led_status = 0;
         #ifdef DEBUG_OVERLAP
-        debug_println("check_overlap: overlap off");
+        debug.println("check_overlap: overlap off");
         #endif // DEBUG_OVERLAP
       }
     }
@@ -2239,11 +2274,11 @@ void service_remote_unit_serial_buffer(){
       command_string = String(char(toupper(control_port_buffer[0]))) + String(char(toupper(control_port_buffer[1])));
 
       #ifdef DEBUG_SERVICE_SERIAL_BUFFER
-      debug_print("serial_serial_buffer: command_string: ");
-      debug_print(command_string);
-      debug_print("$ control_port_buffer_index: ");
-      debug_print_int(control_port_buffer_index);
-      debug_println("");
+      debug.print("serial_serial_buffer: command_string: ");
+      debug.print(command_string);
+      debug.print("$ control_port_buffer_index: ");
+      debug.print(control_port_buffer_index);
+      debug.println("");
       #endif // DEBUG_SERVICE_SERIAL_BUFFER
 
       if ((command_string == "SS") && (control_port_buffer[2] > 47) && (control_port_buffer[2] < 53)) { // this is a variable length command
@@ -2341,9 +2376,9 @@ void service_remote_unit_serial_buffer(){
               pin_value = ((control_port_buffer[2] - 48) * 10) + (control_port_buffer[3] - 48);
             }
             #ifdef DEBUG_SERVICE_SERIAL_BUFFER
-            debug_print("service_serial_buffer: pin_value: ");
-            debug_print_int(pin_value);
-            debug_println("");
+              debug.print("service_serial_buffer: pin_value: ");
+              debug.print(pin_value);
+              debug.println("");
             #endif // DEBUG_SERVICE_SERIAL_BUFFER
             control_port->println("OK");
             pinModeEnhanced(pin_value, OUTPUT);
@@ -2531,7 +2566,7 @@ void service_remote_unit_serial_buffer(){
 void check_serial(){
 
   #ifdef DEBUG_LOOP
-    debug_print("check_serial\n");
+    debug.print("check_serial\n");
     Serial.flush();
   #endif // DEBUG_LOOP    
 
@@ -2593,11 +2628,11 @@ void check_serial(){
     last_serial_receive_time = millis();
 
     #ifdef DEBUG_SERIAL
-      debug_print("check_serial: control_port: ");
-      debug_print_int(control_port_available);
-      debug_print(":");
-      debug_print_int(incoming_serial_byte);
-      debug_println("");
+      debug.print("check_serial: control_port: ");
+      debug.print(control_port_available);
+      debug.print(":");
+      debug.print(incoming_serial_byte);
+      debug.println("");
     #endif // DEBUG_SERIAL
 
 
@@ -2753,7 +2788,7 @@ void check_serial(){
         gps_mirror_port->write(gps_port_read);
       #endif //GPS_MIRROR_PORT
       #ifdef DEBUG_GPS_SERIAL
-        debug_print_char(gps_port_read);
+        debug.print(gps_port_read);
         //port_flush();    
       #endif //DEBUG_GPS_SERIAL
       if (gps.encode(gps_port_read)) {
@@ -2785,7 +2820,7 @@ void check_buttons(){
   #endif // FEATURE_ADAFRUIT_BUTTONS
     if (azimuth_button_was_pushed == 0) {
     #ifdef DEBUG_BUTTONS
-    debug_println("check_buttons: button_cw pushed");
+      debug.println("check_buttons: button_cw pushed");
     #endif // DEBUG_BUTTONS
     #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
     if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER)) {
@@ -2795,7 +2830,7 @@ void check_buttons(){
       #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
     } else {
       #ifdef DEBUG_BUTTONS
-      debug_println("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT");
+      debug.println("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT");
       #endif // DEBUG_BUTTONS
     }
       #endif
@@ -2809,7 +2844,7 @@ void check_buttons(){
     #endif // FEATURE_ADAFRUIT_BUTTONS
     if (azimuth_button_was_pushed == 0) {
     #ifdef DEBUG_BUTTONS
-    debug_println("check_buttons: button_ccw pushed");
+    debug.println("check_buttons: button_ccw pushed");
     #endif // DEBUG_BUTTONS  
     #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
         if (raw_azimuth > (AZ_MANUAL_ROTATE_CCW_LIMIT * HEADING_MULTIPLIER)) {
@@ -2819,7 +2854,7 @@ void check_buttons(){
       #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
       } else {
         #ifdef DEBUG_BUTTONS
-        debug_println("check_buttons: exceeded AZ_MANUAL_ROTATE_CCW_LIMIT");
+        debug.println("check_buttons: exceeded AZ_MANUAL_ROTATE_CCW_LIMIT");
         #endif // DEBUG_BUTTONS
       }
       #endif // OPTION_AZ_MANUAL_ROTATE_LIMITS
@@ -2830,7 +2865,7 @@ void check_buttons(){
 #ifdef FEATURE_ADAFRUIT_BUTTONS
   if ((azimuth_button_was_pushed) && (!(buttons & 0x12))) {
     #ifdef DEBUG_BUTTONS
-    debug_println("check_buttons: no button depressed");
+    debug.println("check_buttons: no button depressed");
     #endif // DEBUG_BUTTONS
     submit_request(AZ, REQUEST_STOP, 0, 63);
     azimuth_button_was_pushed = 0;
@@ -2841,7 +2876,7 @@ void check_buttons(){
     delay(200);
     if ((digitalReadEnhanced(button_ccw) == BUTTON_INACTIVE_STATE) && (digitalReadEnhanced(button_cw) == BUTTON_INACTIVE_STATE)) {
     #ifdef DEBUG_BUTTONS
-    debug_println("check_buttons: no AZ button depressed");
+    debug.println("check_buttons: no AZ button depressed");
     #endif // DEBUG_BUTTONS
     #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
     submit_request(AZ, REQUEST_STOP, 0, 64);
@@ -2863,7 +2898,7 @@ void check_buttons(){
       submit_request(EL, REQUEST_UP, 0, 66);
       elevation_button_was_pushed = 1;
       #ifdef DEBUG_BUTTONS
-      debug_println("check_buttons: button_up pushed");
+      debug.println("check_buttons: button_up pushed");
       #endif // DEBUG_BUTTONS  
     }
 
@@ -2877,7 +2912,7 @@ void check_buttons(){
         submit_request(EL, REQUEST_DOWN, 0, 67);
         elevation_button_was_pushed = 1;
       #ifdef DEBUG_BUTTONS
-      debug_println("check_buttons: button_down pushed");
+      debug.println("check_buttons: button_down pushed");
       #endif // DEBUG_BUTTONS    
       }
     }
@@ -2886,7 +2921,7 @@ void check_buttons(){
 #ifdef FEATURE_ADAFRUIT_BUTTONS
   if ((elevation_button_was_pushed) && (!(buttons & 0x0C))) {
   #ifdef DEBUG_BUTTONS
-  debug_println("check_buttons: no EL button depressed");
+  debug.println("check_buttons: no EL button depressed");
   #endif // DEBUG_BUTTONS
   #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
     submit_request(EL, REQUEST_STOP, 0, 68);
@@ -2901,7 +2936,7 @@ void check_buttons(){
     delay(200);
     if ((digitalReadEnhanced(button_up) == BUTTON_INACTIVE_STATE) && (digitalReadEnhanced(button_down) == BUTTON_INACTIVE_STATE)) {
     #ifdef DEBUG_BUTTONS
-    debug_println("check_buttons: no EL button depressed");
+    debug.println("check_buttons: no EL button depressed");
     #endif // DEBUG_BUTTONS
     #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
       submit_request(EL, REQUEST_STOP, 0, 70);
@@ -2925,18 +2960,18 @@ void check_buttons(){
       park_button_pushed = 1;
       last_time_park_button_pushed = millis();
     #ifdef DEBUG_BUTTONS
-    debug_println("check_buttons: button_park pushed");
+    debug.println("check_buttons: button_park pushed");
     #endif // DEBUG_BUTTONS   
     } else {
       if ((park_button_pushed) && ((millis() - last_time_park_button_pushed) >= 250)) {
         if (park_status != PARK_INITIATED) {
           #ifdef DEBUG_BUTTONS
-          debug_println("check_buttons: executing park");
+          debug.println("check_buttons: executing park");
           #endif // DEBUG_BUTTONS
           initiate_park();
         } else {
           #ifdef DEBUG_BUTTONS
-          debug_println("check_buttons: park aborted");
+          debug.println("check_buttons: park aborted");
           #endif // DEBUG_BUTTONS
           submit_request(AZ, REQUEST_KILL, 0, 72);
             #ifdef FEATURE_ELEVATION_CONTROL
@@ -2955,7 +2990,7 @@ void check_buttons(){
   if (button_stop) {
     if ((digitalReadEnhanced(button_stop) == BUTTON_ACTIVE_STATE)) {
       #ifdef DEBUG_BUTTONS
-      debug_println("check_buttons: button_stop pushed");
+      debug.println("check_buttons: button_stop pushed");
       #endif // DEBUG_BUTTONS      
       #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
       submit_request(AZ, REQUEST_STOP, 0, 74);
@@ -2980,13 +3015,13 @@ void check_buttons(){
       moon_tracking_button_pushed = 1;
       last_time_moon_tracking_button_pushed = millis();
       #ifdef DEBUG_BUTTONS
-      debug_println("check_buttons: moon_tracking_button pushed");
+      debug.println("check_buttons: moon_tracking_button pushed");
       #endif // DEBUG_BUTTONS
     } else {
       if ((moon_tracking_button_pushed) && ((millis() - last_time_moon_tracking_button_pushed) >= 250)) {
         if (!moon_tracking_active) {
           #ifdef DEBUG_BUTTONS
-          debug_println("check_buttons: moon tracking on");
+          debug.println("check_buttons: moon tracking on");
           #endif // DEBUG_BUTTONS
           moon_tracking_active = 1;
           #ifdef FEATURE_SUN_TRACKING
@@ -2994,7 +3029,7 @@ void check_buttons(){
           #endif // FEATURE_SUN_TRACKING          
         } else {
           #ifdef DEBUG_BUTTONS
-           debug_println("check_buttons: moon tracking off");
+           debug.println("check_buttons: moon tracking off");
           #endif // DEBUG_BUTTONS
           moon_tracking_active = 0;
         }
@@ -3012,13 +3047,13 @@ void check_buttons(){
       sun_tracking_button_pushed = 1;
       last_time_sun_tracking_button_pushed = millis();
       #ifdef DEBUG_BUTTONS
-      debug_println("check_buttons: sun_tracking_button pushed");
+      debug.println("check_buttons: sun_tracking_button pushed");
       #endif // DEBUG_BUTTONS
     } else {
       if ((sun_tracking_button_pushed) && ((millis() - last_time_sun_tracking_button_pushed) >= 250)) {
         if (!sun_tracking_active) {
           #ifdef DEBUG_BUTTONS
-          debug_println("check_buttons: sun tracking on");
+          debug.println("check_buttons: sun tracking on");
           #endif // DEBUG_BUTTONS
           sun_tracking_active = 1;
           #ifdef FEATURE_MOON_TRACKING
@@ -3026,7 +3061,7 @@ void check_buttons(){
           #endif // FEATURE_MOON_TRACKING          
         } else {
           #ifdef DEBUG_BUTTONS
-          debug_print("check_buttons: sun tracking off");
+          debug.print("check_buttons: sun tracking off");
           #endif // DEBUG_BUTTONS
           sun_tracking_active = 0;
         }
@@ -3861,28 +3896,28 @@ void read_settings_from_eeprom(){
   if (configuration.magic_number == EEPROM_MAGIC_NUMBER) {
     #ifdef DEBUG_EEPROM
       if (debug_mode) {
-        debug_println("read_settings_from_eeprom: reading settings from eeprom: ");
-        debug_print("\nanalog_az_full_ccw");
-        debug_print_int(configuration.analog_az_full_ccw);
-        debug_print("\nanalog_az_full_cw");
-        debug_print_int(configuration.analog_az_full_cw);
-        debug_print("\nanalog_el_0_degrees");
-        debug_print_int(configuration.analog_el_0_degrees);
-        debug_print("\nanalog_el_max_elevation");
-        debug_print_int(configuration.analog_el_max_elevation);
-        debug_print("\nlast_azimuth:");
-        debug_print_float(configuration.last_azimuth, 1);
-        debug_print("\nlast_elevation:");
-        debug_print_float(configuration.last_elevation, 1);
-        debug_print("\nlast_az_incremental_encoder_position:");
-        debug_print_float(configuration.last_az_incremental_encoder_position);
-        debug_print("\nlast_el_incremental_encoder_position:");
-        debug_print_int(configuration.last_el_incremental_encoder_position);
-        debug_print("\naz_offset:");
-        debug_print_float(configuration.azimuth_offset,2);
-        debug_print("\nel_offset:");
-        debug_print_float(configuration.elevation_offset,2);
-        debug_println("");
+        debug.println("read_settings_from_eeprom: reading settings from eeprom: ");
+        debug.print("\nanalog_az_full_ccw");
+        debug.print(configuration.analog_az_full_ccw);
+        debug.print("\nanalog_az_full_cw");
+        debug.print(configuration.analog_az_full_cw);
+        debug.print("\nanalog_el_0_degrees");
+        debug.print(configuration.analog_el_0_degrees);
+        debug.print("\nanalog_el_max_elevation");
+        debug.print(configuration.analog_el_max_elevation);
+        debug.print("\nlast_azimuth:");
+        debug.print(configuration.last_azimuth, 1);
+        debug.print("\nlast_elevation:");
+        debug.print(configuration.last_elevation, 1);
+        debug.print("\nlast_az_incremental_encoder_position:");
+        debug.print(configuration.last_az_incremental_encoder_position);
+        debug.print("\nlast_el_incremental_encoder_position:");
+        debug.print(configuration.last_el_incremental_encoder_position);
+        debug.print("\naz_offset:");
+        debug.print(configuration.azimuth_offset,2);
+        debug.print("\nel_offset:");
+        debug.print(configuration.elevation_offset,2);
+        debug.println("");
       }
     #endif // DEBUG_EEPROM
 
@@ -3938,7 +3973,7 @@ void read_settings_from_eeprom(){
 
   } else {  // initialize eeprom with default values
     #ifdef DEBUG_EEPROM
-      debug_println("read_settings_from_eeprom: uninitialized eeprom, calling initialize_eeprom_with_defaults()");
+      debug.println("read_settings_from_eeprom: uninitialized eeprom, calling initialize_eeprom_with_defaults()");
     #endif // DEBUG_EEPROM
     initialize_eeprom_with_defaults();
   }
@@ -3947,12 +3982,12 @@ void read_settings_from_eeprom(){
 void initialize_eeprom_with_defaults(){
 
   #ifdef DEBUG_LOOP
-    debug_print("initialize_eeprom_with_defaults()\n");
+    debug.print("initialize_eeprom_with_defaults()\n");
     Serial.flush();
   #endif // DEBUG_LOOP
 
   #ifdef DEBUG_EEPROM
-    debug_println("initialize_eeprom_with_defaults: writing eeprom");
+    debug.println("initialize_eeprom_with_defaults: writing eeprom");
   #endif // DEBUG_EEPROM
 
   configuration.analog_az_full_ccw = ANALOG_AZ_FULL_CCW;
@@ -3986,7 +4021,7 @@ void initialize_eeprom_with_defaults(){
 void write_settings_to_eeprom(){
 
   #ifdef DEBUG_EEPROM
-    debug_println("write_settings_to_eeprom: writing settings to eeprom");
+    debug.println("write_settings_to_eeprom: writing settings to eeprom");
   #endif // DEBUG_EEPROM
 
   configuration.magic_number = EEPROM_MAGIC_NUMBER;
@@ -4011,7 +4046,7 @@ void az_check_operation_timeout(){
   if (((millis() - az_last_rotate_initiation) > OPERATION_TIMEOUT) && (az_state != IDLE)) {
     submit_request(AZ, REQUEST_KILL, 0, 78);
     #ifdef DEBUG_AZ_CHECK_OPERATION_TIMEOUT
-      debug_println("az_check_operation_timeout: timeout reached, aborting rotation");
+      debug.println("az_check_operation_timeout: timeout reached, aborting rotation");
     #endif // DEBUG_AZ_CHECK_OPERATION_TIMEOUT
   }
 }
@@ -4036,7 +4071,7 @@ void initiate_timed_buffer(byte source_port){
     last_timed_buffer_action_time = millis();
     timed_buffer_entry_pointer = 2;
     #ifdef DEBUG_TIMED_BUFFER
-    debug_println("initiate_timed_buffer: changing state to RUNNING_AZIMUTHS");
+    debug.println("initiate_timed_buffer: changing state to RUNNING_AZIMUTHS");
     #endif // DEBUG_TIMED_BUFFER
   } else {
     #ifdef FEATURE_ELEVATION_CONTROL
@@ -4047,7 +4082,7 @@ void initiate_timed_buffer(byte source_port){
       last_timed_buffer_action_time = millis();
       timed_buffer_entry_pointer = 2;
       #ifdef DEBUG_TIMED_BUFFER
-      debug_println("initiate_timed_buffer: changing state to RUNNING_AZIMUTHS_ELEVATIONS");
+      debug.println("initiate_timed_buffer: changing state to RUNNING_AZIMUTHS_ELEVATIONS");
       #endif // DEBUG_TIMED_BUFFER
     } else {
       print_to_port(">",source_port);  // error
@@ -4062,7 +4097,7 @@ void initiate_timed_buffer(byte source_port){
 void print_timed_buffer_empty_message(){
 
   #ifdef DEBUG_TIMED_BUFFER
-  debug_println("check_timed_interval: completed timed buffer; changing state to EMPTY");
+  debug.println("check_timed_interval: completed timed buffer; changing state to EMPTY");
   #endif // DEBUG_TIMED_BUFFER
 
 }
@@ -4075,7 +4110,7 @@ void check_timed_interval(){
   if ((timed_buffer_status == RUNNING_AZIMUTHS) && (((millis() - last_timed_buffer_action_time) / 1000) > timed_buffer_interval_value_seconds)) {
     timed_buffer_entry_pointer++;
     #ifdef DEBUG_TIMED_BUFFER
-    debug_println("check_timed_interval: executing next timed interval step - azimuths");
+    debug.println("check_timed_interval: executing next timed interval step - azimuths");
     #endif // DEBUG_TIMED_BUFFER
     submit_request(AZ, REQUEST_AZIMUTH, timed_buffer_azimuths[timed_buffer_entry_pointer - 1], 82);
     last_timed_buffer_action_time = millis();
@@ -4088,7 +4123,7 @@ void check_timed_interval(){
   if ((timed_buffer_status == RUNNING_AZIMUTHS_ELEVATIONS) && (((millis() - last_timed_buffer_action_time) / 1000) > timed_buffer_interval_value_seconds)) {
     timed_buffer_entry_pointer++;
     #ifdef DEBUG_TIMED_BUFFER
-    debug_println("check_timed_interval: executing next timed interval step - az and el");
+    debug.println("check_timed_interval: executing next timed interval step - az and el");
     #endif // DEBUG_TIMED_BUFFER
     submit_request(AZ, REQUEST_AZIMUTH, timed_buffer_azimuths[timed_buffer_entry_pointer - 1], 83);
     submit_request(EL, REQUEST_ELEVATION, timed_buffer_elevations[timed_buffer_entry_pointer - 1], 84);
@@ -4181,9 +4216,9 @@ void read_azimuth(byte force_read){
 
             if (debug_mode) {
               if ((millis() - last_print_time) > 1000) {
-                debug_println("read_azimuth: avg read frequency: ");
-                debug_print_float(average_read_time, 2);
-                debug_println("");
+                debug.println("read_azimuth: avg read frequency: ");
+                debug.print(average_read_time, 2);
+                debug.println("");
                 last_print_time = millis();
               }
             }
@@ -4234,13 +4269,13 @@ void read_azimuth(byte force_read){
         if (az_position_encoder_result == DIR_CW) {
           configuration.last_azimuth = configuration.last_azimuth + AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
           #ifdef DEBUG_POSITION_ROTARY_ENCODER
-            debug_println("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CW");
+            debug.println("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CW");
           #endif // DEBUG_POSITION_ROTARY_ENCODER
         }
         if (az_position_encoder_result == DIR_CCW) {
           configuration.last_azimuth = configuration.last_azimuth - AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
           #ifdef DEBUG_POSITION_ROTARY_ENCODER
-            debug_println("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CCW");
+            debug.println("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CCW");
           #endif // DEBUG_POSITION_ROTARY_ENCODER
         }
 
@@ -4281,11 +4316,11 @@ void read_azimuth(byte force_read){
       MagnetometerScaled scaled = compass.ReadScaledAxis(); // scaled values from compass.
 
       #ifdef DEBUG_HMC5883L
-        debug_print("read_azimuth: HMC5883L x:");
-        debug_print_float(scaled.XAxis,4);
-        debug_print(" y:");
-        debug_print_float(scaled.YAxis,4);
-        debug_println("");
+        debug.print("read_azimuth: HMC5883L x:");
+        debug.print(scaled.XAxis,4);
+        debug.print(" y:");
+        debug.print(scaled.YAxis,4);
+        debug.println("");
       #endif //DEBUG_HMC5883L
 
 
@@ -4422,7 +4457,7 @@ void read_azimuth(byte force_read){
       raw_azimuth = int(azimuth_hh12.heading() * HEADING_MULTIPLIER);
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
-          control_port->print(F("read_azimuth: HH-12 raw: "));
+          debug.print(F("read_azimuth: HH-12 raw: "));
           control_port->println(raw_azimuth);
           last_hh12_debug = millis();
         }
@@ -4530,268 +4565,268 @@ void output_debug(){
       if (((millis() - last_debug_output_time) >= 3000) && (debug_mode)) {
 
         #ifdef DEBUG_GPS_SERIAL
-          debug_println("");
+          debug.println("");
         #endif //DEBUG_GPS_SERIAL
 
         //port_flush();
 
-        debug_print("debug: \t");
-        debug_print(CODE_VERSION);
+        debug.print("debug: \t");
+        debug.print(CODE_VERSION);
         #ifdef HARDWARE_WB6KCN
-          debug_print(" HARDWARE_WB6KCN");
+          debug.print(" HARDWARE_WB6KCN");
         #endif
         #ifdef HARDWARE_M0UPU
-          debug_print(" HARDWARE_M0UPU");
+          debug.print(" HARDWARE_M0UPU");
         #endif    
         #ifdef HARDWARE_EA4TX_ARS_USB
-          debug_print(" HARDWARE_EA4TX_ARS_USB");
+          debug.print(" HARDWARE_EA4TX_ARS_USB");
         #endif      
-        debug_print("\t\t");
+        debug.print("\t\t");
 
         #ifdef FEATURE_CLOCK
           update_time();
           sprintf(tempstring, "%s", clock_string());
-          debug_print(tempstring);
+          debug.print(tempstring);
         #else // FEATURE_CLOCK
           dtostrf((millis() / 1000),0,0,tempstring);
-          debug_print(tempstring);
+          debug.print(tempstring);
         #endif // FEATURE_CLOCK
 
         #if defined(FEATURE_GPS) || defined(FEATURE_RTC) || (defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE))
-          debug_print("\t");
-          debug_print(clock_status_string());
+          debug.print("\t");
+          debug.print(clock_status_string());
         #endif // defined(FEATURE_GPS) || defined(FEATURE_RTC) || (defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE))
 
         #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
-          debug_print("\t");
+          debug.print("\t");
           sprintf(tempstring, "%s", coordinate_string());
-          debug_print(tempstring); 
-          debug_print(" ");
-          debug_print(coordinates_to_maidenhead(latitude,longitude));
+          debug.print(tempstring); 
+          debug.print(" ");
+          debug.print(coordinates_to_maidenhead(latitude,longitude));
         #endif
 
-        debug_print("\t\t");
+        debug.print("\t\t");
         #ifdef DEBUG_MEMORY
           void * HP = malloc(4);
           if (HP) {free(HP);}
           unsigned long free = (unsigned long)SP - (unsigned long)HP;
           sprintf(tempstring,"%lu",(unsigned long)free);
-          debug_print(tempstring);
-          debug_print("b free");
+          debug.print(tempstring);
+          debug.print("b free");
         #endif //DEBUG_MEMORY
 
         #ifdef FEATURE_YAESU_EMULATION
-          debug_print("\t\tGS-232");
+          debug.print("\t\tGS-232");
           #ifdef OPTION_GS_232B_EMULATION
-            debug_print("B");
+            debug.print("B");
           #else
-            debug_print("A");
+            debug.print("A");
           #endif
         #endif // FEATURE_YAESU_EMULATION
 
         #ifdef FEATURE_PARK
           switch (park_status) {
-            case NOT_PARKED: debug_print("\tNOT_PARKED"); break;
-            case PARK_INITIATED: debug_print("\tPARK_INITIATED"); break;
-            case PARKED: debug_print("\tPARKED"); break;
+            case NOT_PARKED: debug.print("\tNOT_PARKED"); break;
+            case PARK_INITIATED: debug.print("\tPARK_INITIATED"); break;
+            case PARKED: debug.print("\tPARKED"); break;
           }
         #endif // FEATURE_PARK
 
-        debug_print("\n");
+        debug.print("\n");
 
-        debug_print("\tAZ: ");
+        debug.print("\tAZ: ");
         switch (az_state) {
-          case IDLE: debug_print("IDLE"); break;
+          case IDLE: debug.print("IDLE"); break;
           #ifndef HARDWARE_EA4TX_ARS_USB
-            case SLOW_START_CW: debug_print("SLOW_START_CW"); break;
-            case SLOW_START_CCW: debug_print("SLOW_START_CCW"); break;
+            case SLOW_START_CW: debug.print("SLOW_START_CW"); break;
+            case SLOW_START_CCW: debug.print("SLOW_START_CCW"); break;
           #endif //ifndef HARDWARE_EA4TX_ARS_USB
-          case NORMAL_CW: debug_print("NORMAL_CW"); break;
-          case NORMAL_CCW: debug_print("NORMAL_CCW"); break;
+          case NORMAL_CW: debug.print("NORMAL_CW"); break;
+          case NORMAL_CCW: debug.print("NORMAL_CCW"); break;
           #ifndef HARDWARE_EA4TX_ARS_USB
-            case SLOW_DOWN_CW: debug_print("SLOW_DOWN_CW"); break;
-            case SLOW_DOWN_CCW: debug_print("SLOW_DOWN_CCW"); break;
-            case INITIALIZE_SLOW_START_CW: debug_print("INITIALIZE_SLOW_START_CW"); break;
-            case INITIALIZE_SLOW_START_CCW: debug_print("INITIALIZE_SLOW_START_CCW"); break;
-            case INITIALIZE_TIMED_SLOW_DOWN_CW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CW"); break;
-            case INITIALIZE_TIMED_SLOW_DOWN_CCW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CCW"); break;
-            case TIMED_SLOW_DOWN_CW: debug_print("TIMED_SLOW_DOWN_CW"); break;
-            case TIMED_SLOW_DOWN_CCW: debug_print("TIMED_SLOW_DOWN_CCW"); break;
-            case INITIALIZE_DIR_CHANGE_TO_CW: debug_print("INITIALIZE_DIR_CHANGE_TO_CW"); break;
-            case INITIALIZE_DIR_CHANGE_TO_CCW: debug_print("INITIALIZE_DIR_CHANGE_TO_CCW"); break;
-            case INITIALIZE_NORMAL_CW: debug_print("INITIALIZE_NORMAL_CW"); break;
-            case INITIALIZE_NORMAL_CCW: debug_print("INITIALIZE_NORMAL_CCW"); break; 
+            case SLOW_DOWN_CW: debug.print("SLOW_DOWN_CW"); break;
+            case SLOW_DOWN_CCW: debug.print("SLOW_DOWN_CCW"); break;
+            case INITIALIZE_SLOW_START_CW: debug.print("INITIALIZE_SLOW_START_CW"); break;
+            case INITIALIZE_SLOW_START_CCW: debug.print("INITIALIZE_SLOW_START_CCW"); break;
+            case INITIALIZE_TIMED_SLOW_DOWN_CW: debug.print("INITIALIZE_TIMED_SLOW_DOWN_CW"); break;
+            case INITIALIZE_TIMED_SLOW_DOWN_CCW: debug.print("INITIALIZE_TIMED_SLOW_DOWN_CCW"); break;
+            case TIMED_SLOW_DOWN_CW: debug.print("TIMED_SLOW_DOWN_CW"); break;
+            case TIMED_SLOW_DOWN_CCW: debug.print("TIMED_SLOW_DOWN_CCW"); break;
+            case INITIALIZE_DIR_CHANGE_TO_CW: debug.print("INITIALIZE_DIR_CHANGE_TO_CW"); break;
+            case INITIALIZE_DIR_CHANGE_TO_CCW: debug.print("INITIALIZE_DIR_CHANGE_TO_CCW"); break;
+            case INITIALIZE_NORMAL_CW: debug.print("INITIALIZE_NORMAL_CW"); break;
+            case INITIALIZE_NORMAL_CCW: debug.print("INITIALIZE_NORMAL_CCW"); break; 
           #endif //ifndef HARDWARE_EA4TX_ARS_USB     
         }
 
-        debug_print("\tQ: ");
+        debug.print("\tQ: ");
         switch (az_request_queue_state) {
-          case NONE: debug_print("-"); break;
-          case IN_QUEUE: debug_print("IN_QUEUE"); break;
-          case IN_PROGRESS_TIMED: debug_print("IN_PROGRESS_TIMED"); break;
-          case IN_PROGRESS_TO_TARGET: debug_print("IN_PROGRESS_TO_TARGET"); break;
+          case NONE: debug.print("-"); break;
+          case IN_QUEUE: debug.print("IN_QUEUE"); break;
+          case IN_PROGRESS_TIMED: debug.print("IN_PROGRESS_TIMED"); break;
+          case IN_PROGRESS_TO_TARGET: debug.print("IN_PROGRESS_TO_TARGET"); break;
         }
 
-        debug_print(" AZ: ");
-        debug_print_float((azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
-        debug_print(" (raw: ");
-        debug_print_float((raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
-        debug_print(")");
+        debug.print(" AZ: ");
+        debug.print((azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+        debug.print(" (raw: ");
+        debug.print((raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+        debug.print(")");
 
 
         if (az_state != IDLE) {
-          debug_print("  Target: ");
-          debug_print_float((target_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+          debug.print("  Target: ");
+          debug.print((target_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
        
 
-          debug_print(" (raw: ");
+          debug.print(" (raw: ");
 
-          debug_print_float((target_raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
-          debug_print(")");
+          debug.print((target_raw_azimuth / LCD_HEADING_MULTIPLIER), LCD_DECIMAL_PLACES);
+          debug.print(")");
 
-          debug_print("  Secs_left: ");
-          debug_print_int((OPERATION_TIMEOUT - (millis() - az_last_rotate_initiation)) / 1000);
+          debug.print("  Secs_left: ");
+          debug.print((OPERATION_TIMEOUT - (millis() - az_last_rotate_initiation)) / 1000);
         }
 
         #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
-          debug_print("  Analog: ");
+          debug.print("  Analog: ");
           dtostrf(analog_az,0,0,tempstring);
-          debug_print(tempstring);
-          debug_print(" (");
+          debug.print(tempstring);
+          debug.print(" (");
           dtostrf(configuration.analog_az_full_ccw,0,0,tempstring);
-          debug_print(tempstring);
-          debug_print("-");
+          debug.print(tempstring);
+          debug.print("-");
           dtostrf(configuration.analog_az_full_cw,0,0,tempstring);
-          debug_print(tempstring);
-          debug_print(") ");
+          debug.print(tempstring);
+          debug.print(") ");
         #endif // FEATURE_AZ_POSITION_POTENTIOMETER
 
-        debug_print("\t[");
-        debug_print_int(azimuth_starting_point);
-        debug_print("+");
-        debug_print_int(azimuth_rotation_capability);
-        debug_print("]");
+        debug.print("\t[");
+        debug.print(azimuth_starting_point);
+        debug.print("+");
+        debug.print(azimuth_rotation_capability);
+        debug.print("]");
 
         #ifndef HARDWARE_EA4TX_ARS_USB
-          debug_print("  AZ Speed Norm: ");
-          debug_print_int(normal_az_speed_voltage);
-          debug_print(" Current: ");
-          debug_print_int(current_az_speed_voltage);
+          debug.print("  AZ Speed Norm: ");
+          debug.print(normal_az_speed_voltage);
+          debug.print(" Current: ");
+          debug.print(current_az_speed_voltage);
           if (az_speed_pot) {
-            debug_print("  AZ Speed Pot: ");
-            debug_print_int(analogReadEnhanced(az_speed_pot));
+            debug.print("  AZ Speed Pot: ");
+            debug.print(analogReadEnhanced(az_speed_pot));
           }
           if (az_preset_pot) {
-            debug_print(" AZ Preset Pot Analog: ");
-            debug_print_int(analogReadEnhanced(az_preset_pot));
-            debug_print("  AZ Preset Pot Setting: ");
+            debug.print(" AZ Preset Pot Analog: ");
+            debug.print(analogReadEnhanced(az_preset_pot));
+            debug.print("  AZ Preset Pot Setting: ");
             dtostrf((map(analogReadEnhanced(az_preset_pot), AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP)),0,0,tempstring);
-            debug_print(tempstring);
+            debug.print(tempstring);
           }
-          debug_print("\tOffset: ");
+          debug.print("\tOffset: ");
           dtostrf(configuration.azimuth_offset,0,2,tempstring);
-          debug_print(tempstring);
+          debug.print(tempstring);
         #endif // ndef HARDWARE_EA4TX_ARS_USB
-        debug_println("");
+        debug.println("");
 
 
         #ifdef FEATURE_ELEVATION_CONTROL
-          debug_print("\tEL: ");
+          debug.print("\tEL: ");
           switch (el_state) {
-            case IDLE: debug_print("IDLE"); break;
+            case IDLE: debug.print("IDLE"); break;
             #ifndef HARDWARE_EA4TX_ARS_USB
-              case SLOW_START_UP: debug_print("SLOW_START_UP"); break;
-              case SLOW_START_DOWN: debug_print("SLOW_START_DOWN"); break;
+              case SLOW_START_UP: debug.print("SLOW_START_UP"); break;
+              case SLOW_START_DOWN: debug.print("SLOW_START_DOWN"); break;
             #endif //ifndef HARDWARE_EA4TX_ARS_USB
-            case NORMAL_UP: debug_print("NORMAL_UP"); break;
-            case NORMAL_DOWN: debug_print("NORMAL_DOWN"); break;
+            case NORMAL_UP: debug.print("NORMAL_UP"); break;
+            case NORMAL_DOWN: debug.print("NORMAL_DOWN"); break;
             #ifndef HARDWARE_EA4TX_ARS_USB
-              case SLOW_DOWN_DOWN: debug_print("SLOW_DOWN_DOWN"); break;
-              case SLOW_DOWN_UP: debug_print("SLOW_DOWN_UP"); break;
-              case TIMED_SLOW_DOWN_UP: debug_print("TIMED_SLOW_DOWN_UP"); break;
-              case TIMED_SLOW_DOWN_DOWN: debug_print("TIMED_SLOW_DOWN_DOWN"); break;
+              case SLOW_DOWN_DOWN: debug.print("SLOW_DOWN_DOWN"); break;
+              case SLOW_DOWN_UP: debug.print("SLOW_DOWN_UP"); break;
+              case TIMED_SLOW_DOWN_UP: debug.print("TIMED_SLOW_DOWN_UP"); break;
+              case TIMED_SLOW_DOWN_DOWN: debug.print("TIMED_SLOW_DOWN_DOWN"); break;
             #endif //ifndef HARDWARE_EA4TX_ARS_USB
           }
 
-          debug_print("\tQ: ");
+          debug.print("\tQ: ");
           switch (el_request_queue_state) {
-            case NONE: debug_print("-"); break;
-            case IN_QUEUE: debug_print("IN_QUEUE"); break;
-            case IN_PROGRESS_TIMED: debug_print("IN_PROGRESS_TIMED"); break;
-            case IN_PROGRESS_TO_TARGET: debug_print("IN_PROGRESS_TO_TARGET"); break;
+            case NONE: debug.print("-"); break;
+            case IN_QUEUE: debug.print("IN_QUEUE"); break;
+            case IN_PROGRESS_TIMED: debug.print("IN_PROGRESS_TIMED"); break;
+            case IN_PROGRESS_TO_TARGET: debug.print("IN_PROGRESS_TO_TARGET"); break;
           }
-          debug_print(" EL: ");
+          debug.print(" EL: ");
           dtostrf(elevation / LCD_HEADING_MULTIPLIER, 0, LCD_DECIMAL_PLACES,tempstring);
-          debug_print(tempstring);
+          debug.print(tempstring);
           if (el_state != IDLE) {
-            debug_print("\tTarget: ");
+            debug.print("\tTarget: ");
             dtostrf(target_elevation / LCD_HEADING_MULTIPLIER, 0, LCD_DECIMAL_PLACES,tempstring);
-            debug_print(tempstring);
+            debug.print(tempstring);
           }
 
           #ifdef FEATURE_EL_POSITION_POTENTIOMETER
-            debug_print("\tEL Analog: ");
+            debug.print("\tEL Analog: ");
             dtostrf(analog_el,0,0,tempstring);
-            debug_print(tempstring);
-            debug_print(" (");
+            debug.print(tempstring);
+            debug.print(" (");
             dtostrf(configuration.analog_el_0_degrees,0,0,tempstring);
-            debug_print(tempstring);
-            debug_print("-");
+            debug.print(tempstring);
+            debug.print("-");
             dtostrf(configuration.analog_el_max_elevation,0,0,tempstring);
-            debug_print(tempstring);
-            debug_print(") ");
+            debug.print(tempstring);
+            debug.print(") ");
           #endif // FEATURE_EL_POSITION_POTENTIOMETER
          
           #ifndef HARDWARE_EA4TX_ARS_USB
-            debug_print("  EL Speed Norm: ");
-            debug_print_int(normal_el_speed_voltage);
+            debug.print("  EL Speed Norm: ");
+            debug.print(normal_el_speed_voltage);
 
 
-            debug_print(" Current: ");
-            debug_print_int(current_el_speed_voltage);
+            debug.print(" Current: ");
+            debug.print(current_el_speed_voltage);
 
-            debug_print("\tOffset: ");
-            debug_print_float(configuration.elevation_offset, 2);
+            debug.print("\tOffset: ");
+            debug.print(configuration.elevation_offset, 2);
           #endif //ifndef HARDWARE_EA4TX_ARS_USB
-          debug_println("");
+          debug.println("");
         #endif // FEATURE_ELEVATION_CONTROL
 
         //port_flush();
 
         #ifdef FEATURE_TIMED_BUFFER
           if (timed_buffer_status != EMPTY) {
-            debug_print("\tTimed interval buff: ");
+            debug.print("\tTimed interval buff: ");
             switch (timed_buffer_status) {
-              // case EMPTY: debug_print("EMPTY"); break;
-              case LOADED_AZIMUTHS: debug_print("LOADED_AZIMUTHS"); break;
-              case RUNNING_AZIMUTHS: debug_print("RUNNING_AZIMUTHS"); break;
+              // case EMPTY: debug.print("EMPTY"); break;
+              case LOADED_AZIMUTHS: debug.print("LOADED_AZIMUTHS"); break;
+              case RUNNING_AZIMUTHS: debug.print("RUNNING_AZIMUTHS"); break;
               #ifdef FEATURE_ELEVATION_CONTROL
-                case LOADED_AZIMUTHS_ELEVATIONS: debug_print("LOADED_AZIMUTHS_ELEVATIONS"); break;
-                case RUNNING_AZIMUTHS_ELEVATIONS: debug_print("RUNNING_AZIMUTHS_ELEVATIONS"); break;
+                case LOADED_AZIMUTHS_ELEVATIONS: debug.print("LOADED_AZIMUTHS_ELEVATIONS"); break;
+                case RUNNING_AZIMUTHS_ELEVATIONS: debug.print("RUNNING_AZIMUTHS_ELEVATIONS"); break;
               #endif
             }
 
-            debug_print("\tInterval (secs): ");
-            debug_print_int(timed_buffer_interval_value_seconds);
-            debug_print("\tEntries: ");
-            debug_print_int(timed_buffer_number_entries_loaded);
-            debug_print("\tEntry ptr: ");
-            debug_print_int(timed_buffer_entry_pointer);
-            debug_print("\tSecs since last action: ");
-            debug_print_int((millis() - last_timed_buffer_action_time) / 1000);
+            debug.print("\tInterval (secs): ");
+            debug.print(timed_buffer_interval_value_seconds);
+            debug.print("\tEntries: ");
+            debug.print(timed_buffer_number_entries_loaded);
+            debug.print("\tEntry ptr: ");
+            debug.print(timed_buffer_entry_pointer);
+            debug.print("\tSecs since last action: ");
+            debug.print((millis() - last_timed_buffer_action_time) / 1000);
 
             if (timed_buffer_number_entries_loaded > 0) {
               for (int x = 0; x < timed_buffer_number_entries_loaded; x++) {
-                debug_print_int(x + 1);
-                debug_print("\t:");
-                debug_print_int(timed_buffer_azimuths[x] / HEADING_MULTIPLIER);
+                debug.print(x + 1);
+                debug.print("\t:");
+                debug.print(timed_buffer_azimuths[x] / HEADING_MULTIPLIER);
               #ifdef FEATURE_ELEVATION_CONTROL
-                debug_print("\t- ");
-                debug_print_int(timed_buffer_elevations[x] / HEADING_MULTIPLIER);
+                debug.print("\t- ");
+                debug.print(timed_buffer_elevations[x] / HEADING_MULTIPLIER);
               #endif
-                debug_print("\n");
+                debug.print("\n");
               }
-              debug_println("");
+              debug.println("");
             }
 
           } // if (timed_buffer_status != EMPTY)
@@ -4799,51 +4834,51 @@ void output_debug(){
 
 
         #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-          /*debug_print("\tRemote Slave: Command: ");
-          debug_print_int(remote_unit_command_submitted);*/
-          debug_print("\tRemote Slave: Good: ");
-          debug_print_float(remote_unit_good_results,0);
-          debug_print(" Bad: ");
-          debug_print_int(remote_unit_bad_results);
-          /*debug_print(" Index: ");
-          debug_print_int(remote_unit_port_buffer_index);*/
-          debug_print(" CmdTouts: ");
-          debug_print_int(remote_unit_command_timeouts);
-          debug_print(" BuffTouts: ");
-          debug_print_int(remote_unit_incoming_buffer_timeouts);
-          /*debug_print(" Result: ");
-          debug_print_float(remote_unit_command_result_float,2);*/
-          debug_println("");
+          /*debug.print("\tRemote Slave: Command: ");
+          debug.print(remote_unit_command_submitted);*/
+          debug.print("\tRemote Slave: Good: ");
+          debug.print(remote_unit_good_results,0);
+          debug.print(" Bad: ");
+          debug.print(remote_unit_bad_results);
+          /*debug.print(" Index: ");
+          debug.print(remote_unit_port_buffer_index);*/
+          debug.print(" CmdTouts: ");
+          debug.print(remote_unit_command_timeouts);
+          debug.print(" BuffTouts: ");
+          debug.print(remote_unit_incoming_buffer_timeouts);
+          /*debug.print(" Result: ");
+          debug.print(remote_unit_command_result_float,2);*/
+          debug.println("");
         #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 
         #if defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
-          debug_print("\tEthernet Slave TCP Link State: ");
+          debug.print("\tEthernet Slave TCP Link State: ");
           switch(ethernetslavelinkclient0_state){
-            case ETHERNET_SLAVE_DISCONNECTED: debug_print("DIS");
-            case ETHERNET_SLAVE_CONNECTED: debug_print("CONNECTED");
+            case ETHERNET_SLAVE_DISCONNECTED: debug.print("DIS");
+            case ETHERNET_SLAVE_CONNECTED: debug.print("CONNECTED");
           }
-          debug_print(" Reconnects: ");
-          debug_print_int(ethernet_slave_reconnects);  
-          debug_println("");
+          debug.print(" Reconnects: ");
+          debug.print(ethernet_slave_reconnects);  
+          debug.println("");
         #endif // defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)  
 
         #ifdef DEBUG_POSITION_PULSE_INPUT
           static unsigned long last_pulse_count_time = 0;
           static unsigned long last_az_pulse_counter = 0;
           static unsigned long last_el_pulse_counter = 0;
-          debug_print("\tPulse counters: AZ: ");
-          debug_print_int(az_pulse_counter);
-          debug_print(" AZ Ambiguous: ");
-          debug_print_int(az_pulse_counter_ambiguous);
-          debug_print(" EL: ");
-          debug_print_int(el_pulse_counter);
-          debug_print(" EL Ambiguous: ");
-          debug_print_int(el_pulse_counter_ambiguous);
-          debug_print(" Rate per sec: AZ: ");
-          debug_print_float(((az_pulse_counter - last_az_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
-          debug_print(" EL: ");
-          debug_print_float(((el_pulse_counter - last_el_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
-          debug_println("");
+          debug.print("\tPulse counters: AZ: ");
+          debug.print(az_pulse_counter);
+          debug.print(" AZ Ambiguous: ");
+          debug.print(az_pulse_counter_ambiguous);
+          debug.print(" EL: ");
+          debug.print(el_pulse_counter);
+          debug.print(" EL Ambiguous: ");
+          debug.print(el_pulse_counter_ambiguous);
+          debug.print(" Rate per sec: AZ: ");
+          debug.print(((az_pulse_counter - last_az_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
+          debug.print(" EL: ");
+          debug.print(((el_pulse_counter - last_el_pulse_counter) / ((millis() - last_pulse_count_time) / 1000.0)),2);
+          debug.println("");
           last_az_pulse_counter = az_pulse_counter;
           last_el_pulse_counter = el_pulse_counter;
           last_pulse_count_time = millis();
@@ -4851,19 +4886,19 @@ void output_debug(){
 
 
         #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_AZ_POSITION_INCREMENTAL_ENCODER)
-          debug_print("\taz_position_incremental_encoder_interrupt: ");
-          debug_print_int(az_position_incremental_encoder_interrupt);
-          debug_print("\taz_incremental_encoder_position: ");
-          debug_print_float(az_incremental_encoder_position,0);
+          debug.print("\taz_position_incremental_encoder_interrupt: ");
+          debug.print(az_position_incremental_encoder_interrupt);
+          debug.print("\taz_incremental_encoder_position: ");
+          debug.print(az_incremental_encoder_position,0);
         #endif // DEBUG_AZ_POSITION_INCREMENTAL_ENCODER
         #if defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER)
-          debug_print("\n\tel_position_incremental_encoder_interrupt: ");
-          debug_print_float(el_position_incremental_encoder_interrupt,0);
-          debug_print("\tel_incremental_encoder_position: ");
-          debug_print_int(el_incremental_encoder_position);
+          debug.print("\n\tel_position_incremental_encoder_interrupt: ");
+          debug.print(el_position_incremental_encoder_interrupt,0);
+          debug.print("\tel_incremental_encoder_position: ");
+          debug.print(el_incremental_encoder_position);
         #endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
         #if (defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_AZ_POSITION_INCREMENTAL_ENCODER)) || (defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER) && defined(DEBUG_EL_POSITION_INCREMENTAL_ENCODER))
-          debug_println("");
+          debug.println("");
         #endif
 
 
@@ -4871,16 +4906,16 @@ void output_debug(){
 
         #ifdef FEATURE_MOON_TRACKING
           update_moon_position();
-          debug_print(moon_status_string());
+          debug.print(moon_status_string());
         #endif // FEATURE_MOON_TRACKING
 
         #ifdef FEATURE_SUN_TRACKING
           update_sun_position();
-          debug_print(sun_status_string());
+          debug.print(sun_status_string());
         #endif // FEATURE_SUN_TRACKING
 
         #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
-          debug_println("");
+          debug.println("");
         #endif //defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
         #ifdef FEATURE_GPS
@@ -4891,55 +4926,55 @@ void output_debug(){
           float gps_lat_temp = 0;
           float gps_long_temp = 0;
 
-          debug_print("\tGPS: satellites: ");
+          debug.print("\tGPS: satellites: ");
           gps_chars = gps.satellites();
-          if (gps_chars == 255){gps_chars = 0;}
+          //if (gps_chars == 255){gps_chars = 0;}
           dtostrf(gps_chars,0,0,gps_temp_string);
-          debug_print(gps_temp_string);  
+          debug.print(gps_temp_string);  
           unsigned long gps_fix_age_temp = 0;
           gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp); 
-          debug_print(" lat: ");
-          debug_print_float(gps_lat_temp,4);
-          debug_print(" long: ");
-          debug_print_float(gps_long_temp,4);
-          debug_print(" fix age (mS): ");
+          debug.print(" lat: ");
+          debug.print(gps_lat_temp,4);
+          debug.print(" long: ");
+          debug.print(gps_long_temp,4);
+          debug.print(" fix age (mS): ");
           dtostrf(gps_fix_age_temp,0,0,gps_temp_string);
-          debug_print(gps_temp_string);   
+          debug.print(gps_temp_string);   
           gps.stats(&gps_chars,&gps_good_sentences,&gps_failed_checksum);     
-          debug_print(" data chars: ");
+          debug.print(" data chars: ");
           dtostrf(gps_chars,0,0,gps_temp_string);
-          debug_print(gps_temp_string);
-          debug_print(" good sentences: ");
+          debug.print(gps_temp_string);
+          debug.print(" good sentences: ");
           dtostrf(gps_good_sentences,0,0,gps_temp_string);
-          debug_print(gps_temp_string);    
-          debug_print(" failed checksum: ");
+          debug.print(gps_temp_string);    
+          debug.print(" failed checksum: ");
           dtostrf(gps_failed_checksum,0,0,gps_temp_string);
-          debug_print(gps_temp_string);    
-          debug_println("");
+          debug.print(gps_temp_string);    
+          debug.println("");
         #endif //FEATURE_GPS
 
 
         #ifdef FEATURE_AUTOCORRECT
-          debug_print("\t\tAutocorrect: AZ:");
+          debug.print("\t\tAutocorrect: AZ:");
           switch(autocorrect_state_az){
-            case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
-            case AUTOCORRECT_WAITING_AZ: debug_print("AUTOCORRECT_WAITING_AZ: "); debug_print_float(autocorrect_az,2); break;
-            case AUTOCORRECT_WATCHING_AZ: debug_print("AUTOCORRECT_WATCHING_AZ: "); debug_print_float(autocorrect_az,2); break;
+            case AUTOCORRECT_INACTIVE: debug.print("INACTIVE"); break;
+            case AUTOCORRECT_WAITING_AZ: debug.print("AUTOCORRECT_WAITING_AZ: "); debug.print(autocorrect_az,2); break;
+            case AUTOCORRECT_WATCHING_AZ: debug.print("AUTOCORRECT_WATCHING_AZ: "); debug.print(autocorrect_az,2); break;
           }
 
           #ifdef FEATURE_ELEVATION_CONTROL
-            debug_print(" EL:");
+            debug.print(" EL:");
             switch(autocorrect_state_el){
-              case AUTOCORRECT_INACTIVE: debug_print("INACTIVE"); break;
-              case AUTOCORRECT_WAITING_EL: debug_print("AUTOCORRECT_WAITING_EL: "); debug_print_float(autocorrect_el,2); break;
-              case AUTOCORRECT_WATCHING_EL: debug_print("AUTOCORRECT_WATCHING_EL: "); debug_print_float(autocorrect_el,2); break;
+              case AUTOCORRECT_INACTIVE: debug.print("INACTIVE"); break;
+              case AUTOCORRECT_WAITING_EL: debug.print("AUTOCORRECT_WAITING_EL: "); debug.print(autocorrect_el,2); break;
+              case AUTOCORRECT_WATCHING_EL: debug.print("AUTOCORRECT_WATCHING_EL: "); debug.print(autocorrect_el,2); break;
             }
           #endif //FEATURE_ELEVATION_CONTROL
         #endif //DEBUG_AUTOCORRECT
 
 
 
-        debug_println("\n\n\n");
+        debug.println("\n\n\n");
 
         //port_flush();
 
@@ -5021,7 +5056,7 @@ void el_check_operation_timeout(){
     submit_request(EL, REQUEST_KILL, 0, 85);
     #ifdef DEBUG_EL_CHECK_OPERATION_TIMEOUT
       if (debug_mode) {
-        control_port->println(F("el_check_operation_timeout: timeout reached, aborting rotation"));
+        debug.print(F("el_check_operation_timeout: timeout reached, aborting rotation\n"));
       }
     #endif // DEBUG_EL_CHECK_OPERATION_TIMEOUT
   }
@@ -5093,7 +5128,7 @@ void read_elevation(byte force_read){
         configuration.last_elevation = configuration.last_elevation + EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
         #ifdef DEBUG_POSITION_ROTARY_ENCODER
         if (debug_mode) {
-          control_port->println(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CW/UP"));
+          debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CW/UP\n"));
         }
         #endif // DEBUG_POSITION_ROTARY_ENCODER
       }
@@ -5101,7 +5136,7 @@ void read_elevation(byte force_read){
         configuration.last_elevation = configuration.last_elevation - EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
         #ifdef DEBUG_POSITION_ROTARY_ENCODER
         if (debug_mode) {
-          control_port->println(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CCW/DWN"));
+          debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CCW/DWN\n"));
         }
         #endif // DEBUG_POSITION_ROTARY_ENCODER
       }
@@ -5127,8 +5162,8 @@ void read_elevation(byte force_read){
     AccelerometerScaled scaled = accel.ReadScaledAxis();
     #ifdef DEBUG_ACCEL
     if (debug_mode) {
-      control_port->print(F("read_elevation: raw.ZAxis: "));
-      control_port->println(raw.ZAxis);
+      debug.print(F("read_elevation: raw.ZAxis: "));
+      debug.println(raw.ZAxis);
     }
     #endif // DEBUG_ACCEL
     elevation = (atan2(scaled.YAxis, scaled.ZAxis) * 180 * HEADING_MULTIPLIER) / M_PI;
@@ -5146,8 +5181,8 @@ void read_elevation(byte force_read){
     accel.getEvent(&event);
     #ifdef DEBUG_ACCEL
     if (debug_mode) {
-      control_port->print(F("read_elevation: event.acceleration.z: "));
-      control_port->println(event.acceleration.z);
+      debug.print(F("read_elevation: event.acceleration.z: "));
+      debug.println(event.acceleration.z);
     }
     #endif // DEBUG_ACCEL
     elevation = (atan2(event.acceleration.y, event.acceleration.z) * 180 * HEADING_MULTIPLIER) / M_PI;
@@ -5163,9 +5198,9 @@ void read_elevation(byte force_read){
     lsm.read();
     #ifdef DEBUG_ACCEL
     if (debug_mode) {
-      control_port->print(F("read_elevation: lsm.accelData.y: "));
-      control_port->print(lsm.accelData.y);
-      control_port->print(F(" lsm.accelData.z: "));
+      debug.print(F("read_elevation: lsm.accelData.y: "));
+      debug.print(lsm.accelData.y);
+      debug.print(F(" lsm.accelData.z: "));
       control_port->println(lsm.accelData.z);
     }
     #endif // DEBUG_ACCEL
@@ -5180,9 +5215,9 @@ void read_elevation(byte force_read){
     compass.read();
     #ifdef DEBUG_ACCEL
     if (debug_mode) {
-      control_port->print(F("read_elevation: compass.a.y: "));
-      control_port->print(compass.a.y);
-      control_port->print(F(" compass.a.z: "));
+      debug.print(F("read_elevation: compass.a.y: "));
+      debug.print(compass.a.y);
+      debug.print(F(" compass.a.z: "));
       control_port->println(compass.a.z);
     }
     #endif // DEBUG_ACCEL
@@ -5235,7 +5270,7 @@ void read_elevation(byte force_read){
 
       if (debug_mode) {
         if ((millis() - last_print_time) > 1000) {
-          control_port->print(F("read_elevation: avg read frequency: "));
+          debug.print(F("read_elevation: avg read frequency: "));
           control_port->println(average_read_time, 2);
           last_print_time = millis();
         }
@@ -5266,7 +5301,7 @@ void read_elevation(byte force_read){
     elevation = int(elevation_hh12.heading() * HEADING_MULTIPLIER);
     #ifdef DEBUG_HH12
     if ((millis() - last_hh12_debug) > 5000) {
-      control_port->print(F("read_elevation: HH-12 raw: "));
+      debug.print(F("read_elevation: HH-12 raw: "));
       control_port->println(elevation);
       last_hh12_debug = millis();
     }
@@ -5299,9 +5334,9 @@ void read_elevation(byte force_read){
     pulseY = pulseIn(pin_memsic_2125_y,HIGH,250000);
     double Yangle = (asin(((( pulseY / 10. ) - 500.) * 8.) / 1000.0 )) * (360. / (2. * M_PI));
     #ifdef DEBUG_MEMSIC_2125
-    debug_print("read_elevation: memsic2125 pulseY:");
-    debug_print_int(pulseY);
-    debug_println("");
+    debug.print("read_elevation: memsic2125 pulseY:");
+    debug.print(pulseY);
+    debug.println("");
     #endif //DEBUG_MEMSIC_2125
     elevation = Yangle * HEADING_MULTIPLIER;    
     #ifdef FEATURE_ELEVATION_CORRECTION
@@ -5336,20 +5371,20 @@ void update_el_variable_outputs(byte speed_voltage){
 
 
   #ifdef DEBUG_VARIABLE_OUTPUTS
-  debug_print("update_el_variable_outputs: speed_voltage: ");
-  debug_print_int(speed_voltage);
+  debug.print("update_el_variable_outputs: speed_voltage: ");
+  debug.print(speed_voltage);
   #endif // DEBUG_VARIABLE_OUTPUTS
 
   if (((el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (rotate_up_pwm)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_up_pwm");
+    debug.print("\trotate_up_pwm");
     #endif // DEBUG_VARIABLE_OUTPUTS
     analogWriteEnhanced(rotate_up_pwm, speed_voltage);
   }
 
   if (((el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN)) && (rotate_down_pwm)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_down_pwm");
+    debug.print("\trotate_down_pwm");
     #endif // DEBUG_VARIABLE_OUTPUTS
     analogWriteEnhanced(rotate_down_pwm, speed_voltage);
   }
@@ -5357,7 +5392,7 @@ void update_el_variable_outputs(byte speed_voltage){
   if (((el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN) ||
        (el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (rotate_up_down_pwm)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_up_down_pwm");
+    debug.print("\trotate_up_down_pwm");
     #endif // DEBUG_VARIABLE_OUTPUTS
     analogWriteEnhanced(rotate_up_down_pwm, speed_voltage);
   }
@@ -5365,14 +5400,14 @@ void update_el_variable_outputs(byte speed_voltage){
 
   if (((el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (rotate_up_freq)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_up_freq");
+    debug.print("\trotate_up_freq");
     #endif // DEBUG_VARIABLE_OUTPUTS
     tone(rotate_up_freq, map(speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
   }
 
   if (((el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN)) && (rotate_down_freq)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_down_freq");
+    debug.print("\trotate_down_freq");
     #endif // DEBUG_VARIABLE_OUTPUTS
     tone(rotate_down_freq, map(speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH));
   }
@@ -5383,7 +5418,7 @@ void update_el_variable_outputs(byte speed_voltage){
 
   if (((el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP) || (el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN)) && (el_stepper_motor_pulse)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\tel_stepper_motor_pulse: ");
+    debug.print("\tel_stepper_motor_pulse: ");
     #endif // DEBUG_VARIABLE_OUTPUTS
     el_tone = map(speed_voltage, 0, 255, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH);
 
@@ -5395,7 +5430,7 @@ void update_el_variable_outputs(byte speed_voltage){
 
 
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print_int(el_tone);
+    debug.print(el_tone);
     #endif // DEBUG_VARIABLE_OUTPUTS
 
   }
@@ -5406,7 +5441,7 @@ void update_el_variable_outputs(byte speed_voltage){
   }
 
   #ifdef DEBUG_VARIABLE_OUTPUTS
-  debug_println("");
+  debug.println("");
   #endif // DEBUG_VARIABLE_OUTPUTS
 
   current_el_speed_voltage = speed_voltage;
@@ -5422,48 +5457,48 @@ void update_az_variable_outputs(byte speed_voltage){
   #ifdef DEBUG_VARIABLE_OUTPUTS  
   int temp_int = 0;
 
-  debug_print("update_az_variable_outputs: az_state: ");
+  debug.print("update_az_variable_outputs: az_state: ");
   switch (az_state) {
-    case IDLE: debug_print("IDLE"); break;
-    case SLOW_START_CW: debug_print("SLOW_START_CW"); break;
-    case SLOW_START_CCW: debug_print("SLOW_START_CCW"); break;
-    case NORMAL_CW: debug_print("NORMAL_CW"); break;
-    case NORMAL_CCW: debug_print("NORMAL_CCW"); break;
-    case SLOW_DOWN_CW: debug_print("SLOW_DOWN_CW"); break;
-    case SLOW_DOWN_CCW: debug_print("SLOW_DOWN_CCW"); break;
-    case INITIALIZE_SLOW_START_CW: debug_print("INITIALIZE_SLOW_START_CW"); break;
-    case INITIALIZE_SLOW_START_CCW: debug_print("INITIALIZE_SLOW_START_CCW"); break;
-    case INITIALIZE_TIMED_SLOW_DOWN_CW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CW"); break;
-    case INITIALIZE_TIMED_SLOW_DOWN_CCW: debug_print("INITIALIZE_TIMED_SLOW_DOWN_CCW"); break;
-    case TIMED_SLOW_DOWN_CW: debug_print("TIMED_SLOW_DOWN_CW"); break;
-    case TIMED_SLOW_DOWN_CCW: debug_print("TIMED_SLOW_DOWN_CCW"); break;
-    case INITIALIZE_DIR_CHANGE_TO_CW: debug_print("INITIALIZE_DIR_CHANGE_TO_CW"); break;
-    case INITIALIZE_DIR_CHANGE_TO_CCW: debug_print("INITIALIZE_DIR_CHANGE_TO_CCW"); break;
-    case INITIALIZE_NORMAL_CW: debug_print("INITIALIZE_NORMAL_CW"); break;
-    case INITIALIZE_NORMAL_CCW: debug_print("INITIALIZE_NORMAL_CCW"); break;
-    default: debug_print("UNDEF"); break;
+    case IDLE: debug.print("IDLE"); break;
+    case SLOW_START_CW: debug.print("SLOW_START_CW"); break;
+    case SLOW_START_CCW: debug.print("SLOW_START_CCW"); break;
+    case NORMAL_CW: debug.print("NORMAL_CW"); break;
+    case NORMAL_CCW: debug.print("NORMAL_CCW"); break;
+    case SLOW_DOWN_CW: debug.print("SLOW_DOWN_CW"); break;
+    case SLOW_DOWN_CCW: debug.print("SLOW_DOWN_CCW"); break;
+    case INITIALIZE_SLOW_START_CW: debug.print("INITIALIZE_SLOW_START_CW"); break;
+    case INITIALIZE_SLOW_START_CCW: debug.print("INITIALIZE_SLOW_START_CCW"); break;
+    case INITIALIZE_TIMED_SLOW_DOWN_CW: debug.print("INITIALIZE_TIMED_SLOW_DOWN_CW"); break;
+    case INITIALIZE_TIMED_SLOW_DOWN_CCW: debug.print("INITIALIZE_TIMED_SLOW_DOWN_CCW"); break;
+    case TIMED_SLOW_DOWN_CW: debug.print("TIMED_SLOW_DOWN_CW"); break;
+    case TIMED_SLOW_DOWN_CCW: debug.print("TIMED_SLOW_DOWN_CCW"); break;
+    case INITIALIZE_DIR_CHANGE_TO_CW: debug.print("INITIALIZE_DIR_CHANGE_TO_CW"); break;
+    case INITIALIZE_DIR_CHANGE_TO_CCW: debug.print("INITIALIZE_DIR_CHANGE_TO_CCW"); break;
+    case INITIALIZE_NORMAL_CW: debug.print("INITIALIZE_NORMAL_CW"); break;
+    case INITIALIZE_NORMAL_CCW: debug.print("INITIALIZE_NORMAL_CCW"); break;
+    default: debug.print("UNDEF"); break;
   }
-  debug_print(" speed_voltage: ");
-  debug_print_int(speed_voltage);
+  debug.print(" speed_voltage: ");
+  debug.print(speed_voltage);
   #endif // DEBUG_VARIABLE_OUTPUTS
 
   if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (rotate_cw_pwm)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_cw_pwm");
+    debug.print("\trotate_cw_pwm");
     #endif // DEBUG_VARIABLE_OUTPUTS
     analogWriteEnhanced(rotate_cw_pwm, speed_voltage);
   }
 
   if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (rotate_ccw_pwm)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_ccw_pwm");
+    debug.print("\trotate_ccw_pwm");
     #endif // DEBUG_VARIABLE_OUTPUTS
     analogWriteEnhanced(rotate_ccw_pwm, speed_voltage);
   }
 
   if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW) || (az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (rotate_cw_ccw_pwm)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_cw_ccw_pwm");
+    debug.print("\trotate_cw_ccw_pwm");
     #endif // DEBUG_VARIABLE_OUTPUTS
     analogWriteEnhanced(rotate_cw_ccw_pwm, speed_voltage);
   }
@@ -5471,10 +5506,10 @@ void update_az_variable_outputs(byte speed_voltage){
 
   if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (rotate_cw_freq)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_cw_freq: ");
+    debug.print("\trotate_cw_freq: ");
     temp_int = map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH);
     tone(rotate_cw_freq, temp_int);
-    debug_print_int(temp_int);
+    debug.print(temp_int);
     #else // DEBUG_VARIABLE_OUTPUTS
     tone(rotate_cw_freq, map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
     #endif // DEBUG_VARIABLE_OUTPUTS
@@ -5482,10 +5517,10 @@ void update_az_variable_outputs(byte speed_voltage){
 
   if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (rotate_ccw_freq)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\trotate_ccw_freq: ");
+    debug.print("\trotate_ccw_freq: ");
     temp_int = map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH);
     tone(rotate_ccw_freq, temp_int);
-    debug_print_int(temp_int);    
+    debug.print(temp_int);    
     #else // DEBUG_VARIABLE_OUTPUTS
     tone(rotate_ccw_freq, map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH));
     #endif // DEBUG_VARIABLE_OUTPUTS
@@ -5497,12 +5532,12 @@ void update_az_variable_outputs(byte speed_voltage){
 
   if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW) || (az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (az_stepper_motor_pulse)) {
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print("\taz_stepper_motor_pulse: ");
+    debug.print("\taz_stepper_motor_pulse: ");
     #endif // DEBUG_VARIABLE_OUTPUTS
     az_tone = map(speed_voltage, 0, 255, AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH);
     set_az_stepper_freq(az_tone);
     #ifdef DEBUG_VARIABLE_OUTPUTS
-    debug_print_int(az_tone);
+    debug.print(az_tone);
     #endif // DEBUG_VARIABLE_OUTPUTS 
   }
   #endif //FEATURE_STEPPER_MOTOR
@@ -5512,7 +5547,7 @@ void update_az_variable_outputs(byte speed_voltage){
   }
 
   #ifdef DEBUG_VARIABLE_OUTPUTS
-  debug_println("");
+  debug.println("");
   #endif // DEBUG_VARIABLE_OUTPUTS
 
   current_az_speed_voltage = speed_voltage;
@@ -5526,12 +5561,12 @@ void rotator(byte rotation_action, byte rotation_type) {
   #ifdef DEBUG_ROTATOR
   if (debug_mode) {
     control_port->flush();
-    control_port->print(F("rotator: rotation_action:"));
-    control_port->print(rotation_action);
-    control_port->print(F(" rotation_type:"));
+    debug.print(F("rotator: rotation_action:"));
+    debug.print(rotation_action);
+    debug.print(F(" rotation_type:"));
     control_port->flush();
-    control_port->print(rotation_type);
-    control_port->print(F("->"));
+    debug.print(rotation_type);
+    debug.print(F("->"));
     control_port->flush();
     // delay(1000);
   }
@@ -5541,13 +5576,13 @@ void rotator(byte rotation_action, byte rotation_type) {
     case CW:
     #ifdef DEBUG_ROTATOR
       if (debug_mode) {
-        control_port->print(F("CW ")); control_port->flush();
+        debug.print(F("CW ")); control_port->flush();
       }
     #endif // DEBUG_ROTATOR
       if (rotation_action == ACTIVATE) {
       #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->println(F("ACTIVATE")); control_port->flush();
+          debug.print(F("ACTIVATE\n"));
         }
       #endif // DEBUG_ROTATOR
         brake_release(AZ, BRAKE_RELEASE_ON);
@@ -5607,7 +5642,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->print(F("rotator: normal_az_speed_voltage:"));
+          debug.print(F("rotator: normal_az_speed_voltage:"));
           control_port->println(normal_az_speed_voltage);
           //control_port->flush();
         }
@@ -5615,7 +5650,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       } else {
           #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->println(F("DEACTIVATE")); //control_port->flush();
+          debug.print(F("DEACTIVATE\n"));
         }
           #endif // DEBUG_ROTATOR
         if (rotate_cw_pwm) {
@@ -5645,14 +5680,14 @@ void rotator(byte rotation_action, byte rotation_type) {
     case CCW:
       #ifdef DEBUG_ROTATOR
       if (debug_mode) {
-        control_port->print(F("CCW ")); control_port->flush();
+        debug.print(F("CCW ")); control_port->flush();
       }
         #endif // DEBUG_ROTATOR
       if (rotation_action == ACTIVATE) {
           #ifdef DEBUG_ROTATOR
-        if (debug_mode) {
-          control_port->println(F("ACTIVATE")); control_port->flush();
-        }
+            if (debug_mode) {
+              debug.print(F("ACTIVATE\n"));
+            }
           #endif // DEBUG_ROTATOR
         brake_release(AZ, BRAKE_RELEASE_ON);
         if (az_slowstart_active) {
@@ -5727,17 +5762,17 @@ void rotator(byte rotation_action, byte rotation_type) {
         */
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->print(F("rotator: normal_az_speed_voltage:"));
+          debug.print(F("rotator: normal_az_speed_voltage:"));
           control_port->println(normal_az_speed_voltage);
           control_port->flush();
         }
         #endif // DEBUG_ROTATOR
       } else {
         #ifdef DEBUG_ROTATOR
-        if (debug_mode) {
-          control_port->println(F("DEACTIVATE")); control_port->flush();
-        }
-              #endif // DEBUG_ROTATOR
+          if (debug_mode) {
+            debug.print(F("DEACTIVATE\n"));
+          }
+        #endif // DEBUG_ROTATOR
         if (rotate_ccw_pwm) {
           analogWriteEnhanced(rotate_ccw_pwm, 0); digitalWriteEnhanced(rotate_ccw_pwm, LOW);
         }
@@ -5756,13 +5791,13 @@ void rotator(byte rotation_action, byte rotation_type) {
     case UP:
     #ifdef DEBUG_ROTATOR
       if (debug_mode) {
-        control_port->print(F("ROTATION_UP ")); control_port->flush();
+        debug.print(F("ROTATION_UP ")); 
       }
     #endif // DEBUG_ROTATOR
       if (rotation_action == ACTIVATE) {
       #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->println(F("ACTIVATE")); control_port->flush();
+          debug.print(F("ACTIVATE\n")); 
         }
       #endif // DEBUG_ROTATOR
         brake_release(EL, BRAKE_RELEASE_ON);
@@ -5839,7 +5874,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       } else {
       #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->println(F("DEACTIVATE")); control_port->flush();
+          debug.print(F("DEACTIVATE\n"));
         }
       #endif // DEBUG_ROTATOR
         if (rotate_up) {
@@ -5869,13 +5904,13 @@ void rotator(byte rotation_action, byte rotation_type) {
     case DOWN:
       #ifdef DEBUG_ROTATOR
       if (debug_mode) {
-        control_port->print(F("ROTATION_DOWN ")); control_port->flush();
+        debug.print(F("ROTATION_DOWN "));
       }
       #endif // DEBUG_ROTATOR
       if (rotation_action == ACTIVATE) {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->println(F("ACTIVATE")); control_port->flush();
+          debug.print(F("ACTIVATE\n"));
         }
         #endif // DEBUG_ROTATOR
         brake_release(EL, BRAKE_RELEASE_ON);
@@ -5953,7 +5988,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       } else {
           #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          control_port->println(F("DEACTIVATE")); control_port->flush();
+          debug.print(F("DEACTIVATE\n"));
         }
           #endif // DEBUG_ROTATOR
         if (rotate_down) {
@@ -5984,7 +6019,7 @@ void rotator(byte rotation_action, byte rotation_type) {
 
   #ifdef DEBUG_ROTATOR
   if (debug_mode) {
-    control_port->println(F("rotator: exiting"));
+    debug.print(F("rotator: exiting\n"));
     control_port->flush();
   }
   #endif // DEBUG_ROTATOR
@@ -5994,7 +6029,7 @@ void rotator(byte rotation_action, byte rotation_type) {
 void initialize_interrupts(){
 
   #ifdef DEBUG_LOOP
-    debug_print("initialize_interrupts()\n");
+    debug.print("initialize_interrupts()\n");
     Serial.flush();
   #endif // DEBUG_LOOP
 
@@ -6019,7 +6054,7 @@ void initialize_interrupts(){
 void initialize_pins(){
 
   #ifdef DEBUG_LOOP
-    debug_print("initialize_pins()\n");
+    debug.print("initialize_pins()\n");
     Serial.flush();
   #endif // DEBUG_LOOP
 
@@ -6367,7 +6402,7 @@ void initialize_display(){
 
   #if defined(FEATURE_LCD_DISPLAY)
     #ifdef DEBUG_LOOP
-      debug_print("initialize_display()\n");
+      debug.print("initialize_display()\n");
       Serial.flush();
     #endif // DEBUG_LOOP
 
@@ -6383,7 +6418,7 @@ void initialize_display(){
 
 
     #ifdef DEBUG_LOOP
-      debug_print("exiting initialize_display()\n");
+      debug.print("exiting initialize_display()\n");
       Serial.flush();
     #endif // DEBUG_LOOP
 
@@ -6400,7 +6435,7 @@ void initialize_display(){
 void initialize_peripherals(){
 
   #ifdef DEBUG_LOOP
-    debug_print("initialize_peripherals()\n");
+    debug.print("initialize_peripherals()\n");
     Serial.flush();
   #endif // DEBUG_LOOP
 
@@ -6497,9 +6532,9 @@ void initialize_peripherals(){
 void submit_request(byte axis, byte request, int parm, byte called_by){
 
   #ifdef DEBUG_SUBMIT_REQUEST
-  debug_print("submit_request: ");
-  debug_print_int(called_by);
-  debug_print(" ");
+  debug.print("submit_request: ");
+  debug.print(called_by);
+  debug.print(" ");
   #endif // DEBUG_SUBMIT_REQUEST
 
   #ifdef FEATURE_PARK
@@ -6508,7 +6543,7 @@ void submit_request(byte axis, byte request, int parm, byte called_by){
 
   if (axis == AZ) {
     #ifdef DEBUG_SUBMIT_REQUEST
-    debug_print("AZ "); 
+    debug.print("AZ "); 
     #endif // DEBUG_SUBMIT_REQUEST
     az_request = request;
     az_request_parm = parm;
@@ -6518,7 +6553,7 @@ void submit_request(byte axis, byte request, int parm, byte called_by){
   #ifdef FEATURE_ELEVATION_CONTROL
   if (axis == EL) {
     #ifdef DEBUG_SUBMIT_REQUEST
-    debug_print("EL ");
+    debug.print("EL ");
     #endif // DEBUG_SUBMIT_REQUEST
     el_request = request;
     el_request_parm = parm;
@@ -6528,19 +6563,19 @@ void submit_request(byte axis, byte request, int parm, byte called_by){
 
   #ifdef DEBUG_SUBMIT_REQUEST
   switch(request){
-    case 0: debug_print("REQUEST_STOP");break;
-    case 1: debug_print("REQUEST_AZIMUTH");break;
-    case 2: debug_print("REQUEST_AZIMUTH_RAW");break;
-    case 3: debug_print("REQUEST_CW");break;
-    case 4: debug_print("REQUEST_CCW");break;
-    case 5: debug_print("REQUEST_UP");break;
-    case 6: debug_print("REQUEST_DOWN");break;
-    case 7: debug_print("REQUEST_ELEVATION");break;
-    case 8: debug_print("REQUEST_KILL");break;
+    case 0: debug.print("REQUEST_STOP");break;
+    case 1: debug.print("REQUEST_AZIMUTH");break;
+    case 2: debug.print("REQUEST_AZIMUTH_RAW");break;
+    case 3: debug.print("REQUEST_CW");break;
+    case 4: debug.print("REQUEST_CCW");break;
+    case 5: debug.print("REQUEST_UP");break;
+    case 6: debug.print("REQUEST_DOWN");break;
+    case 7: debug.print("REQUEST_ELEVATION");break;
+    case 8: debug.print("REQUEST_KILL");break;
   }
-  debug_print(" ");
-  debug_print_int(parm);
-  debug_println("");
+  debug.print(" ");
+  debug.print(parm);
+  debug.println("");
   #endif // DEBUG_SUBMIT_REQUEST  
 
 } /* submit_request */
@@ -6581,7 +6616,7 @@ void service_rotation(){
     az_slow_start_step = 0;
     az_state = SLOW_START_CW;
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: INITIALIZE_SLOW_START_CW -> SLOW_START_CW");
+    debug.print("service_rotation: INITIALIZE_SLOW_START_CW -> SLOW_START_CW");
     #endif // DEBUG_SERVICE_ROTATION
   }
 
@@ -6593,7 +6628,7 @@ void service_rotation(){
     az_slow_start_step = 0;
     az_state = SLOW_START_CCW;
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: INITIALIZE_SLOW_START_CCW -> SLOW_START_CCW");
+    debug.print("service_rotation: INITIALIZE_SLOW_START_CCW -> SLOW_START_CCW");
     #endif // DEBUG_SERVICE_ROTATION
   }
 
@@ -6633,28 +6668,28 @@ void service_rotation(){
   if ((az_state == SLOW_START_CW) || (az_state == SLOW_START_CCW)) {
     if ((millis() - az_slowstart_start_time) >= AZ_SLOW_START_UP_TIME) {  // is it time to end slow start?
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("service_rotation: NORMAL_C");
+      debug.print("service_rotation: NORMAL_C");
       #endif // DEBUG_SERVICE_ROTATION
       if (az_state == SLOW_START_CW) {
         az_state = NORMAL_CW;
         #ifdef DEBUG_SERVICE_ROTATION
-        debug_print("W");
+        debug.print("W");
         #endif // DEBUG_SERVICE_ROTATION
       } else {
         az_state = NORMAL_CCW;
         #ifdef DEBUG_SERVICE_ROTATION
-        debug_print("CW");
+        debug.print("CW");
         #endif // DEBUG_SERVICE_ROTATION
       }
       update_az_variable_outputs(normal_az_speed_voltage);
     } else {  // it's not time to end slow start yet, but let's check if it's time to step up the speed voltage
       if (((millis() - az_last_step_time) > (AZ_SLOW_START_UP_TIME / AZ_SLOW_START_STEPS)) && (normal_az_speed_voltage > AZ_SLOW_START_STARTING_PWM)) {
         #ifdef DEBUG_SERVICE_ROTATION
-        debug_print("service_rotation: step up: ");
-        debug_print_int(az_slow_start_step);
-        debug_print(" pwm: ");
-        debug_print_int((int)(AZ_SLOW_START_STARTING_PWM + ((normal_az_speed_voltage - AZ_SLOW_START_STARTING_PWM) * ((float)az_slow_start_step / (float)(AZ_SLOW_START_STEPS - 1)))));
-        debug_println("");
+        debug.print("service_rotation: step up: ");
+        debug.print(az_slow_start_step);
+        debug.print(" pwm: ");
+        debug.print((int)(AZ_SLOW_START_STARTING_PWM + ((normal_az_speed_voltage - AZ_SLOW_START_STARTING_PWM) * ((float)az_slow_start_step / (float)(AZ_SLOW_START_STEPS - 1)))));
+        debug.println("");
         #endif // DEBUG_SERVICE_ROTATION
         update_az_variable_outputs((AZ_SLOW_START_STARTING_PWM + ((normal_az_speed_voltage - AZ_SLOW_START_STARTING_PWM) * ((float)az_slow_start_step / (float)(AZ_SLOW_START_STEPS - 1)))));
         az_last_step_time = millis();
@@ -6667,11 +6702,11 @@ void service_rotation(){
   // timed slow down ------------------------------------------------------------------------------------------------------
   if (((az_state == TIMED_SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CCW)) && ((millis() - az_last_step_time) >= (TIMED_SLOW_DOWN_TIME / AZ_SLOW_DOWN_STEPS))) {
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: TIMED_SLOW_DOWN step down: ");
-    debug_print_int(az_slow_down_step);
-    debug_print(" pwm: ");
-    debug_print_int((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
-    debug_println("");
+    debug.print("service_rotation: TIMED_SLOW_DOWN step down: ");
+    debug.print(az_slow_down_step);
+    debug.print(" pwm: ");
+    debug.print((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
+    debug.println("");
     #endif // DEBUG_SERVICE_ROTATION
     update_az_variable_outputs((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
     az_last_step_time = millis();
@@ -6679,7 +6714,7 @@ void service_rotation(){
 
     if (az_slow_down_step == 0) { // is it time to exit timed slow down?
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("service_rotation: TIMED_SLOW_DOWN->IDLE");
+      debug.print("service_rotation: TIMED_SLOW_DOWN->IDLE");
       #endif // DEBUG_SERVICE_ROTATION
       rotator(DEACTIVATE, CW);
       rotator(DEACTIVATE, CCW);        
@@ -6714,11 +6749,11 @@ void service_rotation(){
     // is it time to do another step down?
     if (abs((target_raw_azimuth - raw_azimuth) / HEADING_MULTIPLIER) <= (((float)SLOW_DOWN_BEFORE_TARGET_AZ * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)))) {
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("service_rotation: step down: ");
-      debug_print_int(az_slow_down_step);
-      debug_print(" pwm: ");
-      debug_print_int((int)(AZ_SLOW_DOWN_PWM_STOP + ((az_initial_slow_down_voltage - AZ_SLOW_DOWN_PWM_STOP) * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS))));
-      debug_println("");
+      debug.print("service_rotation: step down: ");
+      debug.print(az_slow_down_step);
+      debug.print(" pwm: ");
+      debug.print((int)(AZ_SLOW_DOWN_PWM_STOP + ((az_initial_slow_down_voltage - AZ_SLOW_DOWN_PWM_STOP) * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS))));
+      debug.println("");
       #endif // DEBUG_SERVICE_ROTATION
       update_az_variable_outputs((AZ_SLOW_DOWN_PWM_STOP + ((az_initial_slow_down_voltage - AZ_SLOW_DOWN_PWM_STOP) * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS))));
       if (az_slow_down_step > 0) {az_slow_down_step--;}
@@ -6733,18 +6768,18 @@ void service_rotation(){
     byte az_state_was = az_state;
 
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: SLOW_DOWN_C");
+    debug.print("service_rotation: SLOW_DOWN_C");
     #endif // DEBUG_SERVICE_ROTATION
     az_slow_down_step = AZ_SLOW_DOWN_STEPS - 1;
     if ((az_state == NORMAL_CW) || (az_state == SLOW_START_CW)) {
       az_state = SLOW_DOWN_CW;
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("W");
+      debug.print("W");
       #endif // DEBUG_SERVICE_ROTATION
     } else {
       az_state = SLOW_DOWN_CCW;
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("CW");
+      debug.print("CW");
       #endif // DEBUG_SERVICE_ROTATION
     }
     
@@ -6752,9 +6787,9 @@ void service_rotation(){
       az_initial_slow_down_voltage = (AZ_INITIALLY_IN_SLOW_DOWN_PWM);
       update_az_variable_outputs(az_initial_slow_down_voltage);
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print(" SLOW_START -> SLOW_DOWN az_initial_slow_down_voltage:");
-      debug_print_int(az_initial_slow_down_voltage);
-      debug_print(" ");
+      debug.print(" SLOW_START -> SLOW_DOWN az_initial_slow_down_voltage:");
+      debug.print(az_initial_slow_down_voltage);
+      debug.print(" ");
       #endif // DEBUG_SERVICE_ROTATION
     } else {
       if (AZ_SLOW_DOWN_PWM_START < current_az_speed_voltage) {
@@ -6779,7 +6814,7 @@ void service_rotation(){
           az_state = IDLE;
           az_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
-          debug_print("service_rotation: IDLE");
+          debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
@@ -6806,7 +6841,7 @@ void service_rotation(){
           az_state = IDLE;
           az_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
-          debug_print("service_rotation: IDLE");
+          debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
@@ -6849,7 +6884,7 @@ void service_rotation(){
     el_slow_start_step = 0;
     el_state = SLOW_START_UP;
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: INITIALIZE_SLOW_START_UP -> SLOW_START_UP");
+    debug.print("service_rotation: INITIALIZE_SLOW_START_UP -> SLOW_START_UP");
     #endif // DEBUG_SERVICE_ROTATION
   }
 
@@ -6861,7 +6896,7 @@ void service_rotation(){
     el_slow_start_step = 0;
     el_state = SLOW_START_DOWN;
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: INITIALIZE_SLOW_START_DOWN -> SLOW_START_DOWN");
+    debug.print("service_rotation: INITIALIZE_SLOW_START_DOWN -> SLOW_START_DOWN");
     #endif // DEBUG_SERVICE_ROTATION
   }
 
@@ -6901,28 +6936,28 @@ void service_rotation(){
   if ((el_state == SLOW_START_UP) || (el_state == SLOW_START_DOWN)) {
     if ((millis() - el_slowstart_start_time) >= EL_SLOW_START_UP_TIME) {  // is it time to end slow start?
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("service_rotation: NORMAL_");
+      debug.print("service_rotation: NORMAL_");
       #endif // DEBUG_SERVICE_ROTATION
       if (el_state == SLOW_START_UP) {
         el_state = NORMAL_UP;
         #ifdef DEBUG_SERVICE_ROTATION
-        debug_print("UP");
+        debug.print("UP");
         #endif // DEBUG_SERVICE_ROTATION
       } else {
         el_state = NORMAL_DOWN;
         #ifdef DEBUG_SERVICE_ROTATION
-        debug_print("DOWN");
+        debug.print("DOWN");
         #endif // DEBUG_SERVICE_ROTATION
       }
       update_el_variable_outputs(normal_el_speed_voltage);
     } else {  // it's not time to end slow start yet, but let's check if it's time to step up the speed voltage
       if (((millis() - el_last_step_time) > (EL_SLOW_START_UP_TIME / EL_SLOW_START_STEPS)) && (normal_el_speed_voltage > EL_SLOW_START_STARTING_PWM)) {
         #ifdef DEBUG_SERVICE_ROTATION
-        debug_print("service_rotation: step up: ");
-        debug_print_int(el_slow_start_step);
-        debug_print(" pwm: ");
-        debug_print_int((int)(EL_SLOW_START_STARTING_PWM + ((normal_el_speed_voltage - EL_SLOW_START_STARTING_PWM) * ((float)el_slow_start_step / (float)(EL_SLOW_START_STEPS - 1)))));
-        debug_println("");
+        debug.print("service_rotation: step up: ");
+        debug.print(el_slow_start_step);
+        debug.print(" pwm: ");
+        debug.print((int)(EL_SLOW_START_STARTING_PWM + ((normal_el_speed_voltage - EL_SLOW_START_STARTING_PWM) * ((float)el_slow_start_step / (float)(EL_SLOW_START_STEPS - 1)))));
+        debug.println("");
         #endif // DEBUG_SERVICE_ROTATION
         update_el_variable_outputs((EL_SLOW_START_STARTING_PWM + ((normal_el_speed_voltage - EL_SLOW_START_STARTING_PWM) * ((float)el_slow_start_step / (float)(EL_SLOW_START_STEPS - 1)))));
         el_last_step_time = millis();
@@ -6935,11 +6970,11 @@ void service_rotation(){
   // timed slow down ------------------------------------------------------------------------------------------------------
   if (((el_state == TIMED_SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_DOWN)) && ((millis() - el_last_step_time) >= (TIMED_SLOW_DOWN_TIME / EL_SLOW_DOWN_STEPS))) {
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: TIMED_SLOW_DOWN step down: ");
-    debug_print_int(el_slow_down_step);
-    debug_print(" pwm: ");
-    debug_print_int((int)(normal_el_speed_voltage * ((float)el_slow_down_step / (float)EL_SLOW_DOWN_STEPS)));
-    debug_println("");
+    debug.print("service_rotation: TIMED_SLOW_DOWN step down: ");
+    debug.print(el_slow_down_step);
+    debug.print(" pwm: ");
+    debug.print((int)(normal_el_speed_voltage * ((float)el_slow_down_step / (float)EL_SLOW_DOWN_STEPS)));
+    debug.println("");
     #endif // DEBUG_SERVICE_ROTATION
     update_el_variable_outputs((int)(normal_el_speed_voltage * ((float)el_slow_down_step / (float)EL_SLOW_DOWN_STEPS)));
     el_last_step_time = millis();
@@ -6947,7 +6982,7 @@ void service_rotation(){
 
     if (el_slow_down_step == 0) { // is it time to exit timed slow down?
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("service_rotation: TIMED_SLOW_DOWN->IDLE");
+      debug.print("service_rotation: TIMED_SLOW_DOWN->IDLE");
       #endif // DEBUG_SERVICE_ROTATION
       rotator(DEACTIVATE, UP);
       rotator(DEACTIVATE, DOWN);
@@ -6979,11 +7014,11 @@ void service_rotation(){
     // is it time to do another step down?
     if (abs((target_elevation - elevation) / HEADING_MULTIPLIER) <= (((float)SLOW_DOWN_BEFORE_TARGET_EL * ((float)el_slow_down_step / (float)EL_SLOW_DOWN_STEPS)))) {
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("service_rotation: step down: ");
-      debug_print_int(el_slow_down_step);
-      debug_print(" pwm: ");
-      debug_print_int((int)(EL_SLOW_DOWN_PWM_STOP + ((el_initial_slow_down_voltage - EL_SLOW_DOWN_PWM_STOP) * ((float)el_slow_down_step / (float)EL_SLOW_DOWN_STEPS))));
-      debug_println("");
+      debug.print("service_rotation: step down: ");
+      debug.print(el_slow_down_step);
+      debug.print(" pwm: ");
+      debug.print((int)(EL_SLOW_DOWN_PWM_STOP + ((el_initial_slow_down_voltage - EL_SLOW_DOWN_PWM_STOP) * ((float)el_slow_down_step / (float)EL_SLOW_DOWN_STEPS))));
+      debug.println("");
       #endif // DEBUG_SERVICE_ROTATION
       update_el_variable_outputs((EL_SLOW_DOWN_PWM_STOP + ((el_initial_slow_down_voltage - EL_SLOW_DOWN_PWM_STOP) * ((float)el_slow_down_step / (float)EL_SLOW_DOWN_STEPS))));
       if (el_slow_down_step > 0) {el_slow_down_step--;}
@@ -6999,18 +7034,18 @@ void service_rotation(){
 
 
     #ifdef DEBUG_SERVICE_ROTATION
-    debug_print("service_rotation: SLOW_DOWN_");
+    debug.print("service_rotation: SLOW_DOWN_");
     #endif // DEBUG_SERVICE_ROTATION
     el_slow_down_step = EL_SLOW_DOWN_STEPS - 1;
     if ((el_state == NORMAL_UP) || (el_state == SLOW_START_UP)) {
       el_state = SLOW_DOWN_UP;
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("UP");
+      debug.print("UP");
       #endif // DEBUG_SERVICE_ROTATION
     } else {
       el_state = SLOW_DOWN_DOWN;
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print("DOWN");
+      debug.print("DOWN");
       #endif // DEBUG_SERVICE_ROTATION
     }
 
@@ -7018,9 +7053,9 @@ void service_rotation(){
       el_initial_slow_down_voltage = EL_INITIALLY_IN_SLOW_DOWN_PWM;
       update_el_variable_outputs(el_initial_slow_down_voltage);
       #ifdef DEBUG_SERVICE_ROTATION
-      debug_print(" SLOW_START -> SLOW_DOWN el_initial_slow_down_voltage:");
-      debug_print_int(el_initial_slow_down_voltage);
-      debug_print(" ");
+      debug.print(" SLOW_START -> SLOW_DOWN el_initial_slow_down_voltage:");
+      debug.print(el_initial_slow_down_voltage);
+      debug.print(" ");
       #endif // DEBUG_SERVICE_ROTATION    
 
     } else {
@@ -7048,7 +7083,7 @@ void service_rotation(){
           el_state = IDLE;
           el_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
-          debug_print("service_rotation: IDLE");
+          debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
 /*control_port->println(abs(elevation - target_elevation));
 read_elevation(0);
@@ -7075,7 +7110,7 @@ control_port->println();*/
           el_state = IDLE;
           el_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
-          debug_print("service_rotation: IDLE");
+          debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
 /*control_port->println(abs(elevation - target_elevation));
 read_elevation(0);
@@ -7131,13 +7166,13 @@ void service_request_queue(){
     #endif //FEATURE_POWER_SWITCH
 
     #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-    debug_print("service_request_queue: AZ ");
+    debug.print("service_request_queue: AZ ");
     #endif // DEBUG_SERVICE_REQUEST_QUEUE
 
     switch (az_request) {
       case (REQUEST_STOP):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_print("REQUEST_STOP");
+        debug.print("REQUEST_STOP");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
@@ -7180,7 +7215,7 @@ void service_request_queue(){
 
       case (REQUEST_AZIMUTH):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_print("REQUEST_AZIMUTH");
+        debug.print("REQUEST_AZIMUTH");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         if ((az_request_parm >= 0) && (az_request_parm <= (360 * HEADING_MULTIPLIER))) {
           target_azimuth = az_request_parm;
@@ -7190,66 +7225,66 @@ void service_request_queue(){
           }
           if ((target_azimuth > (azimuth - (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER))) && (target_azimuth < (azimuth + (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER)))) {
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug_print(" request within tolerance");
+            debug.print(" request within tolerance");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
             within_tolerance_flag = 1;
             az_request_queue_state = NONE;
           } else {  // target azimuth is not within tolerance, we need to rotate
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug_print(" ->A");
+            debug.print(" ->A");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
             work_target_raw_azimuth = target_azimuth;
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug_print(" work_target_raw_azimuth:");
-            debug_print_int(work_target_raw_azimuth / HEADING_MULTIPLIER);
-            debug_print(" azimuth_starting_point:");
-            debug_print_int(azimuth_starting_point);
-            debug_print(" ");
+            debug.print(" work_target_raw_azimuth:");
+            debug.print(work_target_raw_azimuth / HEADING_MULTIPLIER);
+            debug.print(" azimuth_starting_point:");
+            debug.print(azimuth_starting_point);
+            debug.print(" ");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
 
             if (work_target_raw_azimuth < (azimuth_starting_point * HEADING_MULTIPLIER)) {
               work_target_raw_azimuth = work_target_raw_azimuth + (360 * HEADING_MULTIPLIER);
               target_raw_azimuth = work_target_raw_azimuth;
               #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-              debug_print("->B");
+              debug.print("->B");
               #endif // DEBUG_SERVICE_REQUEST_QUEUE
             }
             if ((work_target_raw_azimuth + (360 * HEADING_MULTIPLIER)) < ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER)) { // is there a second possible heading in overlap?
               if (abs(raw_azimuth - work_target_raw_azimuth) < abs((work_target_raw_azimuth + (360 * HEADING_MULTIPLIER)) - raw_azimuth)) { // is second possible heading closer?
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-                debug_print("->C");
+                debug.print("->C");
                 #endif // DEBUG_SERVICE_REQUEST_QUEUE
                 if (work_target_raw_azimuth  > raw_azimuth) { // not closer, use position in non-overlap
                   direction_to_go = CW;
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-                  debug_print("->CW!");
+                  debug.print("->CW!");
                   #endif // DEBUG_SERVICE_REQUEST_QUEUE
                 } else {
                   direction_to_go = CCW;
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-                  debug_print("->CCW!");
+                  debug.print("->CCW!");
                   #endif // DEBUG_SERVICE_REQUEST_QUEUE
                 }
               } else { // go to position in overlap
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-                debug_print("->D");
+                debug.print("->D");
                 #endif // DEBUG_SERVICE_REQUEST_QUEUE
                 target_raw_azimuth = work_target_raw_azimuth + (360 * HEADING_MULTIPLIER);
                 if ((work_target_raw_azimuth + (360 * HEADING_MULTIPLIER)) > raw_azimuth) {
                   direction_to_go = CW;
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-                  debug_print("->CW!");
+                  debug.print("->CW!");
                   #endif // DEBUG_SERVICE_REQUEST_QUEUE
                 } else {
                   direction_to_go = CCW;
                   #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-                  debug_print("->CCW!");
+                  debug.print("->CCW!");
                   #endif // DEBUG_SERVICE_REQUEST_QUEUE
                 }
               }
             } else {  // no possible second heading in overlap
               #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-              debug_print("->E");
+              debug.print("->E");
               #endif // DEBUG_SERVICE_REQUEST_QUEUE
               if (work_target_raw_azimuth  > raw_azimuth) {
                 direction_to_go = CW;
@@ -7260,7 +7295,7 @@ void service_request_queue(){
           }
         } else {
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-          debug_print("->F");
+          debug.print("->F");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
           if ((az_request_parm > (360 * HEADING_MULTIPLIER)) && (az_request_parm <= ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER))) {
             target_azimuth = az_request_parm - (360 * HEADING_MULTIPLIER);
@@ -7272,9 +7307,9 @@ void service_request_queue(){
             }
           } else {
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug_print(" error: bogus azimuth request:");
-            debug_print_int(az_request_parm);
-            debug_println("");
+            debug.print(" error: bogus azimuth request:");
+            debug.print(az_request_parm);
+            debug.println("");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
             rotator(DEACTIVATE, CW);
             rotator(DEACTIVATE, CCW);
@@ -7287,7 +7322,7 @@ void service_request_queue(){
           if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (az_slowstart_active)) {
             az_state = INITIALIZE_DIR_CHANGE_TO_CW;
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug_print(" INITIALIZE_DIR_CHANGE_TO_CW");
+            debug.print(" INITIALIZE_DIR_CHANGE_TO_CW");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
           } else {
             if ((az_state != INITIALIZE_SLOW_START_CW) && (az_state != SLOW_START_CW) && (az_state != NORMAL_CW)) { // if we're already rotating CW, don't do anything
@@ -7302,7 +7337,7 @@ void service_request_queue(){
           if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (az_slowstart_active)) {
             az_state = INITIALIZE_DIR_CHANGE_TO_CCW;
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug_print(" INITIALIZE_DIR_CHANGE_TO_CCW");
+            debug.print(" INITIALIZE_DIR_CHANGE_TO_CCW");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
           } else {
             if ((az_state != INITIALIZE_SLOW_START_CCW) && (az_state != SLOW_START_CCW) && (az_state != NORMAL_CCW)) { // if we're already rotating CCW, don't do anything
@@ -7326,7 +7361,7 @@ void service_request_queue(){
 
       case (REQUEST_AZIMUTH_RAW):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_print("REQUEST_AZIMUTH_RAW");
+        debug.print("REQUEST_AZIMUTH_RAW");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         target_raw_azimuth = az_request_parm;
         target_azimuth = target_raw_azimuth;
@@ -7336,7 +7371,7 @@ void service_request_queue(){
 
         if (((abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER))) && (az_state == IDLE)) {
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-          debug_print(" request within tolerance");
+          debug.print(" request within tolerance");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
           az_request_queue_state = NONE;
           within_tolerance_flag = 1;
@@ -7345,7 +7380,7 @@ void service_request_queue(){
             if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (az_slowstart_active)) {
               az_state = INITIALIZE_DIR_CHANGE_TO_CW;
               #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-              debug_print(" INITIALIZE_DIR_CHANGE_TO_CW");
+              debug.print(" INITIALIZE_DIR_CHANGE_TO_CW");
               #endif // DEBUG_SERVICE_REQUEST_QUEUE
             } else {
               if ((az_state != INITIALIZE_SLOW_START_CW) && (az_state != SLOW_START_CW) && (az_state != NORMAL_CW)) { // if we're already rotating CW, don't do anything
@@ -7359,7 +7394,7 @@ void service_request_queue(){
             if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (az_slowstart_active)) {
               az_state = INITIALIZE_DIR_CHANGE_TO_CCW;
               #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-              debug_print(" INITIALIZE_DIR_CHANGE_TO_CCW");
+              debug.print(" INITIALIZE_DIR_CHANGE_TO_CCW");
               #endif // DEBUG_SERVICE_REQUEST_QUEUE
             } else {
               if ((az_state != INITIALIZE_SLOW_START_CCW) && (az_state != SLOW_START_CCW) && (az_state != NORMAL_CCW)) { // if we're already rotating CCW, don't do anything
@@ -7383,7 +7418,7 @@ void service_request_queue(){
 
       case (REQUEST_CW):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_print("REQUEST_CW");
+        debug.print("REQUEST_CW");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
@@ -7392,7 +7427,7 @@ void service_request_queue(){
         if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (az_slowstart_active)) {
           az_state = INITIALIZE_DIR_CHANGE_TO_CW;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-          debug_print(" INITIALIZE_DIR_CHANGE_TO_CW");
+          debug.print(" INITIALIZE_DIR_CHANGE_TO_CW");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
           if ((az_state != SLOW_START_CW) && (az_state != NORMAL_CW)) {
@@ -7415,7 +7450,7 @@ void service_request_queue(){
 
       case (REQUEST_CCW):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_print("REQUEST_CCW");
+        debug.print("REQUEST_CCW");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
@@ -7424,7 +7459,7 @@ void service_request_queue(){
         if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (az_slowstart_active)) {
           az_state = INITIALIZE_DIR_CHANGE_TO_CCW;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-          debug_print(" INITIALIZE_DIR_CHANGE_TO_CCW");
+          debug.print(" INITIALIZE_DIR_CHANGE_TO_CCW");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
           if ((az_state != SLOW_START_CCW) && (az_state != NORMAL_CCW)) {
@@ -7445,7 +7480,7 @@ void service_request_queue(){
 
       case (REQUEST_KILL):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_print("REQUEST_KILL");
+        debug.print("REQUEST_KILL");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
@@ -7456,7 +7491,7 @@ void service_request_queue(){
         az_state = IDLE;
         az_request_queue_state = NONE;
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_println("");
+        debug.println("");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         break; // REQUEST_KILL
     } /* switch */
@@ -7475,12 +7510,12 @@ void service_request_queue(){
 
     within_tolerance_flag = 0;
     #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-    debug_print("service_request_queue: EL ");
+    debug.print("service_request_queue: EL ");
     #endif // DEBUG_SERVICE_REQUEST_QUEUE
     switch (el_request) {
       case (REQUEST_ELEVATION):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-        debug_print("REQUEST_ELEVATION ");
+        debug.print("REQUEST_ELEVATION ");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         target_elevation = el_request_parm;
 
@@ -7488,7 +7523,7 @@ void service_request_queue(){
           target_elevation = ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {
-            control_port->print(F("REQUEST_ELEVATION: target_elevation > ELEVATION_MAXIMUM_DEGREES"));
+            debug.print(F("REQUEST_ELEVATION: target_elevation > ELEVATION_MAXIMUM_DEGREES"));
           }
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         }
@@ -7498,7 +7533,7 @@ void service_request_queue(){
           target_elevation = EL_MANUAL_ROTATE_DOWN_LIMIT * HEADING_MULTIPLIER;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {
-            control_port->print(F("REQUEST_ELEVATION: target_elevation < EL_MANUAL_ROTATE_DOWN_LIMIT"));
+            debug.print(F("REQUEST_ELEVATION: target_elevation < EL_MANUAL_ROTATE_DOWN_LIMIT"));
           }
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         }
@@ -7506,7 +7541,7 @@ void service_request_queue(){
           target_elevation = EL_MANUAL_ROTATE_UP_LIMIT * HEADING_MULTIPLIER;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {
-            control_port->print(F("REQUEST_ELEVATION: target_elevation > EL_MANUAL_ROTATE_UP_LIMIT"));
+            debug.print(F("REQUEST_ELEVATION: target_elevation > EL_MANUAL_ROTATE_UP_LIMIT"));
           }
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         }
@@ -7515,7 +7550,7 @@ void service_request_queue(){
         if (abs(target_elevation - elevation) < (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) {
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {
-            control_port->println(F("requested elevation within tolerance"));
+            debug.print(F("requested elevation within tolerance\n"));
           }
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
           within_tolerance_flag = 1;
@@ -7526,7 +7561,7 @@ void service_request_queue(){
               el_state = INITIALIZE_DIR_CHANGE_TO_UP;
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
               if (debug_mode) {
-                control_port->println(F(" INITIALIZE_DIR_CHANGE_TO_UP"));
+                debug.print(F(" INITIALIZE_DIR_CHANGE_TO_UP\n"));
               }
                 #endif // DEBUG_SERVICE_REQUEST_QUEUE
             } else {
@@ -7542,7 +7577,7 @@ void service_request_queue(){
               el_state = INITIALIZE_DIR_CHANGE_TO_DOWN;
               #ifdef DEBUG_SERVICE_REQUEST_QUEUE
               if (debug_mode) {
-                control_port->println(F(" INITIALIZE_DIR_CHANGE_TO_DOWN"));
+                debug.print(F(" INITIALIZE_DIR_CHANGE_TO_DOWN\n"));
               }
               #endif // DEBUG_SERVICE_REQUEST_QUEUE
             } else {
@@ -7568,7 +7603,7 @@ void service_request_queue(){
       case (REQUEST_UP):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         if (debug_mode) {
-          control_port->println(F("REQUEST_UP"));
+          debug.print(F("REQUEST_UP\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
@@ -7579,7 +7614,7 @@ void service_request_queue(){
           el_state = INITIALIZE_DIR_CHANGE_TO_UP;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {
-            control_port->println(F("service_request_queue: INITIALIZE_DIR_CHANGE_TO_UP"));
+            debug.print(F("service_request_queue: INITIALIZE_DIR_CHANGE_TO_UP\n"));
           }
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
@@ -7601,7 +7636,7 @@ void service_request_queue(){
       case (REQUEST_DOWN):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         if (debug_mode) {
-          control_port->println(F("REQUEST_DOWN"));
+          debug.print(F("REQUEST_DOWN\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
@@ -7612,7 +7647,7 @@ void service_request_queue(){
           el_state = INITIALIZE_DIR_CHANGE_TO_DOWN;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           if (debug_mode) {
-            control_port->println(F("service_request_queue: INITIALIZE_DIR_CHANGE_TO_DOWN"));
+            debug.print(F("service_request_queue: INITIALIZE_DIR_CHANGE_TO_DOWN\n"));
           }
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
@@ -7634,7 +7669,7 @@ void service_request_queue(){
       case (REQUEST_STOP):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         if (debug_mode) {
-          control_port->println(F("REQUEST_STOP"));
+          debug.print(F("REQUEST_STOP\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
@@ -7678,7 +7713,7 @@ void service_request_queue(){
       case (REQUEST_KILL):
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         if (debug_mode) {
-          control_port->println(F("REQUEST_KILL"));
+          debug.print(F("REQUEST_KILL\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
@@ -8089,12 +8124,12 @@ void service_remote_communications_incoming_buffer(){
   if (remote_unit_port_buffer_carriage_return_flag) {
 
     #ifdef DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
-    debug_print("service_remote_communications_incoming_buffer: remote_unit_port_buffer_index: ");
-    debug_print_int(remote_unit_port_buffer_index);
-    debug_print(" buffer: ");
+    debug.print("service_remote_communications_incoming_buffer: remote_unit_port_buffer_index: ");
+    debug.print(remote_unit_port_buffer_index);
+    debug.print(" buffer: ");
     for (int x = 0; x < remote_unit_port_buffer_index; x++) {
       debug_write((char*)remote_unit_port_buffer[x]);
-      debug_println("$");
+      debug.println("$");
     }
     #endif // DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
 
@@ -8115,7 +8150,7 @@ void service_remote_communications_incoming_buffer(){
               latitude = temp_float_latitude;
               longitude = temp_float_longitude;
               #ifdef DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
-              debug_println("service_remote_communications_incoming_buffer: coordinates synced to slave");
+              debug.println("service_remote_communications_incoming_buffer: coordinates synced to slave");
               #endif //DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE              
             }         
             good_data = 1;
@@ -8161,7 +8196,7 @@ void service_remote_communications_incoming_buffer(){
               clock_sec_set = temp_sec;
               millis_at_last_calibration = millis();
               #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
-              debug_println("service_remote_communications_incoming_buffer: clock synced to slave clock");
+              debug.println("service_remote_communications_incoming_buffer: clock synced to slave clock");
               #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
               good_data = 1;
               clock_synced_to_remote = 1;
@@ -8169,7 +8204,7 @@ void service_remote_communications_incoming_buffer(){
             } else {
 
               #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
-              debug_println("service_remote_communications_incoming_buffer: slave clock sync error");
+              debug.println("service_remote_communications_incoming_buffer: slave clock sync error");
               #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE  
               if ((clock_status == SLAVE_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {clock_status = FREE_RUNNING;}   
             }
@@ -8181,9 +8216,9 @@ void service_remote_communications_incoming_buffer(){
           } else {
             #if defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
             #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
-            debug_print("service_remote_communications_incoming_buffer: REMOTE_UNIT_CL_COMMAND format error.  remote_unit_port_buffer_index: ");
-            debug_print_int(remote_unit_port_buffer_index);
-            debug_println("");
+            debug.print("service_remote_communications_incoming_buffer: REMOTE_UNIT_CL_COMMAND format error.  remote_unit_port_buffer_index: ");
+            debug.print(remote_unit_port_buffer_index);
+            debug.println("");
             #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE 
             if ((clock_status == SLAVE_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {clock_status = FREE_RUNNING;} 
             #endif // defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)          
@@ -8222,31 +8257,31 @@ void service_remote_communications_incoming_buffer(){
         remote_unit_good_results++;
 
         #ifdef DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
-        debug_print("service_remote_communications_incoming_buffer: remote_unit_command_results_available: ");
-        debug_print_int(remote_unit_command_results_available);
-        debug_print(" remote_unit_command_result_float: ");
-        debug_print_float(remote_unit_command_result_float,2);
-        debug_println("");
+        debug.print("service_remote_communications_incoming_buffer: remote_unit_command_results_available: ");
+        debug.print(remote_unit_command_results_available);
+        debug.print(" remote_unit_command_result_float: ");
+        debug.print(remote_unit_command_result_float,2);
+        debug.println("");
         #endif // DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
 
 
       } else {
 
         #ifdef DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER_BAD_DATA
-        debug_print("service_remote_communications_incoming_buffer: bad data: remote_unit_command_submitted: ");
+        debug.print("service_remote_communications_incoming_buffer: bad data: remote_unit_command_submitted: ");
         switch (remote_unit_command_submitted) {
-          case REMOTE_UNIT_AZ_COMMAND: debug_print("REMOTE_UNIT_AZ_COMMAND"); break;
-          case REMOTE_UNIT_EL_COMMAND: debug_print("REMOTE_UNIT_EL_COMMAND"); break;
-          case REMOTE_UNIT_OTHER_COMMAND: debug_print("REMOTE_UNIT_OTHER_COMMAND"); break;
-          default: debug_print("UNDEFINED"); break;
+          case REMOTE_UNIT_AZ_COMMAND: debug.print("REMOTE_UNIT_AZ_COMMAND"); break;
+          case REMOTE_UNIT_EL_COMMAND: debug.print("REMOTE_UNIT_EL_COMMAND"); break;
+          case REMOTE_UNIT_OTHER_COMMAND: debug.print("REMOTE_UNIT_OTHER_COMMAND"); break;
+          default: debug.print("UNDEFINED"); break;
         }
-        debug_print(" buffer_index:");
-        debug_print_int(remote_unit_port_buffer_index);
-        debug_print(" buffer: ");
+        debug.print(" buffer_index:");
+        debug.print(remote_unit_port_buffer_index);
+        debug.print(" buffer: ");
         for (int x = 0; x < remote_unit_port_buffer_index; x++) {
           debug_write((char*)remote_unit_port_buffer[x]);
         }
-        debug_println("$");
+        debug.println("$");
         #endif // DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER_BAD_DATA
 
 
@@ -8356,9 +8391,9 @@ void check_joystick(){
       static unsigned long last_debug_joystick_status = 0;
 
       if ((debug_mode) && ((millis() - last_debug_joystick_status) > 1000)) {
-        control_port->print("check_joystick: x: ");
-        control_port->print(joystick_x);
-        control_port->print("\ty: ");
+        debug.print("check_joystick: x: ");
+        debug.print(joystick_x);
+        debug.print("\ty: ");
         control_port->println(joystick_y);
         last_debug_joystick_status = millis();
       }
@@ -8485,7 +8520,7 @@ void service_rotation_indicator_pin(){
     rotation_indication_pin_state = 1;
       #ifdef DEBUG_ROTATION_INDICATION_PIN
     if (debug_mode) {
-      control_port->println(F("service_rotation_indicator_pin: active"));
+      debug.print(F("service_rotation_indicator_pin: active\n"));
     }
       #endif
   }
@@ -8504,11 +8539,11 @@ void service_rotation_indicator_pin(){
         }
         rotation_indication_pin_state = 0;
         time_rotation_went_inactive = 0;
-              #ifdef DEBUG_ROTATION_INDICATION_PIN
-        if (debug_mode) {
-          control_port->println(F("service_rotation_indicator_pin: inactive"));
-        }
-              #endif
+        #ifdef DEBUG_ROTATION_INDICATION_PIN
+          if (debug_mode) {
+            debug.print(F("service_rotation_indicator_pin: inactive\n"));
+          }
+        #endif
       }
     }
   }
@@ -8530,7 +8565,7 @@ void deactivate_park(){
 void initiate_park(){
 
   #ifdef DEBUG_PARK
-  control_port->println(F("initiate_park: park initiated"));
+  debug.print(F("initiate_park: park initiated\n"));
   #endif // DEBUG_PARK
 
   byte park_initiated = 0;
@@ -8584,9 +8619,9 @@ void service_park(){
         if (parked_pin) {
           digitalWriteEnhanced(parked_pin, LOW);
         }
-      #ifdef DEBUG_PARK
-        control_port->println(F("service_park: park_in_progress_pin: LOW  parked_pin: LOW"));
-      #endif // DEBUG_PARK
+        #ifdef DEBUG_PARK
+          debug.print(F("service_park: park_in_progress_pin: LOW  parked_pin: LOW\n"));
+        #endif // DEBUG_PARK
         break;
       case PARK_INITIATED:
         if (park_in_progress_pin) {
@@ -8595,9 +8630,9 @@ void service_park(){
         if (parked_pin) {
           digitalWriteEnhanced(parked_pin, LOW);
         }
-      #ifdef DEBUG_PARK
-        control_port->println(F("service_park: park_in_progress_pin: HIGH  parked_pin: LOW"));
-      #endif // DEBUG_PARK
+        #ifdef DEBUG_PARK
+          debug.print(F("service_park: park_in_progress_pin: HIGH  parked_pin: LOW\n"));
+        #endif // DEBUG_PARK
         break;
       case PARKED:
         if (park_in_progress_pin) {
@@ -8612,9 +8647,9 @@ void service_park(){
         #endif
           park_serial_initiated = 0;
         }
-      #ifdef DEBUG_PARK
-        control_port->println(F("service_park: park_in_progress_pin: LOW  parked_pin: HIGH"));
-      #endif // DEBUG_PARK
+        #ifdef DEBUG_PARK
+          debug.print(F("service_park: park_in_progress_pin: LOW  parked_pin: HIGH\n"));
+        #endif // DEBUG_PARK
         break;
     } /* switch */
   }
@@ -8641,7 +8676,7 @@ void check_limit_sense(){
         submit_request(AZ, REQUEST_KILL, 0, 9);
         az_limit_tripped = 1;
         #ifdef DEBUG_LIMIT_SENSE
-        control_port->println(F("check_limit_sense: az limit tripped"));
+          debug.print(F("check_limit_sense: az limit tripped\n"));
         #endif // DEBUG_LIMIT_SENSE
       }
     } else {
@@ -8655,9 +8690,9 @@ void check_limit_sense(){
       if (!el_limit_tripped) {
         submit_request(EL, REQUEST_KILL, 0, 10);
         el_limit_tripped = 1;
-          #ifdef DEBUG_LIMIT_SENSE
-        control_port->println(F("check_limit_sense: el limit tripped"));
-          #endif // DEBUG_LIMIT_SENSE
+        #ifdef DEBUG_LIMIT_SENSE
+          debug.print(F("check_limit_sense: el limit tripped\n"));
+        #endif // DEBUG_LIMIT_SENSE
       }
     } else {
       el_limit_tripped = 0;
@@ -8963,171 +8998,6 @@ void take_care_of_pending_remote_command(){
 
 
 
-
-
-
-
-void debug_print(char * print_string){
-
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS) 
-    if (debug_mode & CONTROL_PORT0){
-      control_port->print(print_string);
-    }
-  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-
-  #ifdef FEATURE_ETHERNET
-    if (debug_mode & ETHERNET_PORT0){
-      ethernetclient0.print(print_string);
-    }
-  #endif //FEATURE_ETHERNET
-
-  #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-    if (debug_mode & ETHERNET_PORT1){
-      ethernetclient1.print(print_string);
-    }
-  #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-
-}
-// --------------------------------------------------------------
-void debug_println(char * print_string){
-
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  if (debug_mode & CONTROL_PORT0){
-    control_port->println(print_string);
-  }
-  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-
-  #ifdef FEATURE_ETHERNET
-  if (debug_mode & ETHERNET_PORT0){
-    ethernetclient0.println(print_string);
-  }
-  #endif //FEATURE_ETHERNET
-
-  #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-  if (debug_mode & ETHERNET_PORT1){
-    ethernetclient1.println(print_string);
-  }
-  #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-
-}
-// --------------------------------------------------------------
-void debug_print_char(char print_char){
-
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  if (debug_mode & CONTROL_PORT0){
-    control_port->print(print_char);
-  }
-  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-
-  #ifdef FEATURE_ETHERNET
-  if (debug_mode & ETHERNET_PORT0){
-    ethernetclient0.print(print_char);
-  }
-  #endif //FEATURE_ETHERNET
-
-  #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-  if (debug_mode & ETHERNET_PORT1){
-    ethernetclient1.print(print_char);
-  }
-  #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-}
-// --------------------------------------------------------------
-void debug_write(char * print_string){
-
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  if (debug_mode & CONTROL_PORT0){
-    control_port->write(print_string);
-  }
-  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-
-  #ifdef FEATURE_ETHERNET
-  if (debug_mode & ETHERNET_PORT0){
-    ethernetclient0.write(print_string);
-  }
-  #endif //FEATURE_ETHERNET
-
-  #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-  if (debug_mode & ETHERNET_PORT1){
-    ethernetclient1.write(print_string);
-  }
-  #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1) 
-
-}
-// --------------------------------------------------------------
-void debug_print_int(int print_int){
-
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  if (debug_mode & CONTROL_PORT0){
-    control_port->print(print_int);
-  }
-  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-
-  #ifdef FEATURE_ETHERNET
-  if (debug_mode & ETHERNET_PORT0){
-    ethernetclient0.print(print_int);
-  }
-  #endif //FEATURE_ETHERNET
-
-  #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-  if (debug_mode & ETHERNET_PORT1){
-    ethernetclient1.print(print_int);
-  }
-  #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1) 
-
-
-}
-// --------------------------------------------------------------
-void debug_write_int(int write_int){
-
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  if (debug_mode & CONTROL_PORT0){
-    control_port->write(write_int);
-  }
-  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-
-  #ifdef FEATURE_ETHERNET
-  if (debug_mode & ETHERNET_PORT0){
-    ethernetclient0.write(write_int);
-  }  
-  #endif //FEATURE_ETHERNET
-
-  #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-  if (debug_mode & ETHERNET_PORT1){
-    ethernetclient1.write(write_int);
-  }  
-  #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-
-}
-// --------------------------------------------------------------
-void debug_print_float(float print_float,byte places){
-
-  char tempstring[16] = "";
-
-  dtostrf(print_float,0,places,tempstring);
-
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  if (debug_mode & CONTROL_PORT0){
-    control_port->print(tempstring);
-  }
-  #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-
-  #ifdef FEATURE_ETHERNET
-  if (debug_mode & ETHERNET_PORT0){
-    ethernetclient0.print(tempstring);
-  }
-  #endif //FEATURE_ETHERNET
-
-  #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
-  if (debug_mode & ETHERNET_PORT1){
-    ethernetclient1.print(tempstring);
-  }
-  #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)  
-
-}
-// --------------------------------------------------------------
-
-
-
 void port_flush(){
 
   
@@ -9232,7 +9102,7 @@ void service_analog_output_pins(){
 void submit_autocorrect(byte axis,float heading){
 
   #ifdef DEBUG_AUTOCORRECT
-  debug_print("submit_autocorrect: ");
+  debug.print("submit_autocorrect: ");
   #endif //DEBUG_AUTOCORRECT
 
   if (axis == AZ){
@@ -9241,7 +9111,7 @@ void submit_autocorrect(byte axis,float heading){
     autocorrect_az_submit_time = millis();
 
     #ifdef DEBUG_AUTOCORRECT
-    debug_print("AZ: ");
+    debug.print("AZ: ");
     #endif //DEBUG_AUTOCORRECT
 
   }
@@ -9254,15 +9124,15 @@ void submit_autocorrect(byte axis,float heading){
     autocorrect_el_submit_time = millis();
 
     #ifdef DEBUG_AUTOCORRECT
-    debug_print("EL: ");
+    debug.print("EL: ");
     #endif //DEBUG_AUTOCORRECT
 
   }
   #endif //FEATURE_ELEVATION_CONTROL
 
   #ifdef DEBUG_AUTOCORRECT
-  debug_print_float(heading,2);
-  debug_println("");
+  debug.print(heading,2);
+  debug.println("");
   #endif //DEBUG_AUTOCORRECT
 
 }
@@ -9344,9 +9214,9 @@ void update_moon_position(){
 byte calibrate_az_el(float new_az, float new_el){
 
   #ifdef DEBUG_OFFSET
-    control_port->print("calibrate_az_el: new_az:");
-    control_port->print(new_az, 2);
-    control_port->print(" new_el:");
+    debug.print("calibrate_az_el: new_az:");
+    debug.print(new_az, 2);
+    debug.print(" new_el:");
     control_port->println(new_el, 2);
   #endif // DEBUG_OFFSET
 
@@ -9359,9 +9229,9 @@ byte calibrate_az_el(float new_az, float new_el){
     read_elevation(1);
 
     #ifdef DEBUG_OFFSET
-      control_port->print("calibrate_az_el: az:");
-      control_port->print(azimuth / LCD_HEADING_MULTIPLIER, 2);
-      control_port->print(" el:");
+      debug.print("calibrate_az_el: az:");
+      debug.print(azimuth / LCD_HEADING_MULTIPLIER, 2);
+      debug.print(" el:");
       control_port->println(elevation / LCD_HEADING_MULTIPLIER, 2);
     #endif // DEBUG_OFFSET
 
