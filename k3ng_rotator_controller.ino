@@ -413,10 +413,13 @@
     2.0.2015092001
       LANGUAGE_FRENCH (contributed by Marc-Andre, VE2EVN) 
       fixed issue with rotator_analog_az inferring with other pins if defined but not used 
+
+    2.0.2015092002
+      Fixed issue with compiling DEBUG_GPS  
       
   */
 
-#define CODE_VERSION "2.0.2015092001"
+#define CODE_VERSION "2.0.2015092002"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -464,7 +467,7 @@
 #endif  
 
 #ifdef FEATURE_LCD_DISPLAY
- #include "k3ngdisplay.h"
+ #include "k3ngdisplay.h"  // if you're getting an error on this line when compiling, you probably need to move k3ngdisplay.h and k3ngdisplay.cpp to your ino directory
 #endif    
 
 #ifdef FEATURE_WIRE_SUPPORT
@@ -9366,6 +9369,56 @@ char * az_el_calibrated_string(){
 
 }
 #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+// --------------------------------------------------------------
+
+#ifdef FEATURE_CLOCK
+char * clock_string(){
+
+  char return_string[32] = "";
+  char temp_string[16] = "";
+
+
+
+  dtostrf(clock_years, 0, 0, temp_string);
+  strcpy(return_string, temp_string);
+  strcat(return_string, "-");
+  if (clock_months < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_months, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, "-");
+  if (clock_days < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_days, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, " ");
+
+  if (clock_hours < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_hours, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, ":");
+  if (clock_minutes < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_minutes, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, ":");
+  if (clock_seconds < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_seconds, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string,"Z");
+  return return_string;
+
+} /* clock_string */
+#endif // FEATURE_CLOCK
+
+
 // --------------------------------------------------------------
 
 // that's all, folks !

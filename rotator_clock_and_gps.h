@@ -260,58 +260,7 @@ char * clock_status_string(){
 }
 #endif //FEATURE_CLOCK
 // --------------------------------------------------------------
-
-#ifdef FEATURE_CLOCK
-char * clock_string(){
-
-  char return_string[32] = "";
-  char temp_string[16] = "";
-
-
-
-  dtostrf(clock_years, 0, 0, temp_string);
-  strcpy(return_string, temp_string);
-  strcat(return_string, "-");
-  if (clock_months < 10) {
-    strcat(return_string, "0");
-  }
-  dtostrf(clock_months, 0, 0, temp_string);
-  strcat(return_string, temp_string);
-  strcat(return_string, "-");
-  if (clock_days < 10) {
-    strcat(return_string, "0");
-  }
-  dtostrf(clock_days, 0, 0, temp_string);
-  strcat(return_string, temp_string);
-  strcat(return_string, " ");
-
-  if (clock_hours < 10) {
-    strcat(return_string, "0");
-  }
-  dtostrf(clock_hours, 0, 0, temp_string);
-  strcat(return_string, temp_string);
-  strcat(return_string, ":");
-  if (clock_minutes < 10) {
-    strcat(return_string, "0");
-  }
-  dtostrf(clock_minutes, 0, 0, temp_string);
-  strcat(return_string, temp_string);
-  strcat(return_string, ":");
-  if (clock_seconds < 10) {
-    strcat(return_string, "0");
-  }
-  dtostrf(clock_seconds, 0, 0, temp_string);
-  strcat(return_string, temp_string);
-  strcat(return_string,"Z");
-  return return_string;
-
-} /* clock_string */
-#endif // FEATURE_CLOCK
-
-
-// --------------------------------------------------------------
-
-  #ifdef FEATURE_RTC
+#ifdef FEATURE_RTC
 void service_rtc(){
 
   static unsigned long last_rtc_sync_time = 0;
