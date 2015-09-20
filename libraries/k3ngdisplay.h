@@ -1,3 +1,5 @@
+#ifndef _K3NGDISPLAY_H
+#define _K3NGDISPLAY_H
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
@@ -6,6 +8,10 @@
 #endif
 
 #include "rotator_hardware.h"
+
+
+
+
 
 #ifdef HARDWARE_EA4TX_ARS_USB
   #include "rotator_features_ea4tx_ars_usb.h"
@@ -41,7 +47,7 @@
 
 
 
-#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015090401"
+#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015092001"
 #define MAX_SCREEN_BUFFER_COLUMNS 20
 #define MAX_SCREEN_BUFFER_ROWS 4
 
@@ -113,4 +119,4 @@ private:
 
 };
 
-
+#endif //_K3NGDISPLAY_H

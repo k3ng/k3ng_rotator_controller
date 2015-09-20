@@ -24,9 +24,9 @@ long packeddata = 0; //two bytes concatenated from inputstream
 long angle = 0; //holds processed angle value
 float floatangle = 0;
 #ifdef OPTION_HH12_10_BIT_READINGS
-long anglemask = 65472; //0x1111111111000000: mask to obtain first 10 digits with position info
+  long anglemask = 65472; //0x1111111111000000: mask to obtain first 10 digits with position info
 #else
-long anglemask = 262080; // 0x111111111111000000: mask to obtain first 12 digits with position info
+  long anglemask = 262080; // 0x111111111111000000: mask to obtain first 12 digits with position info
 #endif //OPTION_HH12_10_BIT_READINGS
 long statusmask = 63; //0x000000000111111; mask to obtain last 6 digits containing status info
 long statusbits; //holds status/error information
@@ -63,17 +63,17 @@ float hh12::heading(){
   delayMicroseconds(HH12_DELAY); // delay for chip initialization
   digitalWrite(hh12_clock_pin, LOW); // CLK goes low: start clocking
   delayMicroseconds(HH12_DELAY); // hold low
-#ifdef OPTION_HH12_10_BIT_READINGS
-  for (int x=0; x <16; x++) // clock signal, 16 transitions, output to clock pin
-#else
-  for (int x=0; x <18; x++) // clock signal, 18 transitions, output to clock pin
-#endif //OPTION_HH12_10_BIT_READINGS
+  #ifdef OPTION_HH12_10_BIT_READINGS
+    for (int x=0; x <16; x++) // clock signal, 16 transitions, output to clock pin
+  #else
+    for (int x=0; x <18; x++) // clock signal, 18 transitions, output to clock pin
+  #endif //OPTION_HH12_10_BIT_READINGS
   {
     digitalWrite(hh12_clock_pin, HIGH); //clock goes high
     delayMicroseconds(HH12_DELAY); // 
     inputstream =digitalRead(hh12_data_pin); // read one bit of data from pin
     #ifdef DEBUG_HH12
-    Serial.print(inputstream, DEC);
+      Serial.print(inputstream, DEC);
     #endif
     packeddata = ((packeddata << 1) + inputstream);// left-shift summing variable, add pin value
     digitalWrite(hh12_clock_pin, LOW);
@@ -81,64 +81,66 @@ float hh12::heading(){
   }
   // end of entire clock cycle
 
-
+  // 2015-09-08: Walter is testing these lines
+  //digitalWrite(hh12_cs_pin, HIGH); // CSn high
+  //digitalWrite(hh12_clock_pin, HIGH); // CLK high
 
   #ifdef DEBUG_HH12
-  Serial.print("hh12: packed:");
-  Serial.println(packeddata,DEC);
-  Serial.print("hh12: pack bin: ");
-  Serial.println(packeddata,BIN);
+    Serial.print("hh12: packed:");
+    Serial.println(packeddata,DEC);
+    Serial.print("hh12: pack bin: ");
+    Serial.println(packeddata,BIN);
   #endif
 
   angle = packeddata & anglemask; // mask rightmost 6 digits of packeddata to zero, into angle
 
   #ifdef DEBUG_HH12
-  Serial.print("hh12: mask: ");
-  Serial.println(anglemask, BIN);
-  Serial.print("hh12: bin angle:");
-  Serial.println(angle, BIN);
-  Serial.print("hh12: angle: ");
-  Serial.println(angle, DEC);
+    Serial.print("hh12: mask: ");
+    Serial.println(anglemask, BIN);
+    Serial.print("hh12: bin angle:");
+    Serial.println(angle, BIN);
+    Serial.print("hh12: angle: ");
+    Serial.println(angle, DEC);
   #endif
 
   angle = (angle >> 6); // shift 16-digit angle right 6 digits to form 10-digit value
 
   #ifdef DEBUG_HH12
-  Serial.print("hh12: angleshft:");
-  Serial.println(angle, BIN);
-  Serial.print("hh12: angledec: ");
-  Serial.println(angle, DEC);
+    Serial.print("hh12: angleshft:");
+    Serial.println(angle, BIN);
+    Serial.print("hh12: angledec: ");
+    Serial.println(angle, DEC);
   #endif
 
-#ifdef OPTION_HH12_10_BIT_READINGS
-  floatangle = angle * 0.3515; // angle * (360/1024) == actual degrees
-#else
-  floatangle = angle * 0.08789; // angle * (360/4096) == actual degrees
-#endif //OPTION_HH12_10_BIT_READINGS
+  #ifdef OPTION_HH12_10_BIT_READINGS
+    floatangle = angle * 0.3515; // angle * (360/1024) == actual degrees
+  #else
+    floatangle = angle * 0.08789; // angle * (360/4096) == actual degrees
+  #endif //OPTION_HH12_10_BIT_READINGS
   
   #ifdef DEBUG_HH12
-  statusbits = packeddata & statusmask;
-  DECn = statusbits & 2; // goes high if magnet moved away from IC
-  INCn = statusbits & 4; // goes high if magnet moved towards IC
-  LIN = statusbits & 8; // goes high for linearity alarm
-  COF = statusbits & 16; // goes high for cordic overflow: data invalid
-  OCF = statusbits & 32; // this is 1 when the chip startup is finished
-  if (DECn && INCn) { 
-    Serial.println("hh12: magnet moved out of range"); 
-  } else {
-    if (DECn) { 
-      Serial.println("hh12: magnet moved away from chip"); 
+    statusbits = packeddata & statusmask;
+    DECn = statusbits & 2; // goes high if magnet moved away from IC
+    INCn = statusbits & 4; // goes high if magnet moved towards IC
+    LIN = statusbits & 8; // goes high for linearity alarm
+    COF = statusbits & 16; // goes high for cordic overflow: data invalid
+    OCF = statusbits & 32; // this is 1 when the chip startup is finished
+    if (DECn && INCn) { 
+      Serial.println("hh12: magnet moved out of range"); 
+    } else {
+      if (DECn) { 
+        Serial.println("hh12: magnet moved away from chip"); 
+      }
+      if (INCn) { 
+        Serial.println("hh12: magnet moved towards chip"); 
+      }
     }
-    if (INCn) { 
-      Serial.println("hh12: magnet moved towards chip"); 
+    if (LIN) { 
+      Serial.println("hh12: linearity alarm: magnet misaligned? data questionable"); 
     }
-  }
-  if (LIN) { 
-    Serial.println("hh12: linearity alarm: magnet misaligned? data questionable"); 
-  }
-  if (COF) { 
-    Serial.println("hh12: cordic overflow: magnet misaligned? data invalid"); 
-  }
+    if (COF) { 
+      Serial.println("hh12: cordic overflow: magnet misaligned? data invalid"); 
+    }
   #endif //DEBUG_HH12
 
 

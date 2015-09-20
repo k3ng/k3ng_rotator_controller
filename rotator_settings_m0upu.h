@@ -313,6 +313,8 @@ You can tweak these, but read the online documentation!
    
 
 */
+
+ /*
 #if !defined(UNDER_DEVELOPMENT_K3NGDISPLAY_LIBRARY)
   #if defined(FEATURE_4_BIT_LCD_DISPLAY)
     LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin); 
@@ -392,4 +394,4 @@ PCF8583 rtc(0xA0);
 #undef LCD_ROWS
 #define LCD_ROWS 2
 #endif //HARDWARE_M0UPU
-
+*/

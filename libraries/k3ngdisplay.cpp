@@ -2,7 +2,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015090401"
+// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015092001"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -90,7 +90,9 @@ K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_ti
 void K3NGdisplay::initialize(){
 
 
-  lcd.begin(display_columns, display_rows);
+  lcd.begin(display_columns, display_rows);  // if you are getting an error on this line and do not have
+                                             // any of the LCD display features enabled, remove
+                                             // k3ngdisplay.h and k3ngdisplay.cpp from your ino directory
 
   #ifdef FEATURE_YOURDUINO_I2C_LCD
   lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);

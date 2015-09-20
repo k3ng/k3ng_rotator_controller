@@ -313,7 +313,7 @@ You can tweak these, but read the online documentation!
    
 
 */
-
+/*
 
 #if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME); 
@@ -374,4 +374,4 @@ You can tweak these, but read the online documentation!
   #undef LCD_ROWS
   #define LCD_ROWS 2
 #endif //HARDWARE_M0UPU
-
+*/

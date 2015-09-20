@@ -314,6 +314,7 @@ You can tweak these, but read the online documentation!
    
 
 */
+ /*
 
 #if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME); 
@@ -379,14 +380,14 @@ You can tweak these, but read the online documentation!
   #define AZ_A2_ENCODER_RESOLUTION 32767 //36000
   #define AZ_A2_ENCODER_ADDRESS 0x00
   #define AZ_QUERY_FREQUENCY_MS 250
-  #define AZ_A2_ENCODER_MODE MODE_TWO_BYTE_POSITION/*|MODE_MULTITURN*/
+  #define AZ_A2_ENCODER_MODE MODE_TWO_BYTE_POSITION//|MODE_MULTITURN
 #endif  //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
 #ifdef FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
   #define EL_A2_ENCODER_RESOLUTION 32767 //36000
   #define EL_A2_ENCODER_ADDRESS 0x00
   #define EL_QUERY_FREQUENCY_MS 250
-  #define EL_A2_ENCODER_MODE /*MODE_TWO_BYTE_POSITION|*/MODE_MULTITURN
+  #define EL_A2_ENCODER_MODE MODE_MULTITURN//|MODE_TWO_BYTE_POSITION
 #endif  //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
 #if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
@@ -395,3 +396,4 @@ You can tweak these, but read the online documentation!
   //             (Serial Port,Baud Rate,Busy Pin,Send/Receive Pin)
   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
 #endif
+*/

@@ -408,10 +408,15 @@
       Updates to rotator_language.h
       Fixed k3ngdisplay.h / LiquidCrystal.h compilation problems with Arduino IDE
       Integrated DebugClass (debug.h and debug.cpp) contributed from Matt VK5ZM
+
+
+    2.0.2015092001
+      LANGUAGE_FRENCH (contributed by Marc-Andre, VE2EVN) 
+      fixed issue with rotator_analog_az inferring with other pins if defined but not used 
       
   */
 
-#define CODE_VERSION "2.0.2015090601"
+#define CODE_VERSION "2.0.2015092001"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -542,6 +547,10 @@
 #ifdef FEATURE_STEPPER_MOTOR
   #include "TimerFive.h"
 #endif
+
+
+
+
 
 
 
@@ -913,6 +922,93 @@ byte current_az_speed_voltage = 0;
 #endif //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER 
 
 DebugClass debug;
+
+
+
+
+
+#if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
+  K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
+#endif   
+
+#ifdef FEATURE_AZ_POSITION_HMC5883L
+  HMC5883L compass;
+#endif //FEATURE_AZ_POSITION_HMC5883L
+
+#ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
+  ADXL345 accel;
+#endif //FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
+
+#ifdef FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
+  Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
+#endif //FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
+
+#if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
+  Adafruit_LSM303 lsm;
+#endif
+
+#if defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
+  LSM303 compass;
+  LSM303::vector<int16_t> running_min = {32767, 32767, 32767}, running_max = {-32768, -32768, -32768};
+  char report[80];
+#endif //FEATURE_AZ_POSITION_POLOLU_LSM303
+
+#ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
+  #include "hh12.h"
+  hh12 azimuth_hh12;
+#endif //FEATURE_AZ_POSITION_HH12_AS5045_SSI
+
+#ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
+  #include "hh12.h"
+  hh12 elevation_hh12;
+#endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
+
+#ifdef FEATURE_GPS
+  TinyGPS gps;
+#endif //FEATURE_GPS
+
+#ifdef FEATURE_RTC_DS1307
+  RTC_DS1307 rtc;
+#endif //FEATURE_RTC_DS1307
+
+#ifdef FEATURE_RTC_PCF8583
+  PCF8583 rtc(0xA0);
+#endif //FEATURE_RTC_PCF8583
+
+#ifdef HARDWARE_EA4TX_ARS_USB
+  #undef LCD_COLUMNS
+  #undef LCD_ROWS
+  #define LCD_COLUMNS 16
+  #define LCD_ROWS 2
+#endif //HARDWARE_EA4TX_ARS_USB
+
+#ifdef HARDWARE_M0UPU
+  #undef LCD_ROWS
+  #define LCD_ROWS 2
+#endif //HARDWARE_M0UPU
+
+#ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
+  #define AZ_A2_ENCODER_RESOLUTION 32767 /*36000*/
+  #define AZ_A2_ENCODER_ADDRESS 0x00
+  #define AZ_QUERY_FREQUENCY_MS 250
+  #define AZ_A2_ENCODER_MODE MODE_TWO_BYTE_POSITION /*|MODE_MULTITURN*/
+#endif  //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
+
+#ifdef FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
+  #define EL_A2_ENCODER_RESOLUTION 32767 /*36000*/
+  #define EL_A2_ENCODER_ADDRESS 0x00
+  #define EL_QUERY_FREQUENCY_MS 250
+  #define EL_A2_ENCODER_MODE MODE_MULTITURN /*|MODE_TWO_BYTE_POSITION*/
+#endif  //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
+
+#if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
+  #include "sei_bus.h"
+  SEIbus SEIbus1(&Serial1,9600,pin_sei_bus_busy,pin_sei_bus_send_receive);
+  //             (Serial Port,Baud Rate,Busy Pin,Send/Receive Pin)
+  #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
+#endif
+
+
 
 //yyyyyyyyy
 
@@ -6133,8 +6229,8 @@ void initialize_pins(){
   rotator(DEACTIVATE, CW);
   rotator(DEACTIVATE, CCW);
 
-  #ifndef FEATURE_AZ_POSITION_HMC5883L
-  pinModeEnhanced(rotator_analog_az, INPUT);
+  #if defined(FEATURE_AZ_POSITION_POTENTIOMETER)
+    pinModeEnhanced(rotator_analog_az, INPUT);
   #endif
 
   if (button_cw) {
