@@ -189,7 +189,7 @@
 // #define DEBUG_EL_POSITION_INCREMENTAL_ENCODER
 // #define DEBUG_MOON_TRACKING
 // #define DEBUG_SUN_TRACKING
-#define DEBUG_GPS
+// #define DEBUG_GPS
 // #define DEBUG_GPS_SERIAL
 // #define DEBUG_OFFSET
 // #define DEBUG_RTC
