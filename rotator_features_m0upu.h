@@ -20,11 +20,14 @@
 //#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 //#define FEATURE_AUTOCORRECT
 
-#define LANGUAGE_ENGLISH
+#define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 //#define LANGUAGE_SPANISH
 //#define LANGUAGE_CZECH
 //#define LANGUAGE_ITALIAN
 //#define LANGUAGE_PORTUGUESE_BRASIL
+//#define LANGUAGE_GERMAN  
+//#define LANGUAGE_FRENCH
+//#define LANGUAGE_DUTCH
 
 /* master and remote slave unit functionality */
 //#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      

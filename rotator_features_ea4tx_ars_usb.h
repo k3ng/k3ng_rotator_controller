@@ -5,9 +5,14 @@
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 //#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-#define LANGUAGE_ENGLISH
+#define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 //#define LANGUAGE_SPANISH
 //#define LANGUAGE_CZECH
+//#define LANGUAGE_ITALIAN
+//#define LANGUAGE_PORTUGUESE_BRASIL
+//#define LANGUAGE_GERMAN  
+//#define LANGUAGE_FRENCH
+//#define LANGUAGE_DUTCH
 
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 

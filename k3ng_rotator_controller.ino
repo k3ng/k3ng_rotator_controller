@@ -419,10 +419,13 @@
 
     2.0.2015111501
       Fixed issues with compilation under Arduino 1.6.6 (gave up on various include files... I'll do things the right way in the rewrite)   
+
+    2.0.2015111502
+      LANGUAGE_DUTCH courtesy of David, ON4BDS
       
   */
 
-#define CODE_VERSION "2.0.2015111501"
+#define CODE_VERSION "2.0.2015111502"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
