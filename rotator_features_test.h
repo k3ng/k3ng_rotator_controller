@@ -8,7 +8,7 @@
 
 #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
-//#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
+// #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
 #define FEATURE_MOON_TRACKING
 #define FEATURE_SUN_TRACKING
@@ -60,21 +60,21 @@
 //#define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
                                     // All displays require k3ngdisplay.h and k3ngdisplay.cpp in the ino directory!
-#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 //#define FEATURE_ADAFRUIT_I2C_LCD
 //#define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
 //#define FEATURE_YOURDUINO_I2C_LCD
 //#define FEATURE_RFROBOT_I2C_DISPLAY
 //#define FEATURE_YWROBOT_I2C_DISPLAY
 
-#define FEATURE_ANALOG_OUTPUT_PINS
+// #define FEATURE_ANALOG_OUTPUT_PINS
 
-#define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
-#define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+// #define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
+// #define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
 
 /* preset rotary encoder features and options */
-#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
-#define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
+// #define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
+// #define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 #define OPTION_ENCODER_HALF_STEP_MODE
 #define OPTION_ENCODER_ENABLE_PULLUPS          // define to enable weak pullups on rotary encoder pins
 #define OPTION_INCREMENTAL_ENCODER_PULLUPS  // define to enable weak pullups on 3 phase incremental rotary encoder pins
@@ -89,10 +89,10 @@
 #define OPTION_POSITION_PULSE_INPUT_PULLUPS  // define to enable weak pullups on position pulse inputs
 
 /* less often used features and options */
-#define OPTION_GS_232B_EMULATION          // comment this out to default to Yaesu GS-232A emulation when using FEATURE_YAESU_EMULATION above
+// #define OPTION_GS_232B_EMULATION          // comment this out to default to Yaesu GS-232A emulation when using FEATURE_YAESU_EMULATION above
 #define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
-#define FEATURE_LIMIT_SENSE
-#define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
+// #define FEATURE_LIMIT_SENSE
+// #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 #define FEATURE_PARK
 #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
@@ -103,9 +103,9 @@
 //#define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 #define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 //#define FEATURE_TWO_DECIMAL_PLACE_HEADINGS  // under development - not working yet!
-#define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
-#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
-#define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
+// #define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
+// #define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
+// #define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
 //#define FEATURE_JOYSTICK_CONTROL          // analog joystick support
 //#define OPTION_JOYSTICK_REVERSE_X_AXIS
 //#define OPTION_JOYSTICK_REVERSE_Y_AXIS
@@ -135,8 +135,8 @@
 //#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
 //#define OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE  // use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
-//#define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
-//#define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
+// #define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
+// #define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
 //#define OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
 //#define OPTION_BLINK_OVERLAP_LED
 //#define OPTION_EL_PULSE_DEBOUNCE
