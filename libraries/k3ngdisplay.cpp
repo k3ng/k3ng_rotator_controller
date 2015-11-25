@@ -2,7 +2,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015092001"
+// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2015112501"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -47,6 +47,12 @@
 #ifdef FEATURE_RFROBOT_I2C_DISPLAY
   LiquidCrystal_I2C lcd(0x27,16,2); 
 #endif //FEATURE_RFROBOT_I2C_DISPLAY
+
+
+#ifdef FEATURE_YWROBOT_I2C_DISPLAY
+  #include <LiquidCrystal_I2C.h>
+  LiquidCrystal_I2C lcd(ywrobot_address, ywrobot_pin_en, ywrobot_pin_rw, ywrobot_pin_rs, ywrobot_pin_d4, ywrobot_pin_d5, ywrobot_pin_d6, ywrobot_pin_d7, ywrobot_pin_bl, ywrobot_blpol);  
+#endif //FEATURE_YWROBOT_I2C_DISPLAY
 
 
 

@@ -209,3 +209,16 @@
   #define pin_sei_bus_send_receive 22  
 #endif
 
+#ifdef FEATURE_YWROBOT_I2C_DISPLAY
+  #define ywrobot_address 0x3F
+  #define ywrobot_pin_en 2
+  #define ywrobot_pin_rw 1
+  #define ywrobot_pin_rs 0
+  #define ywrobot_pin_d4 4
+  #define ywrobot_pin_d5 5
+  #define ywrobot_pin_d6 6
+  #define ywrobot_pin_d7 7
+  #define ywrobot_pin_bl 3
+  #define ywrobot_blpol POSITIVE             
+#endif //FEATURE_YWROBOT_I2C_DISPLAY   
+

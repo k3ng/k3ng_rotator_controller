@@ -37,6 +37,7 @@
      Paolo IT9IPQ
      Ismael PY4PI
      Robert DL5ROB
+     David ON4BDS
 
 
    (If you contributed something and I forgot to put your name and call in here, *please* email me!)
@@ -422,10 +423,13 @@
 
     2.0.2015111502
       LANGUAGE_DUTCH courtesy of David, ON4BDS
+
+    2.0.2015112501
+      Fixed FEATURE_YWROBOT_I2C_DISPLAY with updated k3ngdisplay.h and k3ngdisplay..cpp.  Pin settings are back in rotator_pins.h.  
       
   */
 
-#define CODE_VERSION "2.0.2015111502"
+#define CODE_VERSION "2.0.2015112501"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1009,7 +1013,6 @@ DebugClass debug;
   //             (Serial Port,Baud Rate,Busy Pin,Send/Receive Pin)
   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
 #endif
-
 
 
 //yyyyyyyyy
