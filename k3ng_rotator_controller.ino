@@ -1663,6 +1663,9 @@ void check_az_preset_potentiometer() {
           check_pot = 1;
         }
       }
+
+//zzzzzzz
+
       if (check_pot) {
         pot_read = analogReadEnhanced(az_preset_pot);
         new_pot_azimuth = map(pot_read, AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP);
