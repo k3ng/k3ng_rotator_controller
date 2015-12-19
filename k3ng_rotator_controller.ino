@@ -424,12 +424,12 @@
     2.0.2015111502
       LANGUAGE_DUTCH courtesy of David, ON4BDS
 
-    2.0.2015112501
-      Fixed FEATURE_YWROBOT_I2C_DISPLAY with updated k3ngdisplay.h and k3ngdisplay..cpp.  Pin settings are back in rotator_pins.h.  
+    2.0.2015121801
+      Fixed bug in update_display() with display always showing DOWN with elevation rotation (Thanks, UA9OLB)
       
   */
 
-#define CODE_VERSION "2.0.2015112501"
+#define CODE_VERSION "2.0.2015121801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3456,7 +3456,7 @@ void update_display(){
           strcat(workstring," ");
         }
         if (el_request_queue_state == IN_PROGRESS_TO_TARGET) { 
-          if (current_az_state() == ROTATING_UP) {
+          if (current_el_state() == ROTATING_UP) {
             strcat(workstring,UP_STRING);
           } else {
             strcat(workstring,DOWN_STRING);
