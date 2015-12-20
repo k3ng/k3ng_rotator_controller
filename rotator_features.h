@@ -6,60 +6,60 @@
 
 /* main features */
 
-//#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
+// #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
-//#define FEATURE_EASYCOM_EMULATION       // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
+// #define FEATURE_EASYCOM_EMULATION       // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-//#define FEATURE_MOON_TRACKING
-//#define FEATURE_SUN_TRACKING
-//#define FEATURE_CLOCK
-//#define FEATURE_GPS
-//#define FEATURE_RTC_DS1307
-//#define FEATURE_RTC_PCF8583
-//#define FEATURE_ETHERNET
-//#define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
-//#define FEATURE_AUTOCORRECT
+// #define FEATURE_MOON_TRACKING
+// #define FEATURE_SUN_TRACKING
+// #define FEATURE_CLOCK
+// #define FEATURE_GPS
+// #define FEATURE_RTC_DS1307
+// #define FEATURE_RTC_PCF8583
+// #define FEATURE_ETHERNET
+// #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
+// #define FEATURE_AUTOCORRECT
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
-//#define LANGUAGE_SPANISH
-//#define LANGUAGE_CZECH
-//#define LANGUAGE_ITALIAN
-//#define LANGUAGE_PORTUGUESE_BRASIL
-//#define LANGUAGE_GERMAN  
-//#define LANGUAGE_FRENCH
-//#define LANGUAGE_DUTCH
+// #define LANGUAGE_SPANISH
+// #define LANGUAGE_CZECH
+// #define LANGUAGE_ITALIAN
+// #define LANGUAGE_PORTUGUESE_BRASIL
+// #define LANGUAGE_GERMAN  
+// #define LANGUAGE_FRENCH
+// #define LANGUAGE_DUTCH
 
 /* master and remote slave unit functionality */
-//#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
+// #define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
 
-//#define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
-//#define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
+// #define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
+// #define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
-//#define FEATURE_AZ_POSITION_ROTARY_ENCODER
-//#define FEATURE_AZ_POSITION_PULSE_INPUT
-//#define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
-//#define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
-//#define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
-//#define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
-//#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
-//#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-//#define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
+// #define FEATURE_AZ_POSITION_ROTARY_ENCODER
+// #define FEATURE_AZ_POSITION_PULSE_INPUT
+// #define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
+// #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
+// #define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
+// #define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
+// #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
+// #define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+// #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
-//#define FEATURE_EL_POSITION_POTENTIOMETER
-//#define FEATURE_EL_POSITION_ROTARY_ENCODER
-//#define FEATURE_EL_POSITION_PULSE_INPUT
-//#define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
-//#define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library
-//#define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
-//#define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
-//#define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
-//#define FEATURE_EL_POSITION_HH12_AS5045_SSI
-//#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-//#define FEATURE_EL_POSITION_MEMSIC_2125
-//#define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
+// #define FEATURE_EL_POSITION_POTENTIOMETER
+// #define FEATURE_EL_POSITION_ROTARY_ENCODER
+// #define FEATURE_EL_POSITION_PULSE_INPUT
+// #define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
+// #define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library
+// #define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
+// #define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
+// #define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
+// #define FEATURE_EL_POSITION_HH12_AS5045_SSI
+// #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
+// #define FEATURE_EL_POSITION_MEMSIC_2125
+// #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
                                     // All displays require k3ngdisplay.h and k3ngdisplay.cpp in the ino directory!
 //#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
@@ -97,8 +97,8 @@
 //#define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 //#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 //#define FEATURE_PARK
-//#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
-//#define OPTION_EL_MANUAL_ROTATE_LIMITS
+//#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings are AZ_MANUAL_ROTATE_CCW_LIMIT, AZ_MANUAL_ROTATE_CW_LIMIT) 
+//#define OPTION_EL_MANUAL_ROTATE_LIMITS    // (settings are EL_MANUAL_ROTATE_DOWN_LIMIT, EL_MANUAL_ROTATE_UP_LIMIT)
 #define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
 #define OPTION_EASYCOM_EL_QUERY_COMMAND // Adds non-standard Easycom command: EL with no parm returns current elevation
 //#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
@@ -131,6 +131,8 @@
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 //#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+// #define OPTION_REVERSE_AZ_HH12_AS5045
+// #define OPTION_REVERSE_EL_HH12_AS5045
 
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)

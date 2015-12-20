@@ -426,10 +426,13 @@
 
     2.0.2015121801
       Fixed bug in update_display() with display always showing DOWN with elevation rotation (Thanks, UA9OLB)
+
+    2.0.2015122001
+      Created OPTION_REVERSE_AZ_HH12_AS5045 and OPTION_REVERSE_EL_HH12_AS5045
       
   */
 
-#define CODE_VERSION "2.0.2015121801"
+#define CODE_VERSION "2.0.2015122001"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2119,17 +2122,17 @@ void check_az_manual_rotate_limit() {
 
   if ((current_az_state() == ROTATING_CCW) && (raw_azimuth <= (AZ_MANUAL_ROTATE_CCW_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    debug.print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CCW_LIMIT of ");
-    debug.print(AZ_MANUAL_ROTATE_CCW_LIMIT);
-    debug.println("");
+      debug.print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CCW_LIMIT of ");
+      debug.print(AZ_MANUAL_ROTATE_CCW_LIMIT);
+      debug.println("");
     #endif // DEBUG_AZ_MANUAL_ROTATE_LIMITS
     submit_request(AZ, REQUEST_KILL, 0, 49);
   }
   if ((current_az_state() == ROTATING_CW) && (raw_azimuth >= (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    debug.print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CW_LIMIT of ");
-    debug.print(AZ_MANUAL_ROTATE_CW_LIMIT);
-    debug.println("");
+      debug.print("check_az_manual_rotate_limit: stopping - hit AZ_MANUAL_ROTATE_CW_LIMIT of ");
+      debug.print(AZ_MANUAL_ROTATE_CW_LIMIT);
+      debug.println("");
     #endif // DEBUG_AZ_MANUAL_ROTATE_LIMITS
     submit_request(AZ, REQUEST_KILL, 0, 50);
   }
@@ -2143,17 +2146,17 @@ void check_el_manual_rotate_limit() {
 
   if ((current_el_state() == ROTATING_DOWN) && (elevation <= (EL_MANUAL_ROTATE_DOWN_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_EL_MANUAL_ROTATE_LIMITS
-    debug.print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_DOWN_LIMIT of ");
-    debug.print(EL_MANUAL_ROTATE_DOWN_LIMIT);
-    debug.println("");
+      debug.print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_DOWN_LIMIT of ");
+      debug.print(EL_MANUAL_ROTATE_DOWN_LIMIT);
+      debug.println("");
     #endif // DEBUG_EL_MANUAL_ROTATE_LIMITS
     submit_request(EL, REQUEST_KILL, 0, 51);
   }
   if ((current_el_state() == ROTATING_UP) && (elevation >= (EL_MANUAL_ROTATE_UP_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_EL_MANUAL_ROTATE_LIMITS
-    debug.print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_UP_LIMIT of ");
-    debug.print(EL_MANUAL_ROTATE_UP_LIMIT);
-    debug.println("");
+      debug.print("check_el_manual_rotate_limit: stopping - hit EL_MANUAL_ROTATE_UP_LIMIT of ");
+      debug.print(EL_MANUAL_ROTATE_UP_LIMIT);
+      debug.println("");
     #endif // DEBUG_EL_MANUAL_ROTATE_LIMITS
     submit_request(EL, REQUEST_KILL, 0, 52);
   }
@@ -2169,8 +2172,8 @@ void check_brake_release() {
   static unsigned long az_brake_delay_start_time = 0;
 
   #ifdef FEATURE_ELEVATION_CONTROL
-  static byte in_el_brake_release_delay = 0;
-  static unsigned long el_brake_delay_start_time = 0;
+    static byte in_el_brake_release_delay = 0;
+    static unsigned long el_brake_delay_start_time = 0;
   #endif // FEATURE_ELEVATION_CONTROL
 
   if ((az_state == IDLE) && (brake_az_engaged)) {
@@ -2910,13 +2913,14 @@ void check_serial(){
 void check_buttons(){
 
   #ifdef FEATURE_ADAFRUIT_BUTTONS
-  int buttons = 0;
-  buttons = lcd.readButtons();
+    int buttons = 0;
+    buttons = lcd.readButtons();
 
-  if (buttons & BUTTON_RIGHT) {
+    if (buttons & BUTTON_RIGHT) {
   #else
-  if (button_cw && (digitalReadEnhanced(button_cw) == BUTTON_ACTIVE_STATE)) {
+    if (button_cw && (digitalReadEnhanced(button_cw) == BUTTON_ACTIVE_STATE)) {
   #endif // FEATURE_ADAFRUIT_BUTTONS
+
     if (azimuth_button_was_pushed == 0) {
     #ifdef DEBUG_BUTTONS
       debug.println("check_buttons: button_cw pushed");
@@ -2964,7 +2968,7 @@ void check_buttons(){
 #ifdef FEATURE_ADAFRUIT_BUTTONS
   if ((azimuth_button_was_pushed) && (!(buttons & 0x12))) {
     #ifdef DEBUG_BUTTONS
-    debug.println("check_buttons: no button depressed");
+      debug.println("check_buttons: no button depressed");
     #endif // DEBUG_BUTTONS
     submit_request(AZ, REQUEST_STOP, 0, 63);
     azimuth_button_was_pushed = 0;
@@ -2975,7 +2979,7 @@ void check_buttons(){
     delay(200);
     if ((digitalReadEnhanced(button_ccw) == BUTTON_INACTIVE_STATE) && (digitalReadEnhanced(button_cw) == BUTTON_INACTIVE_STATE)) {
     #ifdef DEBUG_BUTTONS
-    debug.println("check_buttons: no AZ button depressed");
+      debug.println("check_buttons: no AZ button depressed");
     #endif // DEBUG_BUTTONS
     #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
     submit_request(AZ, REQUEST_STOP, 0, 64);
@@ -2997,7 +3001,7 @@ void check_buttons(){
       submit_request(EL, REQUEST_UP, 0, 66);
       elevation_button_was_pushed = 1;
       #ifdef DEBUG_BUTTONS
-      debug.println("check_buttons: button_up pushed");
+        debug.println("check_buttons: button_up pushed");
       #endif // DEBUG_BUTTONS  
     }
 
@@ -3011,7 +3015,7 @@ void check_buttons(){
         submit_request(EL, REQUEST_DOWN, 0, 67);
         elevation_button_was_pushed = 1;
       #ifdef DEBUG_BUTTONS
-      debug.println("check_buttons: button_down pushed");
+        debug.println("check_buttons: button_down pushed");
       #endif // DEBUG_BUTTONS    
       }
     }
@@ -3020,7 +3024,7 @@ void check_buttons(){
 #ifdef FEATURE_ADAFRUIT_BUTTONS
   if ((elevation_button_was_pushed) && (!(buttons & 0x0C))) {
   #ifdef DEBUG_BUTTONS
-  debug.println("check_buttons: no EL button depressed");
+    debug.println("check_buttons: no EL button depressed");
   #endif // DEBUG_BUTTONS
   #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
     submit_request(EL, REQUEST_STOP, 0, 68);
@@ -3035,7 +3039,7 @@ void check_buttons(){
     delay(200);
     if ((digitalReadEnhanced(button_up) == BUTTON_INACTIVE_STATE) && (digitalReadEnhanced(button_down) == BUTTON_INACTIVE_STATE)) {
     #ifdef DEBUG_BUTTONS
-    debug.println("check_buttons: no EL button depressed");
+      debug.println("check_buttons: no EL button depressed");
     #endif // DEBUG_BUTTONS
     #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
       submit_request(EL, REQUEST_STOP, 0, 70);
@@ -4553,7 +4557,11 @@ void read_azimuth(byte force_read){
     #endif // FEATURE_AZ_POSITION_PULSE_INPUT
 
     #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
-      raw_azimuth = int(azimuth_hh12.heading() * HEADING_MULTIPLIER);
+      #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
+        raw_azimuth = int(360.0-(azimuth_hh12.heading() * HEADING_MULTIPLIER));
+      #else
+        raw_azimuth = int(azimuth_hh12.heading() * HEADING_MULTIPLIER);
+      #endif
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
           debug.print(F("read_azimuth: HH-12 raw: "));
@@ -5397,7 +5405,11 @@ void read_elevation(byte force_read){
 
 
     #ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
-    elevation = int(elevation_hh12.heading() * HEADING_MULTIPLIER);
+      #if defined(OPTION_REVERSE_EL_HH12_AS5045) 
+        elevation = int(360.0-(elevation_hh12.heading() * HEADING_MULTIPLIER));
+      #else
+        elevation = int(elevation_hh12.heading() * HEADING_MULTIPLIER);
+      #endif
     #ifdef DEBUG_HH12
     if ((millis() - last_hh12_debug) > 5000) {
       debug.print(F("read_elevation: HH-12 raw: "));
