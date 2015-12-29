@@ -429,10 +429,13 @@
 
     2.0.2015122001
       Created OPTION_REVERSE_AZ_HH12_AS5045 and OPTION_REVERSE_EL_HH12_AS5045
+
+    2.0.2015122801
+      Bug fixes involving OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO (Thanks, UA9OLB)  
       
   */
 
-#define CODE_VERSION "2.0.2015122001"
+#define CODE_VERSION "2.0.2015122801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3602,10 +3605,10 @@ void update_display(){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
-          strcat(workstring, "0");
+          strcpy(workstring, "0");
         }    
         dtostrf(clock_hours, 0, 0, workstring2);
-        strcat(workstring,workstring2);    
+        strcpy(workstring,workstring2);    
       #else    
         dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
@@ -3642,10 +3645,10 @@ void update_display(){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
-          strcat(workstring, "0");
+          strcpy(workstring, "0");
         }    
         dtostrf(clock_hours, 0, 0, workstring2);
-        strcat(workstring,workstring2);    
+        strcpy(workstring,workstring2);    
       #else    
         dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
@@ -3783,7 +3786,7 @@ void update_display(){
         strcpy(workstring, "0");
       }    
       dtostrf(clock_hours, 0, 0, workstring2);
-      strcat(workstring,workstring2);    
+      strcpy(workstring,workstring2);    
       #else          
       dtostrf(clock_hours, 0, 0, workstring2);
       strcpy(workstring,workstring2);
@@ -3818,10 +3821,10 @@ void update_display(){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
-          strcat(workstring, "0");
+          strcpy(workstring, "0");
         }    
         dtostrf(clock_hours, 0, 0, workstring2);
-        strcat(workstring,workstring2);    
+        strcpy(workstring,workstring2);    
       #else    
         dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
@@ -10695,6 +10698,8 @@ Not implemented yet:
 
 
   } // switch 
+
+  return(0);
 } // process_backslash_command
 
 //-----------------------------------------------------------------------
