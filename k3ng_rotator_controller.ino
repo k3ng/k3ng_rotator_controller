@@ -435,10 +435,12 @@
 
     2.0.2015122802
       Bug fixes involving buttons and OPTION_EL_MANUAL_ROTATE_LIMITS (Thanks, UA9OLB)
-      
+
+    2.0.2015122901  
+      Corrections to bug fixes involving OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO (Thanks, UA9OLB)
   */
 
-#define CODE_VERSION "2.0.2015122802"
+#define CODE_VERSION "2.0.2015122901"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3637,9 +3639,12 @@ void update_display(){
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
           strcpy(workstring, "0");
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcpy(workstring,workstring2);
         }    
-        dtostrf(clock_hours, 0, 0, workstring2);
-        strcpy(workstring,workstring2);    
       #else    
         dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
@@ -3677,9 +3682,12 @@ void update_display(){
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
           strcpy(workstring, "0");
-        }    
-        dtostrf(clock_hours, 0, 0, workstring2);
-        strcpy(workstring,workstring2);    
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcpy(workstring,workstring2);
+        }   
       #else    
         dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
@@ -3813,11 +3821,14 @@ void update_display(){
       update_time();
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-      if (clock_hours < 10) {
-        strcpy(workstring, "0");
-      }    
-      dtostrf(clock_hours, 0, 0, workstring2);
-      strcpy(workstring,workstring2);    
+        if (clock_hours < 10) {
+          strcpy(workstring, "0");
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcpy(workstring,workstring2);
+        }    
       #else          
       dtostrf(clock_hours, 0, 0, workstring2);
       strcpy(workstring,workstring2);
@@ -3853,9 +3864,12 @@ void update_display(){
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
           strcpy(workstring, "0");
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(clock_hours, 0, 0, workstring2);
+          strcpy(workstring,workstring2);
         }    
-        dtostrf(clock_hours, 0, 0, workstring2);
-        strcpy(workstring,workstring2);    
       #else    
         dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
