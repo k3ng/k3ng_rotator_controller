@@ -432,10 +432,13 @@
 
     2.0.2015122801
       Bug fixes involving OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO (Thanks, UA9OLB)  
+
+    2.0.2015122802
+      Bug fixes involving buttons and OPTION_EL_MANUAL_ROTATE_LIMITS (Thanks, UA9OLB)
       
   */
 
-#define CODE_VERSION "2.0.2015122801"
+#define CODE_VERSION "2.0.2015122802"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2995,19 +2998,32 @@ void check_buttons(){
 #endif // FEATURE_ADAFRUIT_BUTTONS
 
 #ifdef FEATURE_ELEVATION_CONTROL
-#ifdef FEATURE_ADAFRUIT_BUTTONS
+  #ifdef FEATURE_ADAFRUIT_BUTTONS
   if (buttons & 0x08) {
   #else
   if (button_up && (digitalReadEnhanced(button_up) == BUTTON_ACTIVE_STATE)) {
   #endif // FEATURE_ADAFRUIT_BUTTONS
     if (elevation_button_was_pushed == 0) {
-      submit_request(EL, REQUEST_UP, 0, 66);
-      elevation_button_was_pushed = 1;
-      #ifdef DEBUG_BUTTONS
-        debug.println("check_buttons: button_up pushed");
-      #endif // DEBUG_BUTTONS  
+      #ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
+        if (elevation < (EL_MANUAL_ROTATE_UP_LIMIT * HEADING_MULTIPLIER)) {
+          submit_request(EL, REQUEST_UP, 0, 66);
+          elevation_button_was_pushed = 1;
+          #ifdef DEBUG_BUTTONS
+            debug.println("check_buttons: button_up pushed");
+          #endif // DEBUG_BUTTONS  
+        } else {
+          #ifdef DEBUG_BUTTONS
+            debug.println("check_buttons: button_up pushed but at EL_MANUAL_ROTATE_UP_LIMIT");
+          #endif // DEBUG_BUTTONS              
+        }
+      #else 
+        submit_request(EL, REQUEST_UP, 0, 66);
+        elevation_button_was_pushed = 1;
+        #ifdef DEBUG_BUTTONS
+          debug.println("check_buttons: button_up pushed");
+        #endif // DEBUG_BUTTONS  
+      #endif //OPTION_EL_MANUAL_ROTATE_LIMITS  
     }
-
   } else {
     #ifdef FEATURE_ADAFRUIT_BUTTONS
     if (buttons & 0x04) {
@@ -3015,11 +3031,26 @@ void check_buttons(){
     if (button_down && (digitalReadEnhanced(button_down) == BUTTON_ACTIVE_STATE)) {
     #endif // FEATURE_ADAFRUIT_BUTTONS
       if (elevation_button_was_pushed == 0) {
-        submit_request(EL, REQUEST_DOWN, 0, 67);
-        elevation_button_was_pushed = 1;
-      #ifdef DEBUG_BUTTONS
-        debug.println("check_buttons: button_down pushed");
-      #endif // DEBUG_BUTTONS    
+
+        #ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
+          if (elevation > (EL_MANUAL_ROTATE_DOWN_LIMIT * HEADING_MULTIPLIER)) {
+            submit_request(EL, REQUEST_DOWN, 0, 67);
+            elevation_button_was_pushed = 1;
+            #ifdef DEBUG_BUTTONS
+              debug.println("check_buttons: button_down pushed");
+            #endif // DEBUG_BUTTONS 
+          } else {
+            #ifdef DEBUG_BUTTONS
+              debug.println("check_buttons: button_down pushed but at EL_MANUAL_ROTATE_DOWN_LIMIT");
+            #endif // DEBUG_BUTTONS 
+          }
+        #else
+          submit_request(EL, REQUEST_DOWN, 0, 67);
+          elevation_button_was_pushed = 1;
+          #ifdef DEBUG_BUTTONS
+            debug.println("check_buttons: button_down pushed");
+          #endif // DEBUG_BUTTONS 
+        #endif        
       }
     }
   }
