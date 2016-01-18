@@ -1,4 +1,3 @@
-
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
@@ -723,3 +722,4 @@ void K3NGdisplay::revert_back_screen(){
 
 //-----------------------------------------------------------------------------------------------------
 #endif //K3NG_DISPLAY_H
+

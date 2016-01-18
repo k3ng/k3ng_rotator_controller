@@ -438,9 +438,12 @@
 
     2.0.2015122901  
       Corrections to bug fixes involving OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO (Thanks, UA9OLB)
+  
+    2.0.2016011801
+      Fixed compilation bug involving last_moon_tracking_check_time and last_sun_tracking_check_time with some combinations of features
   */
 
-#define CODE_VERSION "2.0.2015122901"
+#define CODE_VERSION "2.0.2016011801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1025,8 +1028,6 @@ DebugClass debug;
   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
 #endif
 
-
-//yyyyyyyyy
 
 
 
@@ -3304,7 +3305,13 @@ void update_display(){
 
   k3ngdisplay.clear_pending_buffer();
 
+  #ifdef FEATURE_MOON_TRACKING
+    static unsigned long last_moon_tracking_check_time = 0;
+  #endif 
 
+  #ifdef FEATURE_SUN_TRACKING
+    static unsigned long last_sun_tracking_check_time = 0;
+  #endif
 
   // OPTION_DISPLAY_DIRECTION_STATUS - azimuth direction display ***********************************************************************************
   #if defined(OPTION_DISPLAY_DIRECTION_STATUS)   
@@ -3729,7 +3736,7 @@ void update_display(){
   // OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY *************************************************************
   #if defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
 
-    static unsigned long last_moon_tracking_check_time = 0;
+    // static unsigned long last_moon_tracking_check_time = 0;
 
     if (!row_override[LCD_MOON_TRACKING_ROW]){
       if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
@@ -3766,7 +3773,7 @@ void update_display(){
   // OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY **********************************************************
   #if defined(OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY) && defined(FEATURE_SUN_TRACKING)
 
-  static unsigned long last_sun_tracking_check_time = 0;
+  // static unsigned long last_sun_tracking_check_time = 0;
 
   if (!row_override[LCD_SUN_TRACKING_ROW]){
     if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
@@ -3899,13 +3906,15 @@ void update_display(){
 
   #endif //defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
 
+
+
   // OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL *******************************************************
   #ifdef OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 
     //  moon tracking ----
     #ifdef FEATURE_MOON_TRACKING
 
-      static unsigned long last_moon_tracking_check_time = 0;
+      // static unsigned long last_moon_tracking_check_time = 0;
 
       if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW])  && (moon_tracking_active)) {
         if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
@@ -3937,7 +3946,7 @@ void update_display(){
 
     //  sun tracking ----
     #ifdef FEATURE_SUN_TRACKING
-      static unsigned long last_sun_tracking_check_time = 0;
+      // static unsigned long last_sun_tracking_check_time = 0;
 
       if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW]) && (sun_tracking_active)){
         if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
@@ -12497,3 +12506,4 @@ void set_el_stepper_freq(unsigned int frequency){
 
 
 // that's all, folks !
+

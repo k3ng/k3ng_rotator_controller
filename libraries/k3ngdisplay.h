@@ -1,3 +1,4 @@
+
 #ifndef _K3NGDISPLAY_H
 #define _K3NGDISPLAY_H
 
@@ -6,6 +7,8 @@
 #else
 #include "WProgram.h"
 #endif
+
+
 
 #include "rotator_hardware.h"
 
@@ -120,3 +123,4 @@ private:
 };
 
 #endif //_K3NGDISPLAY_H
+
