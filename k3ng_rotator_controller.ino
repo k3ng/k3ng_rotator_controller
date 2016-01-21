@@ -444,9 +444,12 @@
 
     2.0.2016012001
       Fixed bug with DEBUG_GPS_SERIAL and also improved GPS port reading  
+
+    2.0.2016012101
+      Fixed bug with OPTION_REVERSE_AZ_HH12_AS5045 and OPTION_REVERSE_EL_HH12_AS5045
   */
 
-#define CODE_VERSION "2.0.2016012001"
+#define CODE_VERSION "2.0.2016012101"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -494,7 +497,7 @@
 #endif  
 
 #ifdef FEATURE_LCD_DISPLAY
- #include "k3ngdisplay.h"  // if you're getting an error on this line when compiling, you probably need to move k3ngdisplay.h and k3ngdisplay.cpp to your ino directory
+ #include <k3ngdisplay.h>  // if you're getting an error on this line when compiling, you probably need to move k3ngdisplay.h and k3ngdisplay.cpp to your ino directory
 #endif    
 
 #ifdef FEATURE_WIRE_SUPPORT
@@ -4636,7 +4639,7 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
       #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
-        raw_azimuth = int(360.0-(azimuth_hh12.heading() * HEADING_MULTIPLIER));
+        raw_azimuth = int((360.0-azimuth_hh12.heading()) * HEADING_MULTIPLIER);
       #else
         raw_azimuth = int(azimuth_hh12.heading() * HEADING_MULTIPLIER);
       #endif
@@ -4817,7 +4820,7 @@ void output_debug(){
           }
         #endif // FEATURE_PARK
 
-        debug.print("\n");
+        debug.println("");
 
         debug.print("\tAZ: ");
         switch (az_state) {
@@ -5484,7 +5487,7 @@ void read_elevation(byte force_read){
 
     #ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
       #if defined(OPTION_REVERSE_EL_HH12_AS5045) 
-        elevation = int(360.0-(elevation_hh12.heading() * HEADING_MULTIPLIER));
+        elevation = int((360.0-elevation_hh12.heading()) * HEADING_MULTIPLIER);
       #else
         elevation = int(elevation_hh12.heading() * HEADING_MULTIPLIER);
       #endif
