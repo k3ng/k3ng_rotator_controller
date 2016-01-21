@@ -1,7 +1,13 @@
 /* 
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  TEST Hardware !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+									// ######## ########  ######  ######## 
+									//    ##    ##       ##    ##    ##    
+									//    ##    ##       ##          ##    
+									//    ##    ######    ######     ##    
+									//    ##    ##             ##    ##    
+									//    ##    ##       ##    ##    ##    
+									//    ##    ########  ######     ##  
 
 
 */
@@ -138,12 +144,22 @@
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
 // #define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
 // #define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
-//#define OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
-//#define OPTION_BLINK_OVERLAP_LED
-//#define OPTION_EL_PULSE_DEBOUNCE
-//#define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
-//#define OPTION_RESET_METHOD_JMP_ASM_0
-//#define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
+// #define OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
+// #define OPTION_BLINK_OVERLAP_LED
+// #define OPTION_EL_PULSE_DEBOUNCE
+// #define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
+// #define OPTION_RESET_METHOD_JMP_ASM_0
+// #define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
+// #define OPTION_DONT_READ_GPS_PORT_AS_OFTEN
+
+
+										// ######## ########  ######  ######## 
+										//    ##    ##       ##    ##    ##    
+										//    ##    ##       ##          ##    
+										//    ##    ######    ######     ##    
+										//    ##    ##             ##    ##    
+										//    ##    ##       ##    ##    ##    
+										//    ##    ########  ######     ##  
 
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
@@ -206,6 +222,15 @@
 // #define DEBUG_AUTOCORRECT
 // #define DEBUG_A2_ENCODER
 // #define DEBUG_A2_ENCODER_LOOPBACK_TEST
+
+
+								// ######## ########  ######  ######## 
+								//    ##    ##       ##    ##    ##    
+								//    ##    ##       ##          ##    
+								//    ##    ######    ######     ##    
+								//    ##    ##             ##    ##    
+								//    ##    ##       ##    ##    ##    
+								//    ##    ########  ######     ##  
 
 
 

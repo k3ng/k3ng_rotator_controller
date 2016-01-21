@@ -1,7 +1,12 @@
 /* 
 
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  TEST Hardware !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+									// ######## ########  ######  ######## 
+									//    ##    ##       ##    ##    ##    
+									//    ##    ##       ##          ##    
+									//    ##    ######    ######     ##    
+									//    ##    ##             ##    ##    
+									//    ##    ##       ##    ##    ##    
+									//    ##    ########  ######     ##  
 
 */
 
@@ -100,7 +105,7 @@ You can tweak these, but read the online documentation!
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
-#define CONTROL_PORT_BAUD_RATE 9600
+#define CONTROL_PORT_BAUD_RATE 115200 //9600
 #define REMOTE_UNIT_PORT_BAUD_RATE 9600
 #define GPS_PORT_BAUD_RATE 9600
 #define GPS_MIRROR_PORT_BAUD_RATE 9600
@@ -317,6 +322,15 @@ You can tweak these, but read the online documentation!
 
 
 
+									// ######## ########  ######  ######## 
+									//    ##    ##       ##    ##    ##    
+									//    ##    ##       ##          ##    
+									//    ##    ######    ######     ##    
+									//    ##    ##             ##    ##    
+									//    ##    ##       ##    ##    ##    
+									//    ##    ########  ######     ##  
+
+
 
 /* ---------------------------- object declarations ----------------------------------------------
 
@@ -406,4 +420,12 @@ You can tweak these, but read the online documentation!
 //   //             (Serial Port,Baud Rate,Busy Pin,Send/Receive Pin)
 //   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
 // #endif
+
+ 									// ######## ########  ######  ######## 
+									//    ##    ##       ##    ##    ##    
+									//    ##    ##       ##          ##    
+									//    ##    ######    ######     ##    
+									//    ##    ##             ##    ##    
+									//    ##    ##       ##    ##    ##    
+									//    ##    ########  ######     ##  
 

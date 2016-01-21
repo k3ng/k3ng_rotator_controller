@@ -44,6 +44,7 @@
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 #define OPTION_DISPLAY_DIRECTION_STATUS
 #define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
+//#define OPTION_DONT_READ_GPS_PORT_AS_OFTEN
 
 
 

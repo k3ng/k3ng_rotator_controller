@@ -441,9 +441,12 @@
   
     2.0.2016011801
       Fixed compilation bug involving last_moon_tracking_check_time and last_sun_tracking_check_time with some combinations of features
+
+    2.0.2016012001
+      Fixed bug with DEBUG_GPS_SERIAL and also improved GPS port reading  
   */
 
-#define CODE_VERSION "2.0.2016011801"
+#define CODE_VERSION "2.0.2016012001"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2893,19 +2896,37 @@ void check_serial(){
 
 
   #ifdef FEATURE_GPS
-    if (gps_port->available()) {
-      byte gps_port_read = gps_port->read();
-      #ifdef GPS_MIRROR_PORT
-        gps_mirror_port->write(gps_port_read);
-      #endif //GPS_MIRROR_PORT
-      #ifdef DEBUG_GPS_SERIAL
-        debug.print(gps_port_read);
-        //port_flush();    
-      #endif //DEBUG_GPS_SERIAL
-      if (gps.encode(gps_port_read)) {
-        gps_data_available = 1;
+    #if defined(OPTION_DONT_READ_GPS_PORT_AS_OFTEN)
+      if (gps_port->available()) {
+        byte gps_port_read = gps_port->read();
+        #ifdef GPS_MIRROR_PORT
+          gps_mirror_port->write(gps_port_read);
+        #endif //GPS_MIRROR_PORT
+        #ifdef DEBUG_GPS_SERIAL
+          debug.write(gps_port_read);
+          if (gps_port_read == 10){debug.write(13);}
+          port_flush();    
+        #endif //DEBUG_GPS_SERIAL
+        if (gps.encode(gps_port_read)) {
+          gps_data_available = 1;
+        }
       }
-    }
+    #else //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
+      while (gps_port->available()) {
+        byte gps_port_read = gps_port->read();
+        #ifdef GPS_MIRROR_PORT
+          gps_mirror_port->write(gps_port_read);
+        #endif //GPS_MIRROR_PORT
+        #ifdef DEBUG_GPS_SERIAL
+          debug.write(gps_port_read);
+          if (gps_port_read == 10){debug.write(13);}
+          port_flush();    
+        #endif //DEBUG_GPS_SERIAL
+        if (gps.encode(gps_port_read)) {
+          gps_data_available = 1;
+        }
+      }
+    #endif //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
   #endif // FEATURE_GPS
 
   #if defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS)
