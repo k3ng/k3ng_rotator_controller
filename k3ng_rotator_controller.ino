@@ -447,9 +447,20 @@
 
     2.0.2016012101
       Fixed bug with OPTION_REVERSE_AZ_HH12_AS5045 and OPTION_REVERSE_EL_HH12_AS5045
+
+    2.0.2016012102  
+      Fixed issues with k3ngdisplay.h / k3ngdisplay.cpp
+
+    2.0.2016012301
+      Further work to get k3ngdisplay files to play with Arduino IDE 1.6.7
+
+    All library files should be placed in \sketchbook\libraries\some-directory\ in order to compile in Arduino IDE 1.6.7
+    Anything rotator_*.* should be in the ino directory!
+    
+
   */
 
-#define CODE_VERSION "2.0.2016012101"
+#define CODE_VERSION "2.0.2016012301"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -477,7 +488,7 @@
   
 #include "rotator_dependencies.h"
 
-#include "debug.h"
+#include "rotator_debug.h"
 
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
   #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
@@ -497,7 +508,7 @@
 #endif  
 
 #ifdef FEATURE_LCD_DISPLAY
- #include <k3ngdisplay.h>  // if you're getting an error on this line when compiling, you probably need to move k3ngdisplay.h and k3ngdisplay.cpp to your ino directory
+  #include "rotator_k3ngdisplay.h"
 #endif    
 
 #ifdef FEATURE_WIRE_SUPPORT
@@ -523,23 +534,23 @@
   #include <LSM303.h>
 #endif
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
-  #include "moon2.h"
+  #include <moon2.h>
 #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 #ifdef FEATURE_SUN_TRACKING
-  #include "sunpos.h"
+  #include <sunpos.h>
 #endif // FEATURE_SUN_TRACKING
 #ifdef FEATURE_GPS
-  #include "TinyGPS.h"
+  #include <TinyGPS.h>
 #endif // FEATURE_GPS
 #ifdef FEATURE_RTC_DS1307
-  #include "RTClib.h"
+  #include <RTClib.h>
 #endif // FEATURE_RTC_DS1307
 #ifdef FEATURE_RTC_PCF8583
-  #include "PCF8583.h"
+  #include <PCF8583.h>
 #endif //FEATURE_RTC_PCF8583
 #ifdef FEATURE_ETHERNET
-  #include "SPI.h"
-  #include "Ethernet.h"
+  #include <SPI.h>
+  #include <Ethernet.h>
 #endif
 
 
@@ -578,7 +589,7 @@
 #endif
 
 #ifdef FEATURE_STEPPER_MOTOR
-  #include "TimerFive.h"
+  #include <TimerFive.h>
 #endif
 
 #include "rotator_language.h"
@@ -1034,8 +1045,7 @@ DebugClass debug;
   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
 #endif
 
-
-
+  
 
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
