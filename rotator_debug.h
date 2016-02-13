@@ -27,6 +27,11 @@
   #include "rotator_features.h" 
 #endif 
 
+// #ifdef FEATURE_ETHERNET
+//   #include <SPI.h>
+//   #include <Ethernet.h>
+// #endif
+
 class DebugClass
 {
  protected:
@@ -54,10 +59,13 @@ class DebugClass
 	void write(int i);
 };
 
-//extern DebugClass Debug;
 
 extern uint8_t debug_mode;
 extern HardwareSerial * control_port;
+
+// #ifdef FEATURE_ETHERNET
+//   extern EthernetClient ethernetclient0;
+// #endif
 
 #endif //_ROTATOR_DEBUG_h
 

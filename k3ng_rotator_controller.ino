@@ -488,7 +488,7 @@
   
 #include "rotator_dependencies.h"
 
-#include "rotator_debug.h"
+//#include "rotator_debug.h"
 
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
   #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
@@ -593,6 +593,8 @@
 #endif
 
 #include "rotator_language.h"
+
+    #include "rotator_debug.h"
 
 
 /*----------------------- variables -------------------------------------*/
