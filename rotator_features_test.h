@@ -22,7 +22,7 @@
 #define FEATURE_GPS
 #define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
-#define FEATURE_ETHERNET
+// #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 // #define FEATURE_AUTOCORRECT
 
@@ -38,22 +38,22 @@
 // #define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
 
 // #define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
-#define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
+// #define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
-#define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+// #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER
 // #define FEATURE_AZ_POSITION_PULSE_INPUT
 // #define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
 // #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
-// #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
+#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 // #define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
-#define FEATURE_EL_POSITION_POTENTIOMETER
+// #define FEATURE_EL_POSITION_POTENTIOMETER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER
 // #define FEATURE_EL_POSITION_PULSE_INPUT
 // #define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
@@ -61,14 +61,15 @@
 // #define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
-// #define FEATURE_EL_POSITION_HH12_AS5045_SSI
+#define FEATURE_EL_POSITION_HH12_AS5045_SSI
 // #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_EL_POSITION_MEMSIC_2125
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
-// All displays require rotator_k3ngdisplay.h and rotator_k3ngdisplay.cpp in the ino directory!
+
+// All displays require k3ngdisplay.h and k3ngdisplay.cpp in a directory in \sketchbook\libraries\  
 // And if you are using an Adafruit, Yourduino, RFRobot, or YWRobot display, you must change the feature setting in k3ngdisplay.h!!!!
-// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
 // #define FEATURE_YOURDUINO_I2C_LCD
@@ -151,8 +152,8 @@
 // #define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 // #define OPTION_RESET_METHOD_JMP_ASM_0
 // #define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
-#define OPTION_REVERSE_AZ_HH12_AS5045
-#define OPTION_REVERSE_EL_HH12_AS5045
+// #define OPTION_REVERSE_AZ_HH12_AS5045
+// #define OPTION_REVERSE_EL_HH12_AS5045
 // #define OPTION_DONT_READ_GPS_PORT_AS_OFTEN
 
 

@@ -454,13 +454,19 @@
     2.0.2016012301
       Further work to get k3ngdisplay files to play with Arduino IDE 1.6.7
 
+    2.0.2016021601
+      DEBUG_HH12 more information output
+
+    2.0.2016030101
+       FEATURE_AZ_POSITION_HH12_AS5045_SSI: AZIMUTH_STARTING_POINT_DEFAULT used in heading calculation now     
+
     All library files should be placed in \sketchbook\libraries\some-directory\ in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2.0.2016012301"
+#define CODE_VERSION "2.0.2016030101"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4651,9 +4657,9 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
       #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
-        raw_azimuth = int((360.0-azimuth_hh12.heading()) * HEADING_MULTIPLIER);
+        raw_azimuth = int((360.0-azimuth_hh12.heading()+AZIMUTH_STARTING_POINT_DEFAULT) * HEADING_MULTIPLIER);
       #else
-        raw_azimuth = int(azimuth_hh12.heading() * HEADING_MULTIPLIER);
+        raw_azimuth = int((azimuth_hh12.heading()+AZIMUTH_STARTING_POINT_DEFAULT) * HEADING_MULTIPLIER);
       #endif
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
@@ -5503,20 +5509,23 @@ void read_elevation(byte force_read){
       #else
         elevation = int(elevation_hh12.heading() * HEADING_MULTIPLIER);
       #endif
-    #ifdef DEBUG_HH12
-    if ((millis() - last_hh12_debug) > 5000) {
-      debug.print(F("read_elevation: HH-12 raw: "));
-      control_port->println(elevation);
-      last_hh12_debug = millis();
-    }
-    #endif // DEBUG_HH12
-    #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
-    #endif // FEATURE_ELEVATION_CORRECTION
-    elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
-    if (elevation > (180 * HEADING_MULTIPLIER)) {
-      elevation = elevation - (360 * HEADING_MULTIPLIER);
-    }
+      #ifdef DEBUG_HH12 //zzzzzzzz
+        if ((millis() - last_hh12_debug) > 5000) {
+          debug.print(F("read_elevation: HH-12 from device: "));
+          debug.print(elevation_hh12.heading());
+          debug.print(F(" uncorrected: "));
+          debug.println(elevation/HEADING_MULTIPLIER);
+          // control_port->println(elevation);
+          last_hh12_debug = millis();
+        }
+      #endif // DEBUG_HH12
+      #ifdef FEATURE_ELEVATION_CORRECTION
+        elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_ELEVATION_CORRECTION
+      elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+      if (elevation > (180 * HEADING_MULTIPLIER)) {
+        elevation = elevation - (360 * HEADING_MULTIPLIER);
+      }
     #endif // FEATURE_EL_POSITION_HH12_AS5045_SSI
 
 

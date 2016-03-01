@@ -60,8 +60,8 @@
 // #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_EL_POSITION_MEMSIC_2125
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
-
-// All displays require rotator_k3ngdisplay.h and rotator_k3ngdisplay.cpp in the ino directory!
+  
+// All displays require k3ngdisplay.h and k3ngdisplay.cpp in a directory in \sketchbook\libraries\  
 // And if you are using an Adafruit, Yourduino, RFRobot, or YWRobot display, you must change the feature setting in k3ngdisplay.h!!!!
 // #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
