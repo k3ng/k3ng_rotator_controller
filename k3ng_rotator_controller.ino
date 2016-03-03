@@ -458,7 +458,10 @@
       DEBUG_HH12 more information output
 
     2.0.2016030101
-       FEATURE_AZ_POSITION_HH12_AS5045_SSI: AZIMUTH_STARTING_POINT_DEFAULT used in heading calculation now     
+       FEATURE_AZ_POSITION_HH12_AS5045_SSI: AZIMUTH_STARTING_POINT_DEFAULT used in heading calculation now    
+
+    2.0.2016030201
+      Fixed FEATURE_ADAFRUIT_BUTTONS to work with k3ngdisplay library and updated k3ngdisplay library to support Adafruit RGB display buttons    
 
     All library files should be placed in \sketchbook\libraries\some-directory\ in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -466,7 +469,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016030101"
+#define CODE_VERSION "2.0.2016030201"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2965,7 +2968,8 @@ void check_buttons(){
 
   #ifdef FEATURE_ADAFRUIT_BUTTONS
     int buttons = 0;
-    buttons = lcd.readButtons();
+    // buttons = lcd.readButtons();
+    buttons = k3ngdisplay.readButtons();
 
     if (buttons & BUTTON_RIGHT) {
   #else

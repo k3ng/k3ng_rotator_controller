@@ -107,7 +107,6 @@ You can tweak these, but read the online documentation!
 #define LCD_COLUMNS 20 //16
 #define LCD_ROWS 4 //2
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
-#define I2C_LCD_COLOR GREEN            // default color of I2C LCD display, including Adafruit and Yourduino; some Yourduino may want this as LED_ON
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION LEFT

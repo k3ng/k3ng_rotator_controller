@@ -17,10 +17,13 @@
                                                               */
 
 #define FEATURE_4_BIT_LCD_DISPLAY
-//#define FEATURE_ADAFRUIT_I2C_LCD
-//#define FEATURE_YOURDUINO_I2C_LCD
-//#define FEATURE_RFROBOT_I2C_DISPLAY
-//#define FEATURE_YWROBOT_I2C_DISPLAY
+// #define FEATURE_ADAFRUIT_I2C_LCD
+// #define FEATURE_YOURDUINO_I2C_LCD
+// #define FEATURE_RFROBOT_I2C_DISPLAY
+// #define FEATURE_YWROBOT_I2C_DISPLAY
+
+// #define FEATURE_ADAFRUIT_BUTTONS                
+
 
 
 #include "rotator_hardware.h"
@@ -57,8 +60,11 @@
   #include "rotator_pins.h"
 #endif
 
+#if defined(FEATURE_ADAFRUIT_I2C_LCD)
+  #include "rotator.h"
+#endif
 
-#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016012301"
+#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016030201"
 #define MAX_SCREEN_BUFFER_COLUMNS 20
 #define MAX_SCREEN_BUFFER_ROWS 4
 
@@ -66,6 +72,8 @@
 
 #define TEXT_BLINK_MS 500
 #define WORK_STRING_SIZE 32
+
+#define I2C_LCD_COLOR GREEN            // default color of I2C LCD display, including Adafruit and Yourduino; some Yourduino units may want this as LED_ON                  
 
 class K3NGdisplay {
 
@@ -116,6 +124,10 @@ public:
     void println(char * print_string);
     int length(char * print_string);
     void clear_row(uint8_t row_number);  // clear one entire row
+
+    #if defined(FEATURE_ADAFRUIT_BUTTONS)
+      uint8_t readButtons();
+    #endif   
 
 private:
 

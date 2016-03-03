@@ -63,7 +63,7 @@
 // And if you are using an Adafruit, Yourduino, RFRobot, or YWRobot display, you must change the feature setting in k3ngdisplay.h!!!!
 #define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
 //#define FEATURE_ADAFRUIT_I2C_LCD
-//#define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons
+// #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 //#define FEATURE_YOURDUINO_I2C_LCD
 //#define FEATURE_RFROBOT_I2C_DISPLAY
 //#define FEATURE_ANALOG_OUTPUT_PINS

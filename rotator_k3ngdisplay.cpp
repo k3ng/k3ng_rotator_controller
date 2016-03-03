@@ -1,7 +1,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016012301"
+// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016030201"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -102,12 +102,12 @@ void K3NGdisplay::initialize(){
                                              // k3ngdisplay.h and k3ngdisplay.cpp from your ino directory
 
   #ifdef FEATURE_YOURDUINO_I2C_LCD
-  lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
-  lcd.setBacklight(I2C_LCD_COLOR);
+    lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
+    lcd.setBacklight(I2C_LCD_COLOR);
   #endif // FEATURE_YOURDUINO_I2C_LCD
 
   #ifdef FEATURE_ADAFRUIT_I2C_LCD
-  lcd.setBacklight(I2C_LCD_COLOR);
+    lcd.setBacklight(I2C_LCD_COLOR);
   #endif // FEATURE_ADAFRUIT_I2C_LCD
 
   clear();
@@ -723,6 +723,14 @@ void K3NGdisplay::revert_back_screen(){
 }
 
 //-----------------------------------------------------------------------------------------------------
+
+#if defined(FEATURE_ADAFRUIT_BUTTONS)
+uint8_t K3NGdisplay::readButtons(){
+
+  return lcd.readButtons();
+
+}
+#endif //FEATURE_ADAFRUIT_BUTTONS
 
 
 #endif //K3NG_DISPLAY_H
