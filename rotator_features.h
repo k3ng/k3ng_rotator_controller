@@ -148,6 +148,7 @@
 // #define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 // #define OPTION_RESET_METHOD_JMP_ASM_0
 // #define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
+// #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING  // change OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING in settings file  
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
 

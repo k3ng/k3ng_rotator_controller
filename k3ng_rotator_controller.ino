@@ -466,13 +466,16 @@
     2.0.2016030401   
       Changed I2C_LCD_COLOR default to WHITE 
 
+    2.0.2016030402
+      OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING
+
     All library files should be placed in \sketchbook\libraries\some-directory\ in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2.0.2016030401"
+#define CODE_VERSION "2.0.2016030402"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -6590,6 +6593,9 @@ void initialize_serial(){
   #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(FEATURE_CLOCK) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
     control_port = CONTROL_PORT_MAPPED_TO;
     control_port->begin(CONTROL_PORT_BAUD_RATE);
+    #if defined(OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING)
+      control_port->print OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING;
+    #endif
   #endif
 
   #ifdef FEATURE_REMOTE_UNIT_SLAVE

@@ -103,6 +103,7 @@ You can tweak these, but read the online documentation!
 #define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port
 #define GPS_PORT_MAPPED_TO &Serial2  // change this line to map the GPS port to a different serial port
 //#define GPS_MIRROR_PORT &Serial3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
+#define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
 
 #define LCD_COLUMNS 20 //16
 #define LCD_ROWS 4 //2
