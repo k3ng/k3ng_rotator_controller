@@ -461,7 +461,10 @@
        FEATURE_AZ_POSITION_HH12_AS5045_SSI: AZIMUTH_STARTING_POINT_DEFAULT used in heading calculation now    
 
     2.0.2016030201
-      Fixed FEATURE_ADAFRUIT_BUTTONS to work with k3ngdisplay library and updated k3ngdisplay library to support Adafruit RGB display buttons    
+      Fixed FEATURE_ADAFRUIT_BUTTONS to work with k3ngdisplay library and updated k3ngdisplay library to support Adafruit RGB display buttons   
+
+    2.0.2016030401   
+      Changed I2C_LCD_COLOR default to WHITE 
 
     All library files should be placed in \sketchbook\libraries\some-directory\ in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -469,7 +472,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016030201"
+#define CODE_VERSION "2.0.2016030401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -602,8 +605,7 @@
 #endif
 
 #include "rotator_language.h"
-
-    #include "rotator_debug.h"
+#include "rotator_debug.h"
 
 
 /*----------------------- variables -------------------------------------*/
