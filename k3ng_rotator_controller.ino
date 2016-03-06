@@ -469,13 +469,16 @@
     2.0.2016030402
       OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING
 
+    2.0.2016030501
+      FEATURE_SAINSMART_I2C_LCD
+
     All library files should be placed in \sketchbook\libraries\some-directory\ in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2.0.2016030402"
+#define CODE_VERSION "2.0.2016030501"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -514,7 +517,7 @@
   #include <Adafruit_RGBLCDShield.h> // required for Adafruit I2C LCD display
 #endif
 
-#if defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_RFROBOT_I2C_DISPLAY)
+#if defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_RFROBOT_I2C_DISPLAY) || defined(FEATURE_SAINSMART_I2C_LCD)
   #include <LiquidCrystal_I2C.h> // required for YourDuino.com or DFRobot I2C LCD display
 #endif
 
@@ -976,11 +979,7 @@ byte current_az_speed_voltage = 0;
 
 DebugClass debug;
 
-
-
-
-
-#if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
+#if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY) || defined(FEATURE_SAINSMART_I2C_LCD)
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
 #endif   
 
