@@ -125,6 +125,10 @@ You can tweak these, but read the online documentation!
 
 #define LCD_HEADING_ROW 2
 #define LCD_HEADING_FIELD_SIZE 20
+#define LCD_AZ_ONLY_HEADING_ROW 1
+#define LCD_AZ_ONLY_HEADING_FIELD_SIZE 20
+#define LCD_EL_ONLY_HEADING_ROW 2
+#define LCD_EL_ONLY_HEADING_FIELD_SIZE 20
 #define LCD_STATUS_ROW 1
 #define LCD_STATUS_FIELD_SIZE 20
 #define LCD_DIRECTION_ROW 1

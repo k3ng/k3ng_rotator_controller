@@ -472,13 +472,18 @@
     2.0.2016030501
       FEATURE_SAINSMART_I2C_LCD
 
-    All library files should be placed in \sketchbook\libraries\some-directory\ in order to compile in Arduino IDE 1.6.7
+    2.0.2016031001
+      OPTION_DISPLAY_HEADING_AZ_ONLY with settings LCD_AZ_ONLY_HEADING_ROW, LCD_AZ_ONLY_HEADING_FIELD_SIZE
+      OPTION_DISPLAY_HEADING_EL_ONLY with settings LCD_EL_ONLY_HEADING_ROW, LCD_EL_ONLY_HEADING_FIELD_SIZE
+
+    All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
+    in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2.0.2016030501"
+#define CODE_VERSION "2.0.2016031001"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3435,6 +3440,51 @@ void update_display(){
     #endif // FEATURE_ELEVATION_CONTROL
   #endif //defined(OPTION_DISPLAY_HEADING)  
 
+
+//zzzzzzz
+
+  // OPTION_DISPLAY_HEADING_AZ_ONLY - show heading ***********************************************************************************
+  #if defined(OPTION_DISPLAY_HEADING_AZ_ONLY)       
+    strcpy(workstring,AZIMUTH_STRING);
+    dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+    #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+      if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+      if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+    #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE    
+    strcat(workstring,workstring2);
+    strcat(workstring,DISPLAY_DEGREES_STRING);
+    k3ngdisplay.print_center_fixed_field_size(workstring,LCD_AZ_ONLY_HEADING_ROW-1,LCD_AZ_ONLY_HEADING_FIELD_SIZE);
+  #endif //defined(OPTION_DISPLAY_HEADING_AZ_ONLY)        
+
+
+  // OPTION_DISPLAY_HEADING_EL_ONLY - show heading ***********************************************************************************
+  #if defined(OPTION_DISPLAY_HEADING_EL_ONLY) && defined(FEATURE_ELEVATION_CONTROL)
+      // #if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+        // if ((elevation >= 1000)) {
+          // strcpy(workstring,SPACE_EL_STRING);
+        // } else {
+          // strcpy(workstring,SPACE_EL_SPACE_STRING);
+        // }
+      // #else
+        strcpy(workstring,ELEVATION_STRING);
+      // #endif // defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+      dtostrf(elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+    #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+      if ((elevation/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+      if ((elevation/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}    
+    #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE  
+    strcat(workstring,workstring2);
+    #if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+      if (LCD_COLUMNS > 14) {
+        strcat(workstring,DISPLAY_DEGREES_STRING);
+      }
+    #else
+      if ((LCD_COLUMNS > 18) || (elevation < 100)) {
+        strcat(workstring,DISPLAY_DEGREES_STRING);
+      }
+    #endif
+    k3ngdisplay.print_center_fixed_field_size(workstring,LCD_EL_ONLY_HEADING_ROW-1,LCD_EL_ONLY_HEADING_FIELD_SIZE);    
+  #endif //defined(OPTION_DISPLAY_HEADING_EL_ONLY)   
 
   // OPTION_DISPLAY_STATUS***********************************************************************************
   #if defined(OPTION_DISPLAY_STATUS)

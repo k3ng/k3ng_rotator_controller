@@ -120,6 +120,8 @@
 
 #define OPTION_DISPLAY_STATUS
 #define OPTION_DISPLAY_HEADING
+#define OPTION_DISPLAY_HEADING_AZ_ONLY
+#define OPTION_DISPLAY_HEADING_EL_ONLY
 #define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
 // #define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 // #define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
