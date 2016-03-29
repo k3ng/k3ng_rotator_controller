@@ -51,7 +51,7 @@
 #define PCF8583_H
 
 #include <Arduino.h>
-#include <../Wire/Wire.h>
+#include <Wire.h>
 
 class PCF8583 {
     int address;
