@@ -1,7 +1,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016030501"
+// K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016032901"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -47,6 +47,7 @@
 
 #if defined(FEATURE_RFROBOT_I2C_DISPLAY)
   LiquidCrystal_I2C lcd(0x27,16,2); 
+  // LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 #endif //FEATURE_RFROBOT_I2C_DISPLAY
 
 

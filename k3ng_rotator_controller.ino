@@ -476,6 +476,10 @@
       OPTION_DISPLAY_HEADING_AZ_ONLY with settings LCD_AZ_ONLY_HEADING_ROW, LCD_AZ_ONLY_HEADING_FIELD_SIZE
       OPTION_DISPLAY_HEADING_EL_ONLY with settings LCD_EL_ONLY_HEADING_ROW, LCD_EL_ONLY_HEADING_FIELD_SIZE
 
+    2.0.2016032901
+      Fixed issues with FEATURE_RFROBOT_I2C_DISPLAY compiling
+      Corrected notes in features files about customizing features in rotator_k3ngdisplay.h  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -984,7 +988,7 @@ byte current_az_speed_voltage = 0;
 
 DebugClass debug;
 
-#if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY) || defined(FEATURE_SAINSMART_I2C_LCD)
+#if defined(FEATURE_LCD_DISPLAY)
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
 #endif   
 
@@ -10652,7 +10656,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
       }
 
-      if ((input_buffer[2] == 'D') && ((input_buffer[3] == 'H') || (input_buffer[3] == 'L'))) { // \?DLxx - digital pin write low; xx = pin #   \\DHxx - digital pin write high; xx = pin # 
+      if ((input_buffer[2] == 'D') && ((input_buffer[3] == 'H') || (input_buffer[3] == 'L'))) { // \?DLxx - digital pin write low; xx = pin #   \?DHxx - digital pin write high; xx = pin # 
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {

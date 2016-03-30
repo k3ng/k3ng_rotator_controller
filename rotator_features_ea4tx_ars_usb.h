@@ -18,7 +18,6 @@
 
 #define FEATURE_EL_POSITION_POTENTIOMETER
 
-// LCD display requires k3ngdisplay.h and k3ngdisplay.cpp in a directory in \sketchbook\libraries\  
 #define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
 
 

@@ -65,7 +65,7 @@
   #include "rotator.h"
 #endif
 
-#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016030501"
+#define K3NG_DISPLAY_LIBRARY_VERSION "1.0.2016032901"
 #define MAX_SCREEN_BUFFER_COLUMNS 20
 #define MAX_SCREEN_BUFFER_ROWS 4
 
@@ -76,6 +76,7 @@
 
 #define I2C_LCD_COLOR WHITE            // default color of I2C LCD display, including Adafruit and Yourduino; some Yourduino units may want this as LED_ON                  
 // #define I2C_LCD_COLOR GREEN                  
+// #define I2C_LCD_COLOR LED_ON
 
 class K3NGdisplay {
 
