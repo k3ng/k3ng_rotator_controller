@@ -478,7 +478,10 @@
 
     2.0.2016032901
       Fixed issues with FEATURE_RFROBOT_I2C_DISPLAY compiling
-      Corrected notes in features files about customizing features in rotator_k3ngdisplay.h  
+      Corrected notes in features files about customizing features in rotator_k3ngdisplay.h 
+
+    2.0.2016042801
+      Fixed compilation error with FEATURE_AZIMUTH_CORRECTION and FEATURE_ELEVATION_CORRECTION    
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
@@ -958,13 +961,13 @@ byte current_az_speed_voltage = 0;
 #endif //FEATURE_STEPPER_MOTOR
 
 #ifdef FEATURE_AZIMUTH_CORRECTION
-  float azimuth_calibration_from[]  = AZIMUTH_CALIBRATION_FROM_ARRAY;    
-  float azimuth_calibration_to[]    = AZIMUTH_CALIBRATION_TO_ARRAY;
+  const float azimuth_calibration_from[]  = AZIMUTH_CALIBRATION_FROM_ARRAY;    
+  const float azimuth_calibration_to[]    = AZIMUTH_CALIBRATION_TO_ARRAY;
 #endif // FEATURE_AZIMUTH_CORRECTION
 
 #ifdef FEATURE_ELEVATION_CORRECTION
-  float elevation_calibration_from[]  = ELEVATION_CALIBRATION_FROM_ARRAY;
-  float elevation_calibration_to[]    = ELEVATION_CALIBRATION_TO_ARRAY;
+  const float elevation_calibration_from[]  = ELEVATION_CALIBRATION_FROM_ARRAY;
+  const float elevation_calibration_to[]    = ELEVATION_CALIBRATION_TO_ARRAY;
 #endif // FEATURE_ELEVATION_CORRECTION
 
 #ifdef FEATURE_AUTOCORRECT
