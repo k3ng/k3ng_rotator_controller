@@ -481,7 +481,10 @@
       Corrected notes in features files about customizing features in rotator_k3ngdisplay.h 
 
     2.0.2016042801
-      Fixed compilation error with FEATURE_AZIMUTH_CORRECTION and FEATURE_ELEVATION_CORRECTION    
+      Fixed compilation error with FEATURE_AZIMUTH_CORRECTION and FEATURE_ELEVATION_CORRECTION 
+
+    2.0.2016051501
+      Fixed bug in submit_request() with slow down (Thanks Olli, DH2WQ)   
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
@@ -490,7 +493,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016031001"
+#define CODE_VERSION "2.0.2016051501"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -6989,7 +6992,9 @@ void service_rotation(){
     debug.print((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
     debug.println("");
     #endif // DEBUG_SERVICE_ROTATION
-    update_az_variable_outputs((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
+    //updated 2016-05-15
+    //update_az_variable_outputs((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
+    update_az_variable_outputs((int)(current_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
     az_last_step_time = millis();
     if (az_slow_down_step > 0) {az_slow_down_step--;}
 
