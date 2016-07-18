@@ -67,7 +67,7 @@
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
 // And if you are using an Adafruit, Yourduino, RFRobot, YWRobot, or SainSmart display, you must also change the feature setting in rotator_k3ngdisplay.h!!!!
-#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
@@ -128,8 +128,8 @@
 #define OPTION_DISPLAY_HEADING_EL_ONLY
 // #define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
 //#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
-//#define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
-//#define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
+// #define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
+// #define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
 //#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
