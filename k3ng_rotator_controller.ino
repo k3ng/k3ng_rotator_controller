@@ -486,6 +486,9 @@
     2.0.2016051501
       Fixed bug in submit_request() with slow down (Thanks Olli, DH2WQ)   
 
+    2.0.2016071801
+      Fixed bug with Maidenhead not being calculated when FEATURE_MOON_TRACKING or FEATURE_SUN_TRACKING wasn't compiled  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -493,7 +496,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016051501"
+#define CODE_VERSION "2.0.2016071801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -885,7 +888,7 @@ byte current_az_speed_voltage = 0;
   #endif //GPS_MIRROR_PORT
 #endif //defined(FEATURE_GPS)
 
-#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || (defined(FEATURE_GPS) && defined(FEATURE_REMOTE_UNIT_SLAVE))
+#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
   double latitude = DEFAULT_LATITUDE;
   double longitude = DEFAULT_LONGITUDE;
 #endif
@@ -9763,7 +9766,7 @@ void service_gps(){
       #endif // defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_PCF8583)
 
 
-      #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_REMOTE_UNIT_SLAVE)
+      //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_REMOTE_UNIT_SLAVE) 
         if (SYNC_COORDINATES_WITH_GPS) {
           latitude = float(gps_lat) / 1000000.0;
           longitude = float(gps_lon) / 1000000.0;
@@ -9775,7 +9778,7 @@ void service_gps(){
             debug.println("");
           #endif // DEBUG_GPS
         }
-      #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+      //#endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
       last_sync = millis();
     }
