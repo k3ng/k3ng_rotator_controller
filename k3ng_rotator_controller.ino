@@ -701,6 +701,14 @@ struct config_t {
   byte el_stepper_motor_last_pin_state;
   byte az_stepper_motor_last_direction;
   byte el_stepper_motor_last_direction;
+#ifdef FEATURE_TWO_DECIMAL_PLACE_HEADINGS
+  long azimuth_starting_point;
+  long azimuth_rotation_capability;
+#else
+  int azimuth_starting_point;
+  int azimuth_rotation_capability;
+#endif
+  byte brake_az_disabled;
 } configuration;
 
 
@@ -2270,7 +2278,7 @@ void check_brake_release() {
 void brake_release(byte az_or_el, byte operation){
 
   if (az_or_el == AZ) {
-    if (brake_az) {
+    if (brake_az && (configuration.brake_az_disabled == 0)) {
       if (operation == BRAKE_RELEASE_ON) {
         digitalWriteEnhanced(brake_az, BRAKE_ACTIVE_STATE);
         brake_az_engaged = 1;
@@ -4190,10 +4198,16 @@ void read_settings_from_eeprom(){
         debug.print(configuration.azimuth_offset,2);
         debug.print("\nel_offset:");
         debug.print(configuration.elevation_offset,2);
+        debug.print("az starting point:");
+        debug.print(configuration.azimuth_starting_point);
+        debug.print("az rotation capability:");
+        debug.print(configuration.azimuth_rotation_capability);
         debug.println("");
       }
     #endif // DEBUG_EEPROM
 
+    azimuth_starting_point = configuration.azimuth_starting_point;
+    azimuth_rotation_capability = configuration.azimuth_rotation_capability;
 
     #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER)
       az_incremental_encoder_position = configuration.last_az_incremental_encoder_position;
@@ -4272,6 +4286,10 @@ void initialize_eeprom_with_defaults(){
   configuration.last_el_incremental_encoder_position = 0;
   configuration.azimuth_offset = 0;
   configuration.elevation_offset = 0;
+  configuration.azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
+  configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
+  configuration.brake_az_disabled = (brake_az ? 1 : 0);
+
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
   #else
@@ -7586,7 +7604,7 @@ void service_request_queue(){
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           debug.print("->F");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
-          if ((az_request_parm > (360 * HEADING_MULTIPLIER)) && (az_request_parm <= ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER))) {
+            if ((az_request_parm > (360 * HEADING_MULTIPLIER)) && (az_request_parm <= ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER))) {
             target_azimuth = az_request_parm - (360 * HEADING_MULTIPLIER);
             target_raw_azimuth = az_request_parm;
             if (az_request_parm > raw_azimuth) {
@@ -10019,6 +10037,16 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     #endif // FEATURE_ELEVATION_CONTROL
   #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
 
+#ifdef FEATURE_TWO_DECIMAL_PLACE_HEADINGS
+  long new_azimuth_starting_point;
+  long new_azimuth_rotation_capability;
+#else
+  int new_azimuth_starting_point;
+  int new_azimuth_rotation_capability;
+#endif
+
+  byte brake_az_disabled;
+
   char temp_string[20] = "";
 
   switch (input_buffer[1]) {
@@ -10049,7 +10077,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         strcpy(return_string, "Error.  Format: \\Ax[x][x] ");
       }
       break;
-        #else // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+   #else // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
     case 'A':      // \Ax[xxx][.][xxxx] - manually set azimuth
       place_multiplier = 1;
       for (int x = input_buffer_index - 1; x > 1; x--) {
@@ -10076,8 +10104,86 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       }
 
       break;
-      #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+   #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
 
+    case 'I':        // \Ix[x][x] - set az starting point
+      new_azimuth_starting_point = 9999;
+      switch (input_buffer_index) {
+        case 2:
+          new_azimuth_starting_point = configuration.azimuth_starting_point;
+          break;
+        case 3:
+          new_azimuth_starting_point = (input_buffer[2] - 48);
+          break;
+        case 4:
+          new_azimuth_starting_point = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+          break;
+        case 5:
+          new_azimuth_starting_point = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+          break;
+      }
+      if ((new_azimuth_starting_point  >= 0) && (new_azimuth_starting_point  < 360)) {
+        if (input_buffer_index > 2) {
+          azimuth_starting_point = configuration.azimuth_starting_point = new_azimuth_starting_point;
+          configuration_dirty = 1;
+        }
+        strcpy(return_string, "Azimuth starting point set to ");
+        dtostrf(new_azimuth_starting_point, 0, 0, temp_string);
+        strcat(return_string, temp_string);
+      } else {
+        strcpy(return_string, "Error.  Format: \\Ix[x][x]");
+      }
+      break;
+
+    case 'J':        // \Jx[x][x] - set az rotation capability
+      new_azimuth_rotation_capability = 9999;
+      switch (input_buffer_index) {
+        case 2:
+          new_azimuth_rotation_capability = configuration.azimuth_rotation_capability;
+          break;
+        case 3:
+          new_azimuth_rotation_capability = (input_buffer[2] - 48);
+          break;
+        case 4:
+          new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+          break;
+        case 5:
+          new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+          break;
+      }
+      if ((new_azimuth_rotation_capability >= 0) && (new_azimuth_rotation_capability <= 450)) {
+        if (input_buffer_index > 2) {
+          azimuth_rotation_capability = configuration.azimuth_rotation_capability = new_azimuth_rotation_capability;
+          configuration_dirty = 1;
+        }
+        strcpy(return_string, "Azimuth rotation capability set to ");
+        dtostrf(new_azimuth_rotation_capability, 0, 0, temp_string);
+        strcat(return_string, temp_string);
+      } else {
+        strcpy(return_string, "Error.  Format: \\Jx[x][x]");
+      }
+      break;
+
+    case 'K':          // \Kx   - Force disable the az brake even if a pin is defined (x: 0 = enable, 1 = disable)
+      brake_az_disabled = 2;
+      if (input_buffer_index == 2) {
+        brake_az_disabled = configuration.brake_az_disabled;
+      } else
+      switch (input_buffer[2]) {
+        case '0': brake_az_disabled = 0; break;
+        case '1': brake_az_disabled = 1; break;
+      }
+      if ((brake_az_disabled >=0) && (brake_az_disabled <= 1)) {
+        if (input_buffer_index > 2) {
+          configuration.brake_az_disabled = brake_az_disabled;
+          configuration_dirty = 1;
+        }
+        strcpy(return_string, "Az brake ");
+        strcat(return_string, (brake_az_disabled ? "disabled." : "enabled."));
+      } else {
+        strcpy(return_string, "Error.");
+      }
+      break;
 
     #if defined(FEATURE_ELEVATION_CONTROL)
     #if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
@@ -10197,21 +10303,27 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           #endif // FEATURE_CLOCK
 
 
-    case 'D': 
+    case 'D':                                                                      // \D - Debug
       if (debug_mode & source_port) {
         debug_mode = debug_mode & (~source_port);
       } else {
         debug_mode = debug_mode | source_port;
       } 
-      break;                                              // D - Debug
+      break;
 
-    case 'E':                                                                      // E - Initialize eeprom
+    case 'E':                                                                      // \E - Initialize eeprom
       initialize_eeprom_with_defaults();
       strcpy(return_string, "Initialized eeprom, resetting unit in 5 seconds...");
       reset_the_unit = 1;
       break;
 
-    case 'L':                                                                      // L - rotate to long path
+    case 'Q':                                                                      // \Q - Save settings in the EEPROM and restart
+      write_settings_to_eeprom();
+      strcpy(return_string, "Settings saved in EEPROM, resetting unit in 5 seconds...");
+      reset_the_unit = 1;
+      break;
+
+    case 'L':                                                                      // \L - rotate to long path
       if (azimuth < (180 * HEADING_MULTIPLIER)) {
         submit_request(AZ, REQUEST_AZIMUTH, (azimuth + (180 * HEADING_MULTIPLIER)), 15);
       } else {
@@ -11954,6 +12066,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       
       break;                 
       case 'Z':                                           // Z - Starting point toggle
+
         if (azimuth_starting_point == 180) {
           azimuth_starting_point = 0;
           strcpy(return_string,"N");
