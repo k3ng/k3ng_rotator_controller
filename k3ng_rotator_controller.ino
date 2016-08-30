@@ -3529,7 +3529,7 @@ void update_display(){
           }
         }
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-        row_override[LCD_STATUS_ROW] = 1;
+        row_override[LCD_STATUS_ROW-1] = 1;
       }
 
       #if defined(FEATURE_PARK)
@@ -3540,12 +3540,12 @@ void update_display(){
           switch(park_status){
             case PARKED: 
               k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW] = 1;
+              row_override[LCD_STATUS_ROW-1] = 1;
               park_message_in_effect = 1;
               break;              
             case PARK_INITIATED:
               k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW] = 1;
+              row_override[LCD_STATUS_ROW-1] = 1;
               park_message_in_effect = 1;
               break;
             case NOT_PARKED: 
@@ -3560,7 +3560,7 @@ void update_display(){
           if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
             park_message_in_effect = 0;
           } else {
-            row_override[LCD_STATUS_ROW] = 1;
+            row_override[LCD_STATUS_ROW-1] = 1;
             switch(park_status){
               case PARKED: 
                 k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
@@ -3590,7 +3590,7 @@ void update_display(){
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-          row_override[LCD_STATUS_ROW] = 1;
+          row_override[LCD_STATUS_ROW-1] = 1;
         }
       #endif //FEATURE_AZ_PRESET_ENCODER
 
@@ -3610,7 +3610,7 @@ void update_display(){
           dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
-          row_override[LCD_STATUS_ROW] = 1;
+          row_override[LCD_STATUS_ROW-1] = 1;
         } else {
           if (current_az_state() == ROTATING_CW) {
             strcpy(workstring,CW_STRING);
@@ -3633,7 +3633,7 @@ void update_display(){
           dtostrf(target_elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
-          row_override[LCD_STATUS_ROW] = 1;
+          row_override[LCD_STATUS_ROW-1] = 1;
         } else {
           if (current_el_state() == ROTATING_UP) {
             strcat(workstring,UP_STRING);
@@ -3655,12 +3655,12 @@ void update_display(){
           switch(park_status){
             case PARKED: 
               k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW] = 1;
+              row_override[LCD_STATUS_ROW-1] = 1;
               park_message_in_effect = 1;
               break;              
             case PARK_INITIATED:
               k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW] = 1;
+              row_override[LCD_STATUS_ROW-1] = 1;
               park_message_in_effect = 1;
               break;
             case NOT_PARKED: 
@@ -3675,7 +3675,7 @@ void update_display(){
           if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
             park_message_in_effect = 0;
           } else {
-            row_override[LCD_STATUS_ROW] = 1;
+            row_override[LCD_STATUS_ROW-1] = 1;
             switch(park_status){
               case PARKED: 
                 k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
@@ -3703,7 +3703,7 @@ void update_display(){
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-          row_override[LCD_STATUS_ROW] = 1;
+          row_override[LCD_STATUS_ROW-1] = 1;
         }
       #endif //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER) 
 
@@ -3726,7 +3726,7 @@ void update_display(){
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW] = 1;
+              row_override[LCD_STATUS_ROW-1] = 1;
               break;
             case ENCODER_EL_PENDING:
               strcpy(workstring,EL_TARGET_STRING);
@@ -3734,7 +3734,7 @@ void update_display(){
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW] = 1;
+              row_override[LCD_STATUS_ROW-1] = 1;
               break;
             case ENCODER_AZ_EL_PENDING:
               strcpy(workstring,TARGET_STRING);
@@ -3746,7 +3746,7 @@ void update_display(){
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);              
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW] = 1;
+              row_override[LCD_STATUS_ROW-1] = 1;
               break;
           } // switch 
         } //if (preset_encoders_state != ENCODER_IDLE)
@@ -3762,7 +3762,7 @@ void update_display(){
 
     static int last_clock_seconds = 0;
 
-    if (!row_override[LCD_HHMMSS_CLOCK_ROW]){
+    if (!row_override[LCD_HHMMSS_CLOCK_ROW-1]){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
@@ -3805,7 +3805,7 @@ void update_display(){
 
   // OPTION_DISPLAY_HHMM_CLOCK **************************************************************************************************
   #if defined(OPTION_DISPLAY_HHMM_CLOCK) && defined(FEATURE_CLOCK)
-    if (!row_override[LCD_HHMM_CLOCK_ROW]){
+    if (!row_override[LCD_HHMM_CLOCK_ROW-1]){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
@@ -3840,7 +3840,7 @@ void update_display(){
 
   // OPTION_DISPLAY_GPS_INDICATOR ********************************************************************
   #if defined(OPTION_DISPLAY_GPS_INDICATOR) && defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
-    if (((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) && (!row_override[LCD_GPS_INDICATOR_ROW])){
+    if (((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) && (!row_override[LCD_GPS_INDICATOR_ROW-1])){
       if (LCD_GPS_INDICATOR_POSITION == LEFT){
         k3ngdisplay.print_left_fixed_field_size(GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
       }
@@ -3859,7 +3859,7 @@ void update_display(){
 
     // static unsigned long last_moon_tracking_check_time = 0;
 
-    if (!row_override[LCD_MOON_TRACKING_ROW]){
+    if (!row_override[LCD_MOON_TRACKING_ROW-1]){
       if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
         update_moon_position();
         last_moon_tracking_check_time = millis();
@@ -3896,7 +3896,7 @@ void update_display(){
 
   // static unsigned long last_sun_tracking_check_time = 0;
 
-  if (!row_override[LCD_SUN_TRACKING_ROW]){
+  if (!row_override[LCD_SUN_TRACKING_ROW-1]){
     if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
       update_sun_position();
       last_sun_tracking_check_time = millis();
@@ -3936,7 +3936,7 @@ void update_display(){
   static unsigned long last_hhmm_clock_maidenhead_switch_time = 0;
 
 
-  if (!row_override[LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW]){
+  if (!row_override[LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1]){
     if ((millis()-last_hhmm_clock_maidenhead_switch_time) > 5000){
       if (displaying_clock){
         displaying_clock = 0;
@@ -3987,7 +3987,7 @@ void update_display(){
 
     static int last_clock_seconds = 0;
 
-    if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
+    if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1]){    
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
@@ -4037,7 +4037,7 @@ void update_display(){
 
       // static unsigned long last_moon_tracking_check_time = 0;
 
-      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW])  && (moon_tracking_active)) {
+      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1])  && (moon_tracking_active)) {
         if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
           update_moon_position();
           last_moon_tracking_check_time = millis();
@@ -4069,7 +4069,7 @@ void update_display(){
     #ifdef FEATURE_SUN_TRACKING
       // static unsigned long last_sun_tracking_check_time = 0;
 
-      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW]) && (sun_tracking_active)){
+      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1]) && (sun_tracking_active)){
         if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
           update_sun_position();
           last_sun_tracking_check_time = millis();
@@ -4105,7 +4105,7 @@ void update_display(){
 
     static byte big_clock_last_clock_seconds = 0;
   
-    if (!row_override[LCD_BIG_CLOCK_ROW]){    
+    if (!row_override[LCD_BIG_CLOCK_ROW-1]){    
       update_time();
       k3ngdisplay.print_center_entire_row(clock_string(),LCD_BIG_CLOCK_ROW-1,0);
       if (big_clock_last_clock_seconds != clock_seconds) {
