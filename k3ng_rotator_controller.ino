@@ -503,7 +503,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016071801"
+#define CODE_VERSION "2.0.2016090701"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
