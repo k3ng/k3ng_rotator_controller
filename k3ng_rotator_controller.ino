@@ -496,6 +496,9 @@
     2.0.20160090701
       I screwed up.  I blew away F6FVY's pull request 29.  Restoring that.  There was a bug in the merged code that caused compile issue I was working on in 2.0.2016083001
 
+    2.0.2016090702
+      Implemented simpler fix for issue 30 - incorrect index for row_override: byte row_override[LCD_ROWS+1];
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -503,7 +506,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016090701"
+#define CODE_VERSION "2.0.2016090702"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3382,7 +3385,7 @@ void update_display(){
   byte force_display_update_now = 0;
   char workstring[32] = "";
   char workstring2[32] = "";
-  byte row_override[LCD_ROWS];
+  byte row_override[LCD_ROWS+1];
 
   for (int x = 0;x < LCD_ROWS;x++){row_override[x] = 0;}
 
