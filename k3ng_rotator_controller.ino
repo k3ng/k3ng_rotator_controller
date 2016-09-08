@@ -493,6 +493,9 @@
       Re-merged changes manually from dfannin submitted issue 30 - incorrect index for row_override; pull request 31
       (Couldn't get pull from git to compile correctly, not sure why)
 
+    2.0.20160090701
+      I screwed up.  I blew away F6FVY's pull request 29.  Restoring that.  There was a bug in the merged code that caused compile issue I was working on in 2.0.2016083001
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -500,7 +503,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016083001"
+#define CODE_VERSION "2.0.2016071801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -705,6 +708,14 @@ struct config_t {
   byte el_stepper_motor_last_pin_state;
   byte az_stepper_motor_last_direction;
   byte el_stepper_motor_last_direction;
+#ifdef FEATURE_TWO_DECIMAL_PLACE_HEADINGS
+  long azimuth_starting_point;
+  long azimuth_rotation_capability;
+#else
+  int azimuth_starting_point;
+  int azimuth_rotation_capability;
+#endif
+  byte brake_az_disabled;
 } configuration;
 
 
@@ -2274,7 +2285,7 @@ void check_brake_release() {
 void brake_release(byte az_or_el, byte operation){
 
   if (az_or_el == AZ) {
-    if (brake_az) {
+    if (brake_az && (configuration.brake_az_disabled == 0)) {
       if (operation == BRAKE_RELEASE_ON) {
         digitalWriteEnhanced(brake_az, BRAKE_ACTIVE_STATE);
         brake_az_engaged = 1;
@@ -3525,7 +3536,7 @@ void update_display(){
           }
         }
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-        row_override[LCD_STATUS_ROW-1] = 1;
+        row_override[LCD_STATUS_ROW] = 1;
       }
 
       #if defined(FEATURE_PARK)
@@ -3536,12 +3547,12 @@ void update_display(){
           switch(park_status){
             case PARKED: 
               k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW-1] = 1;
+              row_override[LCD_STATUS_ROW] = 1;
               park_message_in_effect = 1;
               break;              
             case PARK_INITIATED:
               k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW-1] = 1;
+              row_override[LCD_STATUS_ROW] = 1;
               park_message_in_effect = 1;
               break;
             case NOT_PARKED: 
@@ -3556,7 +3567,7 @@ void update_display(){
           if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
             park_message_in_effect = 0;
           } else {
-            row_override[LCD_STATUS_ROW-1] = 1;
+            row_override[LCD_STATUS_ROW] = 1;
             switch(park_status){
               case PARKED: 
                 k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
@@ -3586,7 +3597,7 @@ void update_display(){
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-          row_override[LCD_STATUS_ROW-1] = 1;
+          row_override[LCD_STATUS_ROW] = 1;
         }
       #endif //FEATURE_AZ_PRESET_ENCODER
 
@@ -3606,7 +3617,7 @@ void update_display(){
           dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
-          row_override[LCD_STATUS_ROW-1] = 1;
+          row_override[LCD_STATUS_ROW] = 1;
         } else {
           if (current_az_state() == ROTATING_CW) {
             strcpy(workstring,CW_STRING);
@@ -3629,7 +3640,7 @@ void update_display(){
           dtostrf(target_elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
-          row_override[LCD_STATUS_ROW-1] = 1;
+          row_override[LCD_STATUS_ROW] = 1;
         } else {
           if (current_el_state() == ROTATING_UP) {
             strcat(workstring,UP_STRING);
@@ -3651,12 +3662,12 @@ void update_display(){
           switch(park_status){
             case PARKED: 
               k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW-1] = 1;
+              row_override[LCD_STATUS_ROW] = 1;
               park_message_in_effect = 1;
               break;              
             case PARK_INITIATED:
               k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW-1] = 1;
+              row_override[LCD_STATUS_ROW] = 1;
               park_message_in_effect = 1;
               break;
             case NOT_PARKED: 
@@ -3671,7 +3682,7 @@ void update_display(){
           if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
             park_message_in_effect = 0;
           } else {
-            row_override[LCD_STATUS_ROW-1] = 1;
+            row_override[LCD_STATUS_ROW] = 1;
             switch(park_status){
               case PARKED: 
                 k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
@@ -3699,7 +3710,7 @@ void update_display(){
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-          row_override[LCD_STATUS_ROW-1] = 1;
+          row_override[LCD_STATUS_ROW] = 1;
         }
       #endif //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER) 
 
@@ -3722,7 +3733,7 @@ void update_display(){
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW-1] = 1;
+              row_override[LCD_STATUS_ROW] = 1;
               break;
             case ENCODER_EL_PENDING:
               strcpy(workstring,EL_TARGET_STRING);
@@ -3730,7 +3741,7 @@ void update_display(){
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW-1] = 1;
+              row_override[LCD_STATUS_ROW] = 1;
               break;
             case ENCODER_AZ_EL_PENDING:
               strcpy(workstring,TARGET_STRING);
@@ -3742,7 +3753,7 @@ void update_display(){
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);              
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
-              row_override[LCD_STATUS_ROW-1] = 1;
+              row_override[LCD_STATUS_ROW] = 1;
               break;
           } // switch 
         } //if (preset_encoders_state != ENCODER_IDLE)
@@ -3758,7 +3769,7 @@ void update_display(){
 
     static int last_clock_seconds = 0;
 
-    if (!row_override[LCD_HHMMSS_CLOCK_ROW-1]){
+    if (!row_override[LCD_HHMMSS_CLOCK_ROW]){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
@@ -3801,7 +3812,7 @@ void update_display(){
 
   // OPTION_DISPLAY_HHMM_CLOCK **************************************************************************************************
   #if defined(OPTION_DISPLAY_HHMM_CLOCK) && defined(FEATURE_CLOCK)
-    if (!row_override[LCD_HHMM_CLOCK_ROW-1]){
+    if (!row_override[LCD_HHMM_CLOCK_ROW]){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
@@ -3836,7 +3847,7 @@ void update_display(){
 
   // OPTION_DISPLAY_GPS_INDICATOR ********************************************************************
   #if defined(OPTION_DISPLAY_GPS_INDICATOR) && defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
-    if (((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) && (!row_override[LCD_GPS_INDICATOR_ROW-1])){
+    if (((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) && (!row_override[LCD_GPS_INDICATOR_ROW])){
       if (LCD_GPS_INDICATOR_POSITION == LEFT){
         k3ngdisplay.print_left_fixed_field_size(GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
       }
@@ -3855,7 +3866,7 @@ void update_display(){
 
     // static unsigned long last_moon_tracking_check_time = 0;
 
-    if (!row_override[LCD_MOON_TRACKING_ROW-1]){
+    if (!row_override[LCD_MOON_TRACKING_ROW]){
       if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
         update_moon_position();
         last_moon_tracking_check_time = millis();
@@ -3892,7 +3903,7 @@ void update_display(){
 
   // static unsigned long last_sun_tracking_check_time = 0;
 
-  if (!row_override[LCD_SUN_TRACKING_ROW-1]){
+  if (!row_override[LCD_SUN_TRACKING_ROW]){
     if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
       update_sun_position();
       last_sun_tracking_check_time = millis();
@@ -3932,7 +3943,7 @@ void update_display(){
   static unsigned long last_hhmm_clock_maidenhead_switch_time = 0;
 
 
-  if (!row_override[LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1]){
+  if (!row_override[LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW]){
     if ((millis()-last_hhmm_clock_maidenhead_switch_time) > 5000){
       if (displaying_clock){
         displaying_clock = 0;
@@ -3983,7 +3994,7 @@ void update_display(){
 
     static int last_clock_seconds = 0;
 
-    if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1]){    
+    if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (clock_hours < 10) {
@@ -4033,7 +4044,7 @@ void update_display(){
 
       // static unsigned long last_moon_tracking_check_time = 0;
 
-      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1])  && (moon_tracking_active)) {
+      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW])  && (moon_tracking_active)) {
         if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
           update_moon_position();
           last_moon_tracking_check_time = millis();
@@ -4065,7 +4076,7 @@ void update_display(){
     #ifdef FEATURE_SUN_TRACKING
       // static unsigned long last_sun_tracking_check_time = 0;
 
-      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1]) && (sun_tracking_active)){
+      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW]) && (sun_tracking_active)){
         if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
           update_sun_position();
           last_sun_tracking_check_time = millis();
@@ -4101,7 +4112,7 @@ void update_display(){
 
     static byte big_clock_last_clock_seconds = 0;
   
-    if (!row_override[LCD_BIG_CLOCK_ROW-1]){    
+    if (!row_override[LCD_BIG_CLOCK_ROW]){    
       update_time();
       k3ngdisplay.print_center_entire_row(clock_string(),LCD_BIG_CLOCK_ROW-1,0);
       if (big_clock_last_clock_seconds != clock_seconds) {
@@ -4194,10 +4205,16 @@ void read_settings_from_eeprom(){
         debug.print(configuration.azimuth_offset,2);
         debug.print("\nel_offset:");
         debug.print(configuration.elevation_offset,2);
+        debug.print("az starting point:");
+        debug.print(configuration.azimuth_starting_point);
+        debug.print("az rotation capability:");
+        debug.print(configuration.azimuth_rotation_capability);
         debug.println("");
       }
     #endif // DEBUG_EEPROM
 
+    azimuth_starting_point = configuration.azimuth_starting_point;
+    azimuth_rotation_capability = configuration.azimuth_rotation_capability;
 
     #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER)
       az_incremental_encoder_position = configuration.last_az_incremental_encoder_position;
@@ -4276,6 +4293,10 @@ void initialize_eeprom_with_defaults(){
   configuration.last_el_incremental_encoder_position = 0;
   configuration.azimuth_offset = 0;
   configuration.elevation_offset = 0;
+  configuration.azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
+  configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
+  configuration.brake_az_disabled = (brake_az ? 1 : 0);
+
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
   #else
@@ -7588,7 +7609,7 @@ void service_request_queue(){
           }
         } else {
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-          debug.print("->F");
+              debug.print("->F");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
           if ((az_request_parm > (360 * HEADING_MULTIPLIER)) && (az_request_parm <= ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER))) {
             target_azimuth = az_request_parm - (360 * HEADING_MULTIPLIER);
@@ -7600,9 +7621,9 @@ void service_request_queue(){
             }
           } else {
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug.print(" error: bogus azimuth request:");
-            debug.print(az_request_parm);
-            debug.println("");
+                debug.print(" error: bogus azimuth request:");
+                debug.print(az_request_parm);
+                debug.println("");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
             rotator(DEACTIVATE, CW);
             rotator(DEACTIVATE, CCW);
@@ -10023,6 +10044,16 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     #endif // FEATURE_ELEVATION_CONTROL
   #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
 
+#ifdef FEATURE_TWO_DECIMAL_PLACE_HEADINGS
+  long new_azimuth_starting_point;
+  long new_azimuth_rotation_capability;
+#else
+  int new_azimuth_starting_point;
+  int new_azimuth_rotation_capability;
+#endif
+
+  byte brake_az_disabled;
+
   char temp_string[20] = "";
 
   switch (input_buffer[1]) {
@@ -10053,7 +10084,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         strcpy(return_string, "Error.  Format: \\Ax[x][x] ");
       }
       break;
-        #else // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+   #else // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
     case 'A':      // \Ax[xxx][.][xxxx] - manually set azimuth
       place_multiplier = 1;
       for (int x = input_buffer_index - 1; x > 1; x--) {
@@ -10080,8 +10111,87 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       }
 
       break;
-      #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+   #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
 
+    case 'I':        // \Ix[x][x] - set az starting point
+      new_azimuth_starting_point = 9999;
+      switch (input_buffer_index) {
+        case 2:
+          new_azimuth_starting_point = configuration.azimuth_starting_point;
+          break;
+        case 3:
+          new_azimuth_starting_point = (input_buffer[2] - 48);
+          break;
+        case 4:
+          new_azimuth_starting_point = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+          break;
+        case 5:
+          new_azimuth_starting_point = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+          break;
+      }
+      if ((new_azimuth_starting_point  >= 0) && (new_azimuth_starting_point  < 360)) {
+        if (input_buffer_index > 2) {
+          azimuth_starting_point = configuration.azimuth_starting_point = new_azimuth_starting_point;
+          configuration_dirty = 1;
+        }
+        strcpy(return_string, "Azimuth starting point set to ");
+        dtostrf(new_azimuth_starting_point, 0, 0, temp_string);
+        strcat(return_string, temp_string);
+      } else {
+        strcpy(return_string, "Error.  Format: \\Ix[x][x]");
+      }
+      break;
+
+    case 'J':        // \Jx[x][x] - set az rotation capability
+      new_azimuth_rotation_capability = 9999;
+      switch (input_buffer_index) {
+        case 2:
+          new_azimuth_rotation_capability = configuration.azimuth_rotation_capability;
+          break;
+        case 3:
+          new_azimuth_rotation_capability = (input_buffer[2] - 48);
+          break;
+        case 4:
+          new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+          break;
+        case 5:
+          new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+          break;
+      }
+      if ((new_azimuth_rotation_capability >= 0) && (new_azimuth_rotation_capability <= 450)) {
+        if (input_buffer_index > 2) {
+          azimuth_rotation_capability = configuration.azimuth_rotation_capability = new_azimuth_rotation_capability;
+          configuration_dirty = 1;
+        }
+        strcpy(return_string, "Azimuth rotation capability set to ");
+        dtostrf(new_azimuth_rotation_capability, 0, 0, temp_string);
+        strcat(return_string, temp_string);
+      } else {
+        strcpy(return_string, "Error.  Format: \\Jx[x][x]");
+      }
+      break;
+
+    case 'K':          // \Kx   - Force disable the az brake even if a pin is defined (x: 0 = enable, 1 = disable)
+      brake_az_disabled = 2;
+      if (input_buffer_index == 2) {
+        brake_az_disabled = configuration.brake_az_disabled;
+      } else {
+          switch (input_buffer[2]) {
+            case '0': brake_az_disabled = 0; break;
+            case '1': brake_az_disabled = 1; break;
+          }
+      }
+      if ((brake_az_disabled >=0) && (brake_az_disabled <= 1)) {
+        if (input_buffer_index > 2) {
+          configuration.brake_az_disabled = brake_az_disabled;
+          configuration_dirty = 1;
+        }
+        strcpy(return_string, "Az brake ");
+        strcat(return_string, (brake_az_disabled ? "disabled." : "enabled."));
+      } else {
+        strcpy(return_string, "Error.");
+      }
+      break;
 
     #if defined(FEATURE_ELEVATION_CONTROL)
     #if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
@@ -10201,21 +10311,27 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           #endif // FEATURE_CLOCK
 
 
-    case 'D': 
+    case 'D':                                                                      // \D - Debug
       if (debug_mode & source_port) {
         debug_mode = debug_mode & (~source_port);
       } else {
         debug_mode = debug_mode | source_port;
       } 
-      break;                                              // D - Debug
+      break;
 
-    case 'E':                                                                      // E - Initialize eeprom
+    case 'E':                                                                      // \E - Initialize eeprom
       initialize_eeprom_with_defaults();
       strcpy(return_string, "Initialized eeprom, resetting unit in 5 seconds...");
       reset_the_unit = 1;
       break;
 
-    case 'L':                                                                      // L - rotate to long path
+    case 'Q':                                                                      // \Q - Save settings in the EEPROM and restart
+      write_settings_to_eeprom();
+      strcpy(return_string, "Settings saved in EEPROM, resetting unit in 5 seconds...");
+      reset_the_unit = 1;
+      break;
+
+    case 'L':                                                                      // \L - rotate to long path
       if (azimuth < (180 * HEADING_MULTIPLIER)) {
         submit_request(AZ, REQUEST_AZIMUTH, (azimuth + (180 * HEADING_MULTIPLIER)), 15);
       } else {
@@ -11958,6 +12074,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       
       break;                 
       case 'Z':                                           // Z - Starting point toggle
+
         if (azimuth_starting_point == 180) {
           azimuth_starting_point = 0;
           strcpy(return_string,"N");
