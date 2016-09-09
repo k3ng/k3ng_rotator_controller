@@ -495,9 +495,22 @@
 
     2.0.20160090701
       I screwed up.  I blew away F6FVY's pull request 29.  Restoring that.  There was a bug in the merged code that caused compile issue I was working on in 2.0.2016083001
+        New Commands (which need to be documented):
+
+            \Ix[x][x] - set az starting point
+            \I - display the current az starting point
+            \Jx[x][x] - set az rotation capability
+            \J - display the current az rotation capability
+            \Kx - force disable the az brake even if a pin is defined (x: 0 = enable, 1 = disable)
+            \K - display the current az brake state
+            \Q - Save settings in the EEPROM and restart
 
     2.0.2016090702
-      Implemented simpler fix for issue 30 - incorrect index for row_override: byte row_override[LCD_ROWS+1];
+      Implemented simpler fix for issue 30 - incorrect index for row_override: byte row_override[LCD_ROWS+1]
+
+    2.0.2016090801
+      Corrected error in FEATURE_ROTARY_ENCODER_SUPPORT ttable (thanks, frye.dale)
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
@@ -506,7 +519,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016090702"
+#define CODE_VERSION "2.0.2016090801"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -776,12 +789,21 @@ byte current_az_speed_voltage = 0;
       { 0x3,  0x3,  0x4, 0x10 }, { 0x3,  0x5,  0x3, 0x20 }
     };
   #else                                      // Use the full-step state table (emits a code at 00 only)
+    // const unsigned char ttable[7][4] = {                   // corrected 2016-09-08 
+    //   { 0x0, 0x2, 0x4, 0x0  }, { 0x3, 0x0, 0x1, 0x10 },
+    //   { 0x3, 0x2, 0x0, 0x0  }, { 0x3, 0x2, 0x1, 0x0  },
+    //   { 0x6, 0x0, 0x4, 0x0  }, { 0x6, 0x5, 0x0, 0x10 },
+    //   { 0x6, 0x5, 0x4, 0x0  },
+    // };
+
     const unsigned char ttable[7][4] = {
-      { 0x0, 0x2, 0x4, 0x0  }, { 0x3, 0x0, 0x1, 0x10 },
-      { 0x3, 0x2, 0x0, 0x0  }, { 0x3, 0x2, 0x1, 0x0  },
-      { 0x6, 0x0, 0x4, 0x0  }, { 0x6, 0x5, 0x0, 0x10 },
-      { 0x6, 0x5, 0x4, 0x0  },
+      {0x0, 0x2, 0x4,  0x0}, {0x3, 0x0, 0x1, 0x10},
+      {0x3, 0x2, 0x0,  0x0}, {0x3, 0x2, 0x1,  0x0},
+      {0x6, 0x0, 0x4,  0x0}, {0x6, 0x5, 0x0, 0x20},
+      {0x6, 0x5, 0x4,  0x0},
     };
+
+
   #endif // OPTION_ENCODER_HALF_STEP_MODE
 
   #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder State Tables
