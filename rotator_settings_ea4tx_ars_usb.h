@@ -1,9 +1,19 @@
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
-#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator
-                                                
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees
+#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM                                                
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM
+/* 
+
+  Use these commands to change the azimuth starting point and rotation capability if you have already ran the code one which would have 
+  initialized the EEPROM:
+
+            \Ix[x][x] - set az starting point
+            \I - display the current az starting point
+            \Jx[x][x] - set az rotation capability
+            \J - display the current az rotation capability
+            \Q - Save settings in the EEPROM and restart            
+*/   
                                                 
 #define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
 

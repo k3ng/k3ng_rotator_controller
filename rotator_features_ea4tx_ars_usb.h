@@ -14,6 +14,8 @@
 //#define LANGUAGE_FRENCH
 //#define LANGUAGE_DUTCH
 
+//#define FEATURE_TEST_DISPLAY_AT_STARTUP
+
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 
 #define FEATURE_EL_POSITION_POTENTIOMETER
@@ -56,7 +58,6 @@
 #define DEFAULT_DEBUG_STATE 0// this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP
-#define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
 // #define DEBUG_SERVICE_REQUEST_QUEUE

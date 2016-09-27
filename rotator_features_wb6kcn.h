@@ -19,6 +19,7 @@
 //#define FEATURE_ETHERNET
 #define FEATURE_STEPPER_MOTOR    // requires this library: https://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
 //#define FEATURE_AUTOCORRECT 
+// #define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 //#define LANGUAGE_SPANISH
@@ -155,7 +156,6 @@
 #define DEFAULT_DEBUG_STATE 0// this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP
-// #define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
 // #define DEBUG_SERVICE_REQUEST_QUEUE

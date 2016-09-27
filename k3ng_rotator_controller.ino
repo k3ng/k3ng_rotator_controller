@@ -72,287 +72,32 @@
 
           Rule #4: Have fun.
 
-  
-  New in this release:
-  
-   HH-12 encoder support 
-   OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
-   \P PWM command is now \W
-   \P is Park command
-   park_in_progress_pin  // goes high when a park has been initiated and rotation is in progress 
-   parked_pin            // goes high when in a parked position 
-    heading_reading_inhibit_pin 
-    FEATURE_LIMIT_SENSE 
-   #define az_limit_sense_pin 0  // input - low stops azimuthal rotation 
-   #define el_limit_sense_pin 0  // input - low stops elevation rotation 
-    \Axxx command - manually set azimuth, xxx = azimuth (FEATURE_AZ_POSITION_ROTARY_ENCODER or FEATURE_AZ_POSITION_PULSE_INPUT only) 
-    \Bxxx command - manually set elevation, xxx = elevation (FEATURE_EL_POSITION_POTENTIOMETER or FEATURE_EL_POSITION_ROTARY_ENCODER only) 
-    fixed bug with preset encoder start and kill button
-    FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-    FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-    OPTION_INCREMENTAL_ENCODER_PULLUPS
-   #define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 8000.0
-   #define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 8000.0
-    AZIMUTH_STARTING_POINT_DEFAULT and AZIMUTH_ROTATION_CAPABILITY_DEFAULT are now persistent
-    Yaesu P35, P45, and Z commands no longer write to eeprom 
-    control_port points to the hardware port for computer interface
-    remote_unit_port points to the hardware port for interfacing to remote unit
-    removed OPTION_SERIAL1, 2, 3, 4
-    SS command: SS0 = control port, SS1 = remote unit port
-    No longer need to manually uncomment hh12.h or object declarations
-    No longer need to manually uncomment LiquidCrystal lcd() 
-    No longer need to manually uncomment Adafruit_ADXL345 accel 
-    No longer need to manually uncomment ADXL345 accel 
-    No longer need to manually uncomment Adafruit_LSM303 lsm;
-    No longer need to manually uncomment HMC5883L compass;
-    FEATURE_4_BIT_LCD_DISPLAY 
-    FEATURE_ADAFRUIT_I2C_LCD 
-    FEATURE_YOURDUINO_I2C_LCD 
-    FEATURE_RFROBOT_I2C_DISPLAY 
-    No longer need to uncomment:
-     FEATURE_LCD_DISPLAY 
-     FEATURE_I2C_LCD 
-     any include files 
-    serial led duration now set by SERIAL_LED_TIME_MS
-   #define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.) 
-   #define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port 
-    start of remote unit pin control
-    remote unit pin control (add 100 to a pin number define to map to remote unit pin) 
-    FEATURE_CLOCK 
-    FEATURE_MOON_TRACKING 
-   #define DEFAULT_LATITUDE 40.889958 
-   #define DEFAULT_LONGITUDE -75.585972 
-  
-   #define INTERNAL_CLOCK_CORRECTION 0.00145
-  
-    \C - show clock 
-    \O - set clock \OYYYYMMDDHHmm 
-    \Mx - x = 0: deactive moon tracking; x = 1: activate moon tracking 
-    \Gxxxxxx - set coordinates via grid square (example: \GFN20EV) 
-  
-    Park is now deactivated when issuing a Yaesu command (other than C) or when doing manual rotation
-    FEATURE_GPS
-   #define GPS_PORT_MAPPED_TO &Serial2 
-   #define GPS_PORT_BAUD_RATE 9600 
-   #define SYNC_TIME_WITH_GPS 1 
-   #define SYNC_COORDINATES_WITH_GPS 1 
-   #define GPS_SYNC_PERIOD_SECONDS 10  // how long to consider internal clock syncronized after a GPS reading 
-   #define GPS_VALID_FIX_AGE_MS 10000  // consider a GPS reading valid if the fix age is less than this 
-    FEATURE_SUN_TRACKING 
-      \Ux - x = 0: deactive sun tracking; x = 1: activate sun tracking  
-    FEATURE_AZ_POSITION_INCREMENTAL_ENCODER & FEATURE_EL_POSITION_INCREMENTAL_ENCODER coding
-    Updated debug output format
-    \XS - calibration az and el to sun heading - there are calculation bugs
-    fixed initialize_serial() compilaton error when neither yaesu or easycom protocol is selected in features
-    fixed bugs in \XS and \XM
-    \XS and\XM now working on all sensor types 
-    moon_tracking_active_pin   
-    sun_tracking_active_pin      
-    moon_tracking_activate_line    
-    sun_tracking_activate_line     
-    moon_tracking_button  
-    sun_tracking_button   
-    \A azimuth calibration now also works with sensors other than rotary encoders and pulse input
-    \B elevation calibration now also works with sensors other than rotary encoders and pulse input
-    OPTION_BUTTON_RELEASE_NO_SLOWDOWN 
-    Fixed God-awful bug that caused Arduino to crash when running FEATURE_GPS.  Note to self: never declare a char in a switch case.  It causes unpredicatable, unexplainable evil stuff to occur.
-    Fixed bug with elevation PWM
-     gps_sync pin - goes high when clock is GPS synchronized 
-     FEATURE_RTC_PCF8583 
-    \O command also programs realtime clocks now
-    Fixed bug in PWM outputs when changing direction
-    Ethernet now working with backslash commands, Yaesu commands, and Easycom commands
-    Fixed bug in Easycom (non-standard) AZ and EL commands
-    Ethernet remote unit slave support (slave only, master using ethernet not done yet)
-    #define GPS_MIRROR_PORT &Serial3   
-    OPTION_DISPLAY_SMALL_CLOCK
-      #define LCD_SMALL_CLOCK_POSITION LEFT
-    OPTION_DISPLAY_GPS_INDICATOR
-      #define LCD_GPS_INDICATOR_POSITION RIGHT
-    OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
-      #define LCD_MOON_TRACKING_ROW 3
-      #define LCD_MOON_TRACKING_UPDATE_INTERVAL 5000    
-    OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
-      #define LCD_SUN_TRACKING_ROW 4
-      #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000  
-    #define LCD_ROWS 4  
-    fixed bug with Yourduino LCD display initialization (thanks PA3FPQ)
-    added GPS counters to debug output
-    FEATURE_POWER_SWITCH
-      #define POWER_SWITCH_IDLE_TIMEOUT 15  (unit: minutes)
-      #define power_switch 0
-    OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
-      #define LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW 3
-    OPTION_DISPLAY_BIG_CLOCK
-    #define GPS_UPDATE_LATENCY_COMPENSATION_MS 200
-    #define AZIMUTH_CALIBRATION_FROM_ARRAY {180,630} 
-    #define AZIMUTH_CALIBRATION_TO_ARRAY {180,630}
-    #define ELEVATION_CALIBRATION_FROM_ARRAY {-180,0,180}
-    #define ELEVATION_CALIBRATION_TO_ARRAY {-180,0,180}
-    #define rotate_cw_ccw  0
-    #define az_stepper_motor_direction 0
-    #define el_stepper_motor_direction 0
-    bug fix for long clock display
-    performance improvement for az / el display on LCD
-    #define az_stepper_motor_pulse 0
-    #define el_stepper_motor_pulse 0  
-    OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD 
-    #define LCD_SMALL_CLOCK_AND_MAIDENHEAD_POSITION 
-    #define LCD_SMALL_CLOCK_AND_MAIDENHEAD_ROW 4 
-    #define LCD_GPS_INDICATOR_ROW 1 
-    OPTION_EXTERNAL_ANALOG_REFERENCE
-    more debug_print conversion
 
-    OPTION_DISPLAY_SMALL_CLOCK renamed to OPTION_DISPLAY_HHMM_CLOCK 
-    LCD_SMALL_CLOCK_POSITION renamed to LCD_HHMM_CLOCK_POSITION 
-    OPTION_DISPLAY_HHMMSS_CLOCK 
-    OPTION_DISPLAY_DISABLE_DIRECTION_STATUS 
-    OPTION_DISPLAY_SMALL_CLOCK_AND_MAIDENHEAD renamed to OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD 
-    OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD 
+    Recent Update History
 
-    #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT  
-    #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT 
-    #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION LEFT 
-    #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1 
-    #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION LEFT 
-    #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 1 
+    Prior to 2.0.2015040401 (May still need to be documented in the wiki):
 
-    OPTION_DISPLAY_DISABLE_DIRECTION_STATUS changed to OPTION_DISPLAY_DIRECTION_STATUS 
-    worked on FEATURE_TWO_DECIMAL_PLACE_HEADINGS
-    LANGUAGE_ENGLISH
-
-    Easycom improvements - space and LF are now also command delimiters.  Also fixed bug with one decimal place.  Works with PSTRotator
-    Fixed issue with LCD display updating when target az or target el was changed during rotation
-    I2C_LCD_COLOR also applies to Yourduino LCD display
-
-    HH-12 elevation bug fix
-
-    FEATURE_MASTER_WITH_SERIAL_SLAVE
-    FEATURE_MASTER_WITH_ETHERNET_SLAVE
-    FEATURE_EL_POSITION_MEMSIC_2125  under development - not working yet
-
-    fixed a bug with azimuth and elevation offset zeroing out first decimal place
-    Ethernet master/slave link!
-    #define ETHERNET_SLAVE_IP_ADDRESS 192,168,1,173
-    #define ETHERNET_SLAVE_TCP_PORT 23
-    #define ETHERNET_SLAVE_RECONNECT_TIME_MS 250
-
-    Changed master/slave AZ and EL command result format: AZxxx.xxxxxx EL+xxx.xxxxxx
-    Slave CL command
-
-    OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
-
-    fixed "if (clock_status == SLAVE_SYNC) {clock_status = FREE_RUNNING;}" compile error
-
-    OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-
-    OPTION_DISABLE_HMC5883L_ERROR_CHECKING
-    HARDWARE_EA4TX_ARS_USB
-    HARDWARE_M0UPU
-    rotator_hardware.h file
-    rotator_features_ea4tx_ars_usb.h
-    rotator_pins_ea4tx_ars_usb.h
-    #define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
-    #define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
-
-    FEATURE_EL_POSITION_INCREMENTAL_ENCODER now does 360 degrees of rotation rather than 720
-
-    OPTION_PRESET_ENCODER_0_360_DEGREES
-
-    service_rotation() - fixed rollover bug with az and el slow down
-
-    Fixed decimal place issue with Easycom AZ and EL query commands
-    FEATURE_EL_POSITION_INCREMENTAL_ENCODER - fixed storage and retrieval of elevation in eeprom
-    Bug fix - stop command wouldn't work when in slow down
-    AZ_INITIALLY_IN_SLOW_DOWN_PWM
-    EL_INITIALLY_IN_SLOW_DOWN_PWM 
-
-    Fixed compilation error when FEATURE_JOYSTICK_CONTROL is activated and FEATURE_ELEVATION_CONTROL is disabled
-
-    FEATURE_ANALOG_OUTPUT_PINS (rotator_features.h)   (documented 2015-04-16)
-    FEATURE_AZ_POSITION_LSM303 is now FEATURE_AZ_POSITION_ADAFRUIT_LSM303 (rotator_features.h) (documented 2015-04-16)
-    FEATURE_EL_POSITION_LSM303 is now FEATURE_EL_POSITION_ADAFRUIT_LSM303 (rotator_features.h) (documented 2015-04-16)
-    LANGUAGE_CZECH (rotator_features.h) (documented)
-
-    FEATURE_AZ_POSITION_POLOLU_LSM303 (rotator_features.h)  (code contributed by AD0CZ) (documented 2015-04-16)
-    FEATURE_EL_POSITION_POLOLU_LSM303 (rotator_features.h)  (documented 2015-04-16)
-    #define POLOLU_LSM_303_MIN_ARRAY {+59, +19, -731} (rotator_settings.h) (documented 2015-04-16)
-    #define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14} (rotator_settings.h) (documented 2015-04-16)
-    DEBUG_POLOLU_LSM303_CALIBRATION (rotator_features.h)
-
-    bug fixed with brake_release() affecting elevation brake (thanks Paolo, IT9IPQ)
-
-    LANGUAGE_ITALIAN code donated by Paolo, IT9IPQ
-    OPTION_DISPLAY_VERSION_ON_STARTUP code provided by Paolo, IT9IPQ
-
-    Fixed bug with LANGUAGE_CZECH (thanks Radek, OK2NMA)
-
-    Change in Easycom response terminator (now uses whatever command terminator was sent to it)
-    Easycom AZ EL command string response change to +xxx.xx +xxx.xx
-
-    OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
-    LANGUAGE_PORTUGUESE_BRASIL (thanks Ismael, PY4PI)
-
-    check_brake_release() bug fix
-
-    configuration.az_stepper_motor_last_direction, configuration.az_stepper_motor_last_pin_state, configuration.el_stepper_motor_last_direction, configuration.el_stepper_motor_last_pin_state    
- 
-    OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK ; HARDWARE_WB6KCN
-    
-    FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2
-
-    AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION
-    EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION
-
-    OPTION_BLINK_OVERLAP_LED and OPTION_OVERLAP_LED_BLINK_MS setting
-
-    FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION and FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION; pin_sun_pushbutton_calibration, pin_moon_pushbutton_calibration
-
-    Rolled FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE_2 into FEATURE_STEPPER_MOTOR
-
-    Working on FEATURE_AUTOCORRECT
-
-    Bug fix involving FEATURE_AZ_POSITION_HH12_AS5045_SSI and azimuth_offset (thanks Johan, PA3FPQ and Jurgen, PE1LWT)
-    Bug fix - wasn't initializing rotate_cw_ccw (thanks Erick, WB6KCN)
-    Bug fix with OPTION_DISPLAY_VERSION_ON_STARTUP and 2 row displays (thanks Gianfranco, IZ8EWD)
-    OPTION_EL_PULSE_DEBOUNCE code - (thanks Gianfranco, IZ8EWD)
-    #define EL_POSITION_PULSE_DEBOUNCE 500  // in ms
-
-    OPTION_HH12_10_BIT_READINGS in hh12.h (thanks Johan PA3FPQ)
-
-    Correction from Johan PA3FPQ on OPTION_HH12_10_BIT_READINGS
-
-    #define BRAKE_ACTIVE_STATE HIGH
-    #define BRAKE_INACTIVE_STATE LOW
-
-    OPTION_SCANCON_2RMHF3600_INC_ENCODER - thanks Jasper, PA2J
-
-    Fixed compile bug with OPTION_EL_MANUAL_ROTATE_LIMITS) when FEATURE_ELEVATION_CONTROL is not enabled
-
-    Eliminated az_stepper_motor_direction and el_stepper_motor_direction.  Use rotate_* pins instead!
-
-    Self-resetting functionality
-    Fixed bug with OPTION_DISPLAY_DIRECTION_STATUS updating
-
-    Improved the self reset with a non-blocking 5 second delay
-
-    Added remote slave commands:
-      RC - read coordinates (returns RCxx.xxxx -xxx.xxxx)
-      GS - query GPS status (returns GS0 (no sync) or GS1 (sync))  
-
-    OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE 
-
-    reset_pin
-
-    Updated for Arduino 1.6.1
-
-    Fixed compilation issue with FEATURE_ELEVATION_CORRECTION and Arduino 1.6.x
-
-    OPTION_RESET_METHOD_JMP_ASM_0
-    Change /E command to do setup() for system reset
-
-    Fixed calculation issues with FEATURE_ELEVATION_CORRECTION
-    Fixed bug with FEATURE_AZIMUTH_CORRECTION and FEATURE_ELEVATION_CORRECTION rounding off to nearest degree
+        DEBUG_POLOLU_LSM303_CALIBRATION (rotator_features.h)
+        OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
+        LANGUAGE_PORTUGUESE_BRASIL (thanks Ismael, PY4PI)
+        AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION
+        EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION
+        OPTION_BLINK_OVERLAP_LED and OPTION_OVERLAP_LED_BLINK_MS setting
+        FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION and FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION; pin_sun_pushbutton_calibration, pin_moon_pushbutton_calibration
+        Working on FEATURE_AUTOCORRECT
+        OPTION_EL_PULSE_DEBOUNCE code - (thanks Gianfranco, IZ8EWD)
+        #define EL_POSITION_PULSE_DEBOUNCE 500  // in ms
+        OPTION_HH12_10_BIT_READINGS in hh12.h (thanks Johan PA3FPQ)
+        #define BRAKE_ACTIVE_STATE HIGH
+        #define BRAKE_INACTIVE_STATE LOW
+        OPTION_SCANCON_2RMHF3600_INC_ENCODER - thanks Jasper, PA2J
+        Added remote slave commands:
+          RC - read coordinates (returns RCxx.xxxx -xxx.xxxx)
+          GS - query GPS status (returns GS0 (no sync) or GS1 (sync))  
+        OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE 
+        reset_pin
+        OPTION_RESET_METHOD_JMP_ASM_0
+        Change /E command to do setup() for system reset
 
     2.0.2015040401 Changed configuration.azimuth_offset to use raw_azimuth rather than azimuth for calculation
 
@@ -511,6 +256,13 @@
     2.0.2016090801
       Corrected error in FEATURE_ROTARY_ENCODER_SUPPORT ttable (thanks, frye.dale)
 
+    2.0.2016092501
+      Working on FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_LIB and FEATURE_EL_POSITION_ROTARY_ENCODER_USE_LIB
+      Fixed bug with last row of LCD display getting blanked out
+      FEATURE_TEST_DISPLAY_AT_STARTUP
+      Noted in various settings files that AZIMUTH_STARTING_POINT_DEFAULT and AZIMUTH_ROTATION_CAPABILITY_DEFAULT are used only for initializing EEPROM
+      Fixed an issue with FEATURE_AZ_POSITION_HH12_AS5045_SSI and FEATURE_AZ_POSITION_INCREMENTAL_ENCODER using AZIMUTH_STARTING_POINT_DEFAULT rather than azimuth_starting_point variable
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
@@ -519,7 +271,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016090801"
+#define CODE_VERSION "2.0.2016092501"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -546,8 +298,6 @@
 #endif      
   
 #include "rotator_dependencies.h"
-
-//#include "rotator_debug.h"
 
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
   #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
@@ -577,41 +327,56 @@
 #if defined(FEATURE_AZ_POSITION_HMC5883L)
   #include <HMC5883L.h> // required for HMC5883L digital compass support
 #endif
+
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303)
   #include <Adafruit_Sensor.h>    // required for any Adafruit sensor libraries
 #endif
+
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB)
   #include <ADXL345.h>  // required for elevation ADXL345 accelerometer using Love Electronics ADXL345 library
 #endif
+
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB)
   #include <Adafruit_ADXL345_U.h>   // required for elevation ADXL345 accelerometer using Adafruit ADXL345 library (FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB)
 #endif
+
 #if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
   #include <Adafruit_LSM303.h>     // required for azimuth and/or elevation using LSM303 compass and/or accelerometer
 #endif
+
 #ifdef FEATURE_AZ_POSITION_POLOLU_LSM303
   #include <LSM303.h>
 #endif
+
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
   #include <moon2.h>
 #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+
 #ifdef FEATURE_SUN_TRACKING
   #include <sunpos.h>
 #endif // FEATURE_SUN_TRACKING
+
 #ifdef FEATURE_GPS
   #include <TinyGPS.h>
 #endif // FEATURE_GPS
+
 #ifdef FEATURE_RTC_DS1307
   #include <RTClib.h>
 #endif // FEATURE_RTC_DS1307
+
 #ifdef FEATURE_RTC_PCF8583
   #include <PCF8583.h>
 #endif //FEATURE_RTC_PCF8583
+
 #ifdef FEATURE_ETHERNET
   #include <SPI.h>
   #include <Ethernet.h>
 #endif
 
+#if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_LIB) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_LIB)
+  //#define ENCODER_OPTIMIZE_INTERRUPTS
+  #include <Encoder.h>
+#endif    
 
 #include "rotator.h"
 
@@ -1118,7 +883,17 @@ DebugClass debug;
   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
 #endif
 
-  
+#ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_LIB
+  Encoder AZ_ENCODER(az_rotary_position_pin1, az_rotary_position_pin2);
+  long PREV_AZ_POSITION  = 0;
+  long CURRENT_AZ_POSITION;
+#endif
+
+#ifdef FEATURE_EL_POSITION_ROTARY_ENCODER_USE_LIB
+  Encoder EL_ENCODER(el_rotary_position_pin1, el_rotary_position_pin2);
+  long PREV_EL_POSITION  = 0;
+  long CURRENT_EL_POSITION;
+#endif  
 
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
@@ -3409,7 +3184,7 @@ void update_display(){
   char workstring2[32] = "";
   byte row_override[LCD_ROWS+1];
 
-  for (int x = 0;x < LCD_ROWS;x++){row_override[x] = 0;}
+  for (int x = 0;x < (LCD_ROWS+1);x++){row_override[x] = 0;}
 
   k3ngdisplay.clear_pending_buffer();
 
@@ -3920,6 +3695,10 @@ void update_display(){
         }
       }
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_TRACKING_ROW-1,LCD_COLUMNS); 
+    } else {
+      #if defined(DEBUG_DISPLAY)
+        debug.println(F("update_display: OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY row override"));
+      #endif
     }
   #endif //defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
 
@@ -3957,6 +3736,10 @@ void update_display(){
       }
     }
     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SUN_TRACKING_ROW-1,LCD_COLUMNS);
+  } else {
+    #if defined(DEBUG_DISPLAY)
+      debug.println(F("update_display: OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY row override"));
+    #endif
   }
   #endif //defined(OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY) && defined(FEATURE_SUN_TRACKING)
 
@@ -4778,9 +4561,9 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
       #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
-        raw_azimuth = int((360.0-azimuth_hh12.heading()+AZIMUTH_STARTING_POINT_DEFAULT) * HEADING_MULTIPLIER);
+        raw_azimuth = int((360.0-azimuth_hh12.heading()+azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/) * HEADING_MULTIPLIER);
       #else
-        raw_azimuth = int((azimuth_hh12.heading()+AZIMUTH_STARTING_POINT_DEFAULT) * HEADING_MULTIPLIER);
+        raw_azimuth = int((azimuth_hh12.heading()+azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/) * HEADING_MULTIPLIER);
       #endif
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
@@ -4833,7 +4616,7 @@ void read_azimuth(byte force_read){
 */
 
     #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-      if (AZIMUTH_STARTING_POINT_DEFAULT == 0) {
+      if (azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/ == 0) {
         raw_azimuth = (((((az_incremental_encoder_position) / (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0)) * HEADING_MULTIPLIER);
       } else {
         if (az_incremental_encoder_position > (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
@@ -4933,14 +4716,7 @@ void output_debug(){
         #endif
 
         debug.print("\t\t");
-        #ifdef DEBUG_MEMORY
-          void * HP = malloc(4);
-          if (HP) {free(HP);}
-          unsigned long free = (unsigned long)SP - (unsigned long)HP;
-          sprintf(tempstring,"%lu",(unsigned long)free);
-          debug.print(tempstring);
-          debug.print("b free");
-        #endif //DEBUG_MEMORY
+
 
         #ifdef FEATURE_YAESU_EMULATION
           debug.print("\t\tGS-232");
@@ -5028,11 +4804,15 @@ void output_debug(){
           debug.print(") ");
         #endif // FEATURE_AZ_POSITION_POTENTIOMETER
 
-        debug.print("\t[");
+        debug.print(F("\tStart:"));
         debug.print(azimuth_starting_point);
-        debug.print("+");
-        debug.print(azimuth_rotation_capability);
-        debug.print("]");
+        debug.print(F(" Rotation Capability:"));
+        debug.print(azimuth_rotation_capability,0);
+        debug.print(F(" Raw Az Range: "));
+        debug.print(azimuth_starting_point);
+        debug.print("-");
+        debug.print((azimuth_starting_point+azimuth_rotation_capability),0);
+        debug.println("");
 
         #ifndef HARDWARE_EA4TX_ARS_USB
           debug.print("  AZ Speed Norm: ");
@@ -5044,9 +4824,9 @@ void output_debug(){
             debug.print(analogReadEnhanced(az_speed_pot));
           }
           if (az_preset_pot) {
-            debug.print(" AZ Preset Pot Analog: ");
+            debug.print(F(" AZ Preset Pot Analog: "));
             debug.print(analogReadEnhanced(az_preset_pot));
-            debug.print("  AZ Preset Pot Setting: ");
+            debug.print(F("  AZ Preset Pot Setting: "));
             dtostrf((map(analogReadEnhanced(az_preset_pot), AZ_PRESET_POT_FULL_CW, AZ_PRESET_POT_FULL_CCW, AZ_PRESET_POT_FULL_CW_MAP, AZ_PRESET_POT_FULL_CCW_MAP)),0,0,tempstring);
             debug.print(tempstring);
           }
@@ -5056,6 +4836,7 @@ void output_debug(){
         #endif // ndef HARDWARE_EA4TX_ARS_USB
         debug.println("");
 
+   
 
         #ifdef FEATURE_ELEVATION_CONTROL
           debug.print("\tEL: ");
@@ -5299,15 +5080,32 @@ void output_debug(){
           #endif //FEATURE_ELEVATION_CONTROL
         #endif //DEBUG_AUTOCORRECT
 
+        if ((raw_azimuth / LCD_HEADING_MULTIPLIER) < azimuth_starting_point){
+          debug.print(F("\tWARNING: raw azimuth is CCW of configured starting point of "));
+          debug.print(azimuth_starting_point);
+          debug.println("!");
+        }
+
+        if ((raw_azimuth / LCD_HEADING_MULTIPLIER) > (azimuth_starting_point+azimuth_rotation_capability)){
+          debug.print(F("\tWARNING: raw azimuth is CW of configured ending point of "));
+          debug.print((azimuth_starting_point+azimuth_rotation_capability),0);
+          debug.println("!");
+        }    
+
+        void * HP = malloc(4);
+        if (HP) {free(HP);}
+        unsigned long free = (unsigned long)SP - (unsigned long)HP;
+        sprintf(tempstring,"%lu",(unsigned long)free);
+        if ((free < 500) || (free > 10000)){
+          debug.print(F("WARNING: Low memory: "));
+          debug.print(tempstring);
+          debug.println(F("b free"));
+        }
 
 
         debug.println("\n\n\n");
 
-        //port_flush();
-
-        last_debug_output_time = millis();
-
-        
+        last_debug_output_time = millis(); 
 
       }
     #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
@@ -6744,6 +6542,10 @@ void initialize_display(){
     #endif // DEBUG_LOOP
 
     k3ngdisplay.initialize();
+
+    #if defined(FEATURE_TEST_DISPLAY_AT_STARTUP)
+      test_display();
+    #endif
 
     #ifdef OPTION_DISPLAY_VERSION_ON_STARTUP 
       k3ngdisplay.print_center_timed_message("\x4B\x33\x4E\x47","\x52\x6F\x74\x6F\x72\x20\x43\x6F\x6E\x74\x72\x6F\x6C\x6C\x65\x72",CODE_VERSION,SPLASH_SCREEN_TIME);
@@ -12769,7 +12571,44 @@ void set_el_stepper_freq(unsigned int frequency){
 #endif //defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR)
 //------------------------------------------------------
 
+#if defined(FEATURE_TEST_DISPLAY_AT_STARTUP)
 
+void test_display(){
+  
+  char tempchar[12] = "";
+  int display_number = 1;
+
+
+  k3ngdisplay.print_top_left("1");
+  k3ngdisplay.service(1);
+  delay(150);  
+  k3ngdisplay.print_top_right("2");
+  k3ngdisplay.service(1);
+  delay(150);   
+  k3ngdisplay.print_bottom_left("3");
+  k3ngdisplay.service(1);
+  delay(150);   
+  k3ngdisplay.print_bottom_right("4"); 
+  k3ngdisplay.service(1);
+  delay(2000);
+  k3ngdisplay.clear();
+
+  for (int y = 0; y < LCD_ROWS;y++){
+    for (int x = 0; x < LCD_COLUMNS;x++){
+      dtostrf(display_number,0,0,tempchar);
+      k3ngdisplay.print(tempchar,x,y);
+      k3ngdisplay.service(1);
+      delay(100);
+      display_number++;
+      if (display_number > 9){display_number = 0;}
+    }
+  }
+  
+  delay(2000);
+}
+
+
+#endif //FEATURE_TEST_DISPLAY_AT_STARTUP
 
 
 // that's all, folks !

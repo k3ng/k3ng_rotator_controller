@@ -61,6 +61,41 @@ void DebugClass::print(const __FlashStringHelper *str)
 	}
 }
 
+void DebugClass::println(const __FlashStringHelper *str)
+{
+	char c;
+	if(!str) return;
+	
+	/* since str is a const we can't increment it, so do this instead */
+	char *p = (char *)str;
+	
+	/* keep going until we find the null */
+	while((c = pgm_read_byte(p++)))
+	{
+		#if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+		 if (debug_mode & CONTROL_PORT0)
+		 {
+			control_port->write(c);
+		 }
+		#endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+
+		// #ifdef FEATURE_ETHERNET
+		//  if (debug_mode & ETHERNET_PORT0)
+		//  {
+		// 	ethernetclient0.write(c);
+		//  }
+		// #endif //FEATURE_ETHERNET
+
+		// #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
+		//  if (debug_mode & ETHERNET_PORT1)
+		//  {
+		// 	ethernetclient1.write(c);
+		//  }
+		// #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
+	}
+	control_port->println();
+}
+
 void DebugClass::print(char ch)
 {
 	#if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
