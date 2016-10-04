@@ -72,15 +72,15 @@
 #define el_rotary_preset_pin2 0 // A2 //7                     // DOWN Encoder Pin
 #endif //FEATURE_EL_PRESET_ENCODER
 
-#if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_LIB)
+#if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
   #define az_rotary_position_pin1 0                     // CW Encoder Pin
   #define az_rotary_position_pin2 0                     // CCW Encoder Pin
-#endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
+#endif 
 
-#if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_LIB)
+#if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
   #define el_rotary_position_pin1 0                     // CW Encoder Pin
   #define el_rotary_position_pin2 0                     // CCW Encoder Pin
-#endif //FEATURE_EL_POSITION_ROTARY_ENCODER
+#endif
 
 #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
 #define az_position_pulse_pin 0                       // must be an interrupt capable pin!

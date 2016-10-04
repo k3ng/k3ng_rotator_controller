@@ -63,12 +63,12 @@
 #define el_rotary_preset_pin2 0                     // DOWN Encoder Pin
 #endif //FEATURE_EL_PRESET_ENCODER
 
-#ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER
+#if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
 #define az_rotary_position_pin1 0                     // CW Encoder Pin
 #define az_rotary_position_pin2 0                     // CCW Encoder Pin
 #endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
 
-#ifdef FEATURE_EL_POSITION_ROTARY_ENCODER
+#if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
 #define el_rotary_position_pin1 0                     // CW Encoder Pin
 #define el_rotary_position_pin2 0                     // CCW Encoder Pin
 #endif //FEATURE_EL_POSITION_ROTARY_ENCODER

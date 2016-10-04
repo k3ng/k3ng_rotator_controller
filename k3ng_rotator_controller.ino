@@ -257,12 +257,14 @@
       Corrected error in FEATURE_ROTARY_ENCODER_SUPPORT ttable (thanks, frye.dale)
 
     2.0.2016092501
-      Working on FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_LIB and FEATURE_EL_POSITION_ROTARY_ENCODER_USE_LIB
+      Working on FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY and FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
       Fixed bug with last row of LCD display getting blanked out
       FEATURE_TEST_DISPLAY_AT_STARTUP
       Noted in various settings files that AZIMUTH_STARTING_POINT_DEFAULT and AZIMUTH_ROTATION_CAPABILITY_DEFAULT are used only for initializing EEPROM
       Fixed an issue with FEATURE_AZ_POSITION_HH12_AS5045_SSI and FEATURE_AZ_POSITION_INCREMENTAL_ENCODER using AZIMUTH_STARTING_POINT_DEFAULT rather than azimuth_starting_point variable
 
+    2.0.2016100301
+      FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY and FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY ready for testing
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
@@ -271,7 +273,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016092501"
+#define CODE_VERSION "2.0.2016100301"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -373,7 +375,7 @@
   #include <Ethernet.h>
 #endif
 
-#if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_LIB) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_LIB)
+#if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
   //#define ENCODER_OPTIMIZE_INTERRUPTS
   #include <Encoder.h>
 #endif    
@@ -883,16 +885,16 @@ DebugClass debug;
   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
 #endif
 
-#ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_LIB
-  Encoder AZ_ENCODER(az_rotary_position_pin1, az_rotary_position_pin2);
-  long PREV_AZ_POSITION  = 0;
-  long CURRENT_AZ_POSITION;
+#ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
+  Encoder encoder_pjrc_az(az_rotary_position_pin1, az_rotary_position_pin2);
+  long encoder_pjrc_previous_az_position  = 0;
+  long encoder_pjrc_current_az_position;
 #endif
 
-#ifdef FEATURE_EL_POSITION_ROTARY_ENCODER_USE_LIB
-  Encoder EL_ENCODER(el_rotary_position_pin1, el_rotary_position_pin2);
-  long PREV_EL_POSITION  = 0;
-  long CURRENT_EL_POSITION;
+#ifdef FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
+  Encoder encoder_pjrc_el(el_rotary_position_pin1, el_rotary_position_pin2);
+  long encoder_pjrc_previous_el_position  = 0;
+  long encoder_pjrc_current_el_position;
 #endif  
 
 
@@ -2549,7 +2551,7 @@ void check_serial(){
   float tempfloat = 0;
   char return_string[100] = ""; 
 
-  #if !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+  #if !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT) && !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
     long place_multiplier = 0;
     byte decimalplace = 0;
   #endif
@@ -2567,16 +2569,13 @@ void check_serial(){
     byte hit_error = 0;
   #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
-  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
     int new_azimuth = 9999;
   #endif
 
-  #ifdef FEATURE_ELEVATION_CONTROL
-    #if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
-      int new_elevation = 9999;
-    #endif // FEATURE_ELEVATION_CONTROL
-  #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
-
+  #if defined(FEATURE_ELEVATION_CONTROL) && (defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY))
+    int new_elevation = 9999;
+  #endif
 
   #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
 
@@ -4033,18 +4032,18 @@ void read_settings_from_eeprom(){
     #endif
 
 
-    #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER)
+    #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
       raw_azimuth = int(configuration.last_azimuth * HEADING_MULTIPLIER);
       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
         azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
       } else {
         azimuth = raw_azimuth;
       }
-    #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER)
+    #endif
 
-    #if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_EL_POSITION_ROTARY_ENCODER)
+    #if defined(FEATURE_ELEVATION_CONTROL) && (defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY))
       elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
-    #endif // defined(FEATURE_EL_POSITION_ROTARY_ENCODER)
+    #endif
 
 
 
@@ -4063,11 +4062,11 @@ void read_settings_from_eeprom(){
       el_position_pulse_input_elevation = configuration.last_elevation;
     #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
-    #if defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER)
+    #if defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
       configuration.azimuth_offset = 0;
     #endif
 
-    #if defined(FEATURE_EL_POSITION_PULSE_INPUT) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER)
+    #if defined(FEATURE_EL_POSITION_PULSE_INPUT) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
       configuration.elevation_offset = 0;
     #endif
 
@@ -4417,6 +4416,67 @@ void read_azimuth(byte force_read){
         configuration_dirty = 1;
       }
     #endif // FEATURE_AZ_POSITION_ROTARY_ENCODER
+
+
+    #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
+       encoder_pjrc_current_az_position = encoder_pjrc_az.read();
+        if ( (encoder_pjrc_current_az_position != encoder_pjrc_previous_az_position) ) 
+        {
+          configuration.last_azimuth = configuration.last_azimuth + ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position) * AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE); 
+            
+          #ifdef DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
+           if ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position ) < 0) 
+            {
+             debug.print("read_azimuth: AZ_POSITION_ROTARY_PJRC_ENCODER: CCW - ");
+            }
+             else
+            {
+             debug.print("read_azimuth: AZ_POSITION_ROTARY_PJRC_ENCODER: CW - ");
+            } 
+             debug.print("Encoder Count: ");
+             debug.print(encoder_pjrc_current_az_position);
+             debug.print(" - configuration.last_azimuth : ");
+             debug.print(configuration.last_azimuth );
+             debug.print(" - raw_azimuth : ");
+             debug.println(raw_azimuth);
+          #endif // DEBUG_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
+
+          encoder_pjrc_previous_az_position = encoder_pjrc_current_az_position;
+             
+          #ifdef OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
+           if (configuration.last_azimuth < azimuth_starting_point) {
+             configuration.last_azimuth = azimuth_starting_point;
+           }
+          if (configuration.last_azimuth > (azimuth_starting_point + azimuth_rotation_capability)) {
+             configuration.last_azimuth = (azimuth_starting_point + azimuth_rotation_capability);
+           }
+         #else
+           if (configuration.last_azimuth < 0) {
+             configuration.last_azimuth += 360;
+           }
+           if (configuration.last_azimuth >= 360) {
+             configuration.last_azimuth -= 360;
+           }
+         #endif // OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
+
+         //debug.print(" Calculating raw_azimuth : ");
+         raw_azimuth = int(configuration.last_azimuth * HEADING_MULTIPLIER);
+
+
+         #ifdef FEATURE_AZIMUTH_CORRECTION
+           raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+         #endif // FEATURE_AZIMUTH_CORRECTION
+
+         if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
+           azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
+         } else {
+           azimuth = raw_azimuth;
+         }
+         configuration_dirty = 1;
+                  
+        }     
+    #endif  //FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
+
 
     #ifdef FEATURE_AZ_POSITION_HMC5883L
       MagnetometerScaled scaled = compass.ReadScaledAxis(); // scaled values from compass.
@@ -5281,6 +5341,60 @@ void read_elevation(byte force_read){
     }
     #endif // FEATURE_EL_POSITION_ROTARY_ENCODER
 
+
+    #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
+      encoder_pjrc_current_el_position = encoder_pjrc_el.read();
+      if (encoder_pjrc_current_el_position != encoder_pjrc_previous_el_position){
+        configuration.last_elevation = configuration.last_elevation + ((encoder_pjrc_current_el_position - encoder_pjrc_previous_el_position) * EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE);
+            
+        #ifdef DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
+          if ((encoder_pjrc_current_el_position - encoder_pjrc_previous_el_position ) < 0){
+            debug.print("read_elevation: EL_POSITION_ROTARY_PJRC_ENCODER: CCW/Down - ");
+          } else { 
+            debug.print("read_elevation: EL_POSITION_ROTARY_PJRC_ENCODER: CW/Up - ");
+          } 
+          debug.print("Encoder Count: ");
+          debug.print(encoder_pjrc_current_el_position);
+          debug.print(" - configuration.last_elevation : ");
+          debug.print(configuration.last_elevation );
+          debug.print(" - raw_elevation : ");
+          debug.println(elevation);
+        #endif // DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
+
+        #ifdef OPTION_EL_POSITION_ROTARY_ENCODER_HARD_LIMIT
+          if (configuration.last_elevation < 0){
+            configuration.last_elevation = 0;
+          }
+          if (configuration.last_elevation > ELEVATION_MAXIMUM_DEGREES) {
+            configuration.last_elevation = ELEVATION_MAXIMUM_DEGREES;
+          }
+        #endif
+            
+        elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
+        #ifdef FEATURE_ELEVATION_CORRECTION
+          elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+        #endif // FEATURE_ELEVATION_CORRECTION
+        configuration_dirty = 1;
+        
+         #ifdef OPTION_EL_POSITION_ROTARY_ENCODER_HARD_LIMIT
+          if (configuration.last_elevation < 0){
+            configuration.last_elevation = 0;
+          }
+          if (configuration.last_elevation > ELEVATION_MAXIMUM_DEGREES){
+            configuration.last_elevation = ELEVATION_MAXIMUM_DEGREES;
+          }
+        #endif
+            
+        elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
+
+        #ifdef FEATURE_ELEVATION_CORRECTION
+          elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+        #endif // FEATURE_ELEVATION_CORRECTION
+
+        configuration_dirty = 1; 
+          
+      }
+    #endif // FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
 
     #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
     AccelerometerRaw raw = accel.ReadRawAxis();
@@ -9862,22 +9976,21 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     byte hit_error = 0;
   #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
-  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
     int new_azimuth = 9999;
   #endif
-  #ifdef FEATURE_ELEVATION_CONTROL
-    #if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
-      int new_elevation = 9999;
-    #endif // FEATURE_ELEVATION_CONTROL
-  #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
 
-#ifdef FEATURE_TWO_DECIMAL_PLACE_HEADINGS
-  long new_azimuth_starting_point;
-  long new_azimuth_rotation_capability;
-#else
-  int new_azimuth_starting_point;
-  int new_azimuth_rotation_capability;
-#endif
+  #if defined(FEATURE_ELEVATION_CONTROL) && (defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY))
+    int new_elevation = 9999;
+  #endif
+
+  #ifdef FEATURE_TWO_DECIMAL_PLACE_HEADINGS
+    long new_azimuth_starting_point;
+    long new_azimuth_rotation_capability;
+  #else
+    int new_azimuth_starting_point;
+    int new_azimuth_rotation_capability;
+  #endif
 
   byte brake_az_disabled;
 
@@ -9885,7 +9998,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
   switch (input_buffer[1]) {
 
-   #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
+   #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
     case 'A':      // \Ax[x][x] - manually set azimuth
       new_azimuth = 9999;
       switch (input_buffer_index) {
@@ -10021,59 +10134,59 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       break;
 
     #if defined(FEATURE_ELEVATION_CONTROL)
-    #if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
-    case 'B':      // \Bx[x][x] - manually set elevation
-      new_elevation = 9999;
-      switch (input_buffer_index) {
-        case 3:
-          new_elevation = (input_buffer[2] - 48);
+      #if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)  || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
+        case 'B':      // \Bx[x][x] - manually set elevation
+          new_elevation = 9999;
+          switch (input_buffer_index) {
+            case 3:
+              new_elevation = (input_buffer[2] - 48);
+              break;
+            case 4:
+              new_elevation = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+              break;
+            case 5:
+              new_elevation = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+              break;
+          }
+          if ((new_elevation >= 0) && (new_elevation <= 180)) {
+            elevation = new_elevation * HEADING_MULTIPLIER;
+            configuration.last_elevation = new_elevation;
+            configuration_dirty = 1;
+            strcpy(return_string, "Elevation set to ");
+            dtostrf(new_elevation, 0, 0, temp_string);
+            strcat(return_string, temp_string);
+          } else {
+            strcpy(return_string, "Error.  Format: \\Bx[x][x]");
+          }
           break;
-        case 4:
-          new_elevation = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
-          break;
-        case 5:
-          new_elevation = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
-          break;
-      }
-      if ((new_elevation >= 0) && (new_elevation <= 180)) {
-        elevation = new_elevation * HEADING_MULTIPLIER;
-        configuration.last_elevation = new_elevation;
-        configuration_dirty = 1;
-        strcpy(return_string, "Elevation set to ");
-        dtostrf(new_elevation, 0, 0, temp_string);
-        strcat(return_string, temp_string);
-      } else {
-        strcpy(return_string, "Error.  Format: \\Bx[x][x]");
-      }
-      break;
       #else // defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
-    case 'B':      // \Bx[xxx][.][xxxx] - manually set elevation
-      place_multiplier = 1;
-      for (int x = input_buffer_index - 1; x > 1; x--) {
-        if (char(input_buffer[x]) != '.') {
-          tempfloat += (input_buffer[x] - 48) * place_multiplier;
-          place_multiplier = place_multiplier * 10;
-        } else {
-          decimalplace = x;
-        }
-      }
-      if (decimalplace) {
-        tempfloat = tempfloat / pow(10, (input_buffer_index - decimalplace - 1));
-      }
-      if ((tempfloat >= 0) && (tempfloat <= 180)) {
-        configuration.elevation_offset = 0;
-        read_elevation(1);
-        configuration.elevation_offset = tempfloat - float(elevation / HEADING_MULTIPLIER);
-        configuration_dirty = 1;
-        strcpy(return_string, "Elevation calibrated to ");
-        dtostrf(tempfloat, 0, 2, temp_string);
-        strcat(return_string, temp_string);
-      } else {
-        strcpy(return_string, "Error.");
-      }
-      break;
+        case 'B':      // \Bx[xxx][.][xxxx] - manually set elevation
+          place_multiplier = 1;
+          for (int x = input_buffer_index - 1; x > 1; x--) {
+            if (char(input_buffer[x]) != '.') {
+              tempfloat += (input_buffer[x] - 48) * place_multiplier;
+              place_multiplier = place_multiplier * 10;
+            } else {
+              decimalplace = x;
+            }
+          }
+          if (decimalplace) {
+            tempfloat = tempfloat / pow(10, (input_buffer_index - decimalplace - 1));
+          }
+          if ((tempfloat >= 0) && (tempfloat <= 180)) {
+            configuration.elevation_offset = 0;
+            read_elevation(1);
+            configuration.elevation_offset = tempfloat - float(elevation / HEADING_MULTIPLIER);
+            configuration_dirty = 1;
+            strcpy(return_string, "Elevation calibrated to ");
+            dtostrf(tempfloat, 0, 2, temp_string);
+            strcat(return_string, temp_string);
+          } else {
+            strcpy(return_string, "Error.");
+          }
+          break;
       #endif // defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
-      #endif //FEATURE_ELEVATION_CONTROL
+    #endif //FEATURE_ELEVATION_CONTROL
 
     #ifdef FEATURE_CLOCK
     case 'C':         // show clock
