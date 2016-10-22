@@ -51,7 +51,7 @@
 // #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
-// #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
+#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 // #define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
@@ -64,7 +64,7 @@
 // #define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
-// #define FEATURE_EL_POSITION_HH12_AS5045_SSI
+#define FEATURE_EL_POSITION_HH12_AS5045_SSI
 // #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_EL_POSITION_MEMSIC_2125
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER

@@ -266,6 +266,9 @@
     2.0.2016100301
       FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY and FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY ready for testing
 
+    2.0.2016102201
+      Fixed bug with FEATURE_AZ_POSITION_HH12_AS5045_SSI, negative offset, and crossing between 359 and 0 degrees
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -273,7 +276,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016100301"
+#define CODE_VERSION "2.0.2016102201"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4636,14 +4639,11 @@ void read_azimuth(byte force_read){
         raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif // FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+      if (raw_azimuth < 0){raw_azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);}
       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
         azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
       } else {
-        if (raw_azimuth < 0) {
-          azimuth = raw_azimuth + (360 * HEADING_MULTIPLIER);
-        } else {
-          azimuth = raw_azimuth;
-        }
+        azimuth = raw_azimuth;
       }
     #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI
 /*
