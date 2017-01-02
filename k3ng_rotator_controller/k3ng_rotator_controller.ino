@@ -269,6 +269,12 @@
     2.0.2016102201
       Fixed bug with FEATURE_AZ_POSITION_HH12_AS5045_SSI, negative offset, and crossing between 359 and 0 degrees
 
+    2.0.2017010101
+      Minor update in comments in settings files  
+
+    2.0.2017010102
+      Fixed bug in FEATURE_ELEVATION_CONTROL with brake control (Thanks, zoobie40)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -276,7 +282,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2016102201"
+#define CODE_VERSION "2.0.2017010102"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2107,8 +2113,8 @@ void brake_release(byte az_or_el, byte operation){
     }
   } else {
     #ifdef FEATURE_ELEVATION_CONTROL
-    if (operation == BRAKE_RELEASE_ON) { 
-      if (brake_el) {
+    if (brake_el) {
+      if (operation == BRAKE_RELEASE_ON) {  
         digitalWriteEnhanced(brake_el, BRAKE_ACTIVE_STATE);
         brake_el_engaged = 1;
         #ifdef DEBUG_BRAKE
