@@ -3103,7 +3103,7 @@ char * idle_status(){
 
 
   #ifdef OPTION_DISPLAY_DIRECTION_STATUS
-  return azimuth_direction(azimuth);
+    return azimuth_direction(azimuth);
   #endif //OPTION_DISPLAY_DIRECTION_STATUS
 
   return("");
@@ -6648,6 +6648,7 @@ void initialize_serial(){
 
 
 void initialize_display(){
+
 
   #if defined(FEATURE_LCD_DISPLAY)
     #ifdef DEBUG_LOOP
