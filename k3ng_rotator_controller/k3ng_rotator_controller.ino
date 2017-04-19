@@ -275,6 +275,9 @@
     2.0.2017010102
       Fixed bug in FEATURE_ELEVATION_CONTROL with brake control (Thanks, zoobie40)
 
+    2.0.2017041901
+      Fixed bug - when azimithal rotation was in progress and an azimuth heading that was within the tolerance was submitted, rotation was not stopped (Thanks, Laurent, F6FVY)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
@@ -282,7 +285,7 @@
 
   */
 
-#define CODE_VERSION "2.0.2017010102"
+#define CODE_VERSION "2.0.2017041901"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -7487,10 +7490,15 @@ void service_request_queue(){
           }
           if ((target_azimuth > (azimuth - (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER))) && (target_azimuth < (azimuth + (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER)))) {
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug.print(" request within tolerance");
+            debug.print(" request within tolerance"); //zzzzzzzz
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
             within_tolerance_flag = 1;
-            az_request_queue_state = NONE;
+            // az_request_queue_state = NONE;
+            if (az_state != IDLE){
+              submit_request(AZ, REQUEST_STOP, 0, 137);
+            } else {
+              az_request_queue_state = NONE;
+            }
           } else {  // target azimuth is not within tolerance, we need to rotate
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
             debug.print(" ->A");
@@ -7635,7 +7643,11 @@ void service_request_queue(){
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
           debug.print(" request within tolerance");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
-          az_request_queue_state = NONE;
+          if (az_state != IDLE){
+            submit_request(AZ, REQUEST_STOP, 0, 138);
+          } else {
+            az_request_queue_state = NONE;
+          }
           within_tolerance_flag = 1;
         } else {
           if (target_raw_azimuth > raw_azimuth) {
