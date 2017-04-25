@@ -278,14 +278,16 @@
     2.0.2017041901
       Fixed bug - when azimithal rotation was in progress and an azimuth heading that was within the tolerance was submitted, rotation was not stopped (Thanks, Laurent, F6FVY)
 
+    2.0.2017042401
+      configuration.brake_az_disabled is now set to 0 (not disabled) when initializing eeprom (Thanks, Patrick, TK5EP)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
-    in order to compile in Arduino IDE 1.6.7
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2.0.2017041901"
+#define CODE_VERSION "2.0.2017042401"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4114,7 +4116,7 @@ void initialize_eeprom_with_defaults(){
   configuration.elevation_offset = 0;
   configuration.azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
   configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
-  configuration.brake_az_disabled = (brake_az ? 1 : 0);
+  configuration.brake_az_disabled = 0; //(brake_az ? 1 : 0);
 
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
