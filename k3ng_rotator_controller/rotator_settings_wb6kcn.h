@@ -150,7 +150,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 103
+#define EEPROM_MAGIC_NUMBER 107
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 

@@ -281,13 +281,16 @@
     2.0.2017042401
       configuration.brake_az_disabled is now set to 0 (not disabled) when initializing eeprom (Thanks, Patrick, TK5EP)
 
+    2017.05.13.01
+      Added the \V command to FEATURE_CLOCK to set timezone offset  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2.0.2017042401"
+#define CODE_VERSION "2017.05.13.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -513,6 +516,7 @@ struct config_t {
   int azimuth_rotation_capability;
 #endif
   byte brake_az_disabled;
+  float clock_timezone_offset;
 } configuration;
 
 
@@ -4117,6 +4121,7 @@ void initialize_eeprom_with_defaults(){
   configuration.azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
   configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
   configuration.brake_az_disabled = 0; //(brake_az ? 1 : 0);
+  configuration.clock_timezone_offset = 0;
 
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
@@ -9589,7 +9594,9 @@ char * clock_string(){
   }
   dtostrf(clock_seconds, 0, 0, temp_string);
   strcat(return_string, temp_string);
-  strcat(return_string,"Z");
+  if (configuration.clock_timezone_offset == 0){
+    strcat(return_string,"Z");
+  }
   return return_string;
 
 } /* clock_string */
@@ -9602,7 +9609,7 @@ char * clock_string(){
 void update_time(){
   unsigned long runtime = millis() - millis_at_last_calibration;
 
-  unsigned long time = (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
+  unsigned long time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
 
   clock_years = clock_year_set;
   clock_months = clock_month_set;
@@ -9990,6 +9997,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     byte temp_day = 0;
     byte temp_minute = 0;
     byte temp_hour = 0;
+    byte negative_flag = 0;
   #endif // FEATURE_CLOCK
 
   #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
@@ -10237,10 +10245,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         clock_sec_set = 0;
         millis_at_last_calibration = millis();
 
-
-
-
-
         #if defined(FEATURE_RTC_DS1307)
         rtc.adjust(DateTime(temp_year, temp_month, temp_day, temp_hour, temp_minute, 0));
         #endif // defined(FEATURE_RTC_DS1307)
@@ -10263,14 +10267,41 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         update_time();
         strcat(return_string, clock_string());
         #endif
-
-
       } else {
         strcpy(return_string, "Error. Usage: \\OYYYYMMDDHHmm");
       }
       break;
-          #endif // FEATURE_CLOCK
 
+    case 'V': //  \Vx[xxx][.][xxxx]   Set time zone offset
+      negative_flag = 0;
+      place_multiplier = 1;
+      for (int x = input_buffer_index - 1; x > 1; x--) {
+        if (char(input_buffer[x]) == '-') {
+          negative_flag = 1;
+        } else {
+          if (char(input_buffer[x]) != '.') {
+            tempfloat += (input_buffer[x] - 48) * place_multiplier;
+            place_multiplier = place_multiplier * 10;
+          } else {
+            decimalplace = x;
+          }
+        }
+      }
+      if (decimalplace) {
+        tempfloat = tempfloat / pow(10, (input_buffer_index - decimalplace - 1));
+      }
+      if (negative_flag){tempfloat = tempfloat * -1.0;}
+      if ((tempfloat >= -24.0) && (tempfloat <= 24.0)) {
+        configuration.clock_timezone_offset = tempfloat;
+        configuration_dirty = 1;
+        strcpy(return_string, "Timezone offset set to ");
+        dtostrf(tempfloat, 0, 2, temp_string);
+        strcat(return_string, temp_string);
+      } else {
+        strcpy(return_string, "Error.");
+      }
+      break;
+    #endif // FEATURE_CLOCK
 
     case 'D':                                                                      // \D - Debug
       if (debug_mode & source_port) {
