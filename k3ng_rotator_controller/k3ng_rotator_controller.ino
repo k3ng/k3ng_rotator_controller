@@ -284,13 +284,16 @@
     2017.05.13.01
       Added the \V command to FEATURE_CLOCK to set timezone offset  
 
+    2017.05.13.02
+      Fixed bug with timezone offset functionality  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2017.05.13.01"
+#define CODE_VERSION "2017.05.13.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -743,6 +746,12 @@ byte current_az_speed_voltage = 0;
   unsigned long clock_hours = 0;
   unsigned long clock_minutes = 0;
   unsigned long clock_seconds = 0;
+  unsigned long local_clock_years = 0;
+  unsigned long local_clock_months = 0;
+  unsigned long local_clock_days = 0;
+  unsigned long local_clock_hours = 0;
+  unsigned long local_clock_minutes = 0;
+  unsigned long local_clock_seconds = 0;
   int clock_year_set = 2014;
   byte clock_month_set = 1;
   byte clock_day_set = 1;
@@ -3939,7 +3948,7 @@ void update_display(){
   
     if (!row_override[LCD_BIG_CLOCK_ROW]){    
       update_time();
-      k3ngdisplay.print_center_entire_row(clock_string(),LCD_BIG_CLOCK_ROW-1,0);
+      k3ngdisplay.print_center_entire_row(timezone_modified_clock_string(),LCD_BIG_CLOCK_ROW-1,0);
       if (big_clock_last_clock_seconds != clock_seconds) {
         force_display_update_now = 1;
         big_clock_last_clock_seconds = clock_seconds;
@@ -4771,7 +4780,7 @@ void output_debug(){
 
         #ifdef FEATURE_CLOCK
           update_time();
-          sprintf(tempstring, "%s", clock_string());
+          sprintf(tempstring, "%s", timezone_modified_clock_string());
           debug.print(tempstring);
         #else // FEATURE_CLOCK
           dtostrf((millis() / 1000),0,0,tempstring);
@@ -9554,45 +9563,44 @@ char * az_el_calibrated_string(){
 // --------------------------------------------------------------
 
 #ifdef FEATURE_CLOCK
-char * clock_string(){
+char * timezone_modified_clock_string(){
 
   char return_string[32] = "";
   char temp_string[16] = "";
 
 
-
-  dtostrf(clock_years, 0, 0, temp_string);
+  dtostrf(local_clock_years, 0, 0, temp_string);
   strcpy(return_string, temp_string);
   strcat(return_string, "-");
-  if (clock_months < 10) {
+  if (local_clock_months < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_months, 0, 0, temp_string);
+  dtostrf(local_clock_months, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, "-");
-  if (clock_days < 10) {
+  if (local_clock_days < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_days, 0, 0, temp_string);
+  dtostrf(local_clock_days, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, " ");
 
-  if (clock_hours < 10) {
+  if (local_clock_hours < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_hours, 0, 0, temp_string);
+  dtostrf(local_clock_hours, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, ":");
-  if (clock_minutes < 10) {
+  if (local_clock_minutes < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_minutes, 0, 0, temp_string);
+  dtostrf(local_clock_minutes, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, ":");
-  if (clock_seconds < 10) {
+  if (local_clock_seconds < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_seconds, 0, 0, temp_string);
+  dtostrf(local_clock_seconds, 0, 0, temp_string);
   strcat(return_string, temp_string);
   if (configuration.clock_timezone_offset == 0){
     strcat(return_string,"Z");
@@ -9609,7 +9617,9 @@ char * clock_string(){
 void update_time(){
   unsigned long runtime = millis() - millis_at_last_calibration;
 
-  unsigned long time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
+  // calculate UTC
+
+  unsigned long time = (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
 
   clock_years = clock_year_set;
   clock_months = clock_month_set;
@@ -9662,6 +9672,67 @@ void update_time(){
   clock_minutes  = time / 60L;
   time -= clock_minutes * 60L;
   clock_seconds = time;
+
+
+  // calculate local time
+
+
+  unsigned long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
+
+  local_clock_years = clock_year_set;
+  local_clock_months = clock_month_set;
+  local_clock_days = local_time / 86400L;
+  local_time -= local_clock_days * 86400L;
+  local_clock_days += clock_day_set;
+  local_clock_hours = local_time / 3600L;
+
+  switch (local_clock_months) {
+
+    case 1:
+    case 3:
+    case 5:
+    case 7:
+    case 8:
+    case 10:
+    case 12:
+      if (local_clock_days > 31) {
+        local_clock_days = 1; local_clock_months++;
+      }
+      break;
+
+    case 2:
+      if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
+        if (local_clock_days > 29) {
+          local_clock_days = 1; local_clock_months++;
+        }
+      } else {
+        if (local_clock_days > 28) {
+          local_clock_days = 1; local_clock_months++;
+        }
+      }
+      break;
+
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+      if (local_clock_days > 30) {
+        local_clock_days = 1; local_clock_months++;
+      }
+      break;
+  } /* switch */
+
+  if (local_clock_months > 12) {
+    local_clock_months = 1; local_clock_years++;
+  }
+
+  local_time -= local_clock_hours * 3600L;
+  local_clock_minutes  = local_time / 60L;
+  local_time -= local_clock_minutes * 60L;
+  local_clock_seconds = local_time;  
+
+
+
 } /* update_time */
 #endif // FEATURE_CLOCK
 
@@ -9725,7 +9796,7 @@ void service_gps(){
             debug.println("");
           #endif //DEBUG_GPS_SERIAL        
           debug.print("service_gps: clock sync:");
-          sprintf(tempstring,"%s",clock_string());
+          sprintf(tempstring,"%s",timezone_modified_clock_string());
           debug.print(tempstring);
           debug.println("");
         #endif // DEBUG_GPS
@@ -10220,11 +10291,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     #ifdef FEATURE_CLOCK
     case 'C':         // show clock
       update_time();
-      sprintf(return_string, "%s", clock_string());
+      sprintf(return_string, "%s", timezone_modified_clock_string());
 
 
       break;
-    case 'O':         // set clock
+    case 'O':         // set clock UTC time
       temp_year = ((input_buffer[2] - 48) * 1000) + ((input_buffer[3] - 48) * 100) + ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
       temp_month = ((input_buffer[6] - 48) * 10) + (input_buffer[7] - 48);
       temp_day = ((input_buffer[8] - 48) * 10) + (input_buffer[9] - 48);
@@ -10261,11 +10332,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         #if (!defined(FEATURE_RTC_DS1307) && !defined(FEATURE_RTC_PCF8583))
         strcpy(return_string, "Clock set to ");
         update_time();
-        strcat(return_string, clock_string());
+        strcat(return_string, timezone_modified_clock_string());
         #else
         strcpy(return_string, "Internal clock and RTC set to ");
         update_time();
-        strcat(return_string, clock_string());
+        strcat(return_string, timezone_modified_clock_string());
         #endif
       } else {
         strcpy(return_string, "Error. Usage: \\OYYYYMMDDHHmm");
@@ -10635,7 +10706,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
           #ifdef FEATURE_CLOCK
             update_time();
-            strcat(return_string,clock_string());
+            strcat(return_string,timezone_modified_clock_string());
           #endif //FEATURE_CLOCK 
 
           strcat(return_string,";");
@@ -10752,7 +10823,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           #ifdef FEATURE_CLOCK
             strcpy(return_string,"\\!OKCL");
             update_time();
-            strcat(return_string,clock_string());
+            strcat(return_string,timezone_modified_clock_string());
           #else //FEATURE_CLOCK
             strcpy(return_string,"\\!??CL");
           #endif //FEATURE_CLOCK
@@ -11245,7 +11316,7 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
       if ((slave_command_buffer[0] == 'C') && (slave_command_buffer[1] == 'L')) {
         strcpy(return_string,"CL");
         update_time();
-        strcat(return_string,clock_string());
+        strcat(return_string,timezone_modified_clock_string());
         command_good = 1;
       }
       #endif //FEATURE_CLOCK
