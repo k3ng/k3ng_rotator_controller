@@ -290,6 +290,9 @@
     2017.07.24.01
       Fixed bug with "strcat(workstring." (Thanks, Russ, K0WFS)
 
+    2017.07.24.02
+      Fixed typos in a few places with "or" in if statements.  Not sure how that happened :-/  (Thanks, Russ, K0WFS)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -2649,7 +2652,7 @@ void check_serial(){
 
         // Easycom only
 
-        if ((control_port_buffer[0] == '\\') or (control_port_buffer[0] == '/') or ((control_port_buffer_index == 0) && ((incoming_serial_byte == '\\') || (incoming_serial_byte == '/')))) {
+        if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/') || ((control_port_buffer_index == 0) && ((incoming_serial_byte == '\\') || (incoming_serial_byte == '/')))) {
           // if it's a backslash command add it to the buffer if it's not a line feed or carriage return
           if ((incoming_serial_byte != 10) && (incoming_serial_byte != 13)) { 
             control_port_buffer[control_port_buffer_index] = incoming_serial_byte;
@@ -2716,7 +2719,7 @@ void check_serial(){
           clear_command_buffer();
         } else {
           // if it is a backslash command, process it if we have a carriage return
-          if ((incoming_serial_byte == 13) && ((control_port_buffer[0] == '\\') or (control_port_buffer[0] == '/'))){
+          if ((incoming_serial_byte == 13) && ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/'))){
             process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
             control_port->println(return_string);
             clear_command_buffer();
@@ -2732,7 +2735,7 @@ void check_serial(){
         }
 
         if (incoming_serial_byte == 13) {  // do we have a carriage return?
-          if ((control_port_buffer[0] == '\\') or (control_port_buffer[0] == '/')) {
+          if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
             process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
           } else {
             #ifdef FEATURE_YAESU_EMULATION
@@ -12262,7 +12265,7 @@ void service_ethernet(){
 
 
       if (((incoming_byte == 13) || (ethernet_port_buffer_index0 >= COMMAND_BUFFER_SIZE)) && (ethernet_port_buffer_index0 > 0)){  // do we have a carriage return?
-        if ((ethernet_port_buffer0[0] == '\\') or (ethernet_port_buffer0[0] == '/')) {
+        if ((ethernet_port_buffer0[0] == '\\') || (ethernet_port_buffer0[0] == '/')) {
           process_backslash_command(ethernet_port_buffer0, ethernet_port_buffer_index0, ETHERNET_PORT0, return_string);
         } else {
           #ifdef FEATURE_YAESU_EMULATION
@@ -12313,7 +12316,7 @@ void service_ethernet(){
         ethernet_port_buffer_index1++;
       }
       if (incoming_byte == 13) {  // do we have a carriage return?
-        if ((ethernet_port_buffer1[0] == '\\') or (ethernet_port_buffer1[0] == '/')) {
+        if ((ethernet_port_buffer1[0] == '\\') || (ethernet_port_buffer1[0] == '/')) {
           process_backslash_command(ethernet_port_buffer1, ethernet_port_buffer_index1, ETHERNET_PORT1, return_string);
         } else {
           #ifdef FEATURE_YAESU_EMULATION
