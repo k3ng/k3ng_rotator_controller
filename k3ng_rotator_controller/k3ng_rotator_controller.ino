@@ -299,7 +299,7 @@
 
   */
 
-#define CODE_VERSION "2017.07.24.01"
+#define CODE_VERSION "2017.07.24.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
