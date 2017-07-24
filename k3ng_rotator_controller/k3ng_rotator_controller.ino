@@ -287,13 +287,16 @@
     2017.05.13.02
       Fixed bug with timezone offset functionality  
 
+    2017.07.24.01
+      Fixed bug with "strcat(workstring." (Thanks, Russ, K0WFS)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2017.05.13.02"
+#define CODE_VERSION "2017.07.24.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3259,7 +3262,7 @@ void update_display(){
       strcat(workstring,workstring2);
       #if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
         if (LCD_COLUMNS > 14) {
-          strcat(workstring.DISPLAY_DEGREES_STRING);
+          strcat(workstring,DISPLAY_DEGREES_STRING);
         }
       #else
         if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {
