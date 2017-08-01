@@ -109,6 +109,8 @@ You can tweak these, but read the online documentation!
 #define REMOTE_UNIT_PORT_BAUD_RATE 9600
 #define GPS_PORT_BAUD_RATE 9600
 #define GPS_MIRROR_PORT_BAUD_RATE 9600
+#define LCH_PORT_BAUD_RATE 9600
+#define LCH_PORT_MAPPED_TO &Serial1  // change this line to map the LCH-360 sensor port
 #define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
 //#define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port
 #define GPS_PORT_MAPPED_TO &Serial2  // change this line to map the GPS port to a different serial port

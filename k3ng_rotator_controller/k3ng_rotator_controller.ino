@@ -293,16 +293,13 @@
     2017.07.24.02
       Fixed typos in a few places with "or" in if statements.  Not sure how that happened :-/  (Thanks, Russ, K0WFS)
 
-    2017.07.31.01
-      Fixed various LCD display clock options to display local time
-
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2017.07.31.01"
+#define CODE_VERSION "2017.07.24.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -725,6 +722,17 @@ byte current_az_speed_voltage = 0;
   #endif //GPS_MIRROR_PORT
 #endif //defined(FEATURE_GPS)
 
+#if defined(FEATURE_EL_POSITION_LCH)
+  HardwareSerial * lch_port;
+  //String inString = "";
+  char lchbuffer[30];
+  int  lchbufferIndex = 0;
+  float lchreading = 0.0;
+  //static boolean lchinit ;
+
+  
+#endif //defined(FEATURE_lch)
+
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
   double latitude = DEFAULT_LATITUDE;
   double longitude = DEFAULT_LONGITUDE;
@@ -955,7 +963,10 @@ void setup() {
   initialize_rotary_encoders();
 
   initialize_interrupts();
-
+  
+  
+  Serial.write("testi");
+  
 
 } /* setup */
 
@@ -2791,6 +2802,31 @@ void check_serial(){
   #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
 
 
+  #ifdef FEATURE_EL_POSITION_LCH
+
+      if (lch_port->available()) {
+      
+       
+          char ch = lch_port->read();
+          if( ch == '\r')  
+          {
+              lchbuffer[ lchbufferIndex ] = 0; // terminate the string with a 0      
+              lchbufferIndex = 0;  // reset the index ready for another string;
+              //float output = 0.0;
+               lchreading = atof (lchbuffer);
+               //Serial.println (output);
+               //elevation = output*10;
+              // #ifdef FEATURE_ELEVATION_CORRECTION
+              //elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+              //#endif // FEATURE_ELEVATION_CORRECTION
+              //elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+   }
+   else
+     lchbuffer[ lchbufferIndex++ ] = ch; // add the character into the buffer
+ }
+    
+  #endif // FEATURE_EL_POSITION_LCH
+
   #ifdef FEATURE_GPS
     #if defined(OPTION_DONT_READ_GPS_PORT_AS_OFTEN)
       if (gps_port->available()) {
@@ -3650,23 +3686,23 @@ void update_display(){
     if (!row_override[LCD_HHMM_CLOCK_ROW]){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (local_clock_hours < 10) {
+        if (clock_hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(clock_hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(clock_hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }   
       #else    
-        dtostrf(local_clock_hours, 0, 0, workstring2);
+        dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (local_clock_minutes < 10) {
+      if (clock_minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_minutes, 0, 0, workstring2);
+      dtostrf(clock_minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       if (LCD_HHMM_CLOCK_POSITION == LEFT){
         k3ngdisplay.print_left_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
@@ -3799,23 +3835,23 @@ void update_display(){
       update_time();
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (local_clock_hours < 10) {
+        if (clock_hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(clock_hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(clock_hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else          
-      dtostrf(local_clock_hours, 0, 0, workstring2);
+      dtostrf(clock_hours, 0, 0, workstring2);
       strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (local_clock_minutes < 10) {
+      if (clock_minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_minutes, 0, 0, workstring2);
+      dtostrf(clock_minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       switch (LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION){
         case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
@@ -3835,34 +3871,34 @@ void update_display(){
   // OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD **********************************************************************
   #if defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
 
-    static int last_clock_seconds_clock_and_maidenhead = 0;
+    static int last_clock_seconds = 0;
 
     if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (local_clock_hours < 10) {
+        if (clock_hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(clock_hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(clock_hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else    
-        dtostrf(local_clock_hours, 0, 0, workstring2);
+        dtostrf(clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (local_clock_minutes < 10) {
+      if (clock_minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_minutes, 0, 0, workstring2);
+      dtostrf(clock_minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring,":");
-      if (local_clock_seconds < 10) {
+      if (clock_seconds < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_seconds, 0, 0, workstring2);
+      dtostrf(clock_seconds, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring," ");
       strcat(workstring,coordinates_to_maidenhead(latitude,longitude));
@@ -3871,8 +3907,8 @@ void update_display(){
         case RIGHT: k3ngdisplay.print_right_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
         case CENTER: k3ngdisplay.print_center_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
       }
-      if (last_clock_seconds_clock_and_maidenhead != local_clock_seconds) {force_display_update_now = 1;}
-      last_clock_seconds_clock_and_maidenhead = local_clock_seconds;
+      if (last_clock_seconds != clock_seconds) {force_display_update_now = 1;}
+      last_clock_seconds = clock_seconds;
     }
 
   #endif //defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
@@ -5229,6 +5265,8 @@ void print_to_port(char * print_this,byte port){
 }
 
 
+
+
 // --------------------------------------------------------------
 void print_help(byte port){
 
@@ -5336,7 +5374,17 @@ void read_elevation(byte force_read){
       elevation = 0;
     }
     #endif // FEATURE_EL_POSITION_POTENTIOMETER
+  #ifdef FEATURE_EL_POSITION_LCH
 
+     elevation = lchreading*10;
+     #ifdef FEATURE_ELEVATION_CORRECTION
+     elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+     #endif // FEATURE_ELEVATION_CORRECTION
+     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+   
+ 
+    
+  #endif // FEATURE_EL_POSITION_LCH
 
     #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER
     static byte el_position_encoder_state = 0;
@@ -6674,6 +6722,18 @@ void initialize_serial(){
       gps_mirror_port->begin(GPS_MIRROR_PORT_BAUD_RATE);
     #endif //GPS_MIRROR_PORT
   #endif //FEATURE_GPS
+
+    #ifdef FEATURE_EL_POSITION_LCH
+    lch_port = LCH_PORT_MAPPED_TO;
+    lch_port->begin(LCH_PORT_BAUD_RATE);
+    //sets default settings (filters, etc) and sets autoupdate (device just pushes data without asking it)
+    lch_port->write("str0100\n"); //sets autopudate speed to 0.1sec
+    lch_port->write("setcasc\n"); //this activates auto push
+    //lch_port->write("setflt1\n"); //sets device filter to 0.125Hz
+    //lch_port->write("stpcasc\n");
+    //lch_port->write("setcasc\n");
+    lch_port->flush();
+  #endif //FEATURE_lch
 
 } /* initialize_serial */
 
@@ -9306,6 +9366,10 @@ void port_flush(){
 
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
   remote_unit_port->flush();
+  #endif
+
+  #if defined(FEATURE_EL_POSITION_LCH)
+  lch_port->flush();
   #endif
 
   #if defined(GPS_PORT_MAPPED_TO) && defined(FEATURE_GPS)
