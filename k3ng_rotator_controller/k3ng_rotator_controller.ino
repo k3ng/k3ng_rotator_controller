@@ -293,13 +293,16 @@
     2017.07.24.02
       Fixed typos in a few places with "or" in if statements.  Not sure how that happened :-/  (Thanks, Russ, K0WFS)
 
+    2017.07.31.01
+      Fixed various LCD display clock options to display local time
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2017.07.24.02"
+#define CODE_VERSION "2017.07.31.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3647,23 +3650,23 @@ void update_display(){
     if (!row_override[LCD_HHMM_CLOCK_ROW]){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (clock_hours < 10) {
+        if (local_clock_hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }   
       #else    
-        dtostrf(clock_hours, 0, 0, workstring2);
+        dtostrf(local_clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (clock_minutes < 10) {
+      if (local_clock_minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock_minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       if (LCD_HHMM_CLOCK_POSITION == LEFT){
         k3ngdisplay.print_left_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
@@ -3796,23 +3799,23 @@ void update_display(){
       update_time();
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (clock_hours < 10) {
+        if (local_clock_hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else          
-      dtostrf(clock_hours, 0, 0, workstring2);
+      dtostrf(local_clock_hours, 0, 0, workstring2);
       strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (clock_minutes < 10) {
+      if (local_clock_minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock_minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       switch (LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION){
         case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
@@ -3832,34 +3835,34 @@ void update_display(){
   // OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD **********************************************************************
   #if defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
 
-    static int last_clock_seconds = 0;
+    static int last_clock_seconds_clock_and_maidenhead = 0;
 
     if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (clock_hours < 10) {
+        if (local_clock_hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else    
-        dtostrf(clock_hours, 0, 0, workstring2);
+        dtostrf(local_clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (clock_minutes < 10) {
+      if (local_clock_minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock_minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring,":");
-      if (clock_seconds < 10) {
+      if (local_clock_seconds < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(clock_seconds, 0, 0, workstring2);
+      dtostrf(local_clock_seconds, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring," ");
       strcat(workstring,coordinates_to_maidenhead(latitude,longitude));
@@ -3868,8 +3871,8 @@ void update_display(){
         case RIGHT: k3ngdisplay.print_right_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
         case CENTER: k3ngdisplay.print_center_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
       }
-      if (last_clock_seconds != clock_seconds) {force_display_update_now = 1;}
-      last_clock_seconds = clock_seconds;
+      if (last_clock_seconds_clock_and_maidenhead != local_clock_seconds) {force_display_update_now = 1;}
+      last_clock_seconds_clock_and_maidenhead = local_clock_seconds;
     }
 
   #endif //defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
