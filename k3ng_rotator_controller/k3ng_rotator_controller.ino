@@ -296,13 +296,16 @@
     2017.07.31.01
       Fixed various LCD display clock options to display local time
 
+    2017.08.01.01
+      Fixed local time display bugs and local time calculation for negative offset timezones (UTC-x)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
 
   */
 
-#define CODE_VERSION "2017.07.31.01"
+#define CODE_VERSION "2017.08.01.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -755,13 +758,13 @@ byte current_az_speed_voltage = 0;
   unsigned long clock_hours = 0;
   unsigned long clock_minutes = 0;
   unsigned long clock_seconds = 0;
-  unsigned long local_clock_years = 0;
-  unsigned long local_clock_months = 0;
-  unsigned long local_clock_days = 0;
-  unsigned long local_clock_hours = 0;
-  unsigned long local_clock_minutes = 0;
-  unsigned long local_clock_seconds = 0;
-  int clock_year_set = 2014;
+  long local_clock_years = 0;
+  long local_clock_months = 0;
+  long local_clock_days = 0;
+  long local_clock_hours = 0;
+  long local_clock_minutes = 0;
+  long local_clock_seconds = 0;
+  int clock_year_set = 2017;
   byte clock_month_set = 1;
   byte clock_day_set = 1;
   byte clock_sec_set = 0;
@@ -3607,29 +3610,29 @@ void update_display(){
     if (!row_override[LCD_HHMMSS_CLOCK_ROW]){
       update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (clock_hours < 10) {
+        if (local_clock_hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock_hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else    
-        dtostrf(clock_hours, 0, 0, workstring2);
+        dtostrf(local_clock_hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (clock_minutes < 10) {
+      if (local_clock_minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock_minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring,":");
-      if (clock_seconds < 10) {
+      if (local_clock_seconds < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(clock_seconds, 0, 0, workstring2);
+      dtostrf(local_clock_seconds, 0, 0, workstring2);
       strcat(workstring,workstring2);
       if (LCD_HHMMSS_CLOCK_POSITION == LEFT){
         k3ngdisplay.print_left_fixed_field_size(workstring,LCD_HHMMSS_CLOCK_ROW-1,8);
@@ -4789,8 +4792,26 @@ void output_debug(){
 
         #ifdef FEATURE_CLOCK
           update_time();
-          sprintf(tempstring, "%s", timezone_modified_clock_string());
-          debug.print(tempstring);
+          if (configuration.clock_timezone_offset != 0){
+            sprintf(tempstring, "%s", timezone_modified_clock_string());
+            debug.print(tempstring);
+            debug.print("UTC");
+            if (configuration.clock_timezone_offset > 0){
+              debug.print("+");
+            }
+            if (configuration.clock_timezone_offset == int(configuration.clock_timezone_offset)){
+              debug.print(int(configuration.clock_timezone_offset));
+            } else {
+
+              debug.print(configuration.clock_timezone_offset);
+            }
+            debug.print("\t");
+            sprintf(tempstring, "%s", zulu_clock_string());
+            debug.print(tempstring);
+          } else {
+            sprintf(tempstring, "%s", zulu_clock_string());
+            debug.print(tempstring);
+          }       
         #else // FEATURE_CLOCK
           dtostrf((millis() / 1000),0,0,tempstring);
           debug.print(tempstring);
@@ -9619,6 +9640,53 @@ char * timezone_modified_clock_string(){
 } /* clock_string */
 #endif // FEATURE_CLOCK
 
+// --------------------------------------------------------------
+
+#ifdef FEATURE_CLOCK
+char * zulu_clock_string(){
+
+  char return_string[32] = "";
+  char temp_string[16] = "";
+
+
+  dtostrf(clock_years, 0, 0, temp_string);
+  strcpy(return_string, temp_string);
+  strcat(return_string, "-");
+  if (clock_months < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_months, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, "-");
+  if (clock_days < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_days, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, " ");
+
+  if (clock_hours < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_hours, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, ":");
+  if (clock_minutes < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_minutes, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string, ":");
+  if (clock_seconds < 10) {
+    strcat(return_string, "0");
+  }
+  dtostrf(clock_seconds, 0, 0, temp_string);
+  strcat(return_string, temp_string);
+  strcat(return_string,"Z");
+  return return_string;
+
+} /* zulu_clock_string */
+#endif // FEATURE_CLOCK
 
 // --------------------------------------------------------------
 
@@ -9685,60 +9753,170 @@ void update_time(){
 
   // calculate local time
 
-
-  unsigned long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
+  long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
 
   local_clock_years = clock_year_set;
   local_clock_months = clock_month_set;
-  local_clock_days = local_time / 86400L;
-  local_time -= local_clock_days * 86400L;
-  local_clock_days += clock_day_set;
-  local_clock_hours = local_time / 3600L;
+  local_clock_days = clock_day_set;
 
-  switch (local_clock_months) {
+  if (local_time < 0){
+    local_time = local_time + (24L * 60L * 60L) - 1;
+    local_clock_days--;
+    if (local_clock_days < 1){
+      local_clock_months--;
+      switch (local_clock_months) {
+        case 0:
+          local_clock_months = 12;
+          local_clock_days = 31;
+          local_clock_years--;
+          break;
+        case 1:
+        case 3:
+        case 5:
+        case 7:
+        case 8:
+        case 10:
+        case 12:
+          local_clock_days = 31;
+          break;
+        case 2: //February
+          if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
+            local_clock_days = 29;
+          } else {
+            local_clock_days = 28;
+          }
+          break;
+        case 4:
+        case 6:
+        case 9:
+        case 11:
+          local_clock_days = 30;
+          break;
+      } /* switch */    
+    }
+    local_clock_hours = local_time / 3600L;
+    local_time -= local_clock_hours * 3600L;
+    local_clock_minutes  = local_time / 60L;
+    local_time -= local_clock_minutes * 60L;
+    local_clock_seconds = local_time;  
 
-    case 1:
-    case 3:
-    case 5:
-    case 7:
-    case 8:
-    case 10:
-    case 12:
-      if (local_clock_days > 31) {
-        local_clock_days = 1; local_clock_months++;
-      }
-      break;
+  } else {  //(local_time < 0)
 
-    case 2:
-      if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
-        if (local_clock_days > 29) {
-          local_clock_days = 1; local_clock_months++;
+    local_clock_days = local_time / 86400L;
+    local_time -= local_clock_days * 86400L;
+    local_clock_days += clock_day_set;
+    local_clock_hours = local_time / 3600L;
+
+    switch (local_clock_months) {
+
+      case 1:
+      case 3:
+      case 5:
+      case 7:
+      case 8:
+      case 10:
+      case 12:
+        if (local_clock_days > 31) {
+          local_clock_days = 1;
+          local_clock_months++;
         }
-      } else {
-        if (local_clock_days > 28) {
-          local_clock_days = 1; local_clock_months++;
+        break;
+
+      case 2:
+        if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
+          if (local_clock_days > 29) {
+            local_clock_days = 1; 
+            local_clock_months++;
+          }
+        } else {
+          if (local_clock_days > 28) {
+            local_clock_days = 1;
+            local_clock_months++;
+          }
         }
-      }
-      break;
+        break;
 
-    case 4:
-    case 6:
-    case 9:
-    case 11:
-      if (local_clock_days > 30) {
-        local_clock_days = 1; local_clock_months++;
-      }
-      break;
-  } /* switch */
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        if (local_clock_days > 30) {
+          local_clock_days = 1;
+          local_clock_months++;
+        }
+        break;
+    } /* switch */
 
-  if (local_clock_months > 12) {
-    local_clock_months = 1; local_clock_years++;
-  }
+    if (local_clock_months > 12) {
+      local_clock_months = 1; 
+      local_clock_years++;
+    }
 
-  local_time -= local_clock_hours * 3600L;
-  local_clock_minutes  = local_time / 60L;
-  local_time -= local_clock_minutes * 60L;
-  local_clock_seconds = local_time;  
+    local_time -= local_clock_hours * 3600L;
+    local_clock_minutes  = local_time / 60L;
+    local_time -= local_clock_minutes * 60L;
+    local_clock_seconds = local_time;  
+
+
+  }  //(local_time < 0)
+
+
+
+// old method - breaks with negative timezones (UTC-x)
+
+  // unsigned long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
+
+  // local_clock_years = clock_year_set;
+  // local_clock_months = clock_month_set;
+  // local_clock_days = local_time / 86400L;
+  // local_time -= local_clock_days * 86400L;
+  // local_clock_days += clock_day_set;
+  // local_clock_hours = local_time / 3600L;
+
+  // switch (local_clock_months) {
+
+  //   case 1:
+  //   case 3:
+  //   case 5:
+  //   case 7:
+  //   case 8:
+  //   case 10:
+  //   case 12:
+  //     if (local_clock_days > 31) {
+  //       local_clock_days = 1; local_clock_months++;
+  //     }
+  //     break;
+
+  //   case 2:
+  //     if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
+  //       if (local_clock_days > 29) {
+  //         local_clock_days = 1; local_clock_months++;
+  //       }
+  //     } else {
+  //       if (local_clock_days > 28) {
+  //         local_clock_days = 1; local_clock_months++;
+  //       }
+  //     }
+  //     break;
+
+  //   case 4:
+  //   case 6:
+  //   case 9:
+  //   case 11:
+  //     if (local_clock_days > 30) {
+  //       local_clock_days = 1; local_clock_months++;
+  //     }
+  //     break;
+  // } /* switch */
+
+  // if (local_clock_months > 12) {
+  //   local_clock_months = 1; local_clock_years++;
+  // }
+
+  // local_time -= local_clock_hours * 3600L;
+  // local_clock_minutes  = local_time / 60L;
+  // local_time -= local_clock_minutes * 60L;
+  // local_clock_seconds = local_time;  
 
 
 
