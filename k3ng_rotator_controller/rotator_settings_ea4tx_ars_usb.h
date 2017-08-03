@@ -149,7 +149,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 107
+#define EEPROM_MAGIC_NUMBER 108
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 
@@ -315,74 +315,3 @@ You can tweak these, but read the online documentation!
 #define AUTOCORRECT_TIME_MS_EL 1000 
 
 
-
-
-/* ---------------------------- object declarations ----------------------------------------------
-
-
- Object declarations are required for several devices, including LCD displays, compass devices, and accelerometers
-   
-
-*/
-/*
-
-#if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
-  K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME); 
-#endif  
-
-#ifdef FEATURE_AZ_POSITION_HMC5883L
-  HMC5883L compass;
-#endif //FEATURE_AZ_POSITION_HMC5883L
-
-#ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-  ADXL345 accel;
-#endif //FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-
-#ifdef FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-  Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
-#endif //FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-
-#if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
-  Adafruit_LSM303 lsm;
-#endif
-
-#if defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
-  LSM303 compass;
-  LSM303::vector<int16_t> running_min = {32767, 32767, 32767}, running_max = {-32768, -32768, -32768};
-  char report[80];
-#endif //FEATURE_AZ_POSITION_POLOLU_LSM303
-
-#ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
-  #include "hh12.h"
-  hh12 azimuth_hh12;
-#endif //FEATURE_AZ_POSITION_HH12_AS5045_SSI
-
-#ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
-  #include "hh12.h"
-  hh12 elevation_hh12;
-#endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
-
-#ifdef FEATURE_GPS
-  TinyGPS gps;
-#endif //FEATURE_GPS
-
-#ifdef FEATURE_RTC_DS1307
-  RTC_DS1307 rtc;
-#endif //FEATURE_RTC_DS1307
-
-#ifdef FEATURE_RTC_PCF8583
-  PCF8583 rtc(0xA0);
-#endif //FEATURE_RTC_PCF8583
-
-#ifdef HARDWARE_EA4TX_ARS_USB
-  #undef LCD_COLUMNS
-  #undef LCD_ROWS
-  #define LCD_COLUMNS 16
-  #define LCD_ROWS 2
-#endif //HARDWARE_EA4TX_ARS_USB
-
-#ifdef HARDWARE_M0UPU
-  #undef LCD_ROWS
-  #define LCD_ROWS 2
-#endif //HARDWARE_M0UPU
-*/

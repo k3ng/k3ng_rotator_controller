@@ -120,6 +120,10 @@
 #define HACK_REDUCED_DEBUG
 #endif
 
+#if defined(FEATURE_AUTOPARK) && !defined(FEATURE_PARK)
+#define FEATURE_PARK
+#endif
+
 
 
 

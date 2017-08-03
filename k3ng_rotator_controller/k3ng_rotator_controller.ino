@@ -4,7 +4,9 @@
    K3NG
    anthony.good@gmail.com
   
+  Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki
 
+  Support: https://groups.yahoo.com/neo/groups/radioartisan/info
   
    Code contributions, testing, ideas, bug fixes, hardware, support, encouragement, and/or bourbon provided by:
      John W3SA
@@ -64,7 +66,7 @@
 
       Rules for using this code:
 
-          Rule #1: Read the documentation.
+          Rule #1: Read the documentation at https://github.com/k3ng/k3ng_rotator_controller/wiki
   
           Rule #2: Refer to rule #1.
 
@@ -299,13 +301,19 @@
     2017.08.01.01
       Fixed local time display bugs and local time calculation for negative offset timezones (UTC-x)
 
+    2017.08.02.01
+      FEATURE_AUTOPARK created and documented here https://github.com/k3ng/k3ng_rotator_controller/wiki/705-Park-and-AutoPark
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
+  Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki
+
+  Support: https://groups.yahoo.com/neo/groups/radioartisan/info
 
   */
 
-#define CODE_VERSION "2017.08.01.01"
+#define CODE_VERSION "2017.08.02.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -532,6 +540,8 @@ struct config_t {
 #endif
   byte brake_az_disabled;
   float clock_timezone_offset;
+  byte autopark_active;
+  unsigned int autopark_time_minutes;
 } configuration;
 
 
@@ -1048,8 +1058,11 @@ void loop() {
     service_rotation_indicator_pin();
   #endif // FEATURE_ROTATION_INDICATOR_PIN
 
-  #ifdef FEATURE_PARK
+  #if defined(FEATURE_PARK)
     service_park();
+    #if defined(FEATURE_AUTOPARK)
+      service_autopark();
+    #endif
   #endif // FEATURE_PARK
 
   #ifdef FEATURE_LIMIT_SENSE
@@ -1580,8 +1593,6 @@ void check_az_preset_potentiometer() {
           check_pot = 1;
         }
       }
-
-//zzzzzzz
 
       if (check_pot) {
         pot_read = analogReadEnhanced(az_preset_pot);
@@ -4055,6 +4066,10 @@ void read_settings_from_eeprom(){
         debug.print(configuration.azimuth_starting_point);
         debug.print("az rotation capability:");
         debug.print(configuration.azimuth_rotation_capability);
+        debug.print("autopark_active:");
+        debug.print(configuration.autopark_active);
+        debug.print("autopark_time_minutes:");
+        debug.print(configuration.autopark_time_minutes);
         debug.println("");
       }
     #endif // DEBUG_EEPROM
@@ -4143,6 +4158,8 @@ void initialize_eeprom_with_defaults(){
   configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
   configuration.brake_az_disabled = 0; //(brake_az ? 1 : 0);
   configuration.clock_timezone_offset = 0;
+  configuration.autopark_active = 0;
+  configuration.autopark_time_minutes = 0;
 
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
@@ -10818,13 +10835,88 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       break;
   #endif // FEATURE_ANCILLARY_PIN_CONTROL
 
-
+  #if defined(FEATURE_AUTOPARK)
+    case 'Y':
+        if (input_buffer_index == 2){ // query command
+          if (configuration.autopark_active){
+            strcpy(return_string, "Autopark is on, timer: ");
+            dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+            strcat(return_string, temp_string);
+            strcat(return_string, " minutes");
+          } else {
+            strcpy(return_string, "Autopark is off");
+          }
+        }
+        if (input_buffer_index == 3){
+          if ((input_buffer[2] > 47) && (input_buffer[2] < 58)){
+            if (input_buffer[2] == 48){                              // had to break this up - for some strange reason, properly written 
+              strcpy(return_string, "Autopark off");                 // this would not upload
+              configuration.autopark_active = 0;
+              configuration_dirty = 1;
+            }  
+            if (input_buffer[2] != 48){
+              strcpy(return_string, "Autopark on, timer: ");
+              configuration.autopark_time_minutes = input_buffer[2] - 48;
+              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              strcat(return_string, temp_string);
+              strcat(return_string, " minute");
+              if (configuration.autopark_time_minutes > 1){
+                strcat(return_string, "s");
+              }
+              configuration.autopark_active = 1;
+              configuration_dirty = 1;
+            }
+          } else {
+            strcpy(return_string, "Error");
+          }
+        }
+        if (input_buffer_index == 4){
+          if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58)){
+              strcpy(return_string, "Autopark on, timer: ");
+              configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              strcat(return_string, temp_string);
+              strcat(return_string, " minutes");
+              configuration.autopark_active = 1;
+              configuration_dirty = 1;
+          } else {
+            strcpy(return_string, "Error");
+          }
+        }         
+        if (input_buffer_index == 5){
+          if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)){
+              strcpy(return_string, "Autopark on, timer: ");
+              configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              strcat(return_string, temp_string);
+              strcat(return_string, " minutes");
+              configuration.autopark_active = 1;
+              configuration_dirty = 1;
+          } else {
+            strcpy(return_string, "Error");
+          }
+        }   
+        if (input_buffer_index == 6){
+          if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)  && (input_buffer[5] > 47) && (input_buffer[5] < 58)){
+              strcpy(return_string, "Autopark on, timer: ");
+              configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 1000) + ((input_buffer[3] - 48) * 100) + ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
+              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              strcat(return_string, temp_string);
+              strcat(return_string, " minutes");
+              configuration.autopark_active = 1;
+              configuration_dirty = 1;
+          } else {
+            strcpy(return_string, "Error");
+          }
+        }                   
+      break;
+  #endif
 
 // zzzzzzz
 
-// TODO : one big status query command (get rid of all these little commands)      
+// TODO : one big status query command    
 
-  #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
+  #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS)
 
     case '?':
       strcpy(return_string, "\\!??");  //  \\??xxyy - failed response back
@@ -11233,9 +11325,7 @@ Not implemented yet:
 
 
 
-
-
-  #endif  //!defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
+  #endif  //!defined(OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS)
 
 
     default: strcpy(return_string, "Error.");
@@ -13034,5 +13124,38 @@ void test_display(){
 #endif //FEATURE_TEST_DISPLAY_AT_STARTUP
 
 
+
+//------------------------------------------------------
+#if defined(FEATURE_AUTOPARK)
+void service_autopark(){
+
+
+  static unsigned long last_activity_time = 0;
+
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    if ((az_state != IDLE) || (el_state != IDLE) || (park_status == PARKED)){
+      last_activity_time = millis();
+    }
+  #else
+    if ((az_state != IDLE) || (park_status == PARKED)){
+      last_activity_time = millis();
+    }
+  #endif
+
+
+  if ((configuration.autopark_active) && ((millis() - last_activity_time) > (long(configuration.autopark_time_minutes) * 60000L)) 
+    && ((park_status != PARK_INITIATED) || (park_status != PARKED))) {
+    #if defined(DEBUG_PARK)
+      debug.print(F("service_autopark: initiating park\n"));
+    #endif
+    initiate_park();
+  }
+
+}
+#endif //FEATURE_AUTOPARK
+
+
 // that's all, folks !
+
+
 
