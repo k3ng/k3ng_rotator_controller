@@ -304,6 +304,9 @@
     2017.08.02.01
       FEATURE_AUTOPARK created and documented here https://github.com/k3ng/k3ng_rotator_controller/wiki/705-Park-and-AutoPark
 
+    2017.08.14.01
+      Added \+ command which switched LCD azimuth display mode between normal, raw, and +overlap modes  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -313,7 +316,7 @@
 
   */
 
-#define CODE_VERSION "2017.08.02.01"
+#define CODE_VERSION "2017.08.14.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -542,6 +545,7 @@ struct config_t {
   float clock_timezone_offset;
   byte autopark_active;
   unsigned int autopark_time_minutes;
+  byte azimuth_display_mode;
 } configuration;
 
 
@@ -3256,11 +3260,31 @@ void update_display(){
   #if defined(OPTION_DISPLAY_HEADING)
     #if !defined(FEATURE_ELEVATION_CONTROL)                    // ---------------- az only -----------------------------------
       strcpy(workstring,AZIMUTH_STRING);
-      dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+      switch(configuration.azimuth_display_mode){
+        case AZ_DISPLAY_MODE_NORMAL:
+        case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+          dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          break;
+        case AZ_DISPLAY_MODE_RAW:
+          dtostrf(raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          break;  
+      }               
       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-        if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
-        if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
-      #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE    
+        switch(configuration.azimuth_display_mode){
+          case AZ_DISPLAY_MODE_NORMAL:
+          case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+            if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+            if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+            break;
+          case AZ_DISPLAY_MODE_RAW:
+            if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+            if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+            break;            
+        }
+      #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE  
+      if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+        strcat(workstring,"+");
+      } 
       strcat(workstring,workstring2);
       strcat(workstring,DISPLAY_DEGREES_STRING);
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);
@@ -3274,11 +3298,31 @@ void update_display(){
       #else
         strcpy(workstring,AZ_SPACE_STRING);
       #endif // efined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-      dtostrf(azimuth/ LCD_HEADING_MULTIPLIER, 3, LCD_DECIMAL_PLACES, workstring2);
+      switch(configuration.azimuth_display_mode){
+        case AZ_DISPLAY_MODE_NORMAL:
+        case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+          dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 3, LCD_DECIMAL_PLACES, workstring2);
+          break;
+        case AZ_DISPLAY_MODE_RAW:
+          dtostrf(raw_azimuth / LCD_HEADING_MULTIPLIER, 3, LCD_DECIMAL_PLACES, workstring2);
+          break;  
+      }  
       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-        if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
-        if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}
+        switch(configuration.azimuth_display_mode){
+          case AZ_DISPLAY_MODE_NORMAL:
+          case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+            if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+            if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+            break;
+          case AZ_DISPLAY_MODE_RAW:
+            if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+            if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+            break;            
+        }
       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+      if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+        strcat(workstring,"+");
+      }         
       strcat(workstring,workstring2);
       #if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
         if (LCD_COLUMNS > 14) {
@@ -3323,11 +3367,31 @@ void update_display(){
   // OPTION_DISPLAY_HEADING_AZ_ONLY - show heading ***********************************************************************************
   #if defined(OPTION_DISPLAY_HEADING_AZ_ONLY)       
     strcpy(workstring,AZIMUTH_STRING);
-    dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+      switch(configuration.azimuth_display_mode){
+        case AZ_DISPLAY_MODE_NORMAL:
+        case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+          dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          break;
+        case AZ_DISPLAY_MODE_RAW:
+          dtostrf(raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          break;  
+      }  
     #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-      if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
-      if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
-    #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE    
+      switch(configuration.azimuth_display_mode){
+        case AZ_DISPLAY_MODE_NORMAL:
+        case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+          if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+          if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+          break;
+        case AZ_DISPLAY_MODE_RAW:
+          if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+          if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+          break;            
+      } 
+    #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE   
+    if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+      strcat(workstring,"+");
+    }        
     strcat(workstring,workstring2);
     strcat(workstring,DISPLAY_DEGREES_STRING);
     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_AZ_ONLY_HEADING_ROW-1,LCD_AZ_ONLY_HEADING_FIELD_SIZE);
@@ -3374,7 +3438,18 @@ void update_display(){
             strcpy(workstring,CCW_STRING);
           }
           strcat(workstring," ");
-          dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          switch(configuration.azimuth_display_mode){
+            case AZ_DISPLAY_MODE_NORMAL:
+            case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+              dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;
+            case AZ_DISPLAY_MODE_RAW:
+              dtostrf(target_raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;              
+          }
+          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+            strcat(workstring,"+");
+          }           
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
         } else {
@@ -3463,7 +3538,18 @@ void update_display(){
             strcat(workstring,CCW_STRING);
           }
           strcat(workstring," ");
-          dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          switch(configuration.azimuth_display_mode){
+            case AZ_DISPLAY_MODE_NORMAL:
+            case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+              dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;
+            case AZ_DISPLAY_MODE_RAW:
+              dtostrf(target_raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;              
+          }
+          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+            strcat(workstring,"+");
+          }    
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           row_override[LCD_STATUS_ROW] = 1;
@@ -4070,6 +4156,8 @@ void read_settings_from_eeprom(){
         debug.print(configuration.autopark_active);
         debug.print("autopark_time_minutes:");
         debug.print(configuration.autopark_time_minutes);
+        debug.print("azimuth_display_mode:");
+        debug.print(configuration.azimuth_display_mode);
         debug.println("");
       }
     #endif // DEBUG_EEPROM
@@ -4160,6 +4248,7 @@ void initialize_eeprom_with_defaults(){
   configuration.clock_timezone_offset = 0;
   configuration.autopark_active = 0;
   configuration.autopark_time_minutes = 0;
+  configuration.azimuth_display_mode = AZ_DISPLAY_MODE_NORMAL;
 
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
@@ -10911,6 +11000,24 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }                   
       break;
   #endif
+
+  case '+':
+    if (configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS){
+      configuration.azimuth_display_mode = AZ_DISPLAY_MODE_NORMAL;
+      strcpy(return_string, "Azimuth Display Mode: Normal");
+    } else {
+      if (configuration.azimuth_display_mode == AZ_DISPLAY_MODE_RAW){
+        configuration.azimuth_display_mode = AZ_DISPLAY_MODE_OVERLAP_PLUS;
+        strcpy(return_string, "Azimuth Display Mode: +Overlap");
+      } else {
+        if (configuration.azimuth_display_mode == AZ_DISPLAY_MODE_NORMAL){
+          configuration.azimuth_display_mode = AZ_DISPLAY_MODE_RAW;
+          strcpy(return_string, "Azimuth Display Mode: Raw Degrees");
+        }
+      }
+    }
+    configuration_dirty = 1;
+    break;
 
 // zzzzzzz
 

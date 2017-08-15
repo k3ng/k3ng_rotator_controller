@@ -16,8 +16,8 @@
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-#define FEATURE_MOON_TRACKING
-#define FEATURE_SUN_TRACKING
+// #define FEATURE_MOON_TRACKING
+// #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
 #define FEATURE_RTC_DS1307
@@ -133,16 +133,16 @@
 // #define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
 // #define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 // #define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
-// #define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
-#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
+#define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
+// #define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+// #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
 // #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
-//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)

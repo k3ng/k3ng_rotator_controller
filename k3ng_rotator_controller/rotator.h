@@ -163,5 +163,9 @@
 #define AUTOCORRECT_WATCHING_AZ 3
 #define AUTOCORRECT_WATCHING_EL 4
 
+#define AZ_DISPLAY_MODE_NORMAL 0
+#define AZ_DISPLAY_MODE_RAW 1
+#define AZ_DISPLAY_MODE_OVERLAP_PLUS 2
+
 /* ------end of macros ------- */
 
