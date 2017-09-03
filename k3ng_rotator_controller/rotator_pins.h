@@ -212,3 +212,8 @@
   #define ywrobot_blpol POSITIVE             
 #endif //FEATURE_YWROBOT_I2C_DISPLAY
 
+
+// #define pin_led_cw 0
+// #define pin_led_ccw 0
+// #define pin_led_up 0
+// #define pin_led_down 0

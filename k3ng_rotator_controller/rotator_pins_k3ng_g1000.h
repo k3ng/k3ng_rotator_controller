@@ -167,3 +167,8 @@
 #define gps_sync 0
 #endif //FEATURE_GPS
 
+
+// #define pin_led_cw 0
+// #define pin_led_ccw 0
+// #define pin_led_up 0
+// #define pin_led_down 0

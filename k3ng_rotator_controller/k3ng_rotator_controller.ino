@@ -307,6 +307,9 @@
     2017.08.14.01
       Added \+ command which switched LCD azimuth display mode between normal, raw, and +overlap modes  
 
+    2017.09.03.01
+      Added auxiliary pins for rotate LEDs: pin_led_cw, pin_led_ccw, pin_led_up, and pin_led_down, and related settings PIN_LED_ACTIVE_STATE, PIN_LED_INACTIVE_STATE  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -316,7 +319,7 @@
 
   */
 
-#define CODE_VERSION "2017.08.14.01"
+#define CODE_VERSION "2017.09.03.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -6040,9 +6043,15 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_cw) {
           digitalWriteEnhanced(rotate_cw, ROTATE_PIN_ACTIVE_VALUE);
+          #if defined(pin_led_cw)
+            digitalWriteEnhanced(pin_led_cw, PIN_LED_ACTIVE_STATE);
+          #endif
         }
         if (rotate_ccw) {
           digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_ccw)
+            digitalWriteEnhanced(pin_led_ccw, PIN_LED_INACTIVE_STATE);
+          #endif          
         }
         if (rotate_cw_ccw){
           digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_ACTIVE_VALUE);
@@ -6068,6 +6077,9 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_cw) {
           digitalWriteEnhanced(rotate_cw, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_cw)
+            digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
+          #endif          
         }
         if (rotate_cw_ccw){
           digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_INACTIVE_VALUE);
@@ -6143,9 +6155,15 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_cw) {
           digitalWriteEnhanced(rotate_cw, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_cw)
+            digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
+          #endif          
         }
         if (rotate_ccw) {
           digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE);
+          #if defined(pin_led_ccw)
+            digitalWriteEnhanced(pin_led_ccw, PIN_LED_ACTIVE_STATE);
+          #endif          
         }
         if (rotate_cw_ccw){
           digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_ACTIVE_VALUE);
@@ -6185,6 +6203,9 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_ccw) {
           digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_ccw)
+            digitalWriteEnhanced(pin_led_ccw, PIN_LED_INACTIVE_STATE);
+          #endif          
         }
         if (rotate_ccw_freq) {
           noTone(rotate_ccw_freq);
@@ -6254,9 +6275,15 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_up) {
           digitalWriteEnhanced(rotate_up, ROTATE_PIN_ACTIVE_VALUE);
+          #if defined(pin_led_up)
+            digitalWriteEnhanced(pin_led_up, PIN_LED_ACTIVE_STATE);
+          #endif          
         }
         if (rotate_down) {
           digitalWriteEnhanced(rotate_down, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_down)
+            digitalWriteEnhanced(pin_led_down, PIN_LED_INACTIVE_STATE);
+          #endif           
         }
         if (rotate_up_or_down) {
           digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_ACTIVE_VALUE);
@@ -6286,6 +6313,9 @@ void rotator(byte rotation_action, byte rotation_type) {
       #endif // DEBUG_ROTATOR
         if (rotate_up) {
           digitalWriteEnhanced(rotate_up, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_up)
+            digitalWriteEnhanced(pin_led_up, PIN_LED_INACTIVE_STATE);
+          #endif            
         }
         if (rotate_up_pwm) {
           analogWriteEnhanced(rotate_up_pwm, 0); digitalWriteEnhanced(rotate_up_pwm, LOW);
@@ -6368,9 +6398,15 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         if (rotate_up) {
           digitalWriteEnhanced(rotate_up, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_up)
+            digitalWriteEnhanced(pin_led_up, PIN_LED_INACTIVE_STATE);
+          #endif            
         }
         if (rotate_down) {
           digitalWriteEnhanced(rotate_down, ROTATE_PIN_ACTIVE_VALUE);
+          #if defined(pin_led_down)
+            digitalWriteEnhanced(pin_led_down, PIN_LED_ACTIVE_STATE);
+          #endif            
         }
         if (rotate_up_or_down) {
           digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_ACTIVE_VALUE);
@@ -6400,6 +6436,9 @@ void rotator(byte rotation_action, byte rotation_type) {
           #endif // DEBUG_ROTATOR
         if (rotate_down) {
           digitalWriteEnhanced(rotate_down, ROTATE_PIN_INACTIVE_VALUE);
+          #if defined(pin_led_down)
+            digitalWriteEnhanced(pin_led_down, PIN_LED_INACTIVE_STATE);
+          #endif           
         }
         if (rotate_down_pwm) {
           analogWriteEnhanced(rotate_down_pwm, 0); digitalWriteEnhanced(rotate_down_pwm, LOW);
@@ -6536,6 +6575,25 @@ void initialize_pins(){
     pinModeEnhanced(rotate_cw_ccw, OUTPUT);
   }
 
+  #if defined(pin_led_cw)
+    pinModeEnhanced(pin_led_cw, OUTPUT);
+    digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
+  #endif
+
+  #if defined(pin_led_ccw)
+    pinModeEnhanced(pin_led_ccw, OUTPUT);
+    digitalWriteEnhanced(pin_led_ccw, PIN_LED_INACTIVE_STATE);
+  #endif
+
+  #if defined(pin_led_up)
+    pinModeEnhanced(pin_led_up, OUTPUT);
+    digitalWriteEnhanced(pin_led_up, PIN_LED_INACTIVE_STATE);
+  #endif
+
+  #if defined(pin_led_down)
+    pinModeEnhanced(pin_led_down, OUTPUT);
+    digitalWriteEnhanced(pin_led_down, PIN_LED_INACTIVE_STATE);
+  #endif
 
   rotator(DEACTIVATE, CW);
   rotator(DEACTIVATE, CCW);

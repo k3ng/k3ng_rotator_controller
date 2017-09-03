@@ -191,4 +191,9 @@
 #endif //FEATURE_ANALOG_OUTPUT_PINS
 
 
+// #define pin_led_cw 0
+// #define pin_led_ccw 0
+// #define pin_led_up 0
+// #define pin_led_down 0
+
 

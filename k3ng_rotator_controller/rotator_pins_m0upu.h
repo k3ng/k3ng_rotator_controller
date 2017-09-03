@@ -180,3 +180,7 @@
 #define pin_memsic_2125_y 0
 #endif //FEATURE_EL_POSITION_MEMSIC_2125
 
+// #define pin_led_cw 0
+// #define pin_led_ccw 0
+// #define pin_led_up 0
+// #define pin_led_down 0

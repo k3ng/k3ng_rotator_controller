@@ -85,3 +85,8 @@
 #define overlap_led 0            // line goes high when azimuth rotator is in overlap (> 360 rotators)
 #define preset_start_button 0    // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
 
+
+// #define pin_led_cw 0
+// #define pin_led_ccw 0
+// #define pin_led_up 0
+// #define pin_led_down 0
