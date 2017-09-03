@@ -16,8 +16,8 @@
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-// #define FEATURE_MOON_TRACKING
-// #define FEATURE_SUN_TRACKING
+#define FEATURE_MOON_TRACKING
+#define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
 #define FEATURE_RTC_DS1307
@@ -106,7 +106,7 @@
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 #define FEATURE_PARK
-// #define FEATURE_AUTOPARK               // Requires FEATURE_PARK
+#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
 #define OPTION_EL_MANUAL_ROTATE_LIMITS
 #define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
@@ -139,7 +139,7 @@
 #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
-// #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
+#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 #define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE

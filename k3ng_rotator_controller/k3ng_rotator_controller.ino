@@ -310,6 +310,10 @@
     2017.09.03.01
       Added auxiliary pins for rotate LEDs: pin_led_cw, pin_led_ccw, pin_led_up, and pin_led_down, and related settings PIN_LED_ACTIVE_STATE, PIN_LED_INACTIVE_STATE  
 
+    2017.09.03.02
+      Added pins pin_autopark_disable and pin_autopark_timer_reset for FEATURE_AUTOPARK
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -319,7 +323,7 @@
 
   */
 
-#define CODE_VERSION "2017.09.03.01"
+#define CODE_VERSION "2017.09.03.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -953,6 +957,9 @@ DebugClass debug;
   long encoder_pjrc_current_el_position;
 #endif  
 
+#ifdef FEATURE_AUTOPARK
+  unsigned long last_activity_time_autopark = 0;
+#endif  
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 
@@ -3364,9 +3371,6 @@ void update_display(){
     #endif // FEATURE_ELEVATION_CONTROL
   #endif //defined(OPTION_DISPLAY_HEADING)  
 
-
-//zzzzzzz
-
   // OPTION_DISPLAY_HEADING_AZ_ONLY - show heading ***********************************************************************************
   #if defined(OPTION_DISPLAY_HEADING_AZ_ONLY)       
     strcpy(workstring,AZIMUTH_STRING);
@@ -3507,8 +3511,6 @@ void update_display(){
         }
       #endif // FEATURE_PARK
 
-//zzzzzz
-        
       #ifdef FEATURE_AZ_PRESET_ENCODER 
         float target = 0; 
         if (preset_encoders_state == ENCODER_AZ_PENDING) {
@@ -6710,6 +6712,16 @@ void initialize_pins(){
     pinModeEnhanced(parked_pin, OUTPUT);
     digitalWriteEnhanced(parked_pin, LOW);
   }
+    #ifdef FEATURE_AUTOPARK
+      if (pin_autopark_disable) {
+        pinModeEnhanced(pin_autopark_disable, INPUT);
+        digitalWriteEnhanced(pin_autopark_disable, HIGH);
+      }  
+      if (pin_autopark_timer_reset) {
+        pinModeEnhanced(pin_autopark_timer_reset, INPUT);
+        digitalWriteEnhanced(pin_autopark_timer_reset, HIGH);
+      }  
+    #endif //FEATURE_AUTOPARK
   #endif // FEATURE_PARK
 
   if (blink_led) {
@@ -7005,18 +7017,18 @@ void initialize_peripherals(){
 void submit_request(byte axis, byte request, int parm, byte called_by){
 
   #ifdef DEBUG_SUBMIT_REQUEST
-  debug.print("submit_request: ");
-  debug.print(called_by);
-  debug.print(" ");
+    debug.print("submit_request: ");
+    debug.print(called_by);
+    debug.print(" ");
   #endif // DEBUG_SUBMIT_REQUEST
 
   #ifdef FEATURE_PARK
-  park_status = NOT_PARKED;
+    park_status = NOT_PARKED;
   #endif // FEATURE_PARK
 
   if (axis == AZ) {
     #ifdef DEBUG_SUBMIT_REQUEST
-    debug.print("AZ "); 
+      debug.print("AZ "); 
     #endif // DEBUG_SUBMIT_REQUEST
     az_request = request;
     az_request_parm = parm;
@@ -7026,7 +7038,7 @@ void submit_request(byte axis, byte request, int parm, byte called_by){
   #ifdef FEATURE_ELEVATION_CONTROL
   if (axis == EL) {
     #ifdef DEBUG_SUBMIT_REQUEST
-    debug.print("EL ");
+      debug.print("EL ");
     #endif // DEBUG_SUBMIT_REQUEST
     el_request = request;
     el_request_parm = parm;
@@ -7035,20 +7047,20 @@ void submit_request(byte axis, byte request, int parm, byte called_by){
   #endif // FEATURE_ELEVATION_CONTROL
 
   #ifdef DEBUG_SUBMIT_REQUEST
-  switch(request){
-    case 0: debug.print("REQUEST_STOP");break;
-    case 1: debug.print("REQUEST_AZIMUTH");break;
-    case 2: debug.print("REQUEST_AZIMUTH_RAW");break;
-    case 3: debug.print("REQUEST_CW");break;
-    case 4: debug.print("REQUEST_CCW");break;
-    case 5: debug.print("REQUEST_UP");break;
-    case 6: debug.print("REQUEST_DOWN");break;
-    case 7: debug.print("REQUEST_ELEVATION");break;
-    case 8: debug.print("REQUEST_KILL");break;
-  }
-  debug.print(" ");
-  debug.print(parm);
-  debug.println("");
+    switch(request){
+      case 0: debug.print("REQUEST_STOP");break;
+      case 1: debug.print("REQUEST_AZIMUTH");break;
+      case 2: debug.print("REQUEST_AZIMUTH_RAW");break;
+      case 3: debug.print("REQUEST_CW");break;
+      case 4: debug.print("REQUEST_CCW");break;
+      case 5: debug.print("REQUEST_UP");break;
+      case 6: debug.print("REQUEST_DOWN");break;
+      case 7: debug.print("REQUEST_ELEVATION");break;
+      case 8: debug.print("REQUEST_KILL");break;
+    }
+    debug.print(" ");
+    debug.print(parm);
+    debug.println("");
   #endif // DEBUG_SUBMIT_REQUEST  
 
 } /* submit_request */
@@ -7293,15 +7305,15 @@ void service_rotation(){
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
-          if (park_status == PARK_INITIATED) {
-            park_status = PARKED;
-          }
+            if (park_status == PARK_INITIATED) {
+              park_status = PARKED;
+            }
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
 
           #if defined(FEATURE_PARK) && defined(FEATURE_ELEVATION_CONTROL)
-          if ((park_status == PARK_INITIATED) && (el_state == IDLE)) {
-            park_status = PARKED;
-          }
+            if ((park_status == PARK_INITIATED) && (el_state == IDLE)) {
+              park_status = PARKED;
+            }
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
 
         }
@@ -7320,15 +7332,15 @@ void service_rotation(){
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
-          if (park_status == PARK_INITIATED) {
-            park_status = PARKED;
-          }
+            if (park_status == PARK_INITIATED) {
+              park_status = PARKED;
+            }
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
 
           #if defined(FEATURE_PARK) && defined(FEATURE_ELEVATION_CONTROL)
-          if ((park_status == PARK_INITIATED) && (el_state == IDLE)) {
-            park_status = PARKED;
-          }
+            if ((park_status == PARK_INITIATED) && (el_state == IDLE)) {
+              park_status = PARKED;
+            }
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
 
         }
@@ -7565,9 +7577,9 @@ read_elevation(0);
 control_port->println(abs(elevation - target_elevation));
 control_port->println();*/
           #if defined(FEATURE_PARK)
-          if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
-            park_status = PARKED;
-          }
+            if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
+              park_status = PARKED;
+            }
           #endif // defined(FEATURE_PARK)
 
         }
@@ -7592,9 +7604,9 @@ read_elevation(0);
 control_port->println(abs(elevation - target_elevation));
 control_port->println();*/
           #if defined(FEATURE_PARK)
-          if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
-            park_status = PARKED;
-          }
+            if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
+              park_status = PARKED;
+            }
           #endif // defined(FEATURE_PARK)
         }
       }
@@ -7651,7 +7663,7 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         if (az_state != IDLE) {
           if (az_slowdown_active) {
@@ -7700,7 +7712,7 @@ void service_request_queue(){
           }
           if ((target_azimuth > (azimuth - (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER))) && (target_azimuth < (azimuth + (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER)))) {
             #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-            debug.print(" request within tolerance"); //zzzzzzzz
+            debug.print(" request within tolerance");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
             within_tolerance_flag = 1;
             // az_request_queue_state = NONE;
@@ -7906,12 +7918,12 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         if (((az_state == SLOW_START_CCW) || (az_state == NORMAL_CCW) || (az_state == SLOW_DOWN_CCW) || (az_state == TIMED_SLOW_DOWN_CCW)) && (az_slowstart_active)) {
           az_state = INITIALIZE_DIR_CHANGE_TO_CW;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-          debug.print(" INITIALIZE_DIR_CHANGE_TO_CW");
+            debug.print(" INITIALIZE_DIR_CHANGE_TO_CW");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
           if ((az_state != SLOW_START_CW) && (az_state != NORMAL_CW)) {
@@ -7938,12 +7950,12 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         if (((az_state == SLOW_START_CW) || (az_state == NORMAL_CW) || (az_state == SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CW)) && (az_slowstart_active)) {
           az_state = INITIALIZE_DIR_CHANGE_TO_CCW;
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
-          debug.print(" INITIALIZE_DIR_CHANGE_TO_CCW");
+            debug.print(" INITIALIZE_DIR_CHANGE_TO_CCW");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
           if ((az_state != SLOW_START_CCW) && (az_state != NORMAL_CCW)) {
@@ -7968,7 +7980,7 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         rotator(DEACTIVATE, CW);
         rotator(DEACTIVATE, CCW);
@@ -8092,7 +8104,7 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         if (((el_state == SLOW_START_DOWN) || (el_state == NORMAL_DOWN) || (el_state == SLOW_DOWN_DOWN) || (el_state == TIMED_SLOW_DOWN_DOWN)) && (el_slowstart_active)) {
           el_state = INITIALIZE_DIR_CHANGE_TO_UP;
@@ -8125,7 +8137,7 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         if (((el_state == SLOW_START_UP) || (el_state == NORMAL_UP) || (el_state == SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_UP)) && (el_slowstart_active)) {
           el_state = INITIALIZE_DIR_CHANGE_TO_DOWN;
@@ -8158,7 +8170,7 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         if (el_state != IDLE) {
           if (el_slowdown_active) {
@@ -8202,7 +8214,7 @@ void service_request_queue(){
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
         stop_all_tracking();
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         rotator(DEACTIVATE, UP);
         rotator(DEACTIVATE, DOWN);
@@ -9049,7 +9061,7 @@ void deactivate_park(){
 void initiate_park(){
 
   #ifdef DEBUG_PARK
-  debug.print(F("initiate_park: park initiated\n"));
+    debug.print(F("initiate_park: park initiated\n"));
   #endif // DEBUG_PARK
 
   byte park_initiated = 0;
@@ -9060,11 +9072,12 @@ void initiate_park(){
     submit_request(AZ, REQUEST_AZIMUTH_RAW, PARK_AZIMUTH, 7);
     park_initiated = 1;
   }
+
   #ifdef FEATURE_ELEVATION_CONTROL
-  if (abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) {
-    submit_request(EL, REQUEST_ELEVATION, PARK_ELEVATION, 8);
-    park_initiated = 1;
-  }
+    if (abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) {
+      submit_request(EL, REQUEST_ELEVATION, PARK_ELEVATION, 8);
+      park_initiated = 1;
+    }
   #endif // FEATURE_ELEVATION_CONTROL
 
   if (park_initiated) {
@@ -10989,7 +11002,10 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             strcpy(return_string, "Autopark is on, timer: ");
             dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
             strcat(return_string, temp_string);
-            strcat(return_string, " minutes");
+            strcat(return_string, " minute");
+            if (configuration.autopark_time_minutes > 1){
+              strcat(return_string, "s");
+            }
           } else {
             strcpy(return_string, "Autopark is off");
           }
@@ -11011,6 +11027,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
                 strcat(return_string, "s");
               }
               configuration.autopark_active = 1;
+              last_activity_time_autopark = millis();
               configuration_dirty = 1;
             }
           } else {
@@ -11025,6 +11042,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               strcat(return_string, temp_string);
               strcat(return_string, " minutes");
               configuration.autopark_active = 1;
+              last_activity_time_autopark = millis();
               configuration_dirty = 1;
           } else {
             strcpy(return_string, "Error");
@@ -11038,6 +11056,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               strcat(return_string, temp_string);
               strcat(return_string, " minutes");
               configuration.autopark_active = 1;
+              last_activity_time_autopark = millis();
               configuration_dirty = 1;
           } else {
             strcpy(return_string, "Error");
@@ -11051,6 +11070,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               strcat(return_string, temp_string);
               strcat(return_string, " minutes");
               configuration.autopark_active = 1;
+              last_activity_time_autopark = millis();
               configuration_dirty = 1;
           } else {
             strcpy(return_string, "Error");
@@ -13295,26 +13315,53 @@ void test_display(){
 void service_autopark(){
 
 
-  static unsigned long last_activity_time = 0;
+  byte autopark_inhibited = 0;
 
   #if defined(FEATURE_ELEVATION_CONTROL)
     if ((az_state != IDLE) || (el_state != IDLE) || (park_status == PARKED)){
-      last_activity_time = millis();
+      last_activity_time_autopark = millis();
     }
   #else
     if ((az_state != IDLE) || (park_status == PARKED)){
-      last_activity_time = millis();
+      last_activity_time_autopark = millis();
     }
   #endif
 
+  if (pin_autopark_timer_reset){
+    if (digitalReadEnhanced(pin_autopark_timer_reset) == LOW){
+      last_activity_time_autopark = millis();
+      if (park_status == PARK_INITIATED){
+        deactivate_park();
+        submit_request(AZ, REQUEST_STOP, 0, 85);
+        #ifdef FEATURE_ELEVATION_CONTROL
+          submit_request(EL, REQUEST_STOP, 0, 85);
+        #endif
+      }      
+    }
+  }
 
-  if ((configuration.autopark_active) && ((millis() - last_activity_time) > (long(configuration.autopark_time_minutes) * 60000L)) 
+  if (pin_autopark_disable){
+    if (digitalReadEnhanced(pin_autopark_disable) == LOW){
+      autopark_inhibited = 1;
+      last_activity_time_autopark = millis();
+      if (park_status == PARK_INITIATED){
+        deactivate_park();
+        submit_request(AZ, REQUEST_STOP, 0, 86);
+        #ifdef FEATURE_ELEVATION_CONTROL
+          submit_request(EL, REQUEST_STOP, 0, 86);
+        #endif        
+      }
+    }
+  }
+
+  if ((configuration.autopark_active) && (!autopark_inhibited) && ((millis() - last_activity_time_autopark) > (long(configuration.autopark_time_minutes) * 60000L)) 
     && ((park_status != PARK_INITIATED) || (park_status != PARKED))) {
     #if defined(DEBUG_PARK)
       debug.print(F("service_autopark: initiating park\n"));
     #endif
     initiate_park();
   }
+
 
 }
 #endif //FEATURE_AUTOPARK
