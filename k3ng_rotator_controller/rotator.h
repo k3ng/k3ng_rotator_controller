@@ -167,5 +167,8 @@
 #define AZ_DISPLAY_MODE_RAW 1
 #define AZ_DISPLAY_MODE_OVERLAP_PLUS 2
 
+#define AUDIBLE_ALERT_SERVICE 0
+#define AUDIBLE_ALERT_ACTIVATE 1
+
 /* ------end of macros ------- */
 

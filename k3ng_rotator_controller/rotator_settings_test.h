@@ -337,6 +337,14 @@ You can tweak these, but read the online documentation!
 #define PIN_LED_ACTIVE_STATE HIGH
 #define PIN_LED_INACTIVE_STATE LOW  
 
+#define AUDIBLE_ALERT_TYPE 1   // 1 = Logic high/low (set AUDIBLE_PIN_ACTIVE_STATE and AUDIBLE_PIN_INACTIVE_STATE below, 2 = tone (set AUDIBLE_PIN_TONE_FREQ below)
+#define AUDIBLE_ALERT_DURATION_MS 250
+#define AUDIBLE_PIN_ACTIVE_STATE HIGH
+#define AUDIBLE_PIN_INACTIVE_STATE LOW
+#define AUDIBLE_PIN_TONE_FREQ 1000
+#define AUDIBLE_ALERT_AT_STARTUP 1
+#define AUDIBLE_ALERT_AT_AZ_TARGET 1
+#define AUDIBLE_ALERT_AT_EL_TARGET 1
 
 
 									// ######## ########  ######  ######## 

@@ -75,7 +75,7 @@
 
 //#define FEATURE_ANALOG_OUTPUT_PINS
 
-
+// #define FEATURE_AUDIBLE_ALERT
 
 /* preset rotary encoder features and options */
 //#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support

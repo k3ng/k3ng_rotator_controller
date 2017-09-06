@@ -201,3 +201,6 @@
   #define pin_autopark_timer_reset 0   // Pull low to reset the autopark timer (tie in with rig PTT) 
 #endif   
 
+#ifdef FEATURE_AUDIBLE_ALERT
+  #define pin_audible_alert 0
+#endif    

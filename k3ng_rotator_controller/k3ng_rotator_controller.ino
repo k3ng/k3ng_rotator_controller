@@ -313,6 +313,9 @@
     2017.09.03.02
       Added pins pin_autopark_disable and pin_autopark_timer_reset for FEATURE_AUTOPARK
 
+    2017.09.05.01
+      Added FEATURE_AUDIBLE_ALERT documented here: https://github.com/k3ng/k3ng_rotator_controller/wiki/455-Human-Interface:-Audible-Alert  
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -323,7 +326,7 @@
 
   */
 
-#define CODE_VERSION "2017.09.03.02"
+#define CODE_VERSION "2017.09.05.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1141,6 +1144,10 @@ void loop() {
     service_a2_encoders();
   #endif //defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
 
+  #if defined(FEATURE_AUDIBLE_ALERT)
+    audible_alert(AUDIBLE_ALERT_SERVICE);
+  #endif //FEATURE_AUDIBLE_ALERT
+
 
   check_for_reset_flag();
 
@@ -1148,11 +1155,52 @@ void loop() {
 
 
 } /* loop */
+
 /* -------------------------------------- subroutines -----------------------------------------------
  
+
+
                                   Where the real work happens...
  
- */
+
+
+----------------------------------------------------------------------------------------------------- */
+
+
+#if defined(FEATURE_AUDIBLE_ALERT)
+  void audible_alert(byte how_called){
+
+    static unsigned long alert_start_time = 0;
+
+    switch(how_called){
+      case AUDIBLE_ALERT_SERVICE:
+        if ((alert_start_time) && ((millis() - alert_start_time) > AUDIBLE_ALERT_DURATION_MS)) {
+          if (AUDIBLE_ALERT_TYPE == 1){
+            digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_INACTIVE_STATE);
+          }
+          if (AUDIBLE_ALERT_TYPE == 2){
+            noTone(pin_audible_alert);
+          }
+          alert_start_time = 0;
+        }
+        break;
+      case AUDIBLE_ALERT_ACTIVATE:
+        if (AUDIBLE_ALERT_TYPE == 1){
+          digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_ACTIVE_STATE);
+        }
+        if (AUDIBLE_ALERT_TYPE == 2){
+          tone(pin_audible_alert, AUDIBLE_PIN_TONE_FREQ);
+        }
+        alert_start_time = millis();
+        break;  
+
+
+    }
+
+  }
+#endif //FEATURE_AUDIBLE_ALERT
+
+// --------------------------------------------------------------
 
 #if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
   void service_a2_encoders(){
@@ -6816,28 +6864,36 @@ void initialize_pins(){
   #endif //FEATURE_STEPPER_MOTOR
 
   #ifdef FEATURE_EL_POSITION_MEMSIC_2125
-  pinModeEnhanced(pin_memsic_2125_x, INPUT);
-  pinModeEnhanced(pin_memsic_2125_y, INPUT);
+    pinModeEnhanced(pin_memsic_2125_x, INPUT);
+    pinModeEnhanced(pin_memsic_2125_y, INPUT);
   #endif //FEATURE_EL_POSITION_MEMSIC_2125
 
   #ifdef FEATURE_ANALOG_OUTPUT_PINS
-  pinModeEnhanced(pin_analog_az_out, OUTPUT);
-  digitalWriteEnhanced(pin_analog_az_out, LOW);
-  #ifdef FEATURE_ELEVATION_CONTROL
-  pinModeEnhanced(pin_analog_el_out, OUTPUT);
-  digitalWriteEnhanced(pin_analog_el_out, LOW);
-  #endif //FEATURE_ELEVATION_CONTROL
+    pinModeEnhanced(pin_analog_az_out, OUTPUT);
+    digitalWriteEnhanced(pin_analog_az_out, LOW);
+    #ifdef FEATURE_ELEVATION_CONTROL
+      pinModeEnhanced(pin_analog_el_out, OUTPUT);
+      digitalWriteEnhanced(pin_analog_el_out, LOW);
+    #endif //FEATURE_ELEVATION_CONTROL
   #endif //FEATURE_ANALOG_OUTPUT_PINS
 
   #ifdef FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
-  pinModeEnhanced(pin_sun_pushbutton_calibration, INPUT);
-  digitalWriteEnhanced(pin_sun_pushbutton_calibration, HIGH);
+    pinModeEnhanced(pin_sun_pushbutton_calibration, INPUT);
+    digitalWriteEnhanced(pin_sun_pushbutton_calibration, HIGH);
   #endif //FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
 
   #ifdef FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
-  pinModeEnhanced(pin_moon_pushbutton_calibration, INPUT);
-  digitalWriteEnhanced(pin_moon_pushbutton_calibration, HIGH);
+    pinModeEnhanced(pin_moon_pushbutton_calibration, INPUT);
+    digitalWriteEnhanced(pin_moon_pushbutton_calibration, HIGH);
   #endif //FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+
+  #if defined(FEATURE_AUDIBLE_ALERT)
+    pinModeEnhanced(pin_audible_alert, OUTPUT);
+    digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_INACTIVE_STATE);
+    if (AUDIBLE_ALERT_AT_STARTUP){
+      audible_alert(AUDIBLE_ALERT_ACTIVATE);
+    }
+  #endif //FEATURE_AUDIBLE_ALERT
 
 } /* initialize_pins */
 
@@ -7070,15 +7126,15 @@ void service_rotation(){
 
 
   #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) || defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER)
-  service_rotation_lock = 1;
+    service_rotation_lock = 1;
   #endif
 
   static byte az_direction_change_flag = 0;
   static byte az_initial_slow_down_voltage = 0;
 
   #ifdef FEATURE_ELEVATION_CONTROL
-  static byte el_direction_change_flag = 0;
-  static byte el_initial_slow_down_voltage = 0;
+    static byte el_direction_change_flag = 0;
+    static byte el_initial_slow_down_voltage = 0;
   #endif // FEATURE_ELEVATION_CONTROL
 
   if (az_state == INITIALIZE_NORMAL_CW) {
@@ -7187,11 +7243,11 @@ void service_rotation(){
   // timed slow down ------------------------------------------------------------------------------------------------------
   if (((az_state == TIMED_SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CCW)) && ((millis() - az_last_step_time) >= (TIMED_SLOW_DOWN_TIME / AZ_SLOW_DOWN_STEPS))) {
     #ifdef DEBUG_SERVICE_ROTATION
-    debug.print("service_rotation: TIMED_SLOW_DOWN step down: ");
-    debug.print(az_slow_down_step);
-    debug.print(" pwm: ");
-    debug.print((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
-    debug.println("");
+      debug.print("service_rotation: TIMED_SLOW_DOWN step down: ");
+      debug.print(az_slow_down_step);
+      debug.print(" pwm: ");
+      debug.print((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
+      debug.println("");
     #endif // DEBUG_SERVICE_ROTATION
     //updated 2016-05-15
     //update_az_variable_outputs((int)(normal_az_speed_voltage * ((float)az_slow_down_step / (float)AZ_SLOW_DOWN_STEPS)));
@@ -7201,7 +7257,7 @@ void service_rotation(){
 
     if (az_slow_down_step == 0) { // is it time to exit timed slow down?
       #ifdef DEBUG_SERVICE_ROTATION
-      debug.print("service_rotation: TIMED_SLOW_DOWN->IDLE");
+        debug.print("service_rotation: TIMED_SLOW_DOWN->IDLE");
       #endif // DEBUG_SERVICE_ROTATION
       rotator(DEACTIVATE, CW);
       rotator(DEACTIVATE, CCW);        
@@ -7223,6 +7279,13 @@ void service_rotation(){
       } else {
         az_state = IDLE;
         az_request_queue_state = NONE;
+
+        #if defined(FEATURE_AUDIBLE_ALERT)
+          if (AUDIBLE_ALERT_AT_AZ_TARGET){
+            audible_alert(AUDIBLE_ALERT_ACTIVATE);
+          }
+        #endif
+
       }
     }
 
@@ -7301,7 +7364,7 @@ void service_rotation(){
           az_state = IDLE;
           az_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
-          debug.print("service_rotation: IDLE");
+            debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
@@ -7315,6 +7378,12 @@ void service_rotation(){
               park_status = PARKED;
             }
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
+
+          #if defined(FEATURE_AUDIBLE_ALERT)
+            if (AUDIBLE_ALERT_AT_AZ_TARGET){
+              audible_alert(AUDIBLE_ALERT_ACTIVATE);
+            }
+          #endif
 
         }
       }
@@ -7328,7 +7397,7 @@ void service_rotation(){
           az_state = IDLE;
           az_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
-          debug.print("service_rotation: IDLE");
+            debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
@@ -7342,6 +7411,12 @@ void service_rotation(){
               park_status = PARKED;
             }
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
+
+          #if defined(FEATURE_AUDIBLE_ALERT)
+            if (AUDIBLE_ALERT_AT_AZ_TARGET){
+              audible_alert(AUDIBLE_ALERT_ACTIVATE);
+            }
+          #endif
 
         }
       }
@@ -7428,12 +7503,12 @@ void service_rotation(){
       if (el_state == SLOW_START_UP) {
         el_state = NORMAL_UP;
         #ifdef DEBUG_SERVICE_ROTATION
-        debug.print("UP");
+          debug.print("UP");
         #endif // DEBUG_SERVICE_ROTATION
       } else {
         el_state = NORMAL_DOWN;
         #ifdef DEBUG_SERVICE_ROTATION
-        debug.print("DOWN");
+          debug.print("DOWN");
         #endif // DEBUG_SERVICE_ROTATION
       }
       update_el_variable_outputs(normal_el_speed_voltage);
@@ -7489,6 +7564,13 @@ void service_rotation(){
       } else {
         el_state = IDLE;
         el_request_queue_state = NONE;
+
+        #if defined(FEATURE_AUDIBLE_ALERT)
+          if (AUDIBLE_ALERT_AT_EL_TARGET){
+            audible_alert(AUDIBLE_ALERT_ACTIVATE);
+          }
+        #endif
+
       }
     }
 
@@ -7561,7 +7643,7 @@ void service_rotation(){
     if ((el_state == NORMAL_UP) || (el_state == SLOW_START_UP) || (el_state == SLOW_DOWN_UP)) {
       if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation > target_elevation) && ((elevation - target_elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
         #ifndef OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
-        delay(50);
+          delay(50);
         #endif //OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
         read_elevation(0);
         if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || ((elevation > target_elevation) && ((elevation - target_elevation) < ((ELEVATION_TOLERANCE + 5) * HEADING_MULTIPLIER)))) {
@@ -7569,13 +7651,16 @@ void service_rotation(){
           rotator(DEACTIVATE, DOWN);
           el_state = IDLE;
           el_request_queue_state = NONE;
-          #ifdef DEBUG_SERVICE_ROTATION
+            #ifdef DEBUG_SERVICE_ROTATION
           debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
-/*control_port->println(abs(elevation - target_elevation));
-read_elevation(0);
-control_port->println(abs(elevation - target_elevation));
-control_port->println();*/
+
+          #if defined(FEATURE_AUDIBLE_ALERT)
+            if (AUDIBLE_ALERT_AT_EL_TARGET){
+              audible_alert(AUDIBLE_ALERT_ACTIVATE);
+            }
+          #endif
+
           #if defined(FEATURE_PARK)
             if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
               park_status = PARKED;
@@ -7599,10 +7684,13 @@ control_port->println();*/
           #ifdef DEBUG_SERVICE_ROTATION
           debug.print("service_rotation: IDLE");
           #endif // DEBUG_SERVICE_ROTATION
-/*control_port->println(abs(elevation - target_elevation));
-read_elevation(0);
-control_port->println(abs(elevation - target_elevation));
-control_port->println();*/
+
+          #if defined(FEATURE_AUDIBLE_ALERT)
+            if (AUDIBLE_ALERT_AT_EL_TARGET){
+              audible_alert(AUDIBLE_ALERT_ACTIVATE);
+            }
+          #endif
+
           #if defined(FEATURE_PARK)
             if ((park_status == PARK_INITIATED) && (az_state == IDLE)) {
               park_status = PARKED;
@@ -7619,7 +7707,7 @@ control_port->println();*/
   #endif // FEATURE_ELEVATION_CONTROL
 
   #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) || defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER)
-  service_rotation_lock = 0;
+    service_rotation_lock = 0;
   #endif
 
 } /* service_rotation */
