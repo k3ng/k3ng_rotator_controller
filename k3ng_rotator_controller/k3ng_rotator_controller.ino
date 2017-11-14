@@ -9860,7 +9860,7 @@ char * az_el_calibrated_string(){
 #ifdef FEATURE_CLOCK
 char * timezone_modified_clock_string(){
 
-  char return_string[32] = "";
+  static char return_string[32] = "";
   char temp_string[16] = "";
 
 
@@ -9910,7 +9910,7 @@ char * timezone_modified_clock_string(){
 #ifdef FEATURE_CLOCK
 char * zulu_clock_string(){
 
-  char return_string[32] = "";
+  static char return_string[32] = "";
   char temp_string[16] = "";
 
 
