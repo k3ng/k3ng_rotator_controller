@@ -14,11 +14,15 @@
 //#define LANGUAGE_FRENCH
 //#define LANGUAGE_DUTCH
 
+//#define FEATURE_TEST_DISPLAY_AT_STARTUP
+
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 
 #define FEATURE_EL_POSITION_POTENTIOMETER
 
 #define FEATURE_4_BIT_LCD_DISPLAY //Uncomment for classic 4 bit LCD display (most common)
+
+// #define FEATURE_AUDIBLE_ALERT
 
 
 /* less often used features and options */
@@ -28,6 +32,7 @@
 //#define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 //#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 //#define FEATURE_PARK
+//#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 //#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
 //#define OPTION_EL_MANUAL_ROTATE_LIMITS
 #define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
@@ -43,7 +48,7 @@
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 #define OPTION_DISPLAY_DIRECTION_STATUS
-#define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
+#define OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS
 //#define OPTION_DONT_READ_GPS_PORT_AS_OFTEN
 // #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING  // change OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING in settings file
 
@@ -56,7 +61,6 @@
 #define DEFAULT_DEBUG_STATE 0// this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP
-#define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
 // #define DEBUG_SERVICE_REQUEST_QUEUE

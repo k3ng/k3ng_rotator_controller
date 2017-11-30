@@ -1,20 +1,20 @@
-/* 
-
-									// ######## ########  ######  ######## 
-									//    ##    ##       ##    ##    ##    
-									//    ##    ##       ##          ##    
-									//    ##    ######    ######     ##    
-									//    ##    ##             ##    ##    
-									//    ##    ##       ##    ##    ##    
-									//    ##    ########  ######     ##  
-
-*/
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
-#define AZIMUTH_STARTING_POINT_DEFAULT 0 //180      // the starting point in degrees of the azimuthal rotator
-                                                
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees
+#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
+
+/* 
+
+  Use these commands to change the azimuth starting point and rotation capability if you have already ran the code one which would have 
+  initialized the EEPROM:
+
+            \Ix[x][x] - set az starting point
+            \I - display the current az starting point
+            \Jx[x][x] - set az rotation capability
+            \J - display the current az rotation capability
+            \Q - Save settings in the EEPROM and restart            
+*/   
                                                 
 #define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
 
@@ -25,10 +25,10 @@ You can tweak these, but read the online documentation!
 */
 
 // analog voltage calibration - these are default values; you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
-#define ANALOG_AZ_FULL_CCW 2 //4
-#define ANALOG_AZ_FULL_CW 1020 //1009
-#define ANALOG_EL_0_DEGREES 6 //2
-#define ANALOG_EL_MAX_ELEVATION 1019 //1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
+#define ANALOG_AZ_FULL_CCW 4
+#define ANALOG_AZ_FULL_CW 1009
+#define ANALOG_EL_0_DEGREES 2
+#define ANALOG_EL_MAX_ELEVATION 1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
 #define ANALOG_AZ_OVERLAP_DEGREES 540         // if overlap_led above is enabled, turn on overlap led line if azimuth is greater than this setting
                                               // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
@@ -52,7 +52,7 @@ You can tweak these, but read the online documentation!
 
 #define SLOW_DOWN_BEFORE_TARGET_AZ 10.0  // if slow down is enabled, slowdown will be activated within this many degrees of target azimuth
 #define AZ_SLOW_DOWN_PWM_START 200         // starting PWM value for slow down (must be < 256)
-#define AZ_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
+#define	AZ_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
 #define AZ_SLOW_DOWN_STEPS 200 //20       // must be < 256
 #define AZ_INITIALLY_IN_SLOW_DOWN_PWM 50  // PWM value to start at if we're starting in the slow down zone (1 - 255)
 
@@ -65,7 +65,7 @@ You can tweak these, but read the online documentation!
 
 #define SLOW_DOWN_BEFORE_TARGET_EL 10.0  // if slow down is enabled, slowdown will be activated within this many degrees of target elevation
 #define EL_SLOW_DOWN_PWM_START 200         // starting PWM value for slow down (must be < 256)
-#define EL_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
+#define	EL_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
 #define EL_SLOW_DOWN_STEPS 20
 #define EL_INITIALLY_IN_SLOW_DOWN_PWM 50  // PWM value to start at if we're starting in the slow down zone (1 - 255)
 
@@ -105,7 +105,7 @@ You can tweak these, but read the online documentation!
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
-#define CONTROL_PORT_BAUD_RATE 115200 //9600
+#define CONTROL_PORT_BAUD_RATE 9600
 #define REMOTE_UNIT_PORT_BAUD_RATE 9600
 #define GPS_PORT_BAUD_RATE 9600
 #define GPS_MIRROR_PORT_BAUD_RATE 9600
@@ -153,7 +153,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 105
+#define EEPROM_MAGIC_NUMBER 109
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 
@@ -322,114 +322,18 @@ You can tweak these, but read the online documentation!
 #define POLOLU_LSM_303_MAX_ARRAY {+909, +491, +14}
 
 #define AUTOCORRECT_TIME_MS_AZ 1000
-#define AUTOCORRECT_TIME_MS_EL 1000 
+#define AUTOCORRECT_TIME_MS_EL 1000
 
+#define PIN_LED_ACTIVE_STATE HIGH
+#define PIN_LED_INACTIVE_STATE LOW   
 
+#define AUDIBLE_ALERT_TYPE 1   // 1 = Logic high/low (set AUDIBLE_PIN_ACTIVE_STATE and AUDIBLE_PIN_INACTIVE_STATE below, 2 = tone (set AUDIBLE_PIN_TONE_FREQ below)
+#define AUDIBLE_ALERT_DURATION_MS 250
+#define AUDIBLE_PIN_ACTIVE_STATE HIGH
+#define AUDIBLE_PIN_INACTIVE_STATE LOW
+#define AUDIBLE_PIN_TONE_FREQ 1000
+#define AUDIBLE_ALERT_AT_STARTUP 1
+#define AUDIBLE_ALERT_AT_AZ_TARGET 1
+#define AUDIBLE_ALERT_AT_EL_TARGET 1
 
-									// ######## ########  ######  ######## 
-									//    ##    ##       ##    ##    ##    
-									//    ##    ##       ##          ##    
-									//    ##    ######    ######     ##    
-									//    ##    ##             ##    ##    
-									//    ##    ##       ##    ##    ##    
-									//    ##    ########  ######     ##  
-
-
-
-/* ---------------------------- object declarations ----------------------------------------------
-
-
- Object declarations are required for several devices, including LCD displays, compass devices, and accelerometers
-   
-
-*/
-
-// #if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
-//   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME); 
-// #endif   
-
-// #ifdef FEATURE_AZ_POSITION_HMC5883L
-//   HMC5883L compass;
-// #endif //FEATURE_AZ_POSITION_HMC5883L
-
-// #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-//   ADXL345 accel;
-// #endif //FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-
-// #ifdef FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-//   Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
-// #endif //FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-
-// #if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
-//   Adafruit_LSM303 lsm;
-// #endif
-
-// #if defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
-//   LSM303 compass;
-//   LSM303::vector<int16_t> running_min = {32767, 32767, 32767}, running_max = {-32768, -32768, -32768};
-//   char report[80];
-// #endif //FEATURE_AZ_POSITION_POLOLU_LSM303
-
-// #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
-//   #include "hh12.h"
-//   hh12 azimuth_hh12;
-// #endif //FEATURE_AZ_POSITION_HH12_AS5045_SSI
-
-// #ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
-//   #include "hh12.h"
-//   hh12 elevation_hh12;
-// #endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
-
-// #ifdef FEATURE_GPS
-//   TinyGPS gps;
-// #endif //FEATURE_GPS
-
-// #ifdef FEATURE_RTC_DS1307
-//   RTC_DS1307 rtc;
-// #endif //FEATURE_RTC_DS1307
-
-// #ifdef FEATURE_RTC_PCF8583
-//   PCF8583 rtc(0xA0);
-// #endif //FEATURE_RTC_PCF8583
-
-// #ifdef HARDWARE_EA4TX_ARS_USB
-//   #undef LCD_COLUMNS
-//   #undef LCD_ROWS
-//   #define LCD_COLUMNS 16
-//   #define LCD_ROWS 2
-// #endif //HARDWARE_EA4TX_ARS_USB
-
-// #ifdef HARDWARE_M0UPU
-//   #undef LCD_ROWS
-//   #define LCD_ROWS 2
-// #endif //HARDWARE_M0UPU
-
-// #ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
-//   #define AZ_A2_ENCODER_RESOLUTION 32767 //36000
-//   #define AZ_A2_ENCODER_ADDRESS 0x00
-//   #define AZ_QUERY_FREQUENCY_MS 250
-//   #define AZ_A2_ENCODER_MODE MODE_TWO_BYTE_POSITION/*|MODE_MULTITURN*/
-// #endif  //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
-
-// #ifdef FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
-//   #define EL_A2_ENCODER_RESOLUTION 32767 //36000
-//   #define EL_A2_ENCODER_ADDRESS 0x00
-//   #define EL_QUERY_FREQUENCY_MS 250
-//   #define EL_A2_ENCODER_MODE /*MODE_TWO_BYTE_POSITION|*/MODE_MULTITURN
-// #endif  //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
-
-// #if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
-//   #include "sei_bus.h"
-//   SEIbus SEIbus1(&Serial1,9600,pin_sei_bus_busy,pin_sei_bus_send_receive);
-//   //             (Serial Port,Baud Rate,Busy Pin,Send/Receive Pin)
-//   #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
-// #endif
-
- 									// ######## ########  ######  ######## 
-									//    ##    ##       ##    ##    ##    
-									//    ##    ##       ##          ##    
-									//    ##    ######    ######     ##    
-									//    ##    ##             ##    ##    
-									//    ##    ##       ##    ##    ##    
-									//    ##    ########  ######     ##  
-
+  

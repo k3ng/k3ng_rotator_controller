@@ -63,12 +63,12 @@
 #define el_rotary_preset_pin2 0 // A2 //7                     // DOWN Encoder Pin
 #endif //FEATURE_EL_PRESET_ENCODER
 
-#ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER
+#if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
 #define az_rotary_position_pin1 A3                     // CW Encoder Pin
 #define az_rotary_position_pin2 A2                     // CCW Encoder Pin
 #endif //FEATURE_AZ_POSITION_ROTARY_ENCODER
 
-#ifdef FEATURE_EL_POSITION_ROTARY_ENCODER
+#if defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
 #define el_rotary_position_pin1 0                     // CW Encoder Pin
 #define el_rotary_position_pin2 0                     // CCW Encoder Pin
 #endif //FEATURE_EL_POSITION_ROTARY_ENCODER
@@ -180,3 +180,16 @@
 #define pin_memsic_2125_y 0
 #endif //FEATURE_EL_POSITION_MEMSIC_2125
 
+// #define pin_led_cw 0
+// #define pin_led_ccw 0
+// #define pin_led_up 0
+// #define pin_led_down 0
+
+#ifdef FEATURE_AUTOPARK
+  #define pin_autopark_disable 0       // Pull low to disable autopark 
+  #define pin_autopark_timer_reset 0   // Pull low to reset the autopark timer (tie in with rig PTT) 
+#endif    
+
+#ifdef FEATURE_AUDIBLE_ALERT
+  #define pin_audible_alert 0
+#endif      

@@ -85,3 +85,17 @@
 #define overlap_led 0            // line goes high when azimuth rotator is in overlap (> 360 rotators)
 #define preset_start_button 0    // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
 
+
+// #define pin_led_cw 0
+// #define pin_led_ccw 0
+// #define pin_led_up 0
+// #define pin_led_down 0
+
+#ifdef FEATURE_AUTOPARK
+  #define pin_autopark_disable 0       // Pull low to disable autopark 
+  #define pin_autopark_timer_reset 0   // Pull low to reset the autopark timer (tie in with rig PTT) 
+#endif   
+
+#ifdef FEATURE_AUDIBLE_ALERT
+  #define pin_audible_alert 0
+#endif    

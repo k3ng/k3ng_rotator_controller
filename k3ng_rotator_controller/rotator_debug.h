@@ -53,7 +53,7 @@ class DebugClass
 	
 	void println(double i);
 	void println(const char *str);
-//	void println (const __FlashStringHelper *str);
+	void println(const __FlashStringHelper *str);
 	
 	void write(const char *str);
 	void write(int i);

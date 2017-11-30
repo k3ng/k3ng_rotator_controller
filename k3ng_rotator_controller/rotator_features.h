@@ -19,6 +19,7 @@
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 // #define FEATURE_AUTOCORRECT
+// #define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -39,6 +40,7 @@
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER
+// #define FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html  
 // #define FEATURE_AZ_POSITION_PULSE_INPUT
 // #define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
 // #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
@@ -50,6 +52,7 @@
 
 // #define FEATURE_EL_POSITION_POTENTIOMETER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER
+// #define FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html  
 // #define FEATURE_EL_POSITION_PULSE_INPUT
 // #define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
 // #define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library
@@ -75,6 +78,8 @@
 // #define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
 // #define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
 
+// #define FEATURE_AUDIBLE_ALERT
+
 /* preset rotary encoder features and options */
 // #define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
 // #define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
@@ -98,6 +103,7 @@
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 // #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 // #define FEATURE_PARK
+// #define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 // #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings are AZ_MANUAL_ROTATE_CCW_LIMIT, AZ_MANUAL_ROTATE_CW_LIMIT) 
 // #define OPTION_EL_MANUAL_ROTATE_LIMITS    // (settings are EL_MANUAL_ROTATE_DOWN_LIMIT, EL_MANUAL_ROTATE_UP_LIMIT)
 #define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
@@ -149,7 +155,7 @@
 // #define OPTION_EL_PULSE_DEBOUNCE
 // #define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 // #define OPTION_RESET_METHOD_JMP_ASM_0
-// #define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
+// #define OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS
 // #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING  // change OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING in settings file  
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */
@@ -160,7 +166,6 @@
 
 #define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
 // #define DEBUG_LOOP
-// #define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
 // #define DEBUG_SERVICE_REQUEST_QUEUE
@@ -181,6 +186,7 @@
 // #define DEBUG_SUBMIT_REQUEST
 // #define DEBUG_SERVICE_ROTATION
 // #define DEBUG_POSITION_ROTARY_ENCODER
+// #define DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  
 // #define DEBUG_PROFILE_LOOP_TIME
 // #define DEBUG_POSITION_PULSE_INPUT
 // #define DEBUG_ACCEL

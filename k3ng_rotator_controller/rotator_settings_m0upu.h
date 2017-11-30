@@ -1,9 +1,20 @@
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
-#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator
-                                                
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees
+#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
+
+/* 
+
+  Use these commands to change the azimuth starting point and rotation capability if you have already ran the code one which would have 
+  initialized the EEPROM:
+
+            \Ix[x][x] - set az starting point
+            \I - display the current az starting point
+            \Jx[x][x] - set az rotation capability
+            \J - display the current az rotation capability
+            \Q - Save settings in the EEPROM and restart            
+*/   
                                                 
 #define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
 
@@ -111,8 +122,8 @@ You can tweak these, but read the online documentation!
 #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION LEFT
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1
-#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION CENTER
-#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 3
+#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION LEFT
+#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 1
 #define LCD_BIG_CLOCK_ROW 4
 #define LCD_GPS_INDICATOR_POSITION RIGHT //LEFT or RIGHT
 #define LCD_GPS_INDICATOR_ROW 1
@@ -125,10 +136,6 @@ You can tweak these, but read the online documentation!
 
 #define LCD_HEADING_ROW 2
 #define LCD_HEADING_FIELD_SIZE 20
-#define LCD_AZ_ONLY_HEADING_ROW 1
-#define LCD_AZ_ONLY_HEADING_FIELD_SIZE 20
-#define LCD_EL_ONLY_HEADING_ROW 2
-#define LCD_EL_ONLY_HEADING_FIELD_SIZE 20
 #define LCD_STATUS_ROW 1
 #define LCD_STATUS_FIELD_SIZE 20
 #define LCD_DIRECTION_ROW 1
@@ -142,7 +149,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 105
+#define EEPROM_MAGIC_NUMBER 109
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 
@@ -219,8 +226,6 @@ You can tweak these, but read the online documentation!
 #define SUN_AOS_ELEVATION_MIN 0
 #define SUN_AOS_ELEVATION_MAX 180
 
-
-
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
 #define DISPLAY_DEGREES_STRING "\xDF"
@@ -279,12 +284,8 @@ You can tweak these, but read the online documentation!
 //   #define AZIMUTH_CALIBRATION_TO_ARRAY {359,0}
 
 
-#define ELEVATION_CALIBRATION_FROM_ARRAY {-360,0,360}
-#define ELEVATION_CALIBRATION_TO_ARRAY {-360,0,360}
-
-// example: reverse elevation sensing
-//#define ELEVATION_CALIBRATION_FROM_ARRAY {0,180,360}
-//#define ELEVATION_CALIBRATION_TO_ARRAY {180,0,-180}
+#define ELEVATION_CALIBRATION_FROM_ARRAY {-180,0,180}
+#define ELEVATION_CALIBRATION_TO_ARRAY {-180,0,180}
 
 #define ANALOG_OUTPUT_MAX_EL_DEGREES 180
 
@@ -313,95 +314,15 @@ You can tweak these, but read the online documentation!
 #define AUTOCORRECT_TIME_MS_AZ 1000
 #define AUTOCORRECT_TIME_MS_EL 1000 
 
+#define PIN_LED_ACTIVE_STATE HIGH
+#define PIN_LED_INACTIVE_STATE LOW 
 
-
-
-/* ---------------------------- object declarations ----------------------------------------------
-
-
- Object declarations are required for several devices, including LCD displays, compass devices, and accelerometers
-   
-
-*/
-/*
-#if defined(FEATURE_4_BIT_LCD_DISPLAY) || defined(FEATURE_ADAFRUIT_I2C_LCD) || defined(FEATURE_YOURDUINO_I2C_LCD) || defined(FEATURE_YWROBOT_I2C_DISPLAY)
-  K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
-#endif   
-
-#ifdef FEATURE_AZ_POSITION_HMC5883L
-  HMC5883L compass;
-#endif //FEATURE_AZ_POSITION_HMC5883L
-
-#ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-  ADXL345 accel;
-#endif //FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-
-#ifdef FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-  Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
-#endif //FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-
-#if defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303)
-  Adafruit_LSM303 lsm;
-#endif
-
-#if defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
-  LSM303 compass;
-  LSM303::vector<int16_t> running_min = {32767, 32767, 32767}, running_max = {-32768, -32768, -32768};
-  char report[80];
-#endif //FEATURE_AZ_POSITION_POLOLU_LSM303
-
-#ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
-  #include "hh12.h"
-  hh12 azimuth_hh12;
-#endif //FEATURE_AZ_POSITION_HH12_AS5045_SSI
-
-#ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
-  #include "hh12.h"
-  hh12 elevation_hh12;
-#endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
-
-#ifdef FEATURE_GPS
-  TinyGPS gps;
-#endif //FEATURE_GPS
-
-#ifdef FEATURE_RTC_DS1307
-  RTC_DS1307 rtc;
-#endif //FEATURE_RTC_DS1307
-
-#ifdef FEATURE_RTC_PCF8583
-  PCF8583 rtc(0xA0);
-#endif //FEATURE_RTC_PCF8583
-
-#ifdef HARDWARE_EA4TX_ARS_USB
-  #undef LCD_COLUMNS
-  #undef LCD_ROWS
-  #define LCD_COLUMNS 16
-  #define LCD_ROWS 2
-#endif //HARDWARE_EA4TX_ARS_USB
-
-#ifdef HARDWARE_M0UPU
-  #undef LCD_ROWS
-  #define LCD_ROWS 2
-#endif //HARDWARE_M0UPU
-
-#ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
-  #define AZ_A2_ENCODER_RESOLUTION 32767 //36000
-  #define AZ_A2_ENCODER_ADDRESS 0x00
-  #define AZ_QUERY_FREQUENCY_MS 250
-  #define AZ_A2_ENCODER_MODE MODE_TWO_BYTE_POSITION//|MODE_MULTITURN
-#endif  //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
-
-#ifdef FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
-  #define EL_A2_ENCODER_RESOLUTION 32767 //36000
-  #define EL_A2_ENCODER_ADDRESS 0x00
-  #define EL_QUERY_FREQUENCY_MS 250
-  #define EL_A2_ENCODER_MODE MODE_MULTITURN//|MODE_TWO_BYTE_POSITION
-#endif  //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
-
-#if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
-  #include "sei_bus.h"
-  SEIbus SEIbus1(&Serial1,9600,pin_sei_bus_busy,pin_sei_bus_send_receive);
-  //             (Serial Port,Baud Rate,Busy Pin,Send/Receive Pin)
-  #define SEI_BUS_COMMAND_TIMEOUT_MS 6000
-#endif
-*/
+#define AUDIBLE_ALERT_TYPE 1   // 1 = Logic high/low (set AUDIBLE_PIN_ACTIVE_STATE and AUDIBLE_PIN_INACTIVE_STATE below, 2 = tone (set AUDIBLE_PIN_TONE_FREQ below)
+#define AUDIBLE_ALERT_DURATION_MS 250
+#define AUDIBLE_PIN_ACTIVE_STATE HIGH
+#define AUDIBLE_PIN_INACTIVE_STATE LOW
+#define AUDIBLE_PIN_TONE_FREQ 1000
+#define AUDIBLE_ALERT_AT_STARTUP 1
+#define AUDIBLE_ALERT_AT_AZ_TARGET 1
+#define AUDIBLE_ALERT_AT_EL_TARGET 1
+  

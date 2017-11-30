@@ -16,15 +16,16 @@
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-// #define FEATURE_MOON_TRACKING
-// #define FEATURE_SUN_TRACKING
-// #define FEATURE_CLOCK
-// #define FEATURE_GPS
-// #define FEATURE_RTC_DS1307
+#define FEATURE_MOON_TRACKING
+#define FEATURE_SUN_TRACKING
+#define FEATURE_CLOCK
+#define FEATURE_GPS
+#define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 // #define FEATURE_AUTOCORRECT
+// #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -42,32 +43,34 @@
 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
-#define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+ // #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER
+// #define FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html
 // #define FEATURE_AZ_POSITION_PULSE_INPUT
 // #define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
 // #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
-// #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
+#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 // #define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
-#define FEATURE_EL_POSITION_POTENTIOMETER
+ #define FEATURE_EL_POSITION_POTENTIOMETER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER
+// #define FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html
 // #define FEATURE_EL_POSITION_PULSE_INPUT
 // #define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
 // #define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library
 // #define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
-// #define FEATURE_EL_POSITION_HH12_AS5045_SSI
+//#define FEATURE_EL_POSITION_HH12_AS5045_SSI
 // #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_EL_POSITION_MEMSIC_2125
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
 // And if you are using an Adafruit, Yourduino, RFRobot, YWRobot, or SainSmart display, you must also change the feature setting in rotator_k3ngdisplay.h!!!!
-// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
@@ -79,6 +82,8 @@
 
 // #define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
 // #define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
+
+// #define FEATURE_AUDIBLE_ALERT
 
 /* preset rotary encoder features and options */
 // #define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
@@ -103,6 +108,7 @@
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 #define FEATURE_PARK
+#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
 #define OPTION_EL_MANUAL_ROTATE_LIMITS
 #define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
@@ -122,23 +128,23 @@
 //#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
 #define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
 
-// #define OPTION_DISPLAY_STATUS
-// #define OPTION_DISPLAY_HEADING
-#define OPTION_DISPLAY_HEADING_AZ_ONLY
-#define OPTION_DISPLAY_HEADING_EL_ONLY
+#define OPTION_DISPLAY_STATUS
+#define OPTION_DISPLAY_HEADING
+// #define OPTION_DISPLAY_HEADING_AZ_ONLY
+// #define OPTION_DISPLAY_HEADING_EL_ONLY
 // #define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
-//#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
+// #define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 // #define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
-// #define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
-//#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
+#define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
+// #define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+// #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
 #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
-//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
@@ -152,7 +158,7 @@
 // #define OPTION_EL_PULSE_DEBOUNCE
 // #define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 // #define OPTION_RESET_METHOD_JMP_ASM_0
-// #define OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS
+// #define OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS
 // #define OPTION_REVERSE_AZ_HH12_AS5045
 // #define OPTION_REVERSE_EL_HH12_AS5045
 // #define OPTION_DONT_READ_GPS_PORT_AS_OFTEN
@@ -176,7 +182,6 @@
 
 #define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
 // #define DEBUG_LOOP
-// #define DEBUG_MEMORY
 // #define DEBUG_BUTTONS
 // #define DEBUG_SERIAL
 // #define DEBUG_SERVICE_REQUEST_QUEUE
@@ -197,6 +202,7 @@
 // #define DEBUG_SUBMIT_REQUEST
 // #define DEBUG_SERVICE_ROTATION
 // #define DEBUG_POSITION_ROTARY_ENCODER
+// #define DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
 // #define DEBUG_PROFILE_LOOP_TIME
 // #define DEBUG_POSITION_PULSE_INPUT
 // #define DEBUG_ACCEL

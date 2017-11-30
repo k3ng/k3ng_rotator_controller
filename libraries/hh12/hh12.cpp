@@ -10,10 +10,12 @@
 Code adapted from here: http://www.madscientisthut.com/forum_php/viewtopic.php?f=11&t=7
 
 Updated 2015-02-07 for 12 bit readings - Thanks Johan PA3FPQ
+Updated 2016-09-28 Created OPTION_HH12_DONT_GO_HI_END_OF_CYCLE
 
 
 */
 
+//#define OPTION_HH12_DONT_GO_HI_END_OF_CYCLE  // normally this should be commented out (disabled).  Uncomment if you have problems with your HH12
 
 int hh12_clock_pin = 0;
 int hh12_cs_pin = 0;
@@ -81,9 +83,10 @@ float hh12::heading(){
   }
   // end of entire clock cycle
 
-  // 2015-09-08: Walter is testing these lines
-  //digitalWrite(hh12_cs_pin, HIGH); // CSn high
-  //digitalWrite(hh12_clock_pin, HIGH); // CLK high
+  #if !defined(OPTION_HH12_DONT_GO_HI_END_OF_CYCLE)
+    digitalWrite(hh12_cs_pin, HIGH); // CSn high
+    digitalWrite(hh12_clock_pin, HIGH); // CLK high
+  #endif
 
   #ifdef DEBUG_HH12
     Serial.print("hh12: packed:");
