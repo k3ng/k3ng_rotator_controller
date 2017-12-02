@@ -35,7 +35,9 @@
   #include <LCD.h>
 #endif  
 
-
+#ifdef FEATURE_GLCD_DISPLAY //Graphic LCD support by TA7W
+  #include <openGLCD.h>
+#endif
 
 #if defined(FEATURE_YOURDUINO_I2C_LCD)
   #define I2C_ADDR 0x20
@@ -111,9 +113,15 @@ K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_ti
 void K3NGdisplay::initialize(){
 
 
+#ifndef FEATURE_GLCD_DISPLAY
   lcd.begin(display_columns, display_rows);  // if you are getting an error on this line and do not have
                                              // any of the LCD display features enabled, remove
                                              // k3ngdisplay.h and k3ngdisplay.cpp from your ino directory
+#else
+  GLCD.Init();
+  //GLCD.SelectFont(Wendy3x5); //Arial14 Arial_bold_14 CalBlk36 Callibri10 Callibri11 Callibri11_bold Callibri11_italic Callibri14 Callibri15 CalLite24 Cooper19 Cooper21 Cooper26 Corsiva_12 cp437font8x8 fixednums15x31 fixednums7x15 fixednums8x16 fixed_bold10x15 font8x8 Iain5x7 lcdnums12x16 lcdnums14x24 newbasic3x5 Roosewood22 Roosewood26 System5x7 SystemFont5x7 TimesNewRoman13 TimesNewRoman13_italic TimesNewRoman16 TimesNewRoman16_bold TimesNewRoman16_italic utf8font10x16 Verdana12 Verdana12_bold Verdana12_italic Verdana_digits_24 Wendy3x5
+  GLCD.SelectFont(System5x7);
+#endif
 
   #ifdef FEATURE_YOURDUINO_I2C_LCD
     lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
@@ -215,7 +223,11 @@ void K3NGdisplay::clear(){
 
   }
 
+#ifdef FEATURE_GLCD_DISPLAY //Display fupport for TA7W
+  GLCD.ClearScreen();   
+#else
   lcd.clear();
+#endif
   current_print_row = 0;
   current_print_column = 0;
   revert_screen_flag = 0;
@@ -258,26 +270,54 @@ void K3NGdisplay::update(){
 
   for (int x = 0;x < (display_columns*display_rows);x++){  	
     if (screen_buffer_live[x] != screen_buffer_pending[x]){  // do we have a new character to put on the screen ?
-      lcd.setCursor(Xposition(x),Yposition(x));
+#ifdef FEATURE_GLCD_DISPLAY
+          GLCD.CursorTo(Xposition(x),Yposition(x));
+#else
+          lcd.setCursor(Xposition(x),Yposition(x));
+#endif
       if (screen_buffer_attributes_pending[x] & ATTRIBUTE_BLINK){  // does this character have the blink attribute
         if (current_blink_state){
-          lcd.print(screen_buffer_pending[x]);
+#ifdef FEATURE_GLCD_DISPLAY          
+              GLCD.print(screen_buffer_pending[x]);
+#else
+              lcd.print(screen_buffer_pending[x]);
+#endif  
         } else {
-          lcd.print(' ');
+ #ifdef FEATURE_GLCD_DISPLAY          
+              GLCD.print(' ');
+#else
+              lcd.print(' ');
+#endif  
         }
       } else {
-        lcd.print(screen_buffer_pending[x]);
+#ifdef FEATURE_GLCD_DISPLAY          
+              GLCD.print(screen_buffer_pending[x]);
+#else
+              lcd.print(screen_buffer_pending[x]);
+#endif  
       }
       screen_buffer_live[x] = screen_buffer_pending[x];
       screen_buffer_attributes_live[x] = screen_buffer_attributes_pending[x];
     } else {  // not a new character, do we have live character on the screen to blink?
       if (last_blink_state != current_blink_state){
         if (screen_buffer_attributes_live[x] & ATTRIBUTE_BLINK){
+#ifdef FEATURE_GLCD_DISPLAY
+          GLCD.CursorTo(Xposition(x),Yposition(x));
+#else
         	lcd.setCursor(Xposition(x),Yposition(x));
+#endif
         	if (current_blink_state){
+#ifdef FEATURE_GLCD_DISPLAY          
+              GLCD.print(screen_buffer_live[x]);
+#else
               lcd.print(screen_buffer_live[x]);
+#endif  
       	    } else {
-      	      lcd.print(' ');
+#ifdef FEATURE_GLCD_DISPLAY          
+              GLCD.print(' ');
+#else
+      lcd.print(' ');
+#endif  
       	    }
         }
       }
@@ -294,15 +334,32 @@ void K3NGdisplay::redraw(){
   // redraw the screen with the current screen_buffer_live
 
   for (int x = 0;x < (display_columns*display_rows);x++){   
+#ifdef FEATURE_GLCD_DISPLAY    
+    GLCD.CursorTo(Xposition(x),Yposition(x));
+#else
     lcd.setCursor(Xposition(x),Yposition(x));
+#endif
+    
     if (screen_buffer_attributes_live[x] & ATTRIBUTE_BLINK){  // does this character have the blink attribute
       if (current_blink_state){
-        lcd.print(screen_buffer_live[x]);
+#ifdef FEATURE_GLCD_DISPLAY          
+      GLCD.print(screen_buffer_live[x]);
+#else
+      lcd.print(screen_buffer_live[x]);
+#endif  
       } else {
-        lcd.print(' ');
+#ifdef FEATURE_GLCD_DISPLAY          
+      GLCD.print(' ');
+#else
+      lcd.print(' ');
+#endif  
       }
     } else {
+#ifdef FEATURE_GLCD_DISPLAY          
+      GLCD.print(screen_buffer_live[x]);
+#else
       lcd.print(screen_buffer_live[x]);
+#endif
     }
   }
 

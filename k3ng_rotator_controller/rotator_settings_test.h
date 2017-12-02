@@ -334,9 +334,6 @@ You can tweak these, but read the online documentation!
 #define AUTOCORRECT_TIME_MS_AZ 1000
 #define AUTOCORRECT_TIME_MS_EL 1000 
 
-#define PIN_LED_ACTIVE_STATE HIGH
-#define PIN_LED_INACTIVE_STATE LOW  
-
 
 
 									// ######## ########  ######  ######## 

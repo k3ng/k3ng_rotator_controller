@@ -6,7 +6,7 @@
 
 /* main features */
 
-// #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
+#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION       // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
@@ -19,7 +19,7 @@
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 // #define FEATURE_AUTOCORRECT
-// #define FEATURE_TEST_DISPLAY_AT_STARTUP  
+//#define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -50,7 +50,7 @@
 // #define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
-// #define FEATURE_EL_POSITION_POTENTIOMETER
+#define FEATURE_EL_POSITION_POTENTIOMETER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html  
 // #define FEATURE_EL_POSITION_PULSE_INPUT
@@ -65,7 +65,8 @@
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
    
 // If you are using an Adafruit, Yourduino, RFRobot, YWRobot, or SainSmart display, you must also change the feature setting in rotator_k3ngdisplay.h!!!!
-// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+#define FEATURE_GLCD_DISPLAY //Uncomment for Graphic LCD (TA7W)
+//#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
@@ -119,23 +120,23 @@
 #define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED    // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
 // #define OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES // for azimuth and elevation position pulse input feature, ignore pulses that arrive when no rotation is active
 // #define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
-#define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
+//#define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
 
 #define OPTION_DISPLAY_STATUS
 #define OPTION_DISPLAY_HEADING
 #define OPTION_DISPLAY_HEADING_AZ_ONLY
 #define OPTION_DISPLAY_HEADING_EL_ONLY
-#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
-// #define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
+//#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
+#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 // #define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
 // #define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
-// #define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
+#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 // #define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
+//#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
-// #define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
+#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
 // #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
-#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+//#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 // #define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 // #define OPTION_REVERSE_AZ_HH12_AS5045
@@ -160,22 +161,22 @@
 
 
 
-#define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 1 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
-// #define DEBUG_LOOP
-// #define DEBUG_BUTTONS
-// #define DEBUG_SERIAL
-// #define DEBUG_SERVICE_REQUEST_QUEUE
-// #define DEBUG_EEPROM
-// #define DEBUG_AZ_SPEED_POT
-// #define DEBUG_AZ_PRESET_POT
-// #define DEBUG_PRESET_ENCODERS
-// #define DEBUG_AZ_MANUAL_ROTATE_LIMITS
-// #define DEBUG_EL_MANUAL_ROTATE_LIMITS
-// #define DEBUG_BRAKE
-// #define DEBUG_OVERLAP
-// #define DEBUG_DISPLAY
+//#define DEBUG_LOOP
+#define DEBUG_BUTTONS
+//#define DEBUG_SERIAL
+//#define DEBUG_SERVICE_REQUEST_QUEUE
+//#define DEBUG_EEPROM
+//#define DEBUG_AZ_SPEED_POT
+//#define DEBUG_AZ_PRESET_POT
+//#define DEBUG_PRESET_ENCODERS
+//#define DEBUG_AZ_MANUAL_ROTATE_LIMITS
+//#define DEBUG_EL_MANUAL_ROTATE_LIMITS
+//#define DEBUG_BRAKE
+//#define DEBUG_OVERLAP
+//#define DEBUG_DISPLAY
 // #define DEBUG_AZ_CHECK_OPERATION_TIMEOUT
 // #define DEBUG_TIMED_BUFFER
 // #define DEBUG_EL_CHECK_OPERATION_TIMEOUT

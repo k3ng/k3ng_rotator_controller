@@ -1,8 +1,8 @@
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
-#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
+#define AZIMUTH_STARTING_POINT_DEFAULT 0      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 360 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
 
 /* 
 
@@ -16,7 +16,7 @@
             \Q - Save settings in the EEPROM and restart            
 */   
                                                 
-#define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
+#define ELEVATION_MAXIMUM_DEGREES 90           // change this to set the maximum elevation in degrees
 
 /* --------------------------- Settings ------------------------------------------------
 
@@ -214,8 +214,8 @@ You can tweak these, but read the online documentation!
 
 #define SERIAL_LED_TIME_MS 250
 
-#define DEFAULT_LATITUDE 40.889958
-#define DEFAULT_LONGITUDE -75.585972
+#define DEFAULT_LATITUDE 39.9375 //40.889958
+#define DEFAULT_LONGITUDE 32.7917 //-75.585972
 
 #define MOON_TRACKING_CHECK_INTERVAL 5000
 #define MOON_AOS_AZIMUTH_MIN 0
@@ -323,6 +323,3 @@ You can tweak these, but read the online documentation!
 
 #define AUTOCORRECT_TIME_MS_AZ 1000
 #define AUTOCORRECT_TIME_MS_EL 1000
-
-#define PIN_LED_ACTIVE_STATE HIGH
-#define PIN_LED_INACTIVE_STATE LOW   

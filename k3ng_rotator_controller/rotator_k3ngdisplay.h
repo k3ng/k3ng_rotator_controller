@@ -16,13 +16,13 @@
 
                                                               */
 
-#define FEATURE_4_BIT_LCD_DISPLAY
+// #define FEATURE_4_BIT_LCD_DISPLAY
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_YOURDUINO_I2C_LCD
 // #define FEATURE_RFROBOT_I2C_DISPLAY
 // #define FEATURE_YWROBOT_I2C_DISPLAY
 // #define FEATURE_SAINSMART_I2C_LCD
-
+#define FEATURE_KS108_GRAPHIC_LCD //Uncomment for Graphic LCD (TA7W)
 // #define FEATURE_ADAFRUIT_BUTTONS                
 
 
@@ -59,6 +59,10 @@
 #endif
 #if !defined(HARDWARE_CUSTOM)
   #include "rotator_pins.h"
+#endif
+
+#ifdef FEATURE_GLCD_FEATURE   //Graphic LCD support by TA7W
+  #include "rotator_pins_glcd.h" 
 #endif
 
 #if defined(FEATURE_ADAFRUIT_I2C_LCD)
