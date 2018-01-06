@@ -344,7 +344,7 @@ You can tweak these, but read the online documentation!
 #define AUDIBLE_PIN_TONE_FREQ 1000
 #define AUDIBLE_ALERT_AT_STARTUP 1
 #define AUDIBLE_ALERT_AT_AZ_TARGET 1
-#define AUDIBLE_ALERT_AT_EL_TARGET 1
+#define AUDIBLE_ALERT_AT_EL_TARGET 
 
 
 									// ######## ########  ######  ######## 

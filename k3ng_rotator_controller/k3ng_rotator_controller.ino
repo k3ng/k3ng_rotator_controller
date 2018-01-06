@@ -314,7 +314,10 @@
       Added pins pin_autopark_disable and pin_autopark_timer_reset for FEATURE_AUTOPARK
 
     2017.09.05.01
-      Added FEATURE_AUDIBLE_ALERT documented here: https://github.com/k3ng/k3ng_rotator_controller/wiki/455-Human-Interface:-Audible-Alert  
+      Added FEATURE_AUDIBLE_ALERT documented here: https://github.com/k3ng/k3ng_rotator_controller/wiki/455-Human-Interface:-Audible-Alert
+
+    2017.11.14.01
+      Merged pulled request #42 - allowing functions to return their calculated values https://github.com/k3ng/k3ng_rotator_controller/pull/42 (Thanks, SQ6EMM)  
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -326,7 +329,7 @@
 
   */
 
-#define CODE_VERSION "2017.09.05.01"
+#define CODE_VERSION "2017.11.14.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
