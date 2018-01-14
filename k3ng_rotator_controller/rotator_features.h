@@ -19,7 +19,7 @@
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 // #define FEATURE_AUTOCORRECT
-#define FEATURE_TEST_DISPLAY_AT_STARTUP  
+//#define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH

@@ -925,13 +925,20 @@ DebugClass debug;
 #endif //HARDWARE_M0UPU
 
 
-#ifdef FEATURE_GLCD_DISPLAY
+#ifdef FEATURE_GLCD_DISPLAY  //initial display settings for TA7W GLCDroutines
   #undef LCD_COLUMNS
   #undef LCD_ROWS
   #define LCD_COLUMNS 21
   #define LCD_ROWS 8
 #endif //TA7W KS108 GLCD support
 
+#ifdef FEATURE_4x3_KEYPAD //Statemachine definitions for TA7W 4x3Keypad entries
+  char* KeypadStateIndicator[] = {"M","E","A"}; //used to decide which setting will be changed using keypad, # key changes Elevations/Azimuth selection, after entering TARGET via keypad and pressing * activates heading change
+                                       //"M" means Manual Mode, in this mode you can use 2-UP,8-DOWN, 4-LEFT/CCW, 6-RIGHT/CW
+  int keypad_mode = 0;
+  int old_KeypadValue = 0;
+#endif
+  
 
 #ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
   #define AZ_A2_ENCODER_RESOLUTION 32767 /*36000*/
@@ -2872,6 +2879,35 @@ void check_serial(){
 // --------------------------------------------------------------
 void check_buttons(){
 
+  #ifdef FEATURE_4x3_KEYPAD  //reading keypad and converting to equalivent numbers 1234567890*#  (0 is 10, # is 11 and * is 12) (TA7W)
+   int KeypadValue=0; 
+   digitalWrite(pinA, HIGH);
+   digitalWrite(pinB, LOW);
+   digitalWrite(pinC, LOW);
+   KeypadValue = KeypadValue + 1*digitalRead(pin4)+2*digitalRead(pin3)+3*digitalRead(pin2)+11*digitalRead(pin1);
+   digitalWrite(pinA, LOW);
+   digitalWrite(pinB, HIGH);
+   KeypadValue = KeypadValue + 4*digitalRead(pin4)+5*digitalRead(pin3)+6*digitalRead(pin2)+10*digitalRead(pin1);
+   digitalWrite(pinB, LOW);
+   digitalWrite(pinC, HIGH);
+   KeypadValue = KeypadValue + 7*digitalRead(pin4)+8*digitalRead(pin3)+9*digitalRead(pin2)+12*digitalRead(pin1);
+   if (KeypadValue != old_KeypadValue) 
+    {
+      if (KeypadValue ==  0) KeypadValue = 99;
+      if (KeypadValue == 10) KeypadValue = 0;
+      if (KeypadValue == 11) keypad_mode = (keypad_mode+1) % 3;  
+      k3ngdisplay.print(KeypadStateIndicator[keypad_mode],1,KEYPAD_ENTRY_DISPLAY_ROW-1);
+      char tempchar[2]="";
+      dtostrf(KeypadValue,0,0,tempchar);
+      k3ngdisplay.print(tempchar,5,KEYPAD_ENTRY_DISPLAY_ROW-1);
+      dtostrf(keypad_mode,0,0,tempchar);
+      k3ngdisplay.print(tempchar,10,KEYPAD_ENTRY_DISPLAY_ROW-1);
+      k3ngdisplay.service(1);
+      old_KeypadValue = KeypadValue; //for debounce       
+    }
+  #endif
+
+
   #ifdef FEATURE_ADAFRUIT_BUTTONS
     int buttons = 0;
     // buttons = lcd.readButtons();
@@ -4070,6 +4106,7 @@ void update_display(){
 
     static byte big_clock_last_clock_seconds = 0;
   
+  //GLCD.SelectFont(fixednums8x16);
     if (!row_override[LCD_BIG_CLOCK_ROW]){    
       update_time();
       k3ngdisplay.print_center_entire_row(timezone_modified_clock_string(),LCD_BIG_CLOCK_ROW-1,0);
@@ -4078,6 +4115,8 @@ void update_display(){
         big_clock_last_clock_seconds = clock_seconds;
       }
     }
+  //GLCD.SelectFont(System5x7);
+  //GLCD.SelectFont(fixednums8x16);
   #endif //defined(OPTION_DISPLAY_BIG_CLOCK) && defined(FEATURE_CLOCK)
 
 
@@ -6634,6 +6673,14 @@ void initialize_pins(){
   }
   #endif // FEATURE_AZ_POSITION_PULSE_INPUT
 
+  #ifdef FEATURE_4x3_KEYPAD
+    pinModeEnhanced(pinA, OUTPUT);
+    pinModeEnhanced(pinB, OUTPUT);
+    pinModeEnhanced(pinC, OUTPUT);
+    pinModeEnhanced(pin1, INPUT);
+    pinModeEnhanced(pin2, INPUT);
+    pinModeEnhanced(pin3, INPUT);
+  #endif
 
   #ifdef FEATURE_EL_POSITION_PULSE_INPUT
   if (el_position_pulse_pin) {
@@ -13212,8 +13259,6 @@ void test_display(){
   
   char tempchar[12] = "";
   int display_number = 1;
-  Serial.print("BUFFER ");
-  Serial.println(MAX_SCREEN_BUFFER_ROWS);
   
 
   k3ngdisplay.print_top_left("1");

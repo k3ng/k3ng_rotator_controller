@@ -121,6 +121,7 @@ You can tweak these, but read the online documentation!
 #else
   #define LCD_COLUMNS 21
   #define LCD_ROWS 8
+  #define KEYPAD_ENTRY_DISPLAY_ROW 6 //Display Keypad entries and status on row 6
 #endif
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
