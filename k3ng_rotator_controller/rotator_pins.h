@@ -97,6 +97,20 @@
 #define lcd_4_bit_d7_pin 2
 
 
+//4x3 Keypad pin connection definitions 
+//if defined FEATURE_4x3_KEYPAD in features.h we define the pins here
+//TA7W Dec 2017
+#ifdef FEATURE_4x3_KEYPAD
+   #define pinA 45   //Keypad RAW A   ( 1 2 3 # )
+   #define pinB 47   //Keypad RAW B   ( 4 5 6 0 )
+   #define pinC 49   //Keypad RAW C   ( 7 8 9 * )
+   #define pin1 44   //Keypad COL 1   ( 1 4 7 )
+   #define pin2 46   //Keypad COL 2   ( 2 5 8 )
+   #define pin3 48   //Keypad COL 3   ( 3 6 9 )
+   #define pin4 50   //Keypad COL 4   ( # 0 * )
+#endif
+
+
 #ifdef FEATURE_JOYSTICK_CONTROL
   #define pin_joystick_x A0
   #define pin_joystick_y A1

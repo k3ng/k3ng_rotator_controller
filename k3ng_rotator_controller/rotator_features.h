@@ -19,7 +19,7 @@
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 // #define FEATURE_AUTOCORRECT
-//#define FEATURE_TEST_DISPLAY_AT_STARTUP  
+#define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -63,6 +63,9 @@
 // #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_EL_POSITION_MEMSIC_2125
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
+
+
+#define FEATURE_4x3_KEYPAD //4x3 Keypad for rotation controlbye TA7W (pin definitiona are in rotator.h)
    
 // If you are using an Adafruit, Yourduino, RFRobot, YWRobot, or SainSmart display, you must also change the feature setting in rotator_k3ngdisplay.h!!!!
 #define FEATURE_GLCD_DISPLAY //Uncomment for Graphic LCD (TA7W)

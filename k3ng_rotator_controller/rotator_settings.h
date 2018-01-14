@@ -16,7 +16,7 @@
             \Q - Save settings in the EEPROM and restart            
 */   
                                                 
-#define ELEVATION_MAXIMUM_DEGREES 90           // change this to set the maximum elevation in degrees
+#define ELEVATION_MAXIMUM_DEGREES 72           // change this to set the maximum elevation in degrees
 
 /* --------------------------- Settings ------------------------------------------------
 
@@ -28,7 +28,7 @@ You can tweak these, but read the online documentation!
 #define ANALOG_AZ_FULL_CCW 4
 #define ANALOG_AZ_FULL_CW 1009
 #define ANALOG_EL_0_DEGREES 2
-#define ANALOG_EL_MAX_ELEVATION 1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
+#define ANALOG_EL_MAX_ELEVATION 911  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
 #define ANALOG_AZ_OVERLAP_DEGREES 540         // if overlap_led above is enabled, turn on overlap led line if azimuth is greater than this setting
                                               // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
@@ -102,7 +102,7 @@ You can tweak these, but read the online documentation!
 // various code settings
 #define AZIMUTH_TOLERANCE 3.0            // rotator will stop within X degrees when doing autorotation
 #define ELEVATION_TOLERANCE 0.1 //1.0
-#define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
+#define OPERATION_TIMEOUT 240000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
 #define CONTROL_PORT_BAUD_RATE 9600
@@ -116,7 +116,7 @@ You can tweak these, but read the online documentation!
 #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
 
 #define LCD_COLUMNS 20 //16
-#define LCD_ROWS 4 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
+#define LCD_ROWS 7 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT
