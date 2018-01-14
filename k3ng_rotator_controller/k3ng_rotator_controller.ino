@@ -866,6 +866,8 @@ DebugClass debug;
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
 #endif   
 
+
+
 #ifdef FEATURE_AZ_POSITION_HMC5883L
   HMC5883L compass;
 #endif //FEATURE_AZ_POSITION_HMC5883L
@@ -921,6 +923,15 @@ DebugClass debug;
   #undef LCD_ROWS
   #define LCD_ROWS 2
 #endif //HARDWARE_M0UPU
+
+
+#ifdef FEATURE_GLCD_DISPLAY
+  #undef LCD_COLUMNS
+  #undef LCD_ROWS
+  #define LCD_COLUMNS 21
+  #define LCD_ROWS 8
+#endif //TA7W KS108 GLCD support
+
 
 #ifdef FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
   #define AZ_A2_ENCODER_RESOLUTION 32767 /*36000*/
@@ -3365,7 +3376,6 @@ void update_display(){
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);    
     #endif // FEATURE_ELEVATION_CONTROL
   #endif //defined(OPTION_DISPLAY_HEADING)  
-
 
 //zzzzzzz
 
@@ -13202,7 +13212,9 @@ void test_display(){
   
   char tempchar[12] = "";
   int display_number = 1;
-
+  Serial.print("BUFFER ");
+  Serial.println(MAX_SCREEN_BUFFER_ROWS);
+  
 
   k3ngdisplay.print_top_left("1");
   k3ngdisplay.service(1);

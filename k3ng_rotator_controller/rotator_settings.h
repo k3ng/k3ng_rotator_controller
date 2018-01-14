@@ -115,8 +115,13 @@ You can tweak these, but read the online documentation!
 //#define GPS_MIRROR_PORT &Serial1 //3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
 #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
 
-#define LCD_COLUMNS 20 //16
-#define LCD_ROWS 4 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
+#ifndef FEATURE_GLCD_DISPLAY  //GLCD support by TA7W
+  #define LCD_COLUMNS 20 //16
+  #define LCD_ROWS 2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
+#else
+  #define LCD_COLUMNS 21
+  #define LCD_ROWS 8
+#endif
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT
@@ -124,7 +129,7 @@ You can tweak these, but read the online documentation!
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1
 #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION CENTER
 #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 3
-#define LCD_BIG_CLOCK_ROW 4
+#define LCD_BIG_CLOCK_ROW 7
 #define LCD_GPS_INDICATOR_POSITION RIGHT //LEFT or RIGHT
 #define LCD_GPS_INDICATOR_ROW 1
 #define LCD_MOON_TRACKING_ROW 3                                   // LCD display row for OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY

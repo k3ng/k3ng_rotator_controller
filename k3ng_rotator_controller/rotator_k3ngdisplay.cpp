@@ -392,7 +392,6 @@ int K3NGdisplay::buffer_index_position(int x,int y){
 //-----------------------------------------------------------------------------------------------------
 void K3NGdisplay::print_attribute(char * print_string, int x, int y, uint8_t attribute){
 
-  
   for (int print_string_index = 0;print_string_index < (display_columns * display_rows);print_string_index++){
   	if (print_string[print_string_index] != 0){
   	  if (((buffer_index_position(x,y)+print_string_index)) < (display_columns * display_rows)){
