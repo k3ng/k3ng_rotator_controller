@@ -2891,6 +2891,14 @@ void check_buttons(){
    digitalWrite(pinB, LOW);
    digitalWrite(pinC, HIGH);
    KeypadValue = KeypadValue + 7*digitalRead(pin4)+8*digitalRead(pin3)+9*digitalRead(pin2)+12*digitalRead(pin1);
+   if (keypad_mode == 0) //Manual Mode COntrol
+    {
+       if (KeypadValue ==  6) submit_request(AZ, REQUEST_CW,   0, 61);
+       if (KeypadValue ==  4) submit_request(AZ, REQUEST_CCW,  0, 62);
+       if (KeypadValue ==  2) submit_request(EL, REQUEST_UP,   0, 66);
+       if (KeypadValue ==  8) submit_request(EL, REQUEST_DOWN, 0, 67);
+       if (KeypadValue ==  0) {submit_request(AZ, REQUEST_STOP, 0, 74);  submit_request(EL, REQUEST_STOP, 0, 76);}
+    }
    if (KeypadValue != old_KeypadValue) 
     {
       if (KeypadValue ==  0) KeypadValue = 99;
