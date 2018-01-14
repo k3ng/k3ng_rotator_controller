@@ -10,16 +10,16 @@
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION       // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-// #define FEATURE_MOON_TRACKING
+//#define FEATURE_MOON_TRACKING
 // #define FEATURE_SUN_TRACKING
-// #define FEATURE_CLOCK
+#define FEATURE_CLOCK
 // #define FEATURE_GPS
 // #define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support
 // #define FEATURE_AUTOCORRECT
-#define FEATURE_TEST_DISPLAY_AT_STARTUP  
+//#define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -113,7 +113,7 @@
 // #define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 // #define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 #define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-// #define FEATURE_TWO_DECIMAL_PLACE_HEADINGS  // under development - not working yet!
+//#define FEATURE_TWO_DECIMAL_PLACE_HEADINGS  // under development - not working yet!
 // #define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
 // #define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
 // #define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
@@ -127,13 +127,14 @@
 
 #define OPTION_DISPLAY_STATUS
 #define OPTION_DISPLAY_HEADING
-#define OPTION_DISPLAY_HEADING_AZ_ONLY
-#define OPTION_DISPLAY_HEADING_EL_ONLY
+//#define OPTION_DISPLAY_HEADING_AZ_ONLY
+//#define OPTION_DISPLAY_HEADING_EL_ONLY
 //#define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
-#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
+//#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 // #define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
 // #define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
 #define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
+//#define LCD_BIG_CLOCK_ROW 5
 // #define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 //#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
@@ -141,7 +142,7 @@
 // #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
-// #define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+//#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 // #define OPTION_REVERSE_AZ_HH12_AS5045
 // #define OPTION_REVERSE_EL_HH12_AS5045
 
@@ -164,9 +165,9 @@
 
 
 
-#define DEFAULT_DEBUG_STATE 1 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
-#define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
+//#define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
 //#define DEBUG_LOOP
 #define DEBUG_BUTTONS
 //#define DEBUG_SERIAL

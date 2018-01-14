@@ -31,7 +31,7 @@
      Pablo EA4TX
      Máximo EA1DDO
      Matt VK5ZM
-     Baris TA7W
+     Baris Dinc TA7W
      ...and others
   
    Translations provided by
@@ -865,11 +865,6 @@ DebugClass debug;
 #if defined(FEATURE_LCD_DISPLAY)
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
 #endif   
-#if defined(FEATURE_GLCD_DISPLAY) //TA7W GLCD extension
-  K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
-#endif   
-
-
 
 #ifdef FEATURE_AZ_POSITION_HMC5883L
   HMC5883L compass;
