@@ -121,7 +121,7 @@ You can tweak these, but read the online documentation!
 #else
   #define LCD_COLUMNS 21
   #define LCD_ROWS 8
-  #define KEYPAD_ENTRY_DISPLAY_ROW 6 //Display Keypad entries and status on row 6
+  #define KEYPAD_ENTRY_DISPLAY_ROW 5 //Display Keypad entries and status on row 6
 #endif
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
@@ -130,7 +130,7 @@ You can tweak these, but read the online documentation!
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1
 #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION CENTER
 #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 3
-#define LCD_BIG_CLOCK_ROW 7
+#define LCD_BIG_CLOCK_ROW 6
 #define LCD_GPS_INDICATOR_POSITION RIGHT //LEFT or RIGHT
 #define LCD_GPS_INDICATOR_ROW 1
 #define LCD_MOON_TRACKING_ROW 3                                   // LCD display row for OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY

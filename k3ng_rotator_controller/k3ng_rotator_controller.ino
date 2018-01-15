@@ -928,15 +928,19 @@ DebugClass debug;
 #ifdef FEATURE_GLCD_DISPLAY  //initial display settings for TA7W GLCDroutines
   #undef LCD_COLUMNS
   #undef LCD_ROWS
-  #define LCD_COLUMNS 21
-  #define LCD_ROWS 8
+  #define LCD_COLUMNS 16
+  #define LCD_ROWS 6
 #endif //TA7W KS108 GLCD support
 
 #ifdef FEATURE_4x3_KEYPAD //Statemachine definitions for TA7W 4x3Keypad entries
-  char* KeypadStateIndicator[] = {"M","E","A"}; //used to decide which setting will be changed using keypad, # key changes Elevations/Azimuth selection, after entering TARGET via keypad and pressing * activates heading change
+  char* KeypadStateIndicator[] = {"Manual","Azimuth","Elevation"}; //used to decide which setting will be changed using keypad, # key changes Elevations/Azimuth selection, after entering TARGET via keypad and pressing * activates heading change
                                        //"M" means Manual Mode, in this mode you can use 2-UP,8-DOWN, 4-LEFT/CCW, 6-RIGHT/CW
   int keypad_mode = 0;
   int old_KeypadValue = 0;
+  int az_busy = 0;
+  int el_busy = 0;
+  int keypad_digit = 0;
+  char keypad_target[4] = "000";
 #endif
   
 
@@ -2891,29 +2895,51 @@ void check_buttons(){
    digitalWrite(pinB, LOW);
    digitalWrite(pinC, HIGH);
    KeypadValue = KeypadValue + 7*digitalRead(pin4)+8*digitalRead(pin3)+9*digitalRead(pin2)+12*digitalRead(pin1);
-   if (keypad_mode == 0) //Manual Mode COntrol
-    {
-       if (KeypadValue ==  6) submit_request(AZ, REQUEST_CW,   0, 61);
-       if (KeypadValue ==  4) submit_request(AZ, REQUEST_CCW,  0, 62);
-       if (KeypadValue ==  2) submit_request(EL, REQUEST_UP,   0, 66);
-       if (KeypadValue ==  8) submit_request(EL, REQUEST_DOWN, 0, 67);
-       if (KeypadValue ==  0) {submit_request(AZ, REQUEST_STOP, 0, 74);  submit_request(EL, REQUEST_STOP, 0, 76);}
-    }
    if (KeypadValue != old_KeypadValue) 
     {
       if (KeypadValue ==  0) KeypadValue = 99;
       if (KeypadValue == 10) KeypadValue = 0;
-      if (KeypadValue == 11) keypad_mode = (keypad_mode+1) % 3;  
-      k3ngdisplay.print(KeypadStateIndicator[keypad_mode],1,KEYPAD_ENTRY_DISPLAY_ROW-1);
-      char tempchar[2]="";
-      dtostrf(KeypadValue,0,0,tempchar);
-      k3ngdisplay.print(tempchar,5,KEYPAD_ENTRY_DISPLAY_ROW-1);
-      dtostrf(keypad_mode,0,0,tempchar);
-      k3ngdisplay.print(tempchar,10,KEYPAD_ENTRY_DISPLAY_ROW-1);
-      k3ngdisplay.service(1);
-      old_KeypadValue = KeypadValue; //for debounce       
-    }
-  #endif
+      if (KeypadValue == 11) {keypad_mode = (keypad_mode+1) % 3; keypad_digit = 0;} 
+      old_KeypadValue = KeypadValue; //for debounce               
+      if (keypad_mode == 0) //Manual Mode COntrol
+        {
+           if ((KeypadValue ==  6) && (az_busy == 0)) {submit_request(AZ, REQUEST_CW,   0, 61); az_busy = 1;}
+           if ((KeypadValue ==  4) && (az_busy == 0)) {submit_request(AZ, REQUEST_CCW,  0, 62); az_busy = 1;}
+           if ((KeypadValue ==  2) && (el_busy == 0)) {submit_request(EL, REQUEST_UP,   0, 66); el_busy = 1;}
+           if ((KeypadValue ==  8) && (el_busy == 0)) {submit_request(EL, REQUEST_DOWN, 0, 67); el_busy = 1;}
+           if ((KeypadValue == 99) && az_busy) {submit_request(AZ, REQUEST_STOP, 0, 74); az_busy = 0;}         
+           if ((KeypadValue == 99) && el_busy) {submit_request(EL, REQUEST_STOP, 0, 76); el_busy = 0;}
+        }
+      if (keypad_mode == 1) //Azimuth Entry
+        {
+          if (KeypadValue <= 10) //Azimuth Control
+            {
+              keypad_target[keypad_digit]=KeypadValue+48;
+              keypad_digit=(keypad_digit+1) % 3;
+            }
+          if (KeypadValue == 12)  submit_request(AZ, REQUEST_AZIMUTH, (((keypad_target[0]-48) * 100  + (keypad_target[1]-48) * 10 + (keypad_target[2]-48)) * HEADING_MULTIPLIER), 28);
+        }
+      if (keypad_mode == 2) //Elevation Entry 
+        {
+          if (KeypadValue <= 10) //Elevation Control
+            {
+              keypad_target[keypad_digit]=KeypadValue+48;
+              keypad_digit=(keypad_digit+1) % 3;
+            }
+          if (KeypadValue == 12)  submit_request(EL, REQUEST_ELEVATION, ((keypad_target[0]-48) * 100  + (keypad_target[1]-48) * 10 + (keypad_target[2]-48)) , 34);
+        }
+        
+    } //(KeypadValue != old_KeypadValue)
+    k3ngdisplay.print(KeypadStateIndicator[keypad_mode],0,KEYPAD_ENTRY_DISPLAY_ROW-1);
+    //char tempchar[2]="";
+    //dtostrf(KeypadValue,0,0,tempchar);
+    //k3ngdisplay.print(tempchar,5,KEYPAD_ENTRY_DISPLAY_ROW-1);
+    //dtostrf(keypad_mode,0,0,tempchar);
+    //k3ngdisplay.print(tempchar,8,KEYPAD_ENTRY_DISPLAY_ROW-1);
+    k3ngdisplay.print(keypad_target,10,KEYPAD_ENTRY_DISPLAY_ROW-1);
+    k3ngdisplay.service(1);
+
+ #endif
 
 
   #ifdef FEATURE_ADAFRUIT_BUTTONS

@@ -119,8 +119,10 @@ void K3NGdisplay::initialize(){
                                              // k3ngdisplay.h and k3ngdisplay.cpp from your ino directory
 #else
   GLCD.Init();
-  //GLCD.SelectFont(Wendy3x5); //Arial14 Arial_bold_14 CalBlk36 Callibri10 Callibri11 Callibri11_bold Callibri11_italic Callibri14 Callibri15 CalLite24 Cooper19 Cooper21 Cooper26 Corsiva_12 cp437font8x8 fixednums15x31 fixednums7x15 fixednums8x16 fixed_bold10x15 font8x8 Iain5x7 lcdnums12x16 lcdnums14x24 newbasic3x5 Roosewood22 Roosewood26 System5x7 SystemFont5x7 TimesNewRoman13 TimesNewRoman13_italic TimesNewRoman16 TimesNewRoman16_bold TimesNewRoman16_italic utf8font10x16 Verdana12 Verdana12_bold Verdana12_italic Verdana_digits_24 Wendy3x5
-  //GLCD.SelectFont(fixednums8x16);
+  //GLCD.SelectFont(Wendy3x5); //Arial14 Arial_bold_14 CalBlk36 Callibri10 Callibri11 Callibri11_bold Callibri11_italic Callibri14 Callibri15 CalLite24 Cooper19 Cooper21 Cooper26 Corsiva_12 cp437font8x8 fixednums15x31 fixednums7x15 fixednums8x16 
+                                //fixed_bold10x15 font8x8 Iain5x7 lcdnums12x16 lcdnums14x24 newbasic3x5 Roosewood22 Roosewood26 System5x7 SystemFont5x7 TimesNewRoman13 TimesNewRoman13_italic TimesNewRoman16 TimesNewRoman16_bold 
+                                //TimesNewRoman16_italic utf8font10x16 Verdana12 Verdana12_bold Verdana12_italic Verdana_digits_24 Wendy3x5
+  //GLCD.SelectFont(Callibri10);
   GLCD.SelectFont(System5x7);
 
 

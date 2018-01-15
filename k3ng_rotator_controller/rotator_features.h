@@ -103,7 +103,7 @@
 // #define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
 // #define FEATURE_LIMIT_SENSE
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
-// #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
+#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 // #define FEATURE_PARK
 // #define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 // #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings are AZ_MANUAL_ROTATE_CCW_LIMIT, AZ_MANUAL_ROTATE_CW_LIMIT) 
@@ -164,13 +164,13 @@
 
 
 
-#define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 1 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
-//#define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
+#define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
 //#define DEBUG_LOOP
 #define DEBUG_BUTTONS
-//#define DEBUG_SERIAL
-//#define DEBUG_SERVICE_REQUEST_QUEUE
+#define DEBUG_SERIAL
+#define DEBUG_SERVICE_REQUEST_QUEUE
 //#define DEBUG_EEPROM
 //#define DEBUG_AZ_SPEED_POT
 //#define DEBUG_AZ_PRESET_POT
