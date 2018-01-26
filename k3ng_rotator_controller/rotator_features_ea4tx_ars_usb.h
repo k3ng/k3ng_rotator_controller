@@ -105,6 +105,7 @@
 // #define DEBUG_PROCESS_SLAVE
 // #define DEBUG_MEMSIC_2125
 // #define DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
+// #define DEBUG_QMC5883
 
 
 

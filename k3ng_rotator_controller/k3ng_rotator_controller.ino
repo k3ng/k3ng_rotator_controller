@@ -323,6 +323,10 @@
       FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
       {need to document in wiki after someone tests}
 
+    2018.01.25.02
+      FEATURE_AZ_POSITION_DFROBOT_QMC5883
+      {need to document in wiki after someone tests}
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -332,7 +336,7 @@
 
   */
 
-#define CODE_VERSION "2018.01.25.01"
+#define CODE_VERSION "2018.01.25.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -388,6 +392,10 @@
 #if defined(FEATURE_AZ_POSITION_HMC5883L) || defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
   #include <HMC5883L.h> // required for HMC5883L digital compass support
 #endif
+
+#if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
+  #include <DFRobot_QMC5883.h>
+#endif  
 
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303)
   #include <Adafruit_Sensor.h>    // required for any Adafruit sensor libraries
@@ -880,6 +888,10 @@ DebugClass debug;
 #if defined(FEATURE_AZ_POSITION_HMC5883L) || defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
   HMC5883L compass;
 #endif //FEATURE_AZ_POSITION_HMC5883L
+
+#if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)  
+  DFRobot_QMC5883 compass;
+#endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
 
 #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
   ADXL345 accel;
@@ -4755,6 +4767,50 @@ void read_azimuth(byte force_read){
       azimuth = raw_azimuth;
     #endif FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
 
+    #if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
+
+      Vector norm = compass.readNormalize();
+
+      // Calculate heading
+      float heading = atan2(norm.YAxis, norm.XAxis);
+
+      #ifdef DEBUG_QMC5883
+        debug.print("read_azimuth: QMC5883 x:");
+        debug.print(norm.XAxis,4);
+        debug.print(" y:");
+        debug.print(norm.YAxis,4);
+        debug.println("");
+      #endif //DEBUG_QMC5883
+
+      // Set declination angle on your location and fix heading
+      // You can find your declination on: http://magnetic-declination.com/
+      // (+) Positive or (-) for negative
+      // For Bytom / Poland declination angle is 4'26E (positive)
+      // Formula: (deg + (min / 60.0)) / (180 / PI);
+      // float declinationAngle = (4.0 + (26.0 / 60.0)) / (180 / PI);
+      // heading += declinationAngle;
+
+      // Correct for heading < 0deg and heading > 360deg
+      if (heading < 0){
+        heading += 2 * PI;
+      }
+
+      if (heading > 2 * PI){
+        heading -= 2 * PI;
+      }
+
+      // Convert to degrees
+      raw_azimuth = heading * 180 / M_PI; 
+
+      if (AZIMUTH_SMOOTHING_FACTOR > 0) {
+        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+      }
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+        raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+      azimuth = raw_azimuth;
+    #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
 
     #ifdef FEATURE_AZ_POSITION_ADAFRUIT_LSM303
       lsm.read();
@@ -7084,6 +7140,35 @@ void initialize_peripherals(){
 
   #endif //FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
 
+
+  #if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
+
+    while (!compass.begin()){
+      #if defined(DEBUG_QMC5883)
+        control_port->println("initialize_peripherals: could not find a valid QMC5883 sensor");
+      #endif
+      delay(500);
+    }
+
+    if(compass.isHMC()){
+      #if defined(DEBUG_QMC5883)
+        control_port->println("initialize_peripherals: initialize HMC5883");
+      #endif
+      compass.setRange(HMC5883L_RANGE_1_3GA);
+      compass.setMeasurementMode(HMC5883L_CONTINOUS);
+      compass.setDataRate(HMC5883L_DATARATE_15HZ);
+      compass.setSamples(HMC5883L_SAMPLES_8);
+    } else if(compass.isQMC()){
+      #if defined(DEBUG_QMC5883)
+        control_port->println("initialize_peripherals: initialize QMC5883");
+      #endif  
+      compass.setRange(QMC5883_RANGE_2GA);
+      compass.setMeasurementMode(QMC5883_CONTINOUS); 
+      compass.setDataRate(QMC5883_DATARATE_50HZ);
+      compass.setSamples(QMC5883_SAMPLES_8);
+    }
+
+  #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883  
 
 
   #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
