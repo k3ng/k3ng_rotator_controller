@@ -319,6 +319,9 @@
     2017.11.14.01
       Merged pulled request #42 - allowing functions to return their calculated values https://github.com/k3ng/k3ng_rotator_controller/pull/42 (Thanks, SQ6EMM)  
 
+    2018.01.25.01
+      FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+      {need to document in wiki after someone tests}
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -329,7 +332,7 @@
 
   */
 
-#define CODE_VERSION "2017.11.14.01"
+#define CODE_VERSION "2018.01.25.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -382,7 +385,7 @@
   #include <Wire.h>  // required for FEATURE_I2C_LCD, any ADXL345 feature, FEATURE_AZ_POSITION_HMC5883L, FEATURE_EL_POSITION_ADAFRUIT_LSM303
 #endif
 
-#if defined(FEATURE_AZ_POSITION_HMC5883L)
+#if defined(FEATURE_AZ_POSITION_HMC5883L) || defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
   #include <HMC5883L.h> // required for HMC5883L digital compass support
 #endif
 
@@ -471,7 +474,7 @@
 #endif
 
 #ifdef FEATURE_STEPPER_MOTOR
-  #include <TimerFive.h>
+//  #include <TimerFive.h>
 #endif
 
 #include "rotator_language.h"
@@ -874,7 +877,7 @@ DebugClass debug;
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
 #endif   
 
-#ifdef FEATURE_AZ_POSITION_HMC5883L
+#if defined(FEATURE_AZ_POSITION_HMC5883L) || defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
   HMC5883L compass;
 #endif //FEATURE_AZ_POSITION_HMC5883L
 
@@ -4708,6 +4711,50 @@ void read_azimuth(byte force_read){
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_HMC5883L
 
+    #ifdef FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+      Vector norm = compass.readNormalize();
+
+      // Calculate heading
+      float heading = atan2(norm.YAxis, norm.XAxis);
+
+      #ifdef DEBUG_HMC5883L
+        debug.print("read_azimuth: HMC5883L x:");
+        debug.print(norm.XAxis,4);
+        debug.print(" y:");
+        debug.print(norm.YAxis,4);
+        debug.println("");
+      #endif //DEBUG_HMC5883L
+
+      // Set declination angle on your location and fix heading
+      // You can find your declination on: http://magnetic-declination.com/
+      // (+) Positive or (-) for negative
+      // For Bytom / Poland declination angle is 4'26E (positive)
+      // Formula: (deg + (min / 60.0)) / (180 / M_PI);
+      //float declinationAngle = (4.0 + (26.0 / 60.0)) / (180 / M_PI);
+      //heading += declinationAngle;
+
+      // Correct for heading < 0deg and heading > 360deg
+      if (heading < 0){
+        heading += 2 * PI;
+      }
+
+      if (heading > 2 * PI){
+        heading -= 2 * PI;
+      }
+
+      // Convert to degrees
+      raw_azimuth = heading * 180 / M_PI; 
+
+      if (AZIMUTH_SMOOTHING_FACTOR > 0) {
+        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+      }
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+        raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+      azimuth = raw_azimuth;
+    #endif FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+
 
     #ifdef FEATURE_AZ_POSITION_ADAFRUIT_LSM303
       lsm.read();
@@ -6994,7 +7041,7 @@ void initialize_peripherals(){
      #ifndef OPTION_DISABLE_HMC5883L_ERROR_CHECKING
       if (error != 0) {
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-          control_port->print(F("setup: compass error:"));
+          control_port->print(F("initialize_peripherals: compass error:"));
           control_port->println(compass.GetErrorText(error)); // check if there is an error, and print if so
         #endif
       }
@@ -7003,12 +7050,41 @@ void initialize_peripherals(){
     #ifndef OPTION_DISABLE_HMC5883L_ERROR_CHECKING
       if (error != 0) {
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-          control_port->print(F("setup: compass error:"));
+          control_port->print(F("initialize_peripherals: compass error:"));
           control_port->println(compass.GetErrorText(error)); // check if there is an error, and print if so
         #endif
       }
     #endif //OPTION_DISABLE_HMC5883L_ERROR_CHECKING
   #endif // FEATURE_AZ_POSITION_HMC5883L
+
+  #if defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
+    while (!compass.begin())
+    {
+      #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+        control_port->println("initialize_peripherals: could not find a valid HMC5883L sensor");
+      #endif
+      delay(500);
+    }
+
+    // Set measurement range
+    compass.setRange(HMC5883L_RANGE_1_3GA);
+
+    // Set measurement mode
+    compass.setMeasurementMode(HMC5883L_CONTINOUS);
+
+    // Set data rate
+    compass.setDataRate(HMC5883L_DATARATE_30HZ);
+
+    // Set number of samples averaged
+    compass.setSamples(HMC5883L_SAMPLES_8);
+
+    // Set calibration offset. See HMC5883L_calibration.ino
+    compass.setOffset(0, 0);
+
+
+  #endif //FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+
+
 
   #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
     accel = ADXL345();
