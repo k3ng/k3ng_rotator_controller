@@ -120,7 +120,7 @@ You can tweak these, but read the online documentation!
 #define GPS_PORT_BAUD_RATE 9600
 #define GPS_MIRROR_PORT_BAUD_RATE 9600
 #define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
-//#define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port
+#define REMOTE_PORT_MAPPED_TO &Serial3  // change this line to map the remote_unit port to a different serial port
 #define GPS_PORT_MAPPED_TO &Serial2  // change this line to map the GPS port to a different serial port
 //#define GPS_MIRROR_PORT &Serial1 //3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
 #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")

@@ -327,6 +327,9 @@
       FEATURE_AZ_POSITION_DFROBOT_QMC5883
       {need to document in wiki after someone tests}
 
+    2018.01.28.01
+      Enhanced master/slave link TX sniff output  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -336,7 +339,7 @@
 
   */
 
-#define CODE_VERSION "2018.01.25.02"
+#define CODE_VERSION "2018.01.28.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -8678,13 +8681,13 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
     switch (remote_command_to_send) {
       case REMOTE_UNIT_CL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("CL");
+          remote_unit_port->println("CL");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("CL");
+          ethernet_slave_link_send("CL");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("CL");}
+          if (remote_port_tx_sniff) {control_port->println("CL");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_CL_COMMAND;
         break;
@@ -8692,26 +8695,26 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_AZ_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("AZ");
+          remote_unit_port->println("AZ");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("AZ");
+          ethernet_slave_link_send("AZ");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("AZ");}
+          if (remote_port_tx_sniff) {control_port->println("AZ");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_AZ_COMMAND;
         break;
 
       case REMOTE_UNIT_EL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("EL");
+          remote_unit_port->println("EL");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("EL");
+          ethernet_slave_link_send("EL");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE        
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("EL");}
+          if (remote_port_tx_sniff) {control_port->println("EL");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_EL_COMMAND;
         break;
@@ -8719,27 +8722,51 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_AW_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        take_care_of_pending_remote_command();
-        remote_unit_port->print("AW");
-        parm1 = parm1 - 100;   // pin number
-        if (parm1 < 10) {remote_unit_port->print("0");}
-        remote_unit_port->print(parm1);
-        if (parm2 < 10) {remote_unit_port->print("0");}
-        if (parm2 < 100) {remote_unit_port->print("0");}
-        remote_unit_port->println(parm2);
+          take_care_of_pending_remote_command();
+          remote_unit_port->print("AW");
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print("AW");}
+          #endif          
+          parm1 = parm1 - 100;   // pin number
+          if (parm1 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif
+          }
+          remote_unit_port->print(parm1);
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print(parm1);}
+          #endif          
+          if (parm2 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif            
+          }
+          if (parm2 < 100) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif            
+          }
+          remote_unit_port->println(parm2);
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->println(parm1);}
+          #endif                
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        take_care_of_pending_remote_command();
-        strcpy(ethernet_send_string,"AW");
-        parm1 = parm1 - 100;   // pin number
-        if (parm1 < 10) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm1,0,0,temp_string);
-        if (parm2 < 10) {strcat(ethernet_send_string,"0");}
-        if (parm2 < 100) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm2,0,0,temp_string);
-        strcat(ethernet_send_string,temp_string);
-        ethernet_slave_link_send(ethernet_send_string);
+          take_care_of_pending_remote_command();
+          strcpy(ethernet_send_string,"AW");
+          parm1 = parm1 - 100;   // pin number
+          if (parm1 < 10) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm1,0,0,temp_string);
+          if (parm2 < 10) {strcat(ethernet_send_string,"0");}
+          if (parm2 < 100) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm2,0,0,temp_string);
+          strcat(ethernet_send_string,temp_string);
+          ethernet_slave_link_send(ethernet_send_string);
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
         remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
@@ -8747,24 +8774,45 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_DHL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        take_care_of_pending_remote_command();
-        remote_unit_port->print("D");
-        if (parm2 == HIGH) {remote_unit_port->print("H");} else {remote_unit_port->print("L");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {remote_unit_port->print("0");}
-        remote_unit_port->println(parm1);
+          take_care_of_pending_remote_command();
+          remote_unit_port->print("D");
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print("D");}
+          #endif              
+          if (parm2 == HIGH) {
+            remote_unit_port->print("H");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("H");}
+            #endif                
+          } else {
+            remote_unit_port->print("L");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("L");}
+            #endif                
+          }
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif                
+          }
+          remote_unit_port->println(parm1);
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->println(parm1);}
+          #endif              
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
 
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        take_care_of_pending_remote_command();
-        strcpy(ethernet_send_string,"D");
-        if (parm2 == HIGH) {strcat(ethernet_send_string,"H");} else {strcat(ethernet_send_string,"L");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm1,0,0,temp_string);
-        strcat(ethernet_send_string,temp_string);
-        ethernet_slave_link_send(ethernet_send_string);
+          take_care_of_pending_remote_command();
+          strcpy(ethernet_send_string,"D");
+          if (parm2 == HIGH) {strcat(ethernet_send_string,"H");} else {strcat(ethernet_send_string,"L");}
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm1,0,0,temp_string);
+          strcat(ethernet_send_string,temp_string);
+          ethernet_slave_link_send(ethernet_send_string);
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
         remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
@@ -8773,52 +8821,72 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_DOI_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        take_care_of_pending_remote_command();
-        remote_unit_port->print("D");
-        if (parm2 == OUTPUT) {remote_unit_port->print("O");} else {remote_unit_port->print("I");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {remote_unit_port->print("0");}
-        remote_unit_port->println(parm1);
-        remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
-        // get_remote_port_ok_response();
+          take_care_of_pending_remote_command();
+          remote_unit_port->print("D");
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print("D");}
+          #endif                
+          if (parm2 == OUTPUT) {
+            remote_unit_port->print("O");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("O");}
+            #endif                  
+          } else {
+            remote_unit_port->print("I");}
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("I");}
+            #endif                  
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif                  
+          }
+          remote_unit_port->println(parm1);
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->println(parm1);}
+            #endif                
+          remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
+          // get_remote_port_ok_response();
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        take_care_of_pending_remote_command();
-        strcpy(ethernet_send_string,"D");
-        if (parm2 == OUTPUT) {strcat(ethernet_send_string,"O");} else {strcat(ethernet_send_string,"I");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm1,0,0,temp_string);
-        strcat(ethernet_send_string,temp_string);
-        ethernet_slave_link_send(ethernet_send_string);
-        remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
+          take_care_of_pending_remote_command();
+          strcpy(ethernet_send_string,"D");
+          if (parm2 == OUTPUT) {strcat(ethernet_send_string,"O");} else {strcat(ethernet_send_string,"I");}
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm1,0,0,temp_string);
+          strcat(ethernet_send_string,temp_string);
+          ethernet_slave_link_send(ethernet_send_string);
+          remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
         break;
 
       case REMOTE_UNIT_GS_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("GS");
+          remote_unit_port->println("GS");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("GS");
+          ethernet_slave_link_send("GS");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("GS");}
+          if (remote_port_tx_sniff) {control_port->println("GS");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_GS_COMMAND;
         break;
 
       case REMOTE_UNIT_RC_COMMAND:    
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("RC");
+          remote_unit_port->println("RC");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("RC");
+          ethernet_slave_link_send("RC");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("RC");}
+          if (remote_port_tx_sniff) {control_port->println("RC");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_RC_COMMAND;
         break;
@@ -8845,21 +8913,20 @@ byte is_ascii_number(byte char_in){
     return 0;
   }
 
-}\
-
- #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
+}
+#endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 // --------------------------------------------------------------------------
 #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 void service_remote_communications_incoming_buffer(){
 
 
   #if defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
-  int temp_year = 0;
-  byte temp_month = 0;
-  byte temp_day = 0;
-  byte temp_minute = 0;
-  byte temp_hour = 0;
-  byte temp_sec = 0;
+    int temp_year = 0;
+    byte temp_month = 0;
+    byte temp_day = 0;
+    byte temp_minute = 0;
+    byte temp_hour = 0;
+    byte temp_sec = 0;
   #endif // defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
 
   float temp_float_latitude = 0;
@@ -8872,13 +8939,13 @@ void service_remote_communications_incoming_buffer(){
   if (remote_unit_port_buffer_carriage_return_flag) {
 
     #ifdef DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
-    debug.print("service_remote_communications_incoming_buffer: remote_unit_port_buffer_index: ");
-    debug.print(remote_unit_port_buffer_index);
-    debug.print(" buffer: ");
-    for (int x = 0; x < remote_unit_port_buffer_index; x++) {
-      debug_write((char*)remote_unit_port_buffer[x]);
-      debug.println("$");
-    }
+      debug.print("service_remote_communications_incoming_buffer: remote_unit_port_buffer_index: ");
+      debug.print(remote_unit_port_buffer_index);
+      debug.print(" buffer: ");
+      for (int x = 0; x < remote_unit_port_buffer_index; x++) {
+        debug_write((char*)remote_unit_port_buffer[x]);
+        debug.println("$");
+      }
     #endif // DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
 
     if (remote_unit_command_submitted) {   // this was a solicited response
