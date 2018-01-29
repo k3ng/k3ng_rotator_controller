@@ -43,15 +43,17 @@
 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
- // #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+ #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html
 // #define FEATURE_AZ_POSITION_PULSE_INPUT
 // #define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
+// #define FEATURE_AZ_POSITION_DFROBOT_QMC5883            // QMC5883 digital compass support using DFRobot library at https://github.com/DFRobot/DFRobot_QMC5883
+// #define FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY            // HMC5883L digital compass support using Jarzebski library at https://github.com/jarzebski/Arduino-HMC5883L
 // #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
-#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
+// #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 // #define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 
@@ -70,7 +72,7 @@
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
 // And if you are using an Adafruit, Yourduino, RFRobot, YWRobot, or SainSmart display, you must also change the feature setting in rotator_k3ngdisplay.h!!!!
-#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
@@ -234,6 +236,7 @@
 // #define DEBUG_AUTOCORRECT
 // #define DEBUG_A2_ENCODER
 // #define DEBUG_A2_ENCODER_LOOPBACK_TEST
+// #define DEBUG_QMC5883
 
 
 								// ######## ########  ######  ######## 

@@ -314,8 +314,21 @@
       Added pins pin_autopark_disable and pin_autopark_timer_reset for FEATURE_AUTOPARK
 
     2017.09.05.01
-      Added FEATURE_AUDIBLE_ALERT documented here: https://github.com/k3ng/k3ng_rotator_controller/wiki/455-Human-Interface:-Audible-Alert  
+      Added FEATURE_AUDIBLE_ALERT documented here: https://github.com/k3ng/k3ng_rotator_controller/wiki/455-Human-Interface:-Audible-Alert
 
+    2017.11.14.01
+      Merged pulled request #42 - allowing functions to return their calculated values https://github.com/k3ng/k3ng_rotator_controller/pull/42 (Thanks, SQ6EMM)  
+
+    2018.01.25.01
+      FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+      {need to document in wiki after someone tests}
+
+    2018.01.25.02
+      FEATURE_AZ_POSITION_DFROBOT_QMC5883
+      {need to document in wiki after someone tests}
+
+    2018.01.28.01
+      Enhanced master/slave link TX sniff output  
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -326,7 +339,7 @@
 
   */
 
-#define CODE_VERSION "2017.09.05.01"
+#define CODE_VERSION "2018.01.28.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -379,9 +392,13 @@
   #include <Wire.h>  // required for FEATURE_I2C_LCD, any ADXL345 feature, FEATURE_AZ_POSITION_HMC5883L, FEATURE_EL_POSITION_ADAFRUIT_LSM303
 #endif
 
-#if defined(FEATURE_AZ_POSITION_HMC5883L)
+#if defined(FEATURE_AZ_POSITION_HMC5883L) || defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
   #include <HMC5883L.h> // required for HMC5883L digital compass support
 #endif
+
+#if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
+  #include <DFRobot_QMC5883.h>
+#endif  
 
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303)
   #include <Adafruit_Sensor.h>    // required for any Adafruit sensor libraries
@@ -468,7 +485,7 @@
 #endif
 
 #ifdef FEATURE_STEPPER_MOTOR
-  #include <TimerFive.h>
+//  #include <TimerFive.h>
 #endif
 
 #include "rotator_language.h"
@@ -871,9 +888,13 @@ DebugClass debug;
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
 #endif   
 
-#ifdef FEATURE_AZ_POSITION_HMC5883L
+#if defined(FEATURE_AZ_POSITION_HMC5883L) || defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
   HMC5883L compass;
 #endif //FEATURE_AZ_POSITION_HMC5883L
+
+#if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)  
+  DFRobot_QMC5883 compass;
+#endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
 
 #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
   ADXL345 accel;
@@ -4705,6 +4726,94 @@ void read_azimuth(byte force_read){
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_HMC5883L
 
+    #ifdef FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+      Vector norm = compass.readNormalize();
+
+      // Calculate heading
+      float heading = atan2(norm.YAxis, norm.XAxis);
+
+      #ifdef DEBUG_HMC5883L
+        debug.print("read_azimuth: HMC5883L x:");
+        debug.print(norm.XAxis,4);
+        debug.print(" y:");
+        debug.print(norm.YAxis,4);
+        debug.println("");
+      #endif //DEBUG_HMC5883L
+
+      // Set declination angle on your location and fix heading
+      // You can find your declination on: http://magnetic-declination.com/
+      // (+) Positive or (-) for negative
+      // For Bytom / Poland declination angle is 4'26E (positive)
+      // Formula: (deg + (min / 60.0)) / (180 / M_PI);
+      //float declinationAngle = (4.0 + (26.0 / 60.0)) / (180 / M_PI);
+      //heading += declinationAngle;
+
+      // Correct for heading < 0deg and heading > 360deg
+      if (heading < 0){
+        heading += 2 * PI;
+      }
+
+      if (heading > 2 * PI){
+        heading -= 2 * PI;
+      }
+
+      // Convert to degrees
+      raw_azimuth = heading * 180 / M_PI; 
+
+      if (AZIMUTH_SMOOTHING_FACTOR > 0) {
+        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+      }
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+        raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+      azimuth = raw_azimuth;
+    #endif FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+
+    #if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
+
+      Vector norm = compass.readNormalize();
+
+      // Calculate heading
+      float heading = atan2(norm.YAxis, norm.XAxis);
+
+      #ifdef DEBUG_QMC5883
+        debug.print("read_azimuth: QMC5883 x:");
+        debug.print(norm.XAxis,4);
+        debug.print(" y:");
+        debug.print(norm.YAxis,4);
+        debug.println("");
+      #endif //DEBUG_QMC5883
+
+      // Set declination angle on your location and fix heading
+      // You can find your declination on: http://magnetic-declination.com/
+      // (+) Positive or (-) for negative
+      // For Bytom / Poland declination angle is 4'26E (positive)
+      // Formula: (deg + (min / 60.0)) / (180 / PI);
+      // float declinationAngle = (4.0 + (26.0 / 60.0)) / (180 / PI);
+      // heading += declinationAngle;
+
+      // Correct for heading < 0deg and heading > 360deg
+      if (heading < 0){
+        heading += 2 * PI;
+      }
+
+      if (heading > 2 * PI){
+        heading -= 2 * PI;
+      }
+
+      // Convert to degrees
+      raw_azimuth = heading * 180 / M_PI; 
+
+      if (AZIMUTH_SMOOTHING_FACTOR > 0) {
+        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+      }
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+        raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+      azimuth = raw_azimuth;
+    #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
 
     #ifdef FEATURE_AZ_POSITION_ADAFRUIT_LSM303
       lsm.read();
@@ -6991,7 +7100,7 @@ void initialize_peripherals(){
      #ifndef OPTION_DISABLE_HMC5883L_ERROR_CHECKING
       if (error != 0) {
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-          control_port->print(F("setup: compass error:"));
+          control_port->print(F("initialize_peripherals: compass error:"));
           control_port->println(compass.GetErrorText(error)); // check if there is an error, and print if so
         #endif
       }
@@ -7000,12 +7109,70 @@ void initialize_peripherals(){
     #ifndef OPTION_DISABLE_HMC5883L_ERROR_CHECKING
       if (error != 0) {
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-          control_port->print(F("setup: compass error:"));
+          control_port->print(F("initialize_peripherals: compass error:"));
           control_port->println(compass.GetErrorText(error)); // check if there is an error, and print if so
         #endif
       }
     #endif //OPTION_DISABLE_HMC5883L_ERROR_CHECKING
   #endif // FEATURE_AZ_POSITION_HMC5883L
+
+  #if defined(FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY)
+    while (!compass.begin())
+    {
+      #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+        control_port->println("initialize_peripherals: could not find a valid HMC5883L sensor");
+      #endif
+      delay(500);
+    }
+
+    // Set measurement range
+    compass.setRange(HMC5883L_RANGE_1_3GA);
+
+    // Set measurement mode
+    compass.setMeasurementMode(HMC5883L_CONTINOUS);
+
+    // Set data rate
+    compass.setDataRate(HMC5883L_DATARATE_30HZ);
+
+    // Set number of samples averaged
+    compass.setSamples(HMC5883L_SAMPLES_8);
+
+    // Set calibration offset. See HMC5883L_calibration.ino
+    compass.setOffset(0, 0);
+
+
+  #endif //FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+
+
+  #if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
+
+    while (!compass.begin()){
+      #if defined(DEBUG_QMC5883)
+        control_port->println("initialize_peripherals: could not find a valid QMC5883 sensor");
+      #endif
+      delay(500);
+    }
+
+    if(compass.isHMC()){
+      #if defined(DEBUG_QMC5883)
+        control_port->println("initialize_peripherals: initialize HMC5883");
+      #endif
+      compass.setRange(HMC5883L_RANGE_1_3GA);
+      compass.setMeasurementMode(HMC5883L_CONTINOUS);
+      compass.setDataRate(HMC5883L_DATARATE_15HZ);
+      compass.setSamples(HMC5883L_SAMPLES_8);
+    } else if(compass.isQMC()){
+      #if defined(DEBUG_QMC5883)
+        control_port->println("initialize_peripherals: initialize QMC5883");
+      #endif  
+      compass.setRange(QMC5883_RANGE_2GA);
+      compass.setMeasurementMode(QMC5883_CONTINOUS); 
+      compass.setDataRate(QMC5883_DATARATE_50HZ);
+      compass.setSamples(QMC5883_SAMPLES_8);
+    }
+
+  #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883  
+
 
   #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
     accel = ADXL345();
@@ -8514,13 +8681,13 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
     switch (remote_command_to_send) {
       case REMOTE_UNIT_CL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("CL");
+          remote_unit_port->println("CL");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("CL");
+          ethernet_slave_link_send("CL");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("CL");}
+          if (remote_port_tx_sniff) {control_port->println("CL");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_CL_COMMAND;
         break;
@@ -8528,26 +8695,26 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_AZ_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("AZ");
+          remote_unit_port->println("AZ");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("AZ");
+          ethernet_slave_link_send("AZ");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("AZ");}
+          if (remote_port_tx_sniff) {control_port->println("AZ");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_AZ_COMMAND;
         break;
 
       case REMOTE_UNIT_EL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("EL");
+          remote_unit_port->println("EL");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("EL");
+          ethernet_slave_link_send("EL");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE        
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("EL");}
+          if (remote_port_tx_sniff) {control_port->println("EL");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_EL_COMMAND;
         break;
@@ -8555,27 +8722,51 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_AW_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        take_care_of_pending_remote_command();
-        remote_unit_port->print("AW");
-        parm1 = parm1 - 100;   // pin number
-        if (parm1 < 10) {remote_unit_port->print("0");}
-        remote_unit_port->print(parm1);
-        if (parm2 < 10) {remote_unit_port->print("0");}
-        if (parm2 < 100) {remote_unit_port->print("0");}
-        remote_unit_port->println(parm2);
+          take_care_of_pending_remote_command();
+          remote_unit_port->print("AW");
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print("AW");}
+          #endif          
+          parm1 = parm1 - 100;   // pin number
+          if (parm1 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif
+          }
+          remote_unit_port->print(parm1);
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print(parm1);}
+          #endif          
+          if (parm2 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif            
+          }
+          if (parm2 < 100) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif            
+          }
+          remote_unit_port->println(parm2);
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->println(parm1);}
+          #endif                
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        take_care_of_pending_remote_command();
-        strcpy(ethernet_send_string,"AW");
-        parm1 = parm1 - 100;   // pin number
-        if (parm1 < 10) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm1,0,0,temp_string);
-        if (parm2 < 10) {strcat(ethernet_send_string,"0");}
-        if (parm2 < 100) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm2,0,0,temp_string);
-        strcat(ethernet_send_string,temp_string);
-        ethernet_slave_link_send(ethernet_send_string);
+          take_care_of_pending_remote_command();
+          strcpy(ethernet_send_string,"AW");
+          parm1 = parm1 - 100;   // pin number
+          if (parm1 < 10) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm1,0,0,temp_string);
+          if (parm2 < 10) {strcat(ethernet_send_string,"0");}
+          if (parm2 < 100) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm2,0,0,temp_string);
+          strcat(ethernet_send_string,temp_string);
+          ethernet_slave_link_send(ethernet_send_string);
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
         remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
@@ -8583,24 +8774,45 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_DHL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        take_care_of_pending_remote_command();
-        remote_unit_port->print("D");
-        if (parm2 == HIGH) {remote_unit_port->print("H");} else {remote_unit_port->print("L");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {remote_unit_port->print("0");}
-        remote_unit_port->println(parm1);
+          take_care_of_pending_remote_command();
+          remote_unit_port->print("D");
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print("D");}
+          #endif              
+          if (parm2 == HIGH) {
+            remote_unit_port->print("H");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("H");}
+            #endif                
+          } else {
+            remote_unit_port->print("L");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("L");}
+            #endif                
+          }
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif                
+          }
+          remote_unit_port->println(parm1);
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->println(parm1);}
+          #endif              
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
 
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        take_care_of_pending_remote_command();
-        strcpy(ethernet_send_string,"D");
-        if (parm2 == HIGH) {strcat(ethernet_send_string,"H");} else {strcat(ethernet_send_string,"L");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm1,0,0,temp_string);
-        strcat(ethernet_send_string,temp_string);
-        ethernet_slave_link_send(ethernet_send_string);
+          take_care_of_pending_remote_command();
+          strcpy(ethernet_send_string,"D");
+          if (parm2 == HIGH) {strcat(ethernet_send_string,"H");} else {strcat(ethernet_send_string,"L");}
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm1,0,0,temp_string);
+          strcat(ethernet_send_string,temp_string);
+          ethernet_slave_link_send(ethernet_send_string);
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
         remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
@@ -8609,52 +8821,72 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_DOI_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        take_care_of_pending_remote_command();
-        remote_unit_port->print("D");
-        if (parm2 == OUTPUT) {remote_unit_port->print("O");} else {remote_unit_port->print("I");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {remote_unit_port->print("0");}
-        remote_unit_port->println(parm1);
-        remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
-        // get_remote_port_ok_response();
+          take_care_of_pending_remote_command();
+          remote_unit_port->print("D");
+          #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+            if (remote_port_tx_sniff) {control_port->print("D");}
+          #endif                
+          if (parm2 == OUTPUT) {
+            remote_unit_port->print("O");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("O");}
+            #endif                  
+          } else {
+            remote_unit_port->print("I");}
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("I");}
+            #endif                  
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {
+            remote_unit_port->print("0");
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->print("0");}
+            #endif                  
+          }
+          remote_unit_port->println(parm1);
+            #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+              if (remote_port_tx_sniff) {control_port->println(parm1);}
+            #endif                
+          remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
+          // get_remote_port_ok_response();
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        take_care_of_pending_remote_command();
-        strcpy(ethernet_send_string,"D");
-        if (parm2 == OUTPUT) {strcat(ethernet_send_string,"O");} else {strcat(ethernet_send_string,"I");}
-        parm1 = parm1 - 100;
-        if (parm1 < 10) {strcat(ethernet_send_string,"0");}
-        dtostrf(parm1,0,0,temp_string);
-        strcat(ethernet_send_string,temp_string);
-        ethernet_slave_link_send(ethernet_send_string);
-        remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
+          take_care_of_pending_remote_command();
+          strcpy(ethernet_send_string,"D");
+          if (parm2 == OUTPUT) {strcat(ethernet_send_string,"O");} else {strcat(ethernet_send_string,"I");}
+          parm1 = parm1 - 100;
+          if (parm1 < 10) {strcat(ethernet_send_string,"0");}
+          dtostrf(parm1,0,0,temp_string);
+          strcat(ethernet_send_string,temp_string);
+          ethernet_slave_link_send(ethernet_send_string);
+          remote_unit_command_submitted = REMOTE_UNIT_OTHER_COMMAND;
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
         break;
 
       case REMOTE_UNIT_GS_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("GS");
+          remote_unit_port->println("GS");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("GS");
+          ethernet_slave_link_send("GS");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("GS");}
+          if (remote_port_tx_sniff) {control_port->println("GS");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_GS_COMMAND;
         break;
 
       case REMOTE_UNIT_RC_COMMAND:    
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-        remote_unit_port->println("RC");
+          remote_unit_port->println("RC");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
-        ethernet_slave_link_send("RC");
+          ethernet_slave_link_send("RC");
         #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-        if (remote_port_tx_sniff) {control_port->println("RC");}
+          if (remote_port_tx_sniff) {control_port->println("RC");}
         #endif
         remote_unit_command_submitted = REMOTE_UNIT_RC_COMMAND;
         break;
@@ -8681,21 +8913,20 @@ byte is_ascii_number(byte char_in){
     return 0;
   }
 
-}\
-
- #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
+}
+#endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 // --------------------------------------------------------------------------
 #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
 void service_remote_communications_incoming_buffer(){
 
 
   #if defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
-  int temp_year = 0;
-  byte temp_month = 0;
-  byte temp_day = 0;
-  byte temp_minute = 0;
-  byte temp_hour = 0;
-  byte temp_sec = 0;
+    int temp_year = 0;
+    byte temp_month = 0;
+    byte temp_day = 0;
+    byte temp_minute = 0;
+    byte temp_hour = 0;
+    byte temp_sec = 0;
   #endif // defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE)
 
   float temp_float_latitude = 0;
@@ -8708,13 +8939,13 @@ void service_remote_communications_incoming_buffer(){
   if (remote_unit_port_buffer_carriage_return_flag) {
 
     #ifdef DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
-    debug.print("service_remote_communications_incoming_buffer: remote_unit_port_buffer_index: ");
-    debug.print(remote_unit_port_buffer_index);
-    debug.print(" buffer: ");
-    for (int x = 0; x < remote_unit_port_buffer_index; x++) {
-      debug_write((char*)remote_unit_port_buffer[x]);
-      debug.println("$");
-    }
+      debug.print("service_remote_communications_incoming_buffer: remote_unit_port_buffer_index: ");
+      debug.print(remote_unit_port_buffer_index);
+      debug.print(" buffer: ");
+      for (int x = 0; x < remote_unit_port_buffer_index; x++) {
+        debug_write((char*)remote_unit_port_buffer[x]);
+        debug.println("$");
+      }
     #endif // DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
 
     if (remote_unit_command_submitted) {   // this was a solicited response

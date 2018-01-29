@@ -32,6 +32,7 @@
 #define rotation_indication_pin 0
 #define blink_led 0
 #define az_stepper_motor_pulse 44 //0
+#define az_stepper_motor_direction 0
 
 
 
