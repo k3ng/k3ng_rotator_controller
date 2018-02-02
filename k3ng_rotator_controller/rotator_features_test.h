@@ -19,8 +19,8 @@
 #define FEATURE_MOON_TRACKING
 #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
-#define FEATURE_GPS
-#define FEATURE_RTC_DS1307
+// #define FEATURE_GPS
+// #define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // requires Mega or an AVR with Timer 5 support

@@ -330,6 +330,9 @@
     2018.01.28.01
       Enhanced master/slave link TX sniff output  
 
+    2018.02.01.01
+      Added serial port support for ARDUINO_MAPLE_MINI,ARDUINO_AVR_PROMICRO,ARDUINO_AVR_LEONARDO,ARDUINO_AVR_MICRO,ARDUINO_AVR_YUN,ARDUINO_AVR_ESPLORA,ARDUINO_AVR_LILYPAD_USB,ARDUINO_AVR_ROBOT_CONTROL,ARDUINO_AVR_ROBOT_MOTOR,ARDUINO_AVR_LEONARDO_ETH,TEENSYDUINO  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -339,7 +342,7 @@
 
   */
 
-#define CODE_VERSION "2018.01.28.01"
+#define CODE_VERSION "2018.02.01.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -755,19 +758,20 @@ byte current_az_speed_voltage = 0;
 #endif
 
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(FEATURE_CLOCK) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  HardwareSerial * control_port;
+  SERIAL_PORT_CLASS * control_port;
 #endif
 
 #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-  HardwareSerial * remote_unit_port;
+  SERIAL_PORT_CLASS * remote_unit_port;
 #endif
 
 #if defined(FEATURE_GPS)
-  HardwareSerial * gps_port;
+  SERIAL_PORT_CLASS * gps_port;
   #ifdef GPS_MIRROR_PORT
-    HardwareSerial * (gps_mirror_port);
+    SERIAL_PORT_CLASS * (gps_mirror_port);
   #endif //GPS_MIRROR_PORT
 #endif //defined(FEATURE_GPS)
+
 
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
   double latitude = DEFAULT_LATITUDE;
