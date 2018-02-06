@@ -336,6 +336,9 @@
     2018.02.02.01
       Minor updates to DEBUG_ACCEL
 
+    2018.02.05.01
+      Disabled free memory check in DEBUG_DUMP for TEENSYDUINO to fix compilation erroring out (Thanks, Martin, HS0ZED)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -345,7 +348,7 @@
 
   */
 
-#define CODE_VERSION "2018.02.02.01"
+#define CODE_VERSION "2018.02.05.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -5482,15 +5485,17 @@ void output_debug(){
           debug.println("!");
         }    
 
-        void * HP = malloc(4);
-        if (HP) {free(HP);}
-        unsigned long free = (unsigned long)SP - (unsigned long)HP;
-        sprintf(tempstring,"%lu",(unsigned long)free);
-        if ((free < 500) || (free > 10000)){
-          debug.print(F("WARNING: Low memory: "));
-          debug.print(tempstring);
-          debug.println(F("b free"));
-        }
+        #if !defined(TEENSYDUINO)
+          void * HP = malloc(4);
+          if (HP) {free(HP);}
+          unsigned long free = (unsigned long)SP - (unsigned long)HP;
+          sprintf(tempstring,"%lu",(unsigned long)free);
+          if ((free < 500) || (free > 10000)){
+            debug.print(F("WARNING: Low memory: "));
+            debug.print(tempstring);
+            debug.println(F("b free"));
+          }
+        #endif
 
 
         debug.println("\n\n\n");
