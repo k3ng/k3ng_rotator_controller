@@ -27,6 +27,18 @@
   #include "rotator_features.h" 
 #endif 
 
+// Serial port class definitions for various devices
+
+#if defined(ARDUINO_MAPLE_MINI)
+  #define SERIAL_PORT_CLASS USBSerial
+#elif defined(ARDUINO_AVR_PROMICRO) || defined(ARDUINO_AVR_LEONARDO) || defined(ARDUINO_AVR_MICRO) || defined(ARDUINO_AVR_YUN) || defined(ARDUINO_AVR_ESPLORA) || defined(ARDUINO_AVR_LILYPAD_USB) || defined(ARDUINO_AVR_ROBOT_CONTROL) || defined(ARDUINO_AVR_ROBOT_MOTOR) || defined(ARDUINO_AVR_LEONARDO_ETH)
+  #define SERIAL_PORT_CLASS Serial_
+#elif defined(TEENSYDUINO)
+  #define SERIAL_PORT_CLASS usb_serial_class
+#else
+  #define SERIAL_PORT_CLASS HardwareSerial
+#endif
+
 // #ifdef FEATURE_ETHERNET
 //   #include <SPI.h>
 //   #include <Ethernet.h>
@@ -61,7 +73,7 @@ class DebugClass
 
 
 extern uint8_t debug_mode;
-extern HardwareSerial * control_port;
+extern SERIAL_PORT_CLASS * control_port;
 
 // #ifdef FEATURE_ETHERNET
 //   extern EthernetClient ethernetclient0;

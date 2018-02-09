@@ -330,6 +330,15 @@
     2018.01.28.01
       Enhanced master/slave link TX sniff output  
 
+    2018.02.01.01
+      Added serial port support for ARDUINO_MAPLE_MINI,ARDUINO_AVR_PROMICRO,ARDUINO_AVR_LEONARDO,ARDUINO_AVR_MICRO,ARDUINO_AVR_YUN,ARDUINO_AVR_ESPLORA,ARDUINO_AVR_LILYPAD_USB,ARDUINO_AVR_ROBOT_CONTROL,ARDUINO_AVR_ROBOT_MOTOR,ARDUINO_AVR_LEONARDO_ETH,TEENSYDUINO  
+
+    2018.02.02.01
+      Minor updates to DEBUG_ACCEL
+
+    2018.02.05.01
+      Disabled free memory check in DEBUG_DUMP for TEENSYDUINO to fix compilation erroring out (Thanks, Martin, HS0ZED)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -339,7 +348,7 @@
 
   */
 
-#define CODE_VERSION "2018.01.28.01"
+#define CODE_VERSION "2018.02.05.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -755,19 +764,20 @@ byte current_az_speed_voltage = 0;
 #endif
 
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(FEATURE_CLOCK) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  HardwareSerial * control_port;
+  SERIAL_PORT_CLASS * control_port;
 #endif
 
 #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-  HardwareSerial * remote_unit_port;
+  SERIAL_PORT_CLASS * remote_unit_port;
 #endif
 
 #if defined(FEATURE_GPS)
-  HardwareSerial * gps_port;
+  SERIAL_PORT_CLASS * gps_port;
   #ifdef GPS_MIRROR_PORT
-    HardwareSerial * (gps_mirror_port);
+    SERIAL_PORT_CLASS * (gps_mirror_port);
   #endif //GPS_MIRROR_PORT
 #endif //defined(FEATURE_GPS)
+
 
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
   double latitude = DEFAULT_LATITUDE;
@@ -5475,15 +5485,17 @@ void output_debug(){
           debug.println("!");
         }    
 
-        void * HP = malloc(4);
-        if (HP) {free(HP);}
-        unsigned long free = (unsigned long)SP - (unsigned long)HP;
-        sprintf(tempstring,"%lu",(unsigned long)free);
-        if ((free < 500) || (free > 10000)){
-          debug.print(F("WARNING: Low memory: "));
-          debug.print(tempstring);
-          debug.println(F("b free"));
-        }
+        #if !defined(TEENSYDUINO)
+          void * HP = malloc(4);
+          if (HP) {free(HP);}
+          unsigned long free = (unsigned long)SP - (unsigned long)HP;
+          sprintf(tempstring,"%lu",(unsigned long)free);
+          if ((free < 500) || (free > 10000)){
+            debug.print(F("WARNING: Low memory: "));
+            debug.print(tempstring);
+            debug.println(F("b free"));
+          }
+        #endif
 
 
         debug.println("\n\n\n");
@@ -5578,7 +5590,7 @@ void el_check_operation_timeout(){
 void read_elevation(byte force_read){
 
   #ifdef FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-  read_elevation_lock = 1;
+    read_elevation_lock = 1;
   #endif
 
 
@@ -5586,7 +5598,7 @@ void read_elevation(byte force_read){
   static unsigned long last_measurement_time = 0;
 
   #ifdef FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-  static unsigned int incremental_encoder_previous_elevation = elevation;
+    static unsigned int incremental_encoder_previous_elevation = elevation;
   #endif
 
   if (heading_reading_inhibit_pin) {
@@ -5596,13 +5608,13 @@ void read_elevation(byte force_read){
   }
 
   #ifdef DEBUG_HEADING_READING_TIME
-  static unsigned long last_time = 0;
-  static unsigned long last_print_time = 0;
-  static float average_read_time = 0;
+    static unsigned long last_time = 0;
+    static unsigned long last_print_time = 0;
+    static float average_read_time = 0;
   #endif // DEBUG_HEADING_READING_TIME
 
   #ifdef DEBUG_HH12
-  static unsigned long last_hh12_debug = 0;
+    static unsigned long last_hh12_debug = 0;
   #endif // DEBUG_HH12
 
   #ifndef FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT
@@ -5612,56 +5624,56 @@ void read_elevation(byte force_read){
   #endif
 
     #ifdef FEATURE_EL_POSITION_POTENTIOMETER
-    analog_el = analogReadEnhanced(rotator_analog_el);
-    elevation = (map(analog_el, configuration.analog_el_0_degrees, configuration.analog_el_max_elevation, 0, (ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER)));
-    #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
-    #endif // FEATURE_ELEVATION_CORRECTION
-    elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
-    if (ELEVATION_SMOOTHING_FACTOR > 0) {
-      elevation = (elevation * (1 - (ELEVATION_SMOOTHING_FACTOR / 100))) + (previous_elevation * (ELEVATION_SMOOTHING_FACTOR / 100));
-    }
-    if (elevation < 0) {
-      elevation = 0;
-    }
+      analog_el = analogReadEnhanced(rotator_analog_el);
+      elevation = (map(analog_el, configuration.analog_el_0_degrees, configuration.analog_el_max_elevation, 0, (ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER)));
+      #ifdef FEATURE_ELEVATION_CORRECTION
+        elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_ELEVATION_CORRECTION
+      elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+      if (ELEVATION_SMOOTHING_FACTOR > 0) {
+        elevation = (elevation * (1 - (ELEVATION_SMOOTHING_FACTOR / 100))) + (previous_elevation * (ELEVATION_SMOOTHING_FACTOR / 100));
+      }
+      if (elevation < 0) {
+        elevation = 0;
+      }
     #endif // FEATURE_EL_POSITION_POTENTIOMETER
 
 
     #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER
-    static byte el_position_encoder_state = 0;
-    el_position_encoder_state = ttable[el_position_encoder_state & 0xf][((digitalReadEnhanced(el_rotary_position_pin2) << 1) | digitalReadEnhanced(el_rotary_position_pin1))];
-    byte el_position_encoder_result = el_position_encoder_state & 0x30;
-    if (el_position_encoder_result) {
-      if (el_position_encoder_result == DIR_CW) {
-        configuration.last_elevation = configuration.last_elevation + EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
-        #ifdef DEBUG_POSITION_ROTARY_ENCODER
-        if (debug_mode) {
-          debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CW/UP\n"));
+      static byte el_position_encoder_state = 0;
+      el_position_encoder_state = ttable[el_position_encoder_state & 0xf][((digitalReadEnhanced(el_rotary_position_pin2) << 1) | digitalReadEnhanced(el_rotary_position_pin1))];
+      byte el_position_encoder_result = el_position_encoder_state & 0x30;
+      if (el_position_encoder_result) {
+        if (el_position_encoder_result == DIR_CW) {
+          configuration.last_elevation = configuration.last_elevation + EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+          #ifdef DEBUG_POSITION_ROTARY_ENCODER
+            if (debug_mode) {
+              debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CW/UP\n"));
+            }
+          #endif // DEBUG_POSITION_ROTARY_ENCODER
         }
-        #endif // DEBUG_POSITION_ROTARY_ENCODER
-      }
-      if (el_position_encoder_result == DIR_CCW) {
-        configuration.last_elevation = configuration.last_elevation - EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
-        #ifdef DEBUG_POSITION_ROTARY_ENCODER
-        if (debug_mode) {
-          debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CCW/DWN\n"));
+        if (el_position_encoder_result == DIR_CCW) {
+          configuration.last_elevation = configuration.last_elevation - EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+          #ifdef DEBUG_POSITION_ROTARY_ENCODER
+            if (debug_mode) {
+              debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CCW/DWN\n"));
+            }
+          #endif // DEBUG_POSITION_ROTARY_ENCODER
         }
-        #endif // DEBUG_POSITION_ROTARY_ENCODER
+          #ifdef OPTION_EL_POSITION_ROTARY_ENCODER_HARD_LIMIT
+            if (configuration.last_elevation < 0) {
+              configuration.last_elevation = 0;
+            }
+            if (configuration.last_elevation > ELEVATION_MAXIMUM_DEGREES) {
+              configuration.last_elevation = ELEVATION_MAXIMUM_DEGREES;
+            }
+          #endif
+        elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
+        #ifdef FEATURE_ELEVATION_CORRECTION
+          elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+        #endif // FEATURE_ELEVATION_CORRECTION
+        configuration_dirty = 1;
       }
-        #ifdef OPTION_EL_POSITION_ROTARY_ENCODER_HARD_LIMIT
-      if (configuration.last_elevation < 0) {
-        configuration.last_elevation = 0;
-      }
-      if (configuration.last_elevation > ELEVATION_MAXIMUM_DEGREES) {
-        configuration.last_elevation = ELEVATION_MAXIMUM_DEGREES;
-      }
-      #endif
-      elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
-      #ifdef FEATURE_ELEVATION_CORRECTION
-      elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
-      #endif // FEATURE_ELEVATION_CORRECTION
-      configuration_dirty = 1;
-    }
     #endif // FEATURE_EL_POSITION_ROTARY_ENCODER
 
 
@@ -5720,74 +5732,78 @@ void read_elevation(byte force_read){
     #endif // FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
 
     #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
-    AccelerometerRaw raw = accel.ReadRawAxis();
-    AccelerometerScaled scaled = accel.ReadScaledAxis();
-    #ifdef DEBUG_ACCEL
-    if (debug_mode) {
-      debug.print(F("read_elevation: raw.ZAxis: "));
-      debug.println(raw.ZAxis);
-    }
-    #endif // DEBUG_ACCEL
-    elevation = (atan2(scaled.YAxis, scaled.ZAxis) * 180 * HEADING_MULTIPLIER) / M_PI;
-    #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
-    #endif // FEATURE_ELEVATION_CORRECTION
-    elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
-    if (ELEVATION_SMOOTHING_FACTOR > 0) {
-      elevation = (elevation * (1 - (ELEVATION_SMOOTHING_FACTOR / 100))) + (previous_elevation * (ELEVATION_SMOOTHING_FACTOR / 100));
-    }
+      AccelerometerRaw raw = accel.ReadRawAxis();
+      AccelerometerScaled scaled = accel.ReadScaledAxis();
+      #ifdef DEBUG_ACCEL
+        if (debug_mode) {
+          debug.print(F("read_elevation: raw.YAxis: "));
+          debug.print(raw.yAxis);
+          debug.print(F(" ZAxis: "));
+          debug.println(raw.ZAxis);
+        }
+      #endif // DEBUG_ACCEL
+      elevation = (atan2(scaled.YAxis, scaled.ZAxis) * 180 * HEADING_MULTIPLIER) / M_PI;
+      #ifdef FEATURE_ELEVATION_CORRECTION
+        elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_ELEVATION_CORRECTION
+      elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+      if (ELEVATION_SMOOTHING_FACTOR > 0) {
+        elevation = (elevation * (1 - (ELEVATION_SMOOTHING_FACTOR / 100))) + (previous_elevation * (ELEVATION_SMOOTHING_FACTOR / 100));
+      }
     #endif // FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
 
     #ifdef FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
-    sensors_event_t event;
-    accel.getEvent(&event);
-    #ifdef DEBUG_ACCEL
-    if (debug_mode) {
-      debug.print(F("read_elevation: event.acceleration.z: "));
-      debug.println(event.acceleration.z);
-    }
-    #endif // DEBUG_ACCEL
-    elevation = (atan2(event.acceleration.y, event.acceleration.z) * 180 * HEADING_MULTIPLIER) / M_PI;
-    #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
-    #endif // FEATURE_ELEVATION_CORRECTION
-    elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+      sensors_event_t event;
+      accel.getEvent(&event);
+      #ifdef DEBUG_ACCEL
+        if (debug_mode) {
+          debug.print(F("read_elevation: event.acceleration.y: "));
+          debug.print(event.acceleration.y);      
+          debug.print(F(" z: "));
+          debug.println(event.acceleration.z);
+        }
+      #endif // DEBUG_ACCEL
+      elevation = (atan2(event.acceleration.y, event.acceleration.z) * 180 * HEADING_MULTIPLIER) / M_PI;
+      #ifdef FEATURE_ELEVATION_CORRECTION
+        elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_ELEVATION_CORRECTION
+      elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     #endif // FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
 
 
 
     #ifdef FEATURE_EL_POSITION_ADAFRUIT_LSM303
-    lsm.read();
-    #ifdef DEBUG_ACCEL
-    if (debug_mode) {
-      debug.print(F("read_elevation: lsm.accelData.y: "));
-      debug.print(lsm.accelData.y);
-      debug.print(F(" lsm.accelData.z: "));
-      control_port->println(lsm.accelData.z);
-    }
-    #endif // DEBUG_ACCEL
-    elevation = (atan2(lsm.accelData.y, lsm.accelData.z) * 180 * HEADING_MULTIPLIER) / M_PI;
-    #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
-    #endif // FEATURE_ELEVATION_CORRECTION
-    elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+      lsm.read();
+      #ifdef DEBUG_ACCEL
+          if (debug_mode) {
+            debug.print(F("read_elevation: lsm.accelData.y: "));
+            debug.print(lsm.accelData.y);
+            debug.print(F(" z: "));
+            control_port->println(lsm.accelData.z);
+          }
+      #endif // DEBUG_ACCEL
+      elevation = (atan2(lsm.accelData.y, lsm.accelData.z) * 180 * HEADING_MULTIPLIER) / M_PI;
+      #ifdef FEATURE_ELEVATION_CORRECTION
+        elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_ELEVATION_CORRECTION
+      elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303
 
     #ifdef FEATURE_EL_POSITION_POLOLU_LSM303
-    compass.read();
-    #ifdef DEBUG_ACCEL
-    if (debug_mode) {
-      debug.print(F("read_elevation: compass.a.y: "));
-      debug.print(compass.a.y);
-      debug.print(F(" compass.a.z: "));
-      control_port->println(compass.a.z);
-    }
-    #endif // DEBUG_ACCEL
-    elevation = (atan2(compass.a.x, compass.a.z) * -180 * HEADING_MULTIPLIER) / M_PI; //lsm.accelData.y
-    #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
-    #endif // FEATURE_ELEVATION_CORRECTION
-    elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+      compass.read();
+      #ifdef DEBUG_ACCEL
+        if (debug_mode) {
+          debug.print(F("read_elevation: compass.a.y: "));
+          debug.print(compass.a.y);
+          debug.print(F(" z: "));
+          control_port->println(compass.a.z);
+        }
+      #endif // DEBUG_ACCEL
+      elevation = (atan2(compass.a.x, compass.a.z) * -180 * HEADING_MULTIPLIER) / M_PI; //lsm.accelData.y
+      #ifdef FEATURE_ELEVATION_CORRECTION
+        elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_ELEVATION_CORRECTION
+      elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     #endif // FEATURE_EL_POSITION_POLOLU_LSM303
 
 
@@ -5814,7 +5830,7 @@ void read_elevation(byte force_read){
       last_el_position_pulse_input_elevation = el_position_pulse_input_elevation;
       elevation = int(configuration.last_elevation * HEADING_MULTIPLIER);
       #ifdef FEATURE_ELEVATION_CORRECTION
-      elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+        elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
       #endif FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
     }
@@ -8752,7 +8768,7 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
           }
           remote_unit_port->println(parm2);
           #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
-            if (remote_port_tx_sniff) {control_port->println(parm1);}
+            if (remote_port_tx_sniff) {control_port->println(parm2);}
           #endif                
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
