@@ -339,6 +339,9 @@
     2018.02.05.01
       Disabled free memory check in DEBUG_DUMP for TEENSYDUINO to fix compilation erroring out (Thanks, Martin, HS0ZED)
 
+    2018.02.11.01
+      Merge of https://github.com/k3ng/k3ng_rotator_controller/pull/45 (Thanks, IT9IPQ)  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -348,7 +351,7 @@
 
   */
 
-#define CODE_VERSION "2018.02.05.01"
+#define CODE_VERSION "2018.02.11.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
