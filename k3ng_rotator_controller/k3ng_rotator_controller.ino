@@ -4778,7 +4778,7 @@ void read_azimuth(byte force_read){
       #endif // FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
       azimuth = raw_azimuth;
-    #endif FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
+    #endif // FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
 
     #if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
 
