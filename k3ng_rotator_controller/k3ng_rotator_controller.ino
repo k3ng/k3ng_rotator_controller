@@ -340,7 +340,10 @@
       Disabled free memory check in DEBUG_DUMP for TEENSYDUINO to fix compilation erroring out (Thanks, Martin, HS0ZED)
 
     2018.02.11.01
-      Merge of https://github.com/k3ng/k3ng_rotator_controller/pull/45 (Thanks, IT9IPQ)  
+      Merge of https://github.com/k3ng/k3ng_rotator_controller/pull/45 (Thanks, IT9IPQ) 
+
+    2018.02.24.01
+      Added OPTION_GPS_DO_PORT_FLUSHES   
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -351,7 +354,7 @@
 
   */
 
-#define CODE_VERSION "2018.02.11.01"
+#define CODE_VERSION "2018.02.24.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2910,9 +2913,11 @@ void check_serial(){
         #endif //GPS_MIRROR_PORT
         #ifdef DEBUG_GPS_SERIAL
           debug.write(gps_port_read);
-          if (gps_port_read == 10){debug.write(13);}
-          port_flush();    
+          if (gps_port_read == 10){debug.write(13);}       
         #endif //DEBUG_GPS_SERIAL
+        #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES)
+          port_flush();
+        #endif
         if (gps.encode(gps_port_read)) {
           gps_data_available = 1;
         }
@@ -2925,9 +2930,11 @@ void check_serial(){
         #endif //GPS_MIRROR_PORT
         #ifdef DEBUG_GPS_SERIAL
           debug.write(gps_port_read);
-          if (gps_port_read == 10){debug.write(13);}
-          port_flush();    
+          if (gps_port_read == 10){debug.write(13);}   
         #endif //DEBUG_GPS_SERIAL
+        #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES)
+          port_flush();
+        #endif          
         if (gps.encode(gps_port_read)) {
           gps_data_available = 1;
         }
