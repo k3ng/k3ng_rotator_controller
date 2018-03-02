@@ -66,13 +66,13 @@
 // #define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
-//#define FEATURE_EL_POSITION_HH12_AS5045_SSI
+// #define FEATURE_EL_POSITION_HH12_AS5045_SSI
 // #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_EL_POSITION_MEMSIC_2125
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
 
 // And if you are using an Adafruit, Yourduino, RFRobot, YWRobot, or SainSmart display, you must also change the feature setting in rotator_k3ngdisplay.h!!!!
-// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
@@ -119,9 +119,9 @@
 //#define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 #define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
 //#define FEATURE_TWO_DECIMAL_PLACE_HEADINGS  // under development - not working yet!
-// #define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
-// #define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
-// #define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
+//#define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
+//#define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
+//#define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
 //#define FEATURE_JOYSTICK_CONTROL          // analog joystick support
 //#define OPTION_JOYSTICK_REVERSE_X_AXIS
 //#define OPTION_JOYSTICK_REVERSE_Y_AXIS
@@ -164,9 +164,9 @@
 // #define OPTION_REVERSE_AZ_HH12_AS5045
 // #define OPTION_REVERSE_EL_HH12_AS5045
 // #define OPTION_DONT_READ_GPS_PORT_AS_OFTEN
-#define OPTION_GPS_DO_PORT_FLUSHES
+// #define OPTION_GPS_DO_PORT_FLUSHES
 // #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING  // change OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING in settings file
-
+// #define OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING
 
 										// ######## ########  ######  ######## 
 										//    ##    ##       ##    ##    ##    
@@ -221,7 +221,7 @@
 // #define DEBUG_EL_POSITION_INCREMENTAL_ENCODER
 // #define DEBUG_MOON_TRACKING
 // #define DEBUG_SUN_TRACKING
-#define DEBUG_GPS
+// #define DEBUG_GPS
 // #define DEBUG_GPS_SERIAL
 // #define DEBUG_OFFSET
 // #define DEBUG_RTC

@@ -345,6 +345,12 @@
     2018.02.24.01
       Added OPTION_GPS_DO_PORT_FLUSHES   
 
+    2018.02.25.01
+      Small change to FEATURE_GPS and gps_port_read
+
+    2018.03.02.01
+      Added code to handle GPS serial data that is missing terminator characters.  Created OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING which disables this function. 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -354,7 +360,7 @@
 
   */
 
-#define CODE_VERSION "2018.02.24.01"
+#define CODE_VERSION "2018.03.02.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2700,6 +2706,12 @@ void check_serial(){
   float tempfloat = 0;
   char return_string[100] = ""; 
 
+  #if defined(FEATURE_GPS)
+    static byte gps_port_read = 0;
+    static byte gps_port_read_data_sent = 0;
+    static byte gps_missing_terminator_flag = 0;
+  #endif
+
   #if !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT) && !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
     long place_multiplier = 0;
     byte decimalplace = 0;
@@ -2905,41 +2917,89 @@ void check_serial(){
 
 
   #ifdef FEATURE_GPS
-    #if defined(OPTION_DONT_READ_GPS_PORT_AS_OFTEN)
-      if (gps_port->available()) {
-        byte gps_port_read = gps_port->read();
-        #ifdef GPS_MIRROR_PORT
-          gps_mirror_port->write(gps_port_read);
-        #endif //GPS_MIRROR_PORT
-        #ifdef DEBUG_GPS_SERIAL
-          debug.write(gps_port_read);
-          if (gps_port_read == 10){debug.write(13);}       
-        #endif //DEBUG_GPS_SERIAL
-        #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES)
-          port_flush();
-        #endif
-        if (gps.encode(gps_port_read)) {
-          gps_data_available = 1;
+
+    if (gps_missing_terminator_flag){
+      gps.encode('$');
+      gps_missing_terminator_flag = 0;
+      gps_port_read_data_sent = 1;
+    } else {
+
+      #if defined(OPTION_DONT_READ_GPS_PORT_AS_OFTEN)
+        if (gps_port->available()) {
+          gps_port_read = gps_port->read();
+          #ifdef GPS_MIRROR_PORT
+            gps_mirror_port->write(gps_port_read);
+          #endif //GPS_MIRROR_PORT
+          #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_1)
+            debug.write(gps_port_read);
+            if (gps_port_read == 10){debug.write(13);}       
+          #endif //DEBUG_GPS_SERIAL
+          #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES) || defined(DEBUG_TEST_1)
+            port_flush();
+          #endif
+
+          #if defined(OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING)
+            if (gps.encode(gps_port_read)) {
+              gps_data_available = 1;
+            }          
+          #else
+            if ((gps_port_read == '$') && (gps_port_read_data_sent)){ // handle missing LF/CR
+              if (gps.encode('\r')) {
+                gps_data_available = 1;
+                gps_missing_terminator_flag = 1;
+              } else {
+                gps.encode(gps_port_read);
+              }        
+            } else {
+              if (gps.encode(gps_port_read)) {
+                gps_data_available = 1;
+                gps_port_read_data_sent = 0;
+              } else {
+                gps_port_read_data_sent = 1;
+              }
+            }
+          #endif  //  OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING         
         }
-      }
-    #else //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
-      while (gps_port->available()) {
-        byte gps_port_read = gps_port->read();
-        #ifdef GPS_MIRROR_PORT
-          gps_mirror_port->write(gps_port_read);
-        #endif //GPS_MIRROR_PORT
-        #ifdef DEBUG_GPS_SERIAL
-          debug.write(gps_port_read);
-          if (gps_port_read == 10){debug.write(13);}   
-        #endif //DEBUG_GPS_SERIAL
-        #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES)
-          port_flush();
-        #endif          
-        if (gps.encode(gps_port_read)) {
-          gps_data_available = 1;
+      #else //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
+        while (gps_port->available()) {
+          gps_port_read = gps_port->read();
+          #ifdef GPS_MIRROR_PORT
+            gps_mirror_port->write(gps_port_read);
+          #endif //GPS_MIRROR_PORT
+          #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_1)
+            debug.write(gps_port_read);
+            if (gps_port_read == 10){debug.write(13);}   
+          #endif //DEBUG_GPS_SERIAL
+          #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES) || defined(DEBUG_TEST_1)
+            port_flush();
+          #endif  
+          #if defined(OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING)
+            if (gps.encode(gps_port_read)) {
+              gps_data_available = 1;
+            }          
+          #else
+            if ((gps_port_read == '$') && (gps_port_read_data_sent)){ // handle missing LF/CR
+              if (gps.encode('\r')) {
+                gps_data_available = 1;
+                gps_missing_terminator_flag = 1;
+              } else {
+                gps.encode(gps_port_read);
+              }        
+            } else {
+              if (gps.encode(gps_port_read)) {
+                gps_data_available = 1;
+                gps_port_read_data_sent = 0;
+              } else {
+                gps_port_read_data_sent = 1;
+              }
+            }
+          #endif  //  OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING  
+
         }
-      }
-    #endif //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
+      #endif //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
+
+    } // if (gps_missing_terminator_flag)
+
   #endif // FEATURE_GPS
 
   #if defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS)
@@ -5059,7 +5119,7 @@ void output_debug(){
 
       if (((millis() - last_debug_output_time) >= 3000) && (debug_mode)) {
 
-        #ifdef DEBUG_GPS_SERIAL
+        #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_2)
           debug.println("");
         #endif //DEBUG_GPS_SERIAL
 
@@ -9844,15 +9904,15 @@ void port_flush(){
 
   
   #if defined(CONTROL_PORT_MAPPED_TO) && (defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION))
-  control_port->flush();
+    control_port->flush();
   #endif //CONTROL_PORT_MAPPED_TO
 
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-  remote_unit_port->flush();
+    remote_unit_port->flush();
   #endif
 
   #if defined(GPS_PORT_MAPPED_TO) && defined(FEATURE_GPS)
-  gps_port->flush();
+    gps_port->flush();
   #endif //defined(GPS_PORT_MAPPED_TO) && defined(FEATURE_GPS)
   
 
@@ -10467,7 +10527,7 @@ void service_gps(){
     gps.get_position(&gps_lat, &gps_lon, &fix_age);
     gps.crack_datetime(&gps_year, &gps_month, &gps_day, &gps_hours, &gps_minutes, &gps_seconds, &gps_hundredths, &fix_age);
     #ifdef DEBUG_GPS
-      #ifdef DEBUG_GPS_SERIAL
+      #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_3)
         debug.println("");
       #endif //DEBUG_GPS_SERIAL    
       debug.print("service_gps: fix_age:");
