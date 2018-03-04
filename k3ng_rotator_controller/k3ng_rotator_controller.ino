@@ -355,6 +355,9 @@
       Changed some formatting of the debug log output
       Added the /?CV command to query software version
 
+    2018.03.04.01
+      GPS serial port reading is now paused if the GPS library has a valid sentence processed 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -364,7 +367,7 @@
 
   */
 
-#define CODE_VERSION "2018.03.03.01"
+#define CODE_VERSION "2018.03.04.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2965,7 +2968,7 @@ void check_serial(){
           #endif  //  OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING         
         }
       #else //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
-        while (gps_port->available()) {
+        while ((gps_port->available()) && (!gps_data_available)) {
           gps_port_read = gps_port->read();
           #ifdef GPS_MIRROR_PORT
             gps_mirror_port->write(gps_port_read);
