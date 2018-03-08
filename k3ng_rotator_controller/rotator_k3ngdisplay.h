@@ -22,10 +22,9 @@
 // #define FEATURE_RFROBOT_I2C_DISPLAY
 // #define FEATURE_YWROBOT_I2C_DISPLAY
 // #define FEATURE_SAINSMART_I2C_LCD
-
 // #define FEATURE_ADAFRUIT_BUTTONS                
 
-
+// #define OPTION_RFROBOT_I2C_DISPLAY_BACKLIGHT_OFF
 
 #include "rotator_hardware.h"
 

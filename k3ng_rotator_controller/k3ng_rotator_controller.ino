@@ -358,6 +358,14 @@
     2018.03.04.01
       GPS serial port reading is now paused if the GPS library has a valid sentence processed 
 
+    2018.03.06.01
+      Additional DEBUG_GPS code and OPTION_MORE_SERIAL_CHECKS for some GPS problem troubleshooting
+
+    2018.03.08.01
+      Added OPTION_MORE_SERIAL_CHECKS
+      Added OPTION_RFROBOT_I2C_DISPLAY_BACKLIGHT_OFF to rotator_k3ngdisplay.h
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -367,7 +375,7 @@
 
   */
 
-#define CODE_VERSION "2018.03.04.01"
+#define CODE_VERSION "2018.03.08.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1069,10 +1077,18 @@ void loop() {
 
   //read_headings();
 
+
+  #ifdef OPTION_MORE_SERIAL_CHECKS
+    check_serial();
+  #endif
+
   #ifdef FEATURE_LCD_DISPLAY
     update_display();
   #endif
 
+  #ifdef OPTION_MORE_SERIAL_CHECKS
+    check_serial();
+  #endif
 
   #ifndef FEATURE_REMOTE_UNIT_SLAVE
     #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
@@ -1095,6 +1111,10 @@ void loop() {
     output_debug();
   #endif //DEBUG_DUMP
 
+  #ifdef OPTION_MORE_SERIAL_CHECKS
+    check_serial();
+  #endif
+
   read_headings();
 
   #ifndef FEATURE_REMOTE_UNIT_SLAVE
@@ -1102,8 +1122,6 @@ void loop() {
   #endif  
 
   check_for_dirty_configuration();
-
-
 
   #ifdef DEBUG_PROFILE_LOOP_TIME
     profile_loop_time();
@@ -1144,6 +1162,10 @@ void loop() {
     service_sun_tracking();
   #endif // FEATURE_SUN_TRACKING
 
+  #ifdef OPTION_MORE_SERIAL_CHECKS
+    check_serial();
+  #endif
+
   #ifdef FEATURE_GPS
     service_gps();
   #endif // FEATURE_GPS
@@ -1157,6 +1179,10 @@ void loop() {
   #ifdef FEATURE_RTC
     service_rtc();
   #endif // FEATURE_RTC
+
+  #ifdef OPTION_MORE_SERIAL_CHECKS
+    check_serial();
+  #endif
 
   #ifdef FEATURE_ETHERNET
     service_ethernet();
@@ -1201,7 +1227,9 @@ void loop() {
 
   check_for_reset_flag();
 
-
+  #ifdef OPTION_MORE_SERIAL_CHECKS
+    check_serial();
+  #endif
 
 
 } /* loop */
@@ -2937,17 +2965,54 @@ void check_serial(){
           #ifdef GPS_MIRROR_PORT
             gps_mirror_port->write(gps_port_read);
           #endif //GPS_MIRROR_PORT
-          #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_1)
+          #if defined(DEBUG_GPS_SERIAL)
             debug.write(gps_port_read);
             if (gps_port_read == 10){debug.write(13);}       
           #endif //DEBUG_GPS_SERIAL
-          #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES) || defined(DEBUG_TEST_1)
+          #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES)
             port_flush();
           #endif
 
           #if defined(OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING)
             if (gps.encode(gps_port_read)) {
               gps_data_available = 1;
+
+              #ifdef DEBUG_GPS
+                unsigned long gps_chars = 0;
+                unsigned short gps_good_sentences = 0;
+                unsigned short gps_failed_checksum = 0;
+                char gps_temp_string[12] = "";
+                float gps_lat_temp = 0;
+                float gps_long_temp = 0;
+
+                debug.print("\tGPS: satellites:");
+                gps_chars = gps.satellites();
+                //if (gps_chars == 255){gps_chars = 0;}
+                dtostrf(gps_chars,0,0,gps_temp_string);
+                debug.print(gps_temp_string);  
+                unsigned long gps_fix_age_temp = 0;
+                gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp); 
+                debug.print("  lat:");
+                debug.print(gps_lat_temp,4);
+                debug.print("  long:");
+                debug.print(gps_long_temp,4);
+                debug.print("  fix_age_mS:");
+                dtostrf(gps_fix_age_temp,0,0,gps_temp_string);
+                debug.print(gps_temp_string);   
+                gps.stats(&gps_chars,&gps_good_sentences,&gps_failed_checksum);     
+                debug.print("  data_chars:");
+                dtostrf(gps_chars,0,0,gps_temp_string);
+                debug.print(gps_temp_string);
+                debug.print("  good_sentences:");
+                dtostrf(gps_good_sentences,0,0,gps_temp_string);
+                debug.print(gps_temp_string);    
+                debug.print("  failed_checksum:");
+                dtostrf(gps_failed_checksum,0,0,gps_temp_string);
+                debug.print(gps_temp_string);    
+                debug.println("");
+              #endif //FEATURE_GPS
+
+
             }          
           #else
             if ((gps_port_read == '$') && (gps_port_read_data_sent)){ // handle missing LF/CR
@@ -2961,6 +3026,43 @@ void check_serial(){
               if (gps.encode(gps_port_read)) {
                 gps_data_available = 1;
                 gps_port_read_data_sent = 0;
+
+                #ifdef DEBUG_GPS
+                  unsigned long gps_chars = 0;
+                  unsigned short gps_good_sentences = 0;
+                  unsigned short gps_failed_checksum = 0;
+                  char gps_temp_string[12] = "";
+                  float gps_lat_temp = 0;
+                  float gps_long_temp = 0;
+
+                  debug.print("\tGPS: satellites:");
+                  gps_chars = gps.satellites();
+                  //if (gps_chars == 255){gps_chars = 0;}
+                  dtostrf(gps_chars,0,0,gps_temp_string);
+                  debug.print(gps_temp_string);  
+                  unsigned long gps_fix_age_temp = 0;
+                  gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp); 
+                  debug.print("  lat:");
+                  debug.print(gps_lat_temp,4);
+                  debug.print("  long:");
+                  debug.print(gps_long_temp,4);
+                  debug.print("  fix_age_mS:");
+                  dtostrf(gps_fix_age_temp,0,0,gps_temp_string);
+                  debug.print(gps_temp_string);   
+                  gps.stats(&gps_chars,&gps_good_sentences,&gps_failed_checksum);     
+                  debug.print("  data_chars:");
+                  dtostrf(gps_chars,0,0,gps_temp_string);
+                  debug.print(gps_temp_string);
+                  debug.print("  good_sentences:");
+                  dtostrf(gps_good_sentences,0,0,gps_temp_string);
+                  debug.print(gps_temp_string);    
+                  debug.print("  failed_checksum:");
+                  dtostrf(gps_failed_checksum,0,0,gps_temp_string);
+                  debug.print(gps_temp_string);    
+                  debug.println("");
+                #endif //FEATURE_GPS
+
+
               } else {
                 gps_port_read_data_sent = 1;
               }
@@ -2973,11 +3075,11 @@ void check_serial(){
           #ifdef GPS_MIRROR_PORT
             gps_mirror_port->write(gps_port_read);
           #endif //GPS_MIRROR_PORT
-          #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_1)
+          #if defined(DEBUG_GPS_SERIAL)
             debug.write(gps_port_read);
             if (gps_port_read == 10){debug.write(13);}   
           #endif //DEBUG_GPS_SERIAL
-          #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES) || defined(DEBUG_TEST_1)
+          #if defined(DEBUG_GPS_SERIAL) || defined(OPTION_GPS_DO_PORT_FLUSHES)
             port_flush();
           #endif  
           #if defined(OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING)
@@ -5126,7 +5228,7 @@ void output_debug(){
 
       if (((millis() - last_debug_output_time) >= 3000) && (debug_mode)) {
 
-        #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_2)
+        #if defined(DEBUG_GPS_SERIAL)
           debug.println("");
         #endif //DEBUG_GPS_SERIAL
 
@@ -10507,7 +10609,7 @@ void service_gps(){
     gps.get_position(&gps_lat, &gps_lon, &fix_age);
     gps.crack_datetime(&gps_year, &gps_month, &gps_day, &gps_hours, &gps_minutes, &gps_seconds, &gps_hundredths, &fix_age);
     #ifdef DEBUG_GPS
-      #if defined(DEBUG_GPS_SERIAL) || defined(DEBUG_TEST_3)
+      #if defined(DEBUG_GPS_SERIAL)
         debug.println("");
       #endif //DEBUG_GPS_SERIAL    
       debug.print("service_gps: fix_age:");

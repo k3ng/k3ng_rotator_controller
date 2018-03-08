@@ -124,6 +124,14 @@ void K3NGdisplay::initialize(){
     lcd.setBacklight(I2C_LCD_COLOR);
   #endif // FEATURE_ADAFRUIT_I2C_LCD
 
+  #ifdef FEATURE_RFROBOT_I2C_DISPLAY
+    #ifdef OPTION_RFROBOT_I2C_DISPLAY_BACKLIGHT_OFF
+      lcd.noBacklight();
+    #else
+      lcd.backlight();
+    #endif
+  #endif
+
   clear();
 
 
