@@ -364,6 +364,9 @@
     2018.03.08.01
       Added OPTION_MORE_SERIAL_CHECKS
       Added OPTION_RFROBOT_I2C_DISPLAY_BACKLIGHT_OFF to rotator_k3ngdisplay.h
+     
+    2018.03.11.01
+      GPS performance tweak - now ignoring gps_data_available and reading all data available on GPS port
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -375,7 +378,7 @@
 
   */
 
-#define CODE_VERSION "2018.03.08.01"
+#define CODE_VERSION "2018.03.11.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2996,6 +2999,8 @@ void check_serial(){
                 debug.print(gps_lat_temp,4);
                 debug.print("  long:");
                 debug.print(gps_long_temp,4);
+                debug.print("  altitude(m):");
+                debug.print(gps.altitude()/100,0);                
                 debug.print("  fix_age_mS:");
                 dtostrf(gps_fix_age_temp,0,0,gps_temp_string);
                 debug.print(gps_temp_string);   
@@ -3070,7 +3075,7 @@ void check_serial(){
           #endif  //  OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING         
         }
       #else //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
-        while ((gps_port->available()) && (!gps_data_available)) {
+        while ((gps_port->available()) /*&& (!gps_data_available)*/) {
           gps_port_read = gps_port->read();
           #ifdef GPS_MIRROR_PORT
             gps_mirror_port->write(gps_port_read);
@@ -5618,6 +5623,8 @@ void output_debug(){
           debug.print(gps_lat_temp,4);
           debug.print("  long:");
           debug.print(gps_long_temp,4);
+          debug.print("  altitude(m):");
+          debug.print(gps.altitude()/100,0);            
           debug.print("  fix_age_mS:");
           dtostrf(gps_fix_age_temp,0,0,gps_temp_string);
           debug.print(gps_temp_string);   
