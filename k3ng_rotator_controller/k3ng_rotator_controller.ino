@@ -368,6 +368,9 @@
     2018.03.11.01
       GPS performance tweak - now ignoring gps_data_available and reading all data available on GPS port
 
+    2018.03.14.01
+      SET_I2C_BUS_SPEED in settings file; set I2C bus speed to help address I2C I/O time impact serial port performance
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -378,7 +381,7 @@
 
   */
 
-#define CODE_VERSION "2018.03.11.01"
+#define CODE_VERSION "2018.03.14.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -7435,6 +7438,11 @@ void initialize_peripherals(){
     Ethernet.begin(mac, ip, gateway, subnet);
     ethernetserver0.begin();
   #endif //FEATURE_ETHERNET
+
+  #ifdef SET_I2C_BUS_SPEED
+     TWBR = ((F_CPU / SET_I2C_BUS_SPEED) - 16) / 2;
+  #endif
+
 
 } /* initialize_peripherals */
 
