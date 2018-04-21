@@ -54,6 +54,7 @@
 //#define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING  // change OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING in settings file
 //#define OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING
 //#define OPTION_MORE_SERIAL_CHECKS
+//#define OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE
 
 
 /* ---------------------- debug stuff - don't touch unless you know what you are doing --------------------------- */

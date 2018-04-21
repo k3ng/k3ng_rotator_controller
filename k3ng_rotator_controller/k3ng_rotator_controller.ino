@@ -371,6 +371,9 @@
     2018.03.14.01
       SET_I2C_BUS_SPEED in settings file; set I2C bus speed to help address I2C I/O time impact serial port performance
 
+    2018.04.21.01
+      Added OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE for FEATURE_STEPPER_MOTOR.  Also added TimerOne library to Github.
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -381,7 +384,7 @@
 
   */
 
-#define CODE_VERSION "2018.03.14.01"
+#define CODE_VERSION "2018.04.21.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -527,7 +530,11 @@
 #endif
 
 #ifdef FEATURE_STEPPER_MOTOR
-//  #include <TimerFive.h>
+  #ifdef OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE
+    #include <TimerOne.h>
+  #else
+    #include <TimerFive.h>
+  #endif
 #endif
 
 #include "rotator_language.h"
@@ -6853,8 +6860,13 @@ void initialize_interrupts(){
   #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
   #ifdef FEATURE_STEPPER_MOTOR
-  Timer5.initialize(250);  // 250 us = 4 khz rate
-  Timer5.attachInterrupt(service_stepper_motor_pulse_pins);
+    #ifdef OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE
+      Timer1.initialize(250);  // 250 us = 4 khz rate
+      Timer1.attachInterrupt(service_stepper_motor_pulse_pins);
+    #else
+      Timer5.initialize(250);  // 250 us = 4 khz rate
+      Timer5.attachInterrupt(service_stepper_motor_pulse_pins);  
+    #endif
   #endif //FEATURE_STEPPER_MOTOR
 
 
