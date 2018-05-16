@@ -374,6 +374,10 @@
     2018.04.21.01
       Added OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE for FEATURE_STEPPER_MOTOR.  Also added TimerOne library to Github.
 
+    2018.05.16.01
+      Added FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883 - QMC5883 digital compass support using Mechasolution library at https://github.com/keepworking/Mecha_QMC5883L
+      Modified MechaQMC5883.cpp to get rid of compiler warning about ::read
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -384,7 +388,7 @@
 
   */
 
-#define CODE_VERSION "2018.04.21.01"
+#define CODE_VERSION "2018.05.16.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -444,6 +448,10 @@
 #if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)
   #include <DFRobot_QMC5883.h>
 #endif  
+
+#if defined(FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883)
+  #include <MechaQMC5883.h>
+#endif 
 
 #if defined(FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB) || defined(FEATURE_AZ_POSITION_ADAFRUIT_LSM303) || defined(FEATURE_EL_POSITION_ADAFRUIT_LSM303)
   #include <Adafruit_Sensor.h>    // required for any Adafruit sensor libraries
@@ -942,9 +950,13 @@ DebugClass debug;
   HMC5883L compass;
 #endif //FEATURE_AZ_POSITION_HMC5883L
 
+#if defined(FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883)  
+  MechaQMC5883 compass;
+#endif //FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883
+
 #if defined(FEATURE_AZ_POSITION_DFROBOT_QMC5883)  
   DFRobot_QMC5883 compass;
-#endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
+#endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883  
 
 #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
   ADXL345 accel;
@@ -5019,6 +5031,53 @@ void read_azimuth(byte force_read){
       azimuth = raw_azimuth;
     #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
 
+
+
+
+
+    #if defined(FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883)
+
+      int mecha_x, mecha_y, mecha_z, mecha_azimuth;
+      compass.read(&mecha_x, &mecha_y, &mecha_z, &mecha_azimuth);
+
+
+      #ifdef DEBUG_QMC5883
+        debug.print("read_azimuth: QMC5883 x:");
+        debug.print(mecha_x);
+        debug.print(" y:");
+        debug.print(mecha_y);
+        debug.print(" z:");
+        debug.print(mecha_z);
+        debug.print(" mecha_azimuth:");
+        debug.print(mecha_azimuth);                
+        debug.println("");
+      #endif //DEBUG_QMC5883
+
+
+
+      // Correct for heading < 0deg and heading > 360deg
+      if (mecha_azimuth < 0){
+        mecha_azimuth += 360;
+      }
+
+      if (mecha_azimuth > 359){
+        mecha_azimuth -= 360;
+      }
+
+      raw_azimuth = mecha_azimuth;
+
+      if (AZIMUTH_SMOOTHING_FACTOR > 0) {
+        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+      }
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+        raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+      #endif // FEATURE_AZIMUTH_CORRECTION
+      raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
+      azimuth = raw_azimuth;
+    #endif //FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883
+
+
+
     #ifdef FEATURE_AZ_POSITION_ADAFRUIT_LSM303
       lsm.read();
       float heading = atan2(lsm.magData.y, lsm.magData.x);
@@ -7391,6 +7450,11 @@ void initialize_peripherals(){
 
   #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883  
 
+
+  #if defined(FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883)
+    compass.init();
+    //compass.setMode(Mode_Continuous,ODR_200Hz,RNG_2G,OSR_256);
+  #endif //FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883
 
   #ifdef FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
     accel = ADXL345();

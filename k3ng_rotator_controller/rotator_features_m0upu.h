@@ -50,6 +50,8 @@
 //#define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
 //#define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 //#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+//#define FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883   // QMC5883 digital compass support using Mechasolution library at https://github.com/keepworking/Mecha_QMC5883L
+
 
 #define FEATURE_EL_POSITION_POTENTIOMETER
 //#define FEATURE_EL_POSITION_ROTARY_ENCODER

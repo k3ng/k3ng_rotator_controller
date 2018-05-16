@@ -12,18 +12,18 @@
 
 */
 
-#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
+// #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-#define FEATURE_MOON_TRACKING
-#define FEATURE_SUN_TRACKING
-#define FEATURE_CLOCK
-#define FEATURE_GPS
-#define FEATURE_RTC_DS1307
+// #define FEATURE_MOON_TRACKING
+// #define FEATURE_SUN_TRACKING
+// #define FEATURE_CLOCK
+// #define FEATURE_GPS
+// #define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_ETHERNET
-#define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
+// #define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
@@ -43,7 +43,7 @@
 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
- #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
+#define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html
 // #define FEATURE_AZ_POSITION_PULSE_INPUT
@@ -56,6 +56,8 @@
 // #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
 // #define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
+// #define FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883   // QMC5883 digital compass support using Mechasolution library at https://github.com/keepworking/Mecha_QMC5883L
+
 
  #define FEATURE_EL_POSITION_POTENTIOMETER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER
