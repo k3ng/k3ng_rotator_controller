@@ -379,7 +379,10 @@
       Modified MechaQMC5883.cpp to get rid of compiler warning about ::read
 
     2018.10.17.01
-      Added FEATURE_MIDAS_I2C_DISPLAY  
+      Added FEATURE_MIDAS_I2C_DISPLAY 
+
+    2018.10.17.02
+      Added OVERLAP_LED_ACTIVE_STATE and OVERLAP_LED_INACTIVE_STATE settings
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -391,7 +394,7 @@
 
   */
 
-#define CODE_VERSION "2018.10.17.01"
+#define CODE_VERSION "2018.10.17.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2359,7 +2362,7 @@ void check_overlap(){
   if ((overlap_led) && ((millis() - last_check_time) > 500)) {
     // if ((analog_az > (500*HEADING_MULTIPLIER)) && (azimuth > (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER)) && (!overlap_led_status)) {
     if ((raw_azimuth > (ANALOG_AZ_OVERLAP_DEGREES * HEADING_MULTIPLIER)) && (!overlap_led_status)) {
-      digitalWriteEnhanced(overlap_led, HIGH);
+      digitalWriteEnhanced(overlap_led, OVERLAP_LED_ACTIVE_STATE);
       overlap_led_status = 1;
       #ifdef OPTION_BLINK_OVERLAP_LED
       last_overlap_led_transition = millis();
@@ -2371,7 +2374,7 @@ void check_overlap(){
     } else {
       // if (((analog_az < (500*HEADING_MULTIPLIER)) || (azimuth < (ANALOG_AZ_OVERLAP_DEGREES*HEADING_MULTIPLIER))) && (overlap_led_status)) {
       if ((raw_azimuth < (ANALOG_AZ_OVERLAP_DEGREES * HEADING_MULTIPLIER)) && (overlap_led_status)) {
-        digitalWriteEnhanced(overlap_led, LOW);
+        digitalWriteEnhanced(overlap_led, OVERLAP_LED_INACTIVE_STATE);
         overlap_led_status = 0;
         #ifdef DEBUG_OVERLAP
         debug.println("check_overlap: overlap off");
@@ -2385,10 +2388,10 @@ void check_overlap(){
   #ifdef OPTION_BLINK_OVERLAP_LED
   if ((overlap_led_status) && ((millis() - last_overlap_led_transition) >= OPTION_OVERLAP_LED_BLINK_MS)){
     if (blink_status){
-      digitalWriteEnhanced(overlap_led, LOW);
+      digitalWriteEnhanced(overlap_led, OVERLAP_LED_INACTIVE_STATE);
       blink_status = 0;
     } else {
-      digitalWriteEnhanced(overlap_led, HIGH);
+      digitalWriteEnhanced(overlap_led, OVERLAP_LED_ACTIVE_STATE);
       blink_status = 1;
     }
     last_overlap_led_transition = millis();

@@ -344,7 +344,10 @@ You can tweak these, but read the online documentation!
 #define AUDIBLE_PIN_TONE_FREQ 1000
 #define AUDIBLE_ALERT_AT_STARTUP 1
 #define AUDIBLE_ALERT_AT_AZ_TARGET 1
-#define AUDIBLE_ALERT_AT_EL_TARGET 
+#define AUDIBLE_ALERT_AT_EL_TARGET
+
+#define OVERLAP_LED_ACTIVE_STATE HIGH
+#define OVERLAP_LED_INACTIVE_STATE LOW 
 
 //#define SET_I2C_BUS_SPEED 800000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz
 
