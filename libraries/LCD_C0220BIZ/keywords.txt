@@ -1,0 +1,35 @@
+#######################################
+# Syntax Coloring Map For Ultrasound
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+LCD_C0220BIZ	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+init           KEYWORD2
+setDelay       KEYWORD2
+command        KEYWORD2
+write          KEYWORD2
+clear          KEYWORD2
+home           KEYWORD2
+on             KEYWORD2
+off            KEYWORD2
+cursor_on      KEYWORD2
+cursor_off     KEYWORD2
+blink_on       KEYWORD2
+blink_off      KEYWORD2
+setCursor      KEYWORD2
+status         KEYWORD2
+load_custom_character   KEYWORD2
+keypad         KEYWORD2
+setBacklight   KEYWORD2
+setContrast    KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################

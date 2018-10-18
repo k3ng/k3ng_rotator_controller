@@ -18,8 +18,8 @@
 #define rotate_cw_ccw_pwm 0      // optional - PWM on CW and CCW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_cw_freq 0         // optional - CW variable frequency output
 #define rotate_ccw_freq 0        // optional - CCW variable frequency output
-#define button_cw 0              // normally open button to ground for manual CW rotation (schematic pin: A1)
-#define button_ccw 0             // normally open button to ground for manual CCW rotation (schematic pin: A2)
+#define button_cw 0              // normally open button to ground for manual CW rotation (schematic pin: A2)
+#define button_ccw 0             // normally open button to ground for manual CCW rotation (schematic pin: A3)
 #define serial_led 0             // LED blinks when command is received on serial port (set to 0 to disable)
 #define rotator_analog_az A0     // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
 #define azimuth_speed_voltage 0  // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)

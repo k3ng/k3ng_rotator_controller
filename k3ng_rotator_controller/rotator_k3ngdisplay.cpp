@@ -1,7 +1,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "2018.03.08.01"
+// K3NG_DISPLAY_LIBRARY_VERSION "2018.10.17.01"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -34,7 +34,11 @@
 #if defined(FEATURE_YOURDUINO_I2C_LCD)
   #include <LCD.h>
 #endif  
-
+#if defined(FEATURE_MIDAS_I2C_DISPLAY)
+  //#include <lcd.h>
+  #include <LCD_C0220BiZ.h>
+  #include <ST7036.h>
+#endif
 
 
 #if defined(FEATURE_YOURDUINO_I2C_LCD)
@@ -71,6 +75,9 @@
   LiquidCrystal_I2C lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin, BACKLIGHT_PIN, POSITIVE);  
 #endif //FEATURE_SAINSMART_I2C_LCD
 
+#if defined(FEATURE_MIDAS_I2C_DISPLAY)
+  ST7036 lcd = ST7036 ( 2, 16, 120 );
+#endif  
 
 int display_columns = 0;
 uint8_t display_rows = 0;
@@ -110,10 +117,15 @@ K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_ti
 
 void K3NGdisplay::initialize(){
 
-
+  #if !defined(FEATURE_MIDAS_I2C_DISPLAY)
   lcd.begin(display_columns, display_rows);  // if you are getting an error on this line and do not have
                                              // any of the LCD display features enabled, remove
                                              // k3ngdisplay.h and k3ngdisplay.cpp from your ino directory
+  #endif
+
+  #if defined(FEATURE_MIDAS_I2C_DISPLAY)
+    lcd.init();
+  #endif
 
   #ifdef FEATURE_YOURDUINO_I2C_LCD
     lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);

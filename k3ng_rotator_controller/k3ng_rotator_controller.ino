@@ -378,6 +378,9 @@
       Added FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883 - QMC5883 digital compass support using Mechasolution library at https://github.com/keepworking/Mecha_QMC5883L
       Modified MechaQMC5883.cpp to get rid of compiler warning about ::read
 
+    2018.10.17.01
+      Added FEATURE_MIDAS_I2C_DISPLAY  
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -388,7 +391,7 @@
 
   */
 
-#define CODE_VERSION "2018.05.16.01"
+#define CODE_VERSION "2018.10.17.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -432,6 +435,11 @@
 #if defined(FEATURE_YOURDUINO_I2C_LCD)
   #include <LCD.h>   // required for YourDuino.com I2C LCD display
 #endif  
+
+#if defined(FEATURE_MIDAS_I2C_DISPLAY)
+  #include <LCD_C0220BiZ.h>
+  #include <ST7036.h>
+#endif
 
 #ifdef FEATURE_LCD_DISPLAY
   #include "rotator_k3ngdisplay.h"
