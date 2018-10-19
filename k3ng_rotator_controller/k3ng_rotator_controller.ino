@@ -397,7 +397,7 @@
 
   */
 
-#define CODE_VERSION "2018.10.17.02"
+#define CODE_VERSION "2018.10.19.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
