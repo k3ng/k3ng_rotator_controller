@@ -384,6 +384,9 @@
     2018.10.17.02
       Added OVERLAP_LED_ACTIVE_STATE and OVERLAP_LED_INACTIVE_STATE settings
 
+    2018.10.19.01
+      Added OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -11008,7 +11011,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
   #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
     float heading = 0;
-  #endif
+  #endif 
 
   //#if !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT)
     long place_multiplier = 0;
@@ -11050,8 +11053,8 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   char temp_string[20] = "";
 
   switch (input_buffer[1]) {
-
-   #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
+  #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS)
+  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
     case 'A':      // \Ax[x][x] - manually set azimuth
       new_azimuth = 9999;
       switch (input_buffer_index) {
@@ -12105,9 +12108,7 @@ Not implemented yet:
 
   #endif  //!defined(OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS)
 
-
-    default: strcpy(return_string, "Error.");
-
+  #endif //!defined(OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS)
 
 
   } // switch 

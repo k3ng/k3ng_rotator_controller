@@ -12,15 +12,15 @@
 
 */
 
-// #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
+#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 
-// #define FEATURE_MOON_TRACKING
-// #define FEATURE_SUN_TRACKING
-// #define FEATURE_CLOCK
-// #define FEATURE_GPS
-// #define FEATURE_RTC_DS1307
+#define FEATURE_MOON_TRACKING
+#define FEATURE_SUN_TRACKING
+#define FEATURE_CLOCK
+#define FEATURE_GPS
+#define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
@@ -91,7 +91,7 @@
 // #define FEATURE_AUDIBLE_ALERT
 
 /* preset rotary encoder features and options */
-// #define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
+#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
 // #define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 #define OPTION_ENCODER_HALF_STEP_MODE
 #define OPTION_ENCODER_ENABLE_PULLUPS          // define to enable weak pullups on rotary encoder pins
@@ -111,11 +111,11 @@
 #define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
 // #define FEATURE_LIMIT_SENSE
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
-#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
-#define FEATURE_PARK
-#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
-#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
-#define OPTION_EL_MANUAL_ROTATE_LIMITS
+// #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
+// #define FEATURE_PARK
+// #define FEATURE_AUTOPARK               // Requires FEATURE_PARK
+// #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
+// #define OPTION_EL_MANUAL_ROTATE_LIMITS
 #define OPTION_EASYCOM_AZ_QUERY_COMMAND // Adds non-standard Easycom command: AZ with no parm returns current azimuth
 #define OPTION_EASYCOM_EL_QUERY_COMMAND // Adds non-standard Easycom command: EL with no parm returns current elevation
 //#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
@@ -143,13 +143,13 @@
 #define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
 // #define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
+// #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
 #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
-#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
-#define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+// #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
+// #define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
@@ -164,6 +164,7 @@
 // #define OPTION_SCANCON_2RMHF3600_INC_ENCODER  // use with FEATURE_AZ_POSITION_INCREMENTAL_ENCODER and/or FEATURE_EL_POSITION_INCREMENTAL_ENCODER if using the ScanCon 2RMHF3600 incremental encoder
 // #define OPTION_RESET_METHOD_JMP_ASM_0
 // #define OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS
+// #define OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS
 // #define OPTION_REVERSE_AZ_HH12_AS5045
 // #define OPTION_REVERSE_EL_HH12_AS5045
 // #define OPTION_DONT_READ_GPS_PORT_AS_OFTEN
