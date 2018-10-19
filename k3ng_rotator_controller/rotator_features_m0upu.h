@@ -8,7 +8,8 @@
 /* main features */
 //#define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
-//#define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
+//#define FEATURE_EASYCOM_EMULATION       // Easycom protocol emulation on control port
+//#define FEATURE_DCU_1_EMULATION         // DCU-1 protocol emulation on control port    
 
 //#define FEATURE_MOON_TRACKING
 //#define FEATURE_SUN_TRACKING

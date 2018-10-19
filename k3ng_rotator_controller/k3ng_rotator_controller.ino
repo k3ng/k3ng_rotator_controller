@@ -387,6 +387,9 @@
     2018.10.19.01
       Added OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS
 
+    2018.10.19.02
+      Added Hygain DCU-1 protocol emulation - FEATURE_DCU_1_EMULATION  
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -397,7 +400,7 @@
 
   */
 
-#define CODE_VERSION "2018.10.19.01"
+#define CODE_VERSION "2018.10.19.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -825,7 +828,7 @@ byte current_az_speed_voltage = 0;
   volatile byte service_rotation_lock = 0;
 #endif
 
-#if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(FEATURE_CLOCK) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
+#if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(FEATURE_CLOCK) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
   SERIAL_PORT_CLASS * control_port;
 #endif
 
@@ -2812,7 +2815,7 @@ void check_serial(){
     int new_elevation = 9999;
   #endif
 
-  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
+  #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
 
   if ((serial_led) && (serial_led_time != 0) && ((millis() - serial_led_time) > SERIAL_LED_TIME_MS)) {
     digitalWriteEnhanced(serial_led, LOW);
@@ -2929,8 +2932,10 @@ void check_serial(){
         }
 
 
-    #else //FEATURE_EASYCOM_EMULATION ------------------------------------------------------
-        // Yaesu, Remote Slave
+    #endif //FEATURE_EASYCOM_EMULATION ------------------------------------------------------
+
+    #if defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_REMOTE_UNIT_SLAVE)  
+
         if ((incoming_serial_byte != 10) && (incoming_serial_byte != 13)) { // add it to the buffer if it's not a line feed or carriage return
           control_port_buffer[control_port_buffer_index] = incoming_serial_byte;
           control_port_buffer_index++;
@@ -2952,9 +2957,33 @@ void check_serial(){
           clear_command_buffer();
         }
 
-    #endif //FEATURE_EASYCOM_EMULATION--------------------------
+    #endif //defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_REMOTE_UNIT_SLAVE)
 
+    #if defined(FEATURE_DCU_1_EMULATION)  
 
+        if ((incoming_serial_byte != 10) && (incoming_serial_byte != 13) && (incoming_serial_byte != ';')) { // add it to the buffer if it's not a line feed or carriage return
+          control_port_buffer[control_port_buffer_index] = incoming_serial_byte;
+          control_port_buffer_index++;
+          control_port->write(incoming_serial_byte);
+        }
+//zzzzz
+        if (incoming_serial_byte == 13) {  // do we have a command termination?
+          if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
+            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
+            control_port->println(return_string);
+            clear_command_buffer();
+          } else {
+            clear_command_buffer();
+          }
+        }
+        if (incoming_serial_byte == ';'){   
+          control_port->write(incoming_serial_byte);
+          control_port->println();
+          process_dcu_1_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+          control_port->println(return_string);
+          clear_command_buffer();          
+        }  
+    #endif //defined(FEATURE_DCU_1_EMULATION) 
 
   } // if (control_port->available())
   #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
@@ -3952,8 +3981,6 @@ void update_display(){
           row_override[LCD_STATUS_ROW] = 1;
         }
       #endif //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER) 
-
-//zzzzz
 
       #if defined(FEATURE_AZ_PRESET_ENCODER) && defined(FEATURE_EL_PRESET_ENCODER)  
         float target = az_encoder_raw_degrees;
@@ -5312,7 +5339,7 @@ void output_debug(){
 
     char tempstring[32] = "";
 
-    #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
+    #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
 
       if (((millis() - last_debug_output_time) >= 3000) && (debug_mode)) {
 
@@ -5386,6 +5413,14 @@ void output_debug(){
             debug.print("A");
           #endif
         #endif // FEATURE_YAESU_EMULATION
+
+        #ifdef FEATURE_EASYCOM_EMULATION
+          debug.print("EASYCOM");
+        #endif // FEATURE_EASYCOM_EMULATION            
+
+        #ifdef FEATURE_DCU_1_EMULATION
+          debug.print("DCU-1");
+        #endif // FEATURE_DCU_1_EMULATION  
 
         #ifdef FEATURE_PARK
           switch (park_status) {
@@ -6151,7 +6186,7 @@ void read_elevation(byte force_read){
       #else
         elevation = int(elevation_hh12.heading() * HEADING_MULTIPLIER);
       #endif
-      #ifdef DEBUG_HH12 //zzzzzzzz
+      #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
           debug.print(F("read_elevation: HH-12 from device: "));
           debug.print(elevation_hh12.heading());
@@ -12280,10 +12315,59 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
 
 
 
+//-----------------------------------------------------------------------
+
+#ifdef FEATURE_DCU_1_EMULATION
+void process_dcu_1_command(byte * dcu_1_command_buffer, int dcu_1_command_buffer_index, byte source_port, char * return_string){
+
+
+//zzzzzzz
+
+  /* DCU-1 protocol implementation
+
+
+    AP1### = set azimuth target,  ### = 0 to 359
+
+    AM1 = execute rotation
+
+   */
+
+
+  strcpy(return_string,"?");
+  static int dcu_1_azimuth_target_set = 0;
+  int temp_heading = 0;
+
+  
+
+  if (dcu_1_command_buffer[0] == 'A'){
+    if ((dcu_1_command_buffer[1] == 'P') && (dcu_1_command_buffer[2] == '1') && (dcu_1_command_buffer_index == 6)){
+      temp_heading = ((dcu_1_command_buffer[3] - 48) * 100) + ((dcu_1_command_buffer[4] - 48) * 10) + (dcu_1_command_buffer[5] - 48);
+      if ((temp_heading > -1) && (temp_heading < 360)){
+        dcu_1_azimuth_target_set = temp_heading;
+        strcpy(return_string,"OK");
+        return;
+      }
+    }
+    if ((dcu_1_command_buffer[1] == 'M') && (dcu_1_command_buffer[2] == '1')  && (dcu_1_command_buffer_index == 3)){
+      submit_request(AZ, REQUEST_AZIMUTH, (dcu_1_azimuth_target_set * HEADING_MULTIPLIER), 233);
+      strcpy(return_string,"OK");
+      return;
+    }    
+  }
+
+
+} 
+#endif // FEATURE_DCU_1_EMULATION
+
+
 
 // --------------------------------------------------------------
 
     
+
+
+
+
 #ifdef FEATURE_REMOTE_UNIT_SLAVE
 void process_remote_slave_command(byte * slave_command_buffer, int slave_command_buffer_index, byte source_port, char * return_string){
 
