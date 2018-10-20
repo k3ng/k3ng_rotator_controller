@@ -388,7 +388,12 @@
       Added OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS
 
     2018.10.19.02
-      Added Hygain DCU-1 protocol emulation - FEATURE_DCU_1_EMULATION  
+      Added Hygain DCU-1 protocol emulation - FEATURE_DCU_1_EMULATION
+
+    2018.10.19.03
+      Added FEATURE_FABO_LCD_PCF8574_DISPLAY      
+
+
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -400,7 +405,7 @@
 
   */
 
-#define CODE_VERSION "2018.10.19.02"
+#define CODE_VERSION "2018.10.19.03"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -448,6 +453,11 @@
 #if defined(FEATURE_MIDAS_I2C_DISPLAY)
   #include <LCD_C0220BiZ.h>
   #include <ST7036.h>
+#endif
+
+
+#if defined(FEATURE_FABO_LCD_PCF8574_DISPLAY)
+  #include <FaBoLCD_PCF8574.h>
 #endif
 
 #ifdef FEATURE_LCD_DISPLAY

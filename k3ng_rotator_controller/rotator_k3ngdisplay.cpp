@@ -1,7 +1,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "2018.10.17.01"
+// K3NG_DISPLAY_LIBRARY_VERSION "2018.10.19.01"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -38,6 +38,9 @@
   //#include <lcd.h>
   #include <LCD_C0220BiZ.h>
   #include <ST7036.h>
+#endif
+#if defined(FEATURE_FABO_LCD_PCF8574_DISPLAY)
+  #include <FaBoLCD_PCF8574.h>
 #endif
 
 
@@ -78,6 +81,11 @@
 #if defined(FEATURE_MIDAS_I2C_DISPLAY)
   ST7036 lcd = ST7036 ( 2, 16, 120 );
 #endif  
+
+#if defined(FEATURE_FABO_LCD_PCF8574_DISPLAY)
+  FaBoLCD_PCF8574 lcd;
+#endif
+
 
 int display_columns = 0;
 uint8_t display_rows = 0;
@@ -126,6 +134,10 @@ void K3NGdisplay::initialize(){
   #if defined(FEATURE_MIDAS_I2C_DISPLAY)
     lcd.init();
   #endif
+
+  #if defined(FEATURE_FABO_LCD_PCF8574_DISPLAY)
+    lcd.begin(display_columns, display_rows);
+  #endif  
 
   #ifdef FEATURE_YOURDUINO_I2C_LCD
     lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
