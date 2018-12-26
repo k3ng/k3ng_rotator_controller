@@ -1,7 +1,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "2018.10.19.01"
+// K3NG_DISPLAY_LIBRARY_VERSION "2018.11.21.01"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -42,6 +42,10 @@
 #if defined(FEATURE_FABO_LCD_PCF8574_DISPLAY)
   #include <FaBoLCD_PCF8574.h>
 #endif
+#if defined(FEATURE_HD44780_I2C_DISPLAY)
+  #include <hd44780.h>                       // main hd44780 header
+  #include <hd44780ioClass/hd44780_I2Cexp.h> // i2c expander i/o class header
+#endif  
 
 
 #if defined(FEATURE_YOURDUINO_I2C_LCD)
@@ -85,6 +89,10 @@
 #if defined(FEATURE_FABO_LCD_PCF8574_DISPLAY)
   FaBoLCD_PCF8574 lcd;
 #endif
+
+#if defined(FEATURE_HD44780_I2C_DISPLAY)
+  hd44780_I2Cexp lcd;
+#endif  
 
 
 int display_columns = 0;

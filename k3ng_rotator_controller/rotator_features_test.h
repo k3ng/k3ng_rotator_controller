@@ -84,6 +84,7 @@
 // #define FEATURE_SAINSMART_I2C_LCD
 // #define FEATURE_MIDAS_I2C_DISPLAY
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY
+// #define FEATURE_HD44780_I2C_DISPLAY    // Not working yet
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
 
@@ -145,7 +146,7 @@
 #define OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD // display constant HH:MM:SS clock and maidenhead on LCD row 1 (set position with #define LCD_CONSTANT_HHMMSSCLOCK_MAIDENHEAD_POSITION)
 // #define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-// #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
+#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
 #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY

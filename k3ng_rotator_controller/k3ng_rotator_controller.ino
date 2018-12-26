@@ -391,10 +391,11 @@
       Added Hygain DCU-1 protocol emulation - FEATURE_DCU_1_EMULATION
 
     2018.10.19.03
-      Added FEATURE_FABO_LCD_PCF8574_DISPLAY      
+      Added FEATURE_FABO_LCD_PCF8574_DISPLAY
+      Added PRESET_ENCODER_CHANGE_TIME_MS in settings files  
 
-
-
+     2018.12.25.01     
+       Fixed bug in RTC sync timing affecting SYNC_WITH_RTC_SECONDS (Thanks, Fred, VK2EFL for fix, and Steve, N4TTY for discovery)
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -405,7 +406,7 @@
 
   */
 
-#define CODE_VERSION "2018.10.19.03"
+#define CODE_VERSION "2018.12.25.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2166,7 +2167,7 @@ void check_preset_encoders(){
         #endif // DEBUG_PRESET_ENCODERS
       }
     } else {
-      if ((millis() - last_encoder_change_time) > 2000) {       // if enc not changed for more than 2 sec, rotate to target
+      if ((millis() - last_encoder_change_time) > PRESET_ENCODER_CHANGE_TIME_MS) {       // if enc not changed for more than 2 sec, rotate to target
         #ifdef DEBUG_PRESET_ENCODERS
         debug.println("check_preset_encoders: timer submit_encoder_change");
         #endif // DEBUG_PRESET_ENCODERS
@@ -9694,7 +9695,7 @@ void service_rotation_indicator_pin(){
     if (time_rotation_went_inactive == 0) {
       time_rotation_went_inactive = millis();
     } else {
-      if ((millis() - time_rotation_went_inactive) >= ((ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS * 1000) + (ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES * 60 * 1000))) {
+      if ((millis() - time_rotation_went_inactive) >= (((unsigned long)ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS * 1000) + ((unsigned long)ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES * 60 * 1000))) {
         if (rotation_indication_pin) {
           digitalWriteEnhanced(rotation_indication_pin, ROTATION_INDICATOR_PIN_INACTIVE_STATE);
         }
@@ -10166,7 +10167,7 @@ void service_power_switch(){
   #endif //FEATURE_ELEVATION_CONTROL
 
 
-  if ((millis()-last_activity_time) > (60000 * POWER_SWITCH_IDLE_TIMEOUT)) {
+  if ((millis()-last_activity_time) > ((unsigned long)60000 * (unsigned long)POWER_SWITCH_IDLE_TIMEOUT)) {
     if (power_switch_state){ 
       digitalWriteEnhanced(power_switch, LOW);
       power_switch_state = 0;
@@ -10805,7 +10806,7 @@ void service_gps(){
 
       #if defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_DS1307)
         static unsigned long last_rtc_gps_sync_time;
-        if ((millis() - last_rtc_gps_sync_time) >= (SYNC_RTC_TO_GPS_SECONDS * 1000)) {
+        if ((millis() - last_rtc_gps_sync_time) >= ((unsigned long)SYNC_RTC_TO_GPS_SECONDS * 1000)) {
           rtc.adjust(DateTime(gps_year, gps_month, gps_day, gps_hours, gps_minutes, gps_seconds));
           #ifdef DEBUG_RTC
             debug.println("service_gps: synced RTC");
@@ -10816,7 +10817,7 @@ void service_gps(){
 
       #if defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_PCF8583)
         static unsigned long last_rtc_gps_sync_time;
-        if ((millis() - last_rtc_gps_sync_time) >= (SYNC_RTC_TO_GPS_SECONDS * 1000)) {
+        if ((millis() - last_rtc_gps_sync_time) >= ((unsigned long)SYNC_RTC_TO_GPS_SECONDS * 1000)) {
           rtc.year = gps_year;
           rtc.month = gps_month;
           rtc.day = gps_day;
@@ -10852,7 +10853,7 @@ void service_gps(){
     gps_data_available = 0;
   }
 
-  if ((millis() > (GPS_SYNC_PERIOD_SECONDS * 1000)) && ((millis() - last_sync) < (GPS_SYNC_PERIOD_SECONDS * 1000)) && (SYNC_TIME_WITH_GPS)) {
+  if ((millis() > ((unsigned long)GPS_SYNC_PERIOD_SECONDS * 1000)) && ((millis() - last_sync) < ((unsigned long)GPS_SYNC_PERIOD_SECONDS * 1000)) && (SYNC_TIME_WITH_GPS)) {
     clock_status = GPS_SYNC;
   } else {
     clock_status = FREE_RUNNING;
@@ -10883,7 +10884,7 @@ void sync_master_coordinates_to_slave(){
 
   static unsigned long last_sync_master_coordinates_to_slave = 10000;
 
-  if ((millis() - last_sync_master_coordinates_to_slave) >= (SYNC_MASTER_COORDINATES_TO_SLAVE_SECS * 1000)){
+  if ((millis() - last_sync_master_coordinates_to_slave) >= ((unsigned long)SYNC_MASTER_COORDINATES_TO_SLAVE_SECS * 1000)){
     if (submit_remote_command(REMOTE_UNIT_RC_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
       debug.println("sync_master_coordinates_to_slave: submitted REMOTE_UNIT_RC_COMMAND");
@@ -10902,7 +10903,7 @@ void sync_master_clock_to_slave(){
 
   static unsigned long last_sync_master_clock_to_slave = 5000;
 
-  if ((millis() - last_sync_master_clock_to_slave) >= (SYNC_MASTER_CLOCK_TO_SLAVE_CLOCK_SECS * 1000)){
+  if ((millis() - last_sync_master_clock_to_slave) >= ((unsigned long)SYNC_MASTER_CLOCK_TO_SLAVE_CLOCK_SECS * 1000)){
     if (submit_remote_command(REMOTE_UNIT_CL_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
       debug.println("sync_master_clock_to_slave: submitted REMOTE_UNIT_CL_COMMAND");
@@ -10944,7 +10945,7 @@ void service_rtc(){
 
   static unsigned long last_rtc_sync_time = 0;
 
-  if (((millis() - last_rtc_sync_time) >= (SYNC_WITH_RTC_SECONDS * 1000)) || (clock_status == FREE_RUNNING)){
+  if (((millis() - last_rtc_sync_time) >= ((unsigned long)SYNC_WITH_RTC_SECONDS * 1000)) || ((clock_status == FREE_RUNNING) && (millis() - last_rtc_sync_time) > 1000)) {
     last_rtc_sync_time = millis();
     #ifdef FEATURE_GPS
       if (clock_status == GPS_SYNC) { // if we're also equipped with GPS and we're synced to it, don't sync to realtime clock

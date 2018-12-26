@@ -329,5 +329,7 @@ You can tweak these, but read the online documentation!
 #define OVERLAP_LED_ACTIVE_STATE HIGH
 #define OVERLAP_LED_INACTIVE_STATE LOW   
 
+#define PRESET_ENCODER_CHANGE_TIME_MS 2000  
+
 //#define SET_I2C_BUS_SPEED 800000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz
   
