@@ -397,6 +397,9 @@
      2018.12.25.01     
        Fixed bug in RTC sync timing affecting SYNC_WITH_RTC_SECONDS (Thanks, Fred, VK2EFL for fix, and Steve, N4TTY for discovery)
 
+     2019.01.03.01
+       Updated GS-232 M and W commands to accept azimuths over 360 degrees and improved parameter verification  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -406,7 +409,7 @@
 
   */
 
-#define CODE_VERSION "2018.12.25.01"
+#define CODE_VERSION "2019.01.03.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4416,12 +4419,20 @@ void update_display(){
 
 //zzzzzz
 
+  static unsigned long last_full_screen_redraw = 0;
+
+  if ((millis() - last_full_screen_redraw) > 59999){
+    k3ngdisplay.clear();
+    k3ngdisplay.redraw();
+    last_full_screen_redraw = millis();
+  } else {
 
 
   // do it ! ************************************
   k3ngdisplay.service(force_display_update_now);
   //force_display_update_now = 0;
 
+  }
 
 }  
 #endif // defined(FEATURE_LCD_DISPLAY) 
@@ -8845,7 +8856,7 @@ void check_for_dirty_configuration(){
 
   static unsigned long last_config_write_time = 0;
 
-  if ((configuration_dirty) && ((millis() - last_config_write_time) > (EEPROM_WRITE_DIRTY_CONFIG_TIME * 1000))) {
+  if ((configuration_dirty) && ((millis() - last_config_write_time) > ((unsigned long)EEPROM_WRITE_DIRTY_CONFIG_TIME * 1000))) {
     write_settings_to_eeprom();
     last_config_write_time = millis();
   }
@@ -13009,7 +13020,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
             timed_buffer_interval_value_seconds = parsed_value;
             for (int x = 5; x < yaesu_command_buffer_index; x = x + 4) {
               parsed_value = ((int(yaesu_command_buffer[x]) - 48) * 100) + ((int(yaesu_command_buffer[x + 1]) - 48) * 10) + (int(yaesu_command_buffer[x + 2]) - 48);
-              if ((parsed_value >= 0) && (parsed_value <= 360)) {  // is it a valid azimuth?
+              if ((parsed_value >= 0) && (parsed_value <= (azimuth_starting_point + azimuth_rotation_capability))) {  // is it a valid azimuth?
                 timed_buffer_azimuths[timed_buffer_number_entries_loaded] = parsed_value * HEADING_MULTIPLIER;
                 timed_buffer_number_entries_loaded++;
                 timed_buffer_status = LOADED_AZIMUTHS;
@@ -13199,7 +13210,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         
         
         // parse out W command
-        // Short Format: WXXX YYYY           XXX = azimuth YYY = elevation
+        // Short Format: WXXX YYY            XXX = azimuth YYY = elevation
         // Long Format : WSSS XXX YYY        SSS = timed interval   XXX = azimuth    YYY = elevation
 
         if (yaesu_command_buffer_index > 8) {  // if there are more than 4 characters in the command buffer, we got a timed interval command
@@ -13239,20 +13250,24 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
           parsed_elevation = (((int(yaesu_command_buffer[5]) - 48) * 100) + ((int(yaesu_command_buffer[6]) - 48) * 10) + (int(yaesu_command_buffer[7]) - 48)) * HEADING_MULTIPLIER;
         }
       
-         #ifndef FEATURE_ELEVATION_CONTROL
-        if ((parsed_value >= 0) && (parsed_value <= (360 * HEADING_MULTIPLIER))) {
-          submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 32);
-        } else {
-          #ifdef DEBUG_PROCESS_YAESU
-          if (debug_mode) {
-            debug.print("process_yaesu_command: W cmd az error");
+        #ifndef FEATURE_ELEVATION_CONTROL
+
+          if ((parsed_value >= 0) && (parsed_value <= ((azimuth_starting_point + azimuth_rotation_capability)* HEADING_MULTIPLIER))) {
+          //if ((parsed_value >= 0) && (parsed_value <= (360 * HEADING_MULTIPLIER))) {
+            submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 32);
+          } else {
+            #ifdef DEBUG_PROCESS_YAESU
+            if (debug_mode) {
+              debug.print("process_yaesu_command: W cmd az error");
+            }
+            #endif // DEBUG_PROCESS_YAESU
+            strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
           }
-          #endif // DEBUG_PROCESS_YAESU
-          strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
-        }
         
         #else
-         if ((parsed_value >= 0) && (parsed_value <= (360 * HEADING_MULTIPLIER)) && (parsed_elevation >= 0) && (parsed_elevation <= (180 * HEADING_MULTIPLIER))) {
+          if ((parsed_value >= 0) && (parsed_value <= ((azimuth_starting_point + azimuth_rotation_capability)* HEADING_MULTIPLIER)) && (parsed_elevation >= 0) && (parsed_elevation <= (ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER))) {
+       
+         //if ((parsed_value >= 0) && (parsed_value <= (360 * HEADING_MULTIPLIER)) && (parsed_elevation >= 0) && (parsed_elevation <= (180 * HEADING_MULTIPLIER))) {
           submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 33);
           submit_request(EL, REQUEST_ELEVATION, parsed_elevation, 34);
         } else {

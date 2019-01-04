@@ -164,6 +164,10 @@ void K3NGdisplay::initialize(){
     #endif
   #endif
 
+  #ifdef FEATURE_4_BIT_LCD_DISPLAY
+    lcd.noCursor();
+  #endif  
+
   clear();
 
 
@@ -256,6 +260,11 @@ void K3NGdisplay::clear(){
   }
 
   lcd.clear();
+
+  #ifdef FEATURE_4_BIT_LCD_DISPLAY
+    lcd.noCursor();
+  #endif  
+  
   current_print_row = 0;
   current_print_column = 0;
   revert_screen_flag = 0;
