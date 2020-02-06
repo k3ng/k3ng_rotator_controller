@@ -410,6 +410,9 @@
           STALL_CHECK_FREQUENCY_MS_EL
           STALL_CHECK_DEGREES_THRESHOLD_EL
         Pins: az_rotation_stall_detected, el_rotation_stall_detected
+        
+    2020.02.05.02
+      Minor add to DEBUG_RTC  
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -420,7 +423,7 @@
 
   */
 
-#define CODE_VERSION "2020.02.05.01"
+#define CODE_VERSION "2020.02.05.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -7688,7 +7691,13 @@ void initialize_peripherals(){
 
 
   #ifdef FEATURE_RTC_DS1307
+    #ifdef DEBUG_RTC
+      debug.println("initialize_peripherals: rtc.begin");
+    #endif // DEBUG_RTC
     rtc.begin();
+    #ifdef DEBUG_RTC
+      debug.println("initialize_peripherals: begin complete");
+    #endif // DEBUG_RTC    
   #endif // FEATURE_RTC_DS1307
 
   #ifdef FEATURE_ETHERNET
