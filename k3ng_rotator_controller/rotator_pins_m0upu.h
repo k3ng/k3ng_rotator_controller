@@ -30,6 +30,7 @@
 #define rotation_indication_pin 0
 #define az_stepper_motor_pulse 0
 #define az_stepper_motor_direction 0
+#define az_rotation_stall_detected 0
 
 
 // elevation pins
@@ -49,6 +50,7 @@
 #define brake_el 0                // goes high to disengage elevation brake (set to 0 to disable)
 #define el_stepper_motor_pulse 0
 #define el_stepper_motor_direction 0
+#define el_rotation_stall_detected 0
 #endif //FEATURE_ELEVATION_CONTROL
 
 

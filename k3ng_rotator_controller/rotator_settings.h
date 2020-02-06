@@ -341,6 +341,13 @@ You can tweak these, but read the online documentation!
 
 #define PRESET_ENCODER_CHANGE_TIME_MS 2000 
 
+// FEATURE_AZ_ROTATION_STALL_DETECTION
+#define STALL_CHECK_FREQUENCY_MS_AZ 2000
+#define STALL_CHECK_DEGREES_THRESHOLD_AZ 2
+// FEATURE_EL_ROTATION_STALL_DETECTION
+#define STALL_CHECK_FREQUENCY_MS_EL 2000
+#define STALL_CHECK_DEGREES_THRESHOLD_EL 2
+
 //#define SET_I2C_BUS_SPEED 800000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz
 
   

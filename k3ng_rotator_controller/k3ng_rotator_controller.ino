@@ -394,11 +394,22 @@
       Added FEATURE_FABO_LCD_PCF8574_DISPLAY
       Added PRESET_ENCODER_CHANGE_TIME_MS in settings files  
 
-     2018.12.25.01     
-       Fixed bug in RTC sync timing affecting SYNC_WITH_RTC_SECONDS (Thanks, Fred, VK2EFL for fix, and Steve, N4TTY for discovery)
+    2018.12.25.01     
+      Fixed bug in RTC sync timing affecting SYNC_WITH_RTC_SECONDS (Thanks, Fred, VK2EFL for fix, and Steve, N4TTY for discovery)
 
-     2019.01.03.01
-       Updated GS-232 M and W commands to accept azimuths over 360 degrees and improved parameter verification  
+    2019.01.03.01
+      Updated GS-232 M and W commands to accept azimuths over 360 degrees and improved parameter verification 
+
+    2020.02.05.01
+      Moved debug defines to rotator_debug_log_activation.h
+      FEATURE_AZ_ROTATION_STALL_DETECTION & FEATURE_EL_ROTATION_STALL_DETECTION
+        OPTION_ROTATION_STALL_DETECTION_SERIAL_MESSAGE
+        Settings
+          STALL_CHECK_FREQUENCY_MS_AZ
+          STALL_CHECK_DEGREES_THRESHOLD_AZ
+          STALL_CHECK_FREQUENCY_MS_EL
+          STALL_CHECK_DEGREES_THRESHOLD_EL
+        Pins: az_rotation_stall_detected, el_rotation_stall_detected
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -409,7 +420,7 @@
 
   */
 
-#define CODE_VERSION "2019.01.03.01"
+#define CODE_VERSION "2020.02.05.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -578,6 +589,7 @@
 
 #include "rotator_language.h"
 #include "rotator_debug.h"
+#include "rotator_debug_log_activation.h"
 
 
 /*----------------------- variables -------------------------------------*/
@@ -1131,8 +1143,13 @@ void loop() {
     #endif
   #endif // ndef FEATURE_REMOTE_UNIT_SLAVE
 
-  //read_headings();
+  #if defined(FEATURE_AZ_ROTATION_STALL_DETECTION)
+    az_check_rotation_stall();
+  #endif
 
+  #if defined(FEATURE_EL_ROTATION_STALL_DETECTION) && defined(FEATURE_ELEVATION_CONTROL)
+    el_check_rotation_stall();
+  #endif
 
   #ifdef OPTION_MORE_SERIAL_CHECKS
     check_serial();
@@ -2980,7 +2997,6 @@ void check_serial(){
           control_port_buffer_index++;
           control_port->write(incoming_serial_byte);
         }
-//zzzzz
         if (incoming_serial_byte == 13) {  // do we have a command termination?
           if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
             process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
@@ -4417,8 +4433,6 @@ void update_display(){
 // TODO: FEATURE_PARK {done, need to test}, FEATURE_AZ_PRESET_ENCODER and FEATURE_EL_PRESET_ENCODER in status widget {done, need to test}
   
 
-//zzzzzz
-
   static unsigned long last_full_screen_redraw = 0;
 
   if ((millis() - last_full_screen_redraw) > 59999){
@@ -4655,6 +4669,92 @@ void az_check_operation_timeout(){
   }
 }
 
+// --------------------------------------------------------------
+//zzzzzzz
+#if defined(FEATURE_AZ_ROTATION_STALL_DETECTION)
+void az_check_rotation_stall(){
+
+  // check if rotation has stalled
+
+  static unsigned long last_check_time = 0;
+  static int last_raw_azimuth = 0;
+  static byte rotation_stall_pin_active = 0;
+
+  if (az_state != IDLE){
+    if (last_check_time == 0){
+      last_raw_azimuth = raw_azimuth;
+      last_check_time = millis();
+      if (rotation_stall_pin_active){
+        digitalWriteEnhanced(az_rotation_stall_detected,LOW);
+        rotation_stall_pin_active = 0;
+      }
+    } else {
+      if ((millis() - last_check_time) > STALL_CHECK_FREQUENCY_MS_AZ){
+        if ((abs((raw_azimuth - last_raw_azimuth))*HEADING_MULTIPLIER) < STALL_CHECK_DEGREES_THRESHOLD_AZ){
+          #ifdef DEBUG_ROTATION_STALL_DETECTION
+            debug.println("az_check_rotation_stall: REQUEST_KILL");
+          #endif
+          #ifdef OPTION_ROTATION_STALL_DETECTION_SERIAL_MESSAGE
+            control_port->println("AZ Rotation Stall Detected");
+          #endif  
+          submit_request(AZ, REQUEST_KILL, 0, 78);
+          digitalWriteEnhanced(az_rotation_stall_detected,HIGH);
+          rotation_stall_pin_active = 1;
+          last_check_time = 0;
+        } else {
+          last_raw_azimuth = raw_azimuth;
+          last_check_time = millis();
+        }
+      }
+    }
+  } else {
+    last_check_time = 0;
+  }
+}
+#endif //FEATURE_AZ_ROTATION_STALL_DETECTION
+// --------------------------------------------------------------
+//zzzzzzz
+#if defined(FEATURE_EL_ROTATION_STALL_DETECTION) && defined(FEATURE_ELEVATION_CONTROL)
+void el_check_rotation_stall(){
+
+  // check if rotation has stalled
+
+  static unsigned long last_check_time = 0;
+  static int last_elevation = 0;
+  static byte rotation_stall_pin_active = 0;
+
+  if (el_state != IDLE){
+    if (last_check_time == 0){
+      last_elevation = elevation;
+      last_check_time = millis();
+      if (rotation_stall_pin_active){
+        digitalWriteEnhanced(el_rotation_stall_detected,LOW);
+        rotation_stall_pin_active = 0;
+      }
+    } else {
+      if ((millis() - last_check_time) > STALL_CHECK_FREQUENCY_MS_EL){
+        if ((abs((elevation - last_elevation))*HEADING_MULTIPLIER) < STALL_CHECK_DEGREES_THRESHOLD_AZ){
+          #ifdef DEBUG_ROTATION_STALL_DETECTION
+            debug.println("el_check_rotation_stall: REQUEST_KILL");
+          #endif
+          #ifdef OPTION_ROTATION_STALL_DETECTION_SERIAL_MESSAGE
+            control_port->println("EL Rotation Stall Detected");
+          #endif            
+          submit_request(EL, REQUEST_KILL, 0, 78);
+          digitalWriteEnhanced(el_rotation_stall_detected,HIGH);
+          rotation_stall_pin_active = 1;
+          last_check_time = 0;
+        } else {
+          last_elevation = elevation;
+          last_check_time = millis();
+        }
+      }
+    }
+  } else {
+    last_check_time = 0;
+  }
+}
+#endif //FEATURE_EL_ROTATION_STALL_DETECTION
 // --------------------------------------------------------------
 
 #ifdef FEATURE_TIMED_BUFFER
@@ -7351,6 +7451,16 @@ void initialize_pins(){
       audible_alert(AUDIBLE_ALERT_ACTIVATE);
     }
   #endif //FEATURE_AUDIBLE_ALERT
+
+  #ifdef FEATURE_AZ_ROTATION_STALL_DETECTION
+    pinModeEnhanced(az_rotation_stall_detected, OUTPUT);
+    digitalWriteEnhanced(az_rotation_stall_detected, LOW);
+  #endif //FEATURE_AZ_ROTATION_STALL_DETECTION
+
+  #ifdef FEATURE_EL_ROTATION_STALL_DETECTION
+    pinModeEnhanced(el_rotation_stall_detected, OUTPUT);
+    digitalWriteEnhanced(el_rotation_stall_detected, LOW);
+  #endif //FEATURE_EL_ROTATION_STALL_DETECTION  
 
 } /* initialize_pins */
 
@@ -11746,8 +11856,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     configuration_dirty = 1;
     break;
 
-// zzzzzzz
-
 // TODO : one big status query command    
 
   #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS)
@@ -12343,7 +12451,6 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
 void process_dcu_1_command(byte * dcu_1_command_buffer, int dcu_1_command_buffer_index, byte source_port, char * return_string){
 
 
-//zzzzzzz
 
   /* DCU-1 protocol implementation
 

@@ -33,6 +33,7 @@
 #define blink_led 0
 #define az_stepper_motor_pulse 44 //0
 #define az_stepper_motor_direction 0
+#define az_rotation_stall_detected 0
 
 
 
@@ -52,6 +53,7 @@
   #define brake_el 0                // goes high to disengage elevation brake (set to 0 to disable)
   #define elevation_speed_voltage  0 // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_up_pwm and rotate_down_pwm)
   #define el_stepper_motor_pulse 0
+  #define el_rotation_stall_detected 0
 #endif //FEATURE_ELEVATION_CONTROL
 
 // rotary encoder pins and options
