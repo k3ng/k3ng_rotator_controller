@@ -304,6 +304,8 @@ void K3NGdisplay::update(){
 
   // update the screen with changes that are pending in screen_buffer_pending
 
+  lcd.noCursor();
+  lcd.setCursor(0,0);
 
   for (int x = 0;x < (display_columns*display_rows);x++){  	
     if (screen_buffer_live[x] != screen_buffer_pending[x]){  // do we have a new character to put on the screen ?
@@ -341,6 +343,9 @@ void K3NGdisplay::update(){
 void K3NGdisplay::redraw(){
 
   // redraw the screen with the current screen_buffer_live
+
+  lcd.noCursor();
+  lcd.setCursor(0,0);
 
   for (int x = 0;x < (display_columns*display_rows);x++){   
     lcd.setCursor(Xposition(x),Yposition(x));

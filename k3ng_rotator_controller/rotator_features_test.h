@@ -153,7 +153,7 @@
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 //#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
 #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
-//#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+// #define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 // #define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 
@@ -200,9 +200,3 @@
 								//    ##    ##             ##    ##    
 								//    ##    ##       ##    ##    ##    
 								//    ##    ########  ######     ##  
-
-
-
-
-
-

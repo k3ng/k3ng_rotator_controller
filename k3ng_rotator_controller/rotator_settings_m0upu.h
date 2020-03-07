@@ -133,6 +133,9 @@ You can tweak these, but read the online documentation!
 #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000
 #define LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW 3                // LCD display row for OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define SPLASH_SCREEN_TIME 3000
+#define LCD_PERIODIC_REDRAW_TIME_SECS 0      // set to 0 to totally disable periodically redrawing the screen
+#define LCD_CLEAR_BEFORE_REDRAW 1            // set to 0 to disable doing a clear before redraw
+#define LCD_REDRAW_UPON_COMMANDS 0           // set to 1 to enable screen redraws upon commands and button presses
 
 #define LCD_HEADING_ROW 2
 #define LCD_HEADING_FIELD_SIZE 20

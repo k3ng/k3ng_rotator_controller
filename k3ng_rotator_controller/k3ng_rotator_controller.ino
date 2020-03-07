@@ -414,6 +414,9 @@
     2020.02.05.02
       Minor add to DEBUG_RTC  
 
+    2020.03.07.01
+      Added LCD_PERIODIC_REDRAW_TIME_SECS, LCD_CLEAR_BEFORE_REDRAW, LCD_REDRAW_UPON_COMMANDS to settings files
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -423,7 +426,7 @@
 
   */
 
-#define CODE_VERSION "2020.02.05.02"
+#define CODE_VERSION "2020.03.07.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -472,7 +475,6 @@
   #include <LCD_C0220BiZ.h>
   #include <ST7036.h>
 #endif
-
 
 #if defined(FEATURE_FABO_LCD_PCF8574_DISPLAY)
   #include <FaBoLCD_PCF8574.h>
@@ -647,6 +649,8 @@ byte az_slow_down_step = 0;
 unsigned long az_timed_slow_down_start_time = 0;
 byte backslash_command = 0;
 
+//char return_string[100];
+
 struct config_t {
   byte magic_number;
   int analog_az_full_ccw;
@@ -722,8 +726,10 @@ byte current_az_speed_voltage = 0;
 #endif // FEATURE_ELEVATION_CONTROL
 
 #if defined(FEATURE_LCD_DISPLAY)
-  byte push_lcd_update = 0;
+  //byte push_lcd_update = 0;
+  byte perform_screen_redraw = 0;
 #endif // FEATURE_LCD_DISPLAY
+
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT
   #ifdef OPTION_ENCODER_HALF_STEP_MODE      // Use the half-step state table (emits a code at 00 and 11)
@@ -2248,7 +2254,7 @@ void check_preset_encoders(){
   if ((preset_start_button) && (preset_encoders_state != ENCODER_IDLE) && ((millis() - last_encoder_move) > ENCODER_PRESET_TIMEOUT)) { // timeout if we have a preset start button
     preset_encoders_state = ENCODER_IDLE;
     #ifdef FEATURE_LCD_DISPLAY
-    push_lcd_update = 1;                     // push an LCD update
+    //push_lcd_update = 1;                     // push an LCD update
     #endif // FEATURE_LCD_DISPLAY
   }
 
@@ -2920,6 +2926,9 @@ void check_serial(){
                   }
                   control_port_buffer[0] = 'Z';
                   process_easycom_command(control_port_buffer,1,CONTROL_PORT0,return_string);
+                  #if defined(FEATURE_LCD_DISPLAY)
+                    perform_screen_redraw = 1;
+                  #endif
                   //control_port->println(return_string); 
                   control_port->print(return_string);
                   #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
@@ -2927,6 +2936,9 @@ void check_serial(){
                   #endif //OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK       
                 } else {  // we got just a bare AZ command
                   process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+                  #if defined(FEATURE_LCD_DISPLAY)
+                    perform_screen_redraw = 1;
+                  #endif                  
                   //control_port->println(return_string); 
                   control_port->print(return_string);
                   #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
@@ -2937,6 +2949,9 @@ void check_serial(){
 
                 if (control_port_buffer_index > 1){
                   process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+                  #if defined(FEATURE_LCD_DISPLAY)
+                    perform_screen_redraw = 1;
+                  #endif                  
                   //control_port->println(return_string);
                   control_port->print(return_string);
                   #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
@@ -2948,6 +2963,9 @@ void check_serial(){
           #else //defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)
             if (control_port_buffer_index > 1){
               process_easycom_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+              #if defined(FEATURE_LCD_DISPLAY)
+                perform_screen_redraw = 1;
+              #endif              
               //control_port->println(return_string); 
               control_port->print(return_string);
               #ifndef OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
@@ -2960,6 +2978,9 @@ void check_serial(){
           // if it is a backslash command, process it if we have a carriage return
           if ((incoming_serial_byte == 13) && ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/'))){
             process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
+            #if defined(FEATURE_LCD_DISPLAY)
+              perform_screen_redraw = 1;
+            #endif          
             control_port->println(return_string);
             clear_command_buffer();
           }
@@ -2978,9 +2999,15 @@ void check_serial(){
         if (incoming_serial_byte == 13) {  // do we have a carriage return?
           if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
             process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
+            #if defined(FEATURE_LCD_DISPLAY)
+              perform_screen_redraw = 1;
+            #endif            
           } else {
             #ifdef FEATURE_YAESU_EMULATION
               process_yaesu_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+              #if defined(FEATURE_LCD_DISPLAY)
+                perform_screen_redraw = 1;
+              #endif              
             #endif //FEATURE_YAESU_EMULATION
 
             #ifdef FEATURE_REMOTE_UNIT_SLAVE
@@ -3245,6 +3272,9 @@ void check_buttons(){
     if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER)) {
       #endif
       submit_request(AZ, REQUEST_CW, 0, 61);
+      #if defined(FEATURE_LCD_DISPLAY)
+        perform_screen_redraw = 1;
+      #endif
       azimuth_button_was_pushed = 1;
       #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
     } else {
@@ -3269,6 +3299,9 @@ void check_buttons(){
         if (raw_azimuth > (AZ_MANUAL_ROTATE_CCW_LIMIT * HEADING_MULTIPLIER)) {
       #endif
         submit_request(AZ, REQUEST_CCW, 0, 62);
+        #if defined(FEATURE_LCD_DISPLAY)
+          perform_screen_redraw = 1;
+        #endif        
         azimuth_button_was_pushed = 1;
       #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
       } else {
@@ -3299,6 +3332,9 @@ void check_buttons(){
     #endif // DEBUG_BUTTONS
     #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
     submit_request(AZ, REQUEST_STOP, 0, 64);
+    #if defined(FEATURE_LCD_DISPLAY)
+      perform_screen_redraw = 1;
+    #endif    
     #else
     submit_request(AZ, REQUEST_KILL, 0, 65);
     #endif // OPTION_BUTTON_RELEASE_NO_SLOWDOWN
@@ -3317,6 +3353,9 @@ void check_buttons(){
       #ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
         if (elevation < (EL_MANUAL_ROTATE_UP_LIMIT * HEADING_MULTIPLIER)) {
           submit_request(EL, REQUEST_UP, 0, 66);
+          #if defined(FEATURE_LCD_DISPLAY)
+            perform_screen_redraw = 1;
+          #endif          
           elevation_button_was_pushed = 1;
           #ifdef DEBUG_BUTTONS
             debug.println("check_buttons: button_up pushed");
@@ -3328,6 +3367,9 @@ void check_buttons(){
         }
       #else 
         submit_request(EL, REQUEST_UP, 0, 66);
+        #if defined(FEATURE_LCD_DISPLAY)
+          perform_screen_redraw = 1;
+        #endif        
         elevation_button_was_pushed = 1;
         #ifdef DEBUG_BUTTONS
           debug.println("check_buttons: button_up pushed");
@@ -3345,6 +3387,9 @@ void check_buttons(){
         #ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
           if (elevation > (EL_MANUAL_ROTATE_DOWN_LIMIT * HEADING_MULTIPLIER)) {
             submit_request(EL, REQUEST_DOWN, 0, 67);
+            #if defined(FEATURE_LCD_DISPLAY)
+              perform_screen_redraw = 1;
+            #endif            
             elevation_button_was_pushed = 1;
             #ifdef DEBUG_BUTTONS
               debug.println("check_buttons: button_down pushed");
@@ -3356,6 +3401,9 @@ void check_buttons(){
           }
         #else
           submit_request(EL, REQUEST_DOWN, 0, 67);
+          #if defined(FEATURE_LCD_DISPLAY)
+            perform_screen_redraw = 1;
+          #endif          
           elevation_button_was_pushed = 1;
           #ifdef DEBUG_BUTTONS
             debug.println("check_buttons: button_down pushed");
@@ -3375,6 +3423,9 @@ void check_buttons(){
   #else
     submit_request(EL, REQUEST_KILL, 0, 69);
   #endif // OPTION_BUTTON_RELEASE_NO_SLOWDOWN
+    #if defined(FEATURE_LCD_DISPLAY)
+      perform_screen_redraw = 1;
+    #endif  
     elevation_button_was_pushed = 0;
   }
 
@@ -3390,6 +3441,9 @@ void check_buttons(){
     #else
       submit_request(EL, REQUEST_KILL, 0, 71);
     #endif // OPTION_BUTTON_RELEASE_NO_SLOWDOWN
+      #if defined(FEATURE_LCD_DISPLAY)
+        perform_screen_redraw = 1;
+      #endif    
       elevation_button_was_pushed = 0;
     }
   }
@@ -3415,6 +3469,9 @@ void check_buttons(){
           #ifdef DEBUG_BUTTONS
           debug.println("check_buttons: executing park");
           #endif // DEBUG_BUTTONS
+          #if defined(FEATURE_LCD_DISPLAY)
+            perform_screen_redraw = 1;
+          #endif          
           initiate_park();
         } else {
           #ifdef DEBUG_BUTTONS
@@ -3451,6 +3508,9 @@ void check_buttons(){
       submit_request(EL, REQUEST_KILL, 0, 77);
       #endif // OPTION_BUTTON_RELEASE_NO_SLOWDOWN
       #endif // FEATURE_ELEVATION_CONTROL
+      #if defined(FEATURE_LCD_DISPLAY)
+        perform_screen_redraw = 1;
+      #endif    
     }
   }
 
@@ -3471,6 +3531,9 @@ void check_buttons(){
           debug.println("check_buttons: moon tracking on");
           #endif // DEBUG_BUTTONS
           moon_tracking_active = 1;
+          #if defined(FEATURE_LCD_DISPLAY)
+            perform_screen_redraw = 1;
+          #endif          
           #ifdef FEATURE_SUN_TRACKING
           sun_tracking_active = 0;
           #endif // FEATURE_SUN_TRACKING          
@@ -3500,15 +3563,18 @@ void check_buttons(){
       if ((sun_tracking_button_pushed) && ((millis() - last_time_sun_tracking_button_pushed) >= 250)) {
         if (!sun_tracking_active) {
           #ifdef DEBUG_BUTTONS
-          debug.println("check_buttons: sun tracking on");
+            debug.println("check_buttons: sun tracking on");
           #endif // DEBUG_BUTTONS
           sun_tracking_active = 1;
+          #if defined(FEATURE_LCD_DISPLAY)
+            perform_screen_redraw = 1;
+          #endif          
           #ifdef FEATURE_MOON_TRACKING
-          moon_tracking_active = 0;
+            moon_tracking_active = 0;
           #endif // FEATURE_MOON_TRACKING          
         } else {
           #ifdef DEBUG_BUTTONS
-          debug.print("check_buttons: sun tracking off");
+            debug.print("check_buttons: sun tracking off");
           #endif // DEBUG_BUTTONS
           sun_tracking_active = 0;
         }
@@ -4438,16 +4504,18 @@ void update_display(){
 
   static unsigned long last_full_screen_redraw = 0;
 
-  if ((millis() - last_full_screen_redraw) > 59999){
-    k3ngdisplay.clear();
+  if ((((millis() - last_full_screen_redraw) > (long(LCD_PERIODIC_REDRAW_TIME_SECS)*1000L)) & (LCD_PERIODIC_REDRAW_TIME_SECS > 0)) || (perform_screen_redraw && LCD_REDRAW_UPON_COMMANDS)){
+    if (LCD_CLEAR_BEFORE_REDRAW){
+      k3ngdisplay.clear();
+    }
     k3ngdisplay.redraw();
     last_full_screen_redraw = millis();
+    perform_screen_redraw = 0;
   } else {
 
-
-  // do it ! ************************************
-  k3ngdisplay.service(force_display_update_now);
-  //force_display_update_now = 0;
+    // do it ! ************************************
+    k3ngdisplay.service(force_display_update_now);
+    //force_display_update_now = 0;
 
   }
 
@@ -5879,6 +5947,7 @@ void output_debug(){
           dtostrf(gps_good_sentences,0,0,gps_temp_string);
           debug.print(gps_temp_string);    
           debug.print("  failed_checksum:");
+          if (gps_failed_checksum == 1){gps_failed_checksum = 0;}  // hack to ignore that one failed checksum you always seem to get at boot up
           dtostrf(gps_failed_checksum,0,0,gps_temp_string);
           debug.print(gps_temp_string);    
           debug.println("");
@@ -7726,6 +7795,10 @@ void submit_request(byte axis, byte request, int parm, byte called_by){
     park_status = NOT_PARKED;
   #endif // FEATURE_PARK
 
+  // #if defined(FEATURE_LCD_DISPLAY)
+  //   perform_screen_redraw = 1;
+  // #endif
+
   if (axis == AZ) {
     #ifdef DEBUG_SUBMIT_REQUEST
       debug.print("AZ "); 
@@ -8725,7 +8798,7 @@ void service_request_queue(){
     } /* switch */
 
     #ifdef FEATURE_LCD_DISPLAY
-    if (az_request_queue_state != IN_QUEUE) {push_lcd_update = 1;}
+    //if (az_request_queue_state != IN_QUEUE) {push_lcd_update = 1;}
     #endif //FEATURE_LCD_DISPLAY
   }
 
@@ -8961,7 +9034,7 @@ void service_request_queue(){
     } /* switch */
 
     #ifdef FEATURE_LCD_DISPLAY
-    if (el_request_queue_state != IN_QUEUE) {push_lcd_update = 1;}
+    //if (el_request_queue_state != IN_QUEUE) {push_lcd_update = 1;}
     #endif //FEATURE_LCD_DISPLAY
 
   } // (el_request_queue_state == IN_QUEUE)
@@ -11572,6 +11645,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     case 'M':
       switch (input_buffer[2]) {
         case '0':
+          moon_tracking_active = 0;
           submit_request(AZ, REQUEST_STOP, 0, 17);
           submit_request(EL, REQUEST_STOP, 0, 18);
           strcpy(return_string, "Moon tracking deactivated.");
@@ -11650,6 +11724,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     case 'U':     // activate / deactivate sun tracking
       switch (input_buffer[2]) {
         case '0':
+          sun_tracking_active = 0;
           submit_request(AZ, REQUEST_STOP, 0, 19);
           submit_request(EL, REQUEST_STOP, 0, 20);
           strcpy(return_string, "Sun tracking deactivated.");
@@ -14188,6 +14263,3 @@ void service_autopark(){
 
 
 // that's all, folks !
-
-
-
