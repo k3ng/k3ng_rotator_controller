@@ -416,6 +416,8 @@
 
     2020.03.07.01
       Added LCD_PERIODIC_REDRAW_TIME_SECS, LCD_CLEAR_BEFORE_REDRAW, LCD_REDRAW_UPON_COMMANDS to settings files
+      Fixed bug with sun and moon tracking deactivation not stopping rotation (Thanks Steve VE3RX)
+      Minor addition in the k3ngdisplay code for display updates and redraws
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
