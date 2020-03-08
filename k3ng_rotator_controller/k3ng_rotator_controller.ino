@@ -419,16 +419,20 @@
       Fixed bug with sun and moon tracking deactivation not stopping rotation (Thanks Steve VE3RX)
       Minor addition in the k3ngdisplay code for display updates and redraws
 
+    2020.03.08.01
+      Change made to ensure slow start completes before slow stop activates  
+      Add \H command line interface command - clear and redraw the LCD display
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
   Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki
 
-  Support: https://groups.yahoo.com/neo/groups/radioartisan/info
+  Support: https://groups.io/g/radioartisan
 
   */
 
-#define CODE_VERSION "2020.03.07.01"
+#define CODE_VERSION "2020.03.08.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -8031,7 +8035,8 @@ void service_rotation(){
 
   // normal -------------------------------------------------------------------------------------------------------------------
   // if slow down is enabled, see if we're ready to go into slowdown
-  if (((az_state == NORMAL_CW) || (az_state == SLOW_START_CW) || (az_state == NORMAL_CCW) || (az_state == SLOW_START_CCW)) &&
+  //if (((az_state == NORMAL_CW) || (az_state == SLOW_START_CW) || (az_state == NORMAL_CCW) || (az_state == SLOW_START_CCW)) &&
+  if (((az_state == NORMAL_CW) || (az_state == NORMAL_CCW)) && 
       (az_request_queue_state == IN_PROGRESS_TO_TARGET) && az_slowdown_active && (abs((target_raw_azimuth - raw_azimuth) / HEADING_MULTIPLIER) <= SLOW_DOWN_BEFORE_TARGET_AZ)) {
 
     byte az_state_was = az_state;
@@ -11594,6 +11599,13 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       strcpy(return_string, "Initialized eeprom, resetting unit in 5 seconds...");
       reset_the_unit = 1;
       break;
+
+    #if defined(FEATURE_LCD_DISPLAY)
+      case 'H':
+        k3ngdisplay.clear();
+        k3ngdisplay.redraw();
+        break;
+    #endif  
 
     case 'Q':                                                                      // \Q - Save settings in the EEPROM and restart
       write_settings_to_eeprom();
