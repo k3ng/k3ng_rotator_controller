@@ -169,8 +169,8 @@
 
 #ifdef FEATURE_MOON_TRACKING
 #define moon_tracking_active_pin 0    // goes high when moon tracking is active
-#define moon_tracking_activate_line 0 // ground this pin to activate moon tracking (not for use with a button)
-#define moon_tracking_button 0        // use with a normally open momentary switch to ground
+#define moon_tracking_activate_line A15 // ground this pin to activate moon tracking (not for use with a button)
+#define moon_tracking_button A14        // use with a normally open momentary switch to ground
 #endif //FEATURE_MOON_TRACKING
 
 #ifdef FEATURE_SUN_TRACKING

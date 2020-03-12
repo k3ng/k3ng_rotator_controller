@@ -416,12 +416,15 @@
 
     2020.03.07.01
       Added LCD_PERIODIC_REDRAW_TIME_SECS, LCD_CLEAR_BEFORE_REDRAW, LCD_REDRAW_UPON_COMMANDS to settings files
-      Fixed bug with sun and moon tracking deactivation not stopping rotation (Thanks Steve VE3RX)
+      Fixed bug with sun and moon tracking deactivation (\U and \M CLI commands) not stopping rotation (Thanks Steve VE3RX)
       Minor addition in the k3ngdisplay code for display updates and redraws
 
     2020.03.08.01
       Change made to ensure slow start completes before slow stop activates  
       Add \H command line interface command - clear and redraw the LCD display
+
+    2020.03.11.01
+      Upon deactivation of moon or sun tracking using the button pins (moon_tracking_button, sun_tracking_button) or the activation lines (moon_tracking_activate_line, sun_tracking_activate_line), any in progress rotation will now stop (Thanks Steve VE3RX)
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -432,7 +435,7 @@
 
   */
 
-#define CODE_VERSION "2020.03.08.01"
+#define CODE_VERSION "2020.03.11.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3548,6 +3551,11 @@ void check_buttons(){
            debug.println("check_buttons: moon tracking off");
           #endif // DEBUG_BUTTONS
           moon_tracking_active = 0;
+          submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_MOON);
+          #ifdef FEATURE_ELEVATION_CONTROL
+            submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_MOON);
+          #endif
+
         }
         moon_tracking_button_pushed = 0;
       }
@@ -3583,6 +3591,10 @@ void check_buttons(){
             debug.print("check_buttons: sun tracking off");
           #endif // DEBUG_BUTTONS
           sun_tracking_active = 0;
+          submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SUN);
+          #ifdef FEATURE_ELEVATION_CONTROL
+            submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SUN);
+          #endif
         }
         sun_tracking_button_pushed = 0;
       }
@@ -13839,6 +13851,10 @@ void service_moon_tracking(){
     if ((moon_tracking_active) && (digitalReadEnhanced(moon_tracking_activate_line)) && (moon_tracking_activated_by_activate_line)) {
       moon_tracking_active = 0;
       moon_tracking_activated_by_activate_line = 0;
+      submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_MOON_TRACKING);
+      #ifdef FEATURE_ELEVATION_CONTROL
+        submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_MOON_TRACKING);
+      #endif
     }
   }
 
@@ -13916,6 +13932,10 @@ void service_sun_tracking(){
     if ((sun_tracking_active) && (digitalReadEnhanced(sun_tracking_activate_line)) && (sun_tracking_activated_by_activate_line)) {
       sun_tracking_active = 0;
       sun_tracking_activated_by_activate_line = 0;
+      submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SUN_TRACKING);
+      #ifdef FEATURE_ELEVATION_CONTROL
+        submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SUN_TRACKING);
+      #endif      
     }
   }
 
