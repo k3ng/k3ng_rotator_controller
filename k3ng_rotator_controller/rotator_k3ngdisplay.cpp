@@ -1,7 +1,7 @@
 #ifndef K3NG_DISPLAY_H
 #define K3NG_DISPLAY_H
 
-// K3NG_DISPLAY_LIBRARY_VERSION "2018.11.21.01"
+// K3NG_DISPLAY_LIBRARY_VERSION "2020.03.16.01"
 
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -11,9 +11,6 @@
 #endif
 
 #include "rotator_k3ngdisplay.h"
-
-
-
 
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
   #include <LiquidCrystal.h>
@@ -61,7 +58,6 @@
   // LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 #endif //FEATURE_RFROBOT_I2C_DISPLAY
 
-
 #if defined(FEATURE_YWROBOT_I2C_DISPLAY)
   #include <LiquidCrystal_I2C.h>
   //LiquidCrystal_I2C lcd(ywrobot_address, ywrobot_pin_en, ywrobot_pin_rw, ywrobot_pin_rs, ywrobot_pin_d4, ywrobot_pin_d5, ywrobot_pin_d6, ywrobot_pin_d7, ywrobot_pin_bl, ywrobot_blpol);  
@@ -93,7 +89,6 @@
 #if defined(FEATURE_HD44780_I2C_DISPLAY)
   hd44780_I2Cexp lcd;
 #endif  
-
 
 int display_columns = 0;
 uint8_t display_rows = 0;
@@ -304,11 +299,13 @@ void K3NGdisplay::update(){
 
   // update the screen with changes that are pending in screen_buffer_pending
 
+  static int round_robin_refresh_position = 0;
+
   lcd.noCursor();
   lcd.setCursor(0,0);
 
   for (int x = 0;x < (display_columns*display_rows);x++){  	
-    if (screen_buffer_live[x] != screen_buffer_pending[x]){  // do we have a new character to put on the screen ?
+    if ((screen_buffer_live[x] != screen_buffer_pending[x]) || (x == round_robin_refresh_position)){  // do we have a new character to put on the screen ?
       lcd.setCursor(Xposition(x),Yposition(x));
       if (screen_buffer_attributes_pending[x] & ATTRIBUTE_BLINK){  // does this character have the blink attribute
         if (current_blink_state){
@@ -333,6 +330,11 @@ void K3NGdisplay::update(){
         }
       }
     }
+  }
+
+  round_robin_refresh_position++;
+  if (round_robin_refresh_position >= (display_columns*display_rows)){
+    round_robin_refresh_position = 0; 
   }
 
   last_blink_state = current_blink_state;

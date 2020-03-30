@@ -80,6 +80,8 @@
 // #define FEATURE_MIDAS_I2C_DISPLAY
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY  
 
+// #define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+
 // #define FEATURE_ANALOG_OUTPUT_PINS
 
 // #define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION

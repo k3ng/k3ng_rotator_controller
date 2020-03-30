@@ -172,7 +172,7 @@
       LANGUAGE_DUTCH courtesy of David, ON4BDS
 
     2.0.2015121801
-      Fixed bug in update_display() with display always showing DOWN with elevation rotation (Thanks, UA9OLB)
+      Fixed bug in update_lcd_display() with display always showing DOWN with elevation rotation (Thanks, UA9OLB)
 
     2.0.2015122001
       Created OPTION_REVERSE_AZ_HH12_AS5045 and OPTION_REVERSE_EL_HH12_AS5045
@@ -426,6 +426,15 @@
     2020.03.11.01
       Upon deactivation of moon or sun tracking using the button pins (moon_tracking_button, sun_tracking_button) or the activation lines (moon_tracking_activate_line, sun_tracking_activate_line), any in progress rotation will now stop (Thanks Steve VE3RX)
 
+    2020.03.16.01
+      Implemented a round robin screen redraw in rotator_k3ngdisplay.cpp 
+
+    2020.03.30.01
+      FEATURE_NEXTION_DISPLAY - Nextion display support UNDER DEVELOPMENT
+      Added file rotator_nextion.h
+      Documentation in progress: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -435,7 +444,7 @@
 
   */
 
-#define CODE_VERSION "2020.03.11.01"
+#define CODE_VERSION "2020.03.30.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -601,6 +610,10 @@
   #endif
 #endif
 
+#ifdef FEATURE_NEXTION_DISPLAY
+  #include "Nextion.h"
+#endif
+
 #include "rotator_language.h"
 #include "rotator_debug.h"
 #include "rotator_debug_log_activation.h"
@@ -667,8 +680,7 @@ struct config_t {
   int analog_el_0_degrees;
   int analog_el_max_elevation;
   float last_azimuth;
-  float last_elevation;
-  //int last_az_incremental_encoder_position;  
+  float last_elevation;  
   long last_az_incremental_encoder_position;
   int last_el_incremental_encoder_position;
   float azimuth_offset;
@@ -1108,6 +1120,11 @@ DebugClass debug;
   unsigned long last_activity_time_autopark = 0;
 #endif  
 
+#ifdef FEATURE_NEXTION_DISPLAY
+  #include "rotator_nextion.h"
+  byte nextion_current_screen = NEXTION_PAGE_MAIN_ID;
+#endif
+
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 
 void setup() {
@@ -1174,7 +1191,11 @@ void loop() {
   #endif
 
   #ifdef FEATURE_LCD_DISPLAY
-    update_display();
+    update_lcd_display();
+  #endif
+
+  #ifdef FEATURE_NEXTION_DISPLAY
+    service_nextion_display();
   #endif
 
   #ifdef OPTION_MORE_SERIAL_CHECKS
@@ -1321,7 +1342,6 @@ void loop() {
   #ifdef OPTION_MORE_SERIAL_CHECKS
     check_serial();
   #endif
-
 
 } /* loop */
 
@@ -1856,7 +1876,7 @@ void check_az_preset_potentiometer() {
             debug.println("");
           }
           #endif // DEBUG_AZ_PRESET_POT
-          submit_request(AZ, REQUEST_AZIMUTH_RAW, new_pot_azimuth * HEADING_MULTIPLIER, 44);
+          submit_request(AZ, REQUEST_AZIMUTH_RAW, new_pot_azimuth * HEADING_MULTIPLIER, DBG_CHECK_AZ_PRESET_POT);
           pot_changed_waiting = 0;
           last_pot_read = pot_read;
           last_pot_check_time = millis();
@@ -2224,12 +2244,12 @@ void check_preset_encoders(){
       #endif // DEBUG_PRESET_ENCODERS
       #ifdef FEATURE_AZ_PRESET_ENCODER
       if (az_state != IDLE) {
-        submit_request(AZ, REQUEST_KILL, 0, 45);
+        submit_request(AZ, REQUEST_KILL, 0, DBG_CHECK_PRESET_ENCODERS_NOT_IDLE);
       }
       #endif // FEATURE_AZ_PRESET_ENCODER
       #if defined(FEATURE_EL_PRESET_ENCODER) && defined(FEATURE_ELEVATION_CONTROL)
       if (el_state != IDLE) {
-        submit_request(EL, REQUEST_KILL, 0, 46);
+        submit_request(EL, REQUEST_KILL, 0, DBG_CHECK_PRESET_ENCODERS_NOT_IDLE);
       }
       #endif // defined(FEATURE_EL_PRESET_ENCODER) && defined(FEATURE_ELEVATION_CONTROL)
       last_preset_start_button_kill = millis();
@@ -2244,15 +2264,15 @@ void check_preset_encoders(){
 
     if ((preset_encoders_state == ENCODER_AZ_PENDING) || (preset_encoders_state == ENCODER_AZ_EL_PENDING)) {
       #ifndef OPTION_PRESET_ENCODER_0_360_DEGREES
-      submit_request(AZ, REQUEST_AZIMUTH_RAW, az_encoder_raw_degrees, 47);
+      submit_request(AZ, REQUEST_AZIMUTH_RAW, az_encoder_raw_degrees, DBG_CHECK_PRESET_ENCODERS_PENDING);
       #else
-      submit_request(AZ, REQUEST_AZIMUTH, az_encoder_raw_degrees, 47);
+      submit_request(AZ, REQUEST_AZIMUTH, az_encoder_raw_degrees, DBG_CHECK_PRESET_ENCODERS_PENDING);
       #endif //ndef OPTION_PRESET_ENCODER_0_360_DEGREES
     }
 
     #ifdef FEATURE_EL_PRESET_ENCODER
     if ((preset_encoders_state == ENCODER_EL_PENDING) || (preset_encoders_state == ENCODER_AZ_EL_PENDING)) {
-      submit_request(EL, REQUEST_ELEVATION, el_encoder_degrees, 48);
+      submit_request(EL, REQUEST_ELEVATION, el_encoder_degrees, DBG_CHECK_PRESET_ENCODERS_PENDING);
     }
     #endif // FEATURE_EL_PRESET_ENCODER
 
@@ -2282,7 +2302,7 @@ void check_az_manual_rotate_limit() {
       debug.print(AZ_MANUAL_ROTATE_CCW_LIMIT);
       debug.println("");
     #endif // DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    submit_request(AZ, REQUEST_KILL, 0, 49);
+    submit_request(AZ, REQUEST_KILL, 0, DBG_CHECK_AZ_MANUAL_ROTATE_LIMIT_CCW);
   }
   if ((current_az_state() == ROTATING_CW) && (raw_azimuth >= (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_AZ_MANUAL_ROTATE_LIMITS
@@ -2290,7 +2310,7 @@ void check_az_manual_rotate_limit() {
       debug.print(AZ_MANUAL_ROTATE_CW_LIMIT);
       debug.println("");
     #endif // DEBUG_AZ_MANUAL_ROTATE_LIMITS
-    submit_request(AZ, REQUEST_KILL, 0, 50);
+    submit_request(AZ, REQUEST_KILL, 0, DBG_CHECK_AZ_MANUAL_ROTATE_LIMIT_CW);
   }
 } /* check_az_manual_rotate_limit */
 #endif // #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
@@ -2306,7 +2326,7 @@ void check_el_manual_rotate_limit() {
       debug.print(EL_MANUAL_ROTATE_DOWN_LIMIT);
       debug.println("");
     #endif // DEBUG_EL_MANUAL_ROTATE_LIMITS
-    submit_request(EL, REQUEST_KILL, 0, 51);
+    submit_request(EL, REQUEST_KILL, 0, DBG_CHECK_EL_MANUAL_ROTATE_LIMIT_DOWN);
   }
   if ((current_el_state() == ROTATING_UP) && (elevation >= (EL_MANUAL_ROTATE_UP_LIMIT * HEADING_MULTIPLIER))) {
     #ifdef DEBUG_EL_MANUAL_ROTATE_LIMITS
@@ -2314,7 +2334,7 @@ void check_el_manual_rotate_limit() {
       debug.print(EL_MANUAL_ROTATE_UP_LIMIT);
       debug.println("");
     #endif // DEBUG_EL_MANUAL_ROTATE_LIMITS
-    submit_request(EL, REQUEST_KILL, 0, 52);
+    submit_request(EL, REQUEST_KILL, 0, DBG_CHECK_EL_MANUAL_ROTATE_LIMIT_UP);
   }
 } /* check_el_manual_rotate_limit */
 #endif // #ifdef OPTION_EL_MANUAL_ROTATE_LIMITS
@@ -3280,7 +3300,7 @@ void check_buttons(){
     #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
     if (raw_azimuth < (AZ_MANUAL_ROTATE_CW_LIMIT * HEADING_MULTIPLIER)) {
       #endif
-      submit_request(AZ, REQUEST_CW, 0, 61);
+      submit_request(AZ, REQUEST_CW, 0, DBG_CHECK_BUTTONS_BTN_CW);
       #if defined(FEATURE_LCD_DISPLAY)
         perform_screen_redraw = 1;
       #endif
@@ -3288,7 +3308,7 @@ void check_buttons(){
       #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
     } else {
       #ifdef DEBUG_BUTTONS
-      debug.println("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT");
+        debug.println("check_buttons: exceeded AZ_MANUAL_ROTATE_CW_LIMIT");
       #endif // DEBUG_BUTTONS
     }
       #endif
@@ -3307,7 +3327,7 @@ void check_buttons(){
     #ifdef OPTION_AZ_MANUAL_ROTATE_LIMITS
         if (raw_azimuth > (AZ_MANUAL_ROTATE_CCW_LIMIT * HEADING_MULTIPLIER)) {
       #endif
-        submit_request(AZ, REQUEST_CCW, 0, 62);
+        submit_request(AZ, REQUEST_CCW, 0, DBG_CHECK_BUTTONS_BTN_CCW);
         #if defined(FEATURE_LCD_DISPLAY)
           perform_screen_redraw = 1;
         #endif        
@@ -3328,7 +3348,7 @@ void check_buttons(){
     #ifdef DEBUG_BUTTONS
       debug.println("check_buttons: no button depressed");
     #endif // DEBUG_BUTTONS
-    submit_request(AZ, REQUEST_STOP, 0, 63);
+    submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_ADAFRUIT_STOP);
     azimuth_button_was_pushed = 0;
   }
 
@@ -3340,12 +3360,12 @@ void check_buttons(){
       debug.println("check_buttons: no AZ button depressed");
     #endif // DEBUG_BUTTONS
     #ifndef OPTION_BUTTON_RELEASE_NO_SLOWDOWN
-    submit_request(AZ, REQUEST_STOP, 0, 64);
+    submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_RELEASE_NO_SLOWDOWN);
     #if defined(FEATURE_LCD_DISPLAY)
       perform_screen_redraw = 1;
     #endif    
     #else
-    submit_request(AZ, REQUEST_KILL, 0, 65);
+    submit_request(AZ, REQUEST_KILL, 0, DBG_CHECK_BUTTONS_RELEASE_KILL);
     #endif // OPTION_BUTTON_RELEASE_NO_SLOWDOWN
     azimuth_button_was_pushed = 0;
     }
@@ -3607,18 +3627,13 @@ void check_buttons(){
 #ifdef FEATURE_LCD_DISPLAY
 char * idle_status(){
 
-
   #ifdef OPTION_DISPLAY_DIRECTION_STATUS
     return azimuth_direction(azimuth);
   #endif //OPTION_DISPLAY_DIRECTION_STATUS
 
-  return("");
-
-
+  return((char *)"");
 
 }
-
-
 #endif //FEATURE_LCD_DISPLAY
 // --------------------------------------------------------------
 
@@ -3626,8 +3641,6 @@ char * idle_status(){
 char * azimuth_direction(int azimuth_in){
 
   azimuth_in = azimuth_in / HEADING_MULTIPLIER;
-
-
 
   if (azimuth_in > 348) {
     return N_STRING;
@@ -3683,8 +3696,1042 @@ char * azimuth_direction(int azimuth_in){
 #endif /* ifdef FEATURE_LCD_DISPLAY */
 
 // --------------------------------------------------------------
+// #if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
+// void NextionbCWPopCallback(void *ptr) {  // button release
+
+//   submit_request(AZ, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
+
+// }
+// #endif
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
+void NextionbCWPushCallback(void *ptr) {  // button press
+
+  submit_request(AZ, REQUEST_CW, 0, DBG_NEXTION_BUTTON);
+  
+}
+#endif
+
+// --------------------------------------------------------------
+//#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
+// void NextionbCCWPopCallback(void *ptr) {    // button release
+
+ 
+//   submit_request(AZ, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
+
+// }
+// #endif
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
+void NextionbCCWPushCallback(void *ptr) {   // button press
+
+  submit_request(AZ, REQUEST_CCW, 0, DBG_NEXTION_BUTTON);
+
+}
+#endif
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_STOP) && defined(NEXTION_OBJID_BUTTON_STOP)
+void NextionbSTOPPushAndPopCallback(void *ptr) {  // button press and release, just to be safe
+
+  submit_request(AZ, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    submit_request(EL, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
+  #endif
+
+}
+#endif
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW) && defined(FEATURE_ELEVATION_CONTROL)
+void NextionbUpPushCallback(void *ptr) {   // button press
+
+  submit_request(EL, REQUEST_UP, 0, DBG_NEXTION_BUTTON);
+
+}
+#endif
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW) && defined(FEATURE_ELEVATION_CONTROL)
+void NextionbDownPushCallback(void *ptr) {   // button press
+
+  submit_request(EL, REQUEST_DOWN, 0, DBG_NEXTION_BUTTON);
+
+}
+#endif
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbBackPageMainPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID);
+
+}
+#endif
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbNextPageMainPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID);
+
+}
+#endif
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbBackPageConfigurationPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
+  
+}
+#endif
+
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbNextPageConfigurationPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID);
+
+}
+#endif
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbBackPageDiagnosticsPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID);
+
+}
+#endif
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbNextPageDiagnosticsPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID);
+
+}
+#endif
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)    
+void NextionbBackPageAboutPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID);
+
+}
+#endif
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbNextPageAboutPushCallback(void *ptr){
+
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
+
+}
+#endif
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionPageRefresh(byte page_id){
+
+  #define NEXTION_WHITE 65535
+
+  switch (page_id){
+    case NEXTION_PAGE_MAIN_ID:
+      pageMain.show();
+      tTitle.setText(TOUCH_DISPLAY_TITLE);
+      tAzLabel.setText(AZIMUTH_STRING_NO_SPACE);
+      #if defined(FEATURE_ELEVATION_CONTROL)
+        tElLabel.setText(ELEVATION_STRING_NO_SPACE);
+      #endif
+
+      // Make the Up and Down buttons disappear if they're defined but we're azimuth onluy
+      #if !defined(FEATURE_ELEVATION_CONTROL) && defined(NEXTION_OBJNAME_BUTTON_DOWN) && defined(NEXTION_OBJID_BUTTON_DOWN)
+        bDown.Set_background_color_bco(NEXTION_WHITE);
+        bDown.Set_press_background_color_bco2(NEXTION_WHITE);
+        bDown.Set_font_color_pco(NEXTION_WHITE);
+        bDown.Set_press_font_color_pco2(NEXTION_WHITE);
+      #endif
+      #if !defined(FEATURE_ELEVATION_CONTROL) && defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
+        bUp.Set_background_color_bco(NEXTION_WHITE);
+        bUp.Set_press_background_color_bco2(NEXTION_WHITE);
+        bUp.Set_font_color_pco(NEXTION_WHITE);
+        bUp.Set_press_font_color_pco2(NEXTION_WHITE);
+      #endif
+
+
+      bCW.setText(CW_STRING);
+      bCCW.setText(CCW_STRING);
+      bSTOP.setText(TOUCH_DISPLAY_STOP_STRING);
+      nextion_current_screen = NEXTION_PAGE_MAIN_ID;
+      break;
+
+    case NEXTION_PAGE_CONFIGURATION_ID:
+      pageConfiguration.show();
+      nextion_current_screen = NEXTION_PAGE_CONFIGURATION_ID;
+      break;  
+
+    case NEXTION_PAGE_DIAGNOSTICS_ID:
+      pageDiagnostics.show();
+      nextion_current_screen = NEXTION_PAGE_DIAGNOSTICS_ID;
+      tDiag.setText("Test 1 2 3\n4 5 6\n7 8 9\n");
+      break;
+
+    case NEXTION_PAGE_ABOUT_ID:
+      pageAbout.show();
+      nextion_current_screen = NEXTION_PAGE_ABOUT_ID;
+      tCV.setText(CODE_VERSION);
+      break;
+
+  }
+
+}
+#endif
+// --------------------------------------------------------------
+//zzzzzz
+#if defined(FEATURE_NEXTION_DISPLAY)
+void service_nextion_display(){
+
+  /*
+
+    TODO:
+
+      Preset Encoder Status ?
+      Park Status
+      Moon & Sun (Buttons, another Page?)
+      PARK Buttons
+      Azimuth & Elevation Data Entry in Display
+      Azimuth Direction
+      
+      New Pages
+        Data Entry
+        Configuration
+        Moon & Sun?
+        Event Log?
+        Diagnostics
+          Serial Sniff?
+          Debug Log?
+
+  */
+
+
+  #define NEXTION_DISPLAY_UPDATE_MS 500
+
+  char workstring1[32] = "";
+  char workstring2[32] = "";
+  static int last_azimuth = 0;
+  static unsigned long last_az_update = 0;
+  static byte last_nextion_current_screen = NEXTION_PAGE_MAIN_ID;
+
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    static int last_elevation = 0;
+    static unsigned long last_el_update = 0;
+  #endif
+
+  #if defined(FEATURE_CLOCK)
+    static int last_clock_seconds = 0;
+  #endif
+
+  #if defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
+    static byte last_clock_status = clock_status;
+    static byte last_gps_sats = 0;
+  #endif
+
+  static byte last_az_state = IDLE;
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    static byte last_el_state = IDLE;
+  #endif
+
+  #if defined(FEATURE_GPS) && defined(NEXTION_OBJNAME_GRID) && defined(NEXTION_OBJID_GRID)
+    static unsigned long last_grid_update = 0;
+  #endif
+
+  #if defined(FEATURE_GPS) && defined(NEXTION_OBJNAME_COORDINATES) && defined(NEXTION_OBJID_COORDINATES)
+    static unsigned long last_coord_update = 0;
+    unsigned long gps_fix_age_temp = 0;
+    float gps_lat_temp = 0;
+    float gps_long_temp = 0;    
+  #endif
+
+
+  nexLoop(nex_listen_list);
+
+  // Main Page
+
+  if (nextion_current_screen == NEXTION_PAGE_MAIN_ID){
+
+    // Azimuth
+    if (((azimuth != last_azimuth) && ((millis() - last_az_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
+      dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring1);
+      strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
+      tAzValue.setText(workstring1);
+      last_azimuth = azimuth;
+      last_az_update = millis();
+    }
+
+    // Elevation
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      if (((elevation != last_elevation) && ((millis() - last_el_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
+        dtostrf(elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring1);
+        strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
+        tElValue.setText(workstring1);
+        last_elevation = elevation;
+        last_el_update = millis();
+      }
+    #endif
+
+
+
+
+    // Clock
+    #if defined(FEATURE_CLOCK) && defined(NEXTION_OBJNAME_CLOCK) && defined(NEXTION_OBJID_CLOCK)
+      update_time();
+      if ((local_clock_seconds != last_clock_seconds)  || (last_nextion_current_screen != nextion_current_screen)){
+        last_clock_seconds = clock_seconds;
+        #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+          if (local_clock_hours < 10) {
+            strcpy(workstring1, "0");
+            dtostrf(local_clock_hours, 0, 0, workstring2);
+            strcat(workstring1,workstring2); 
+          } else { 
+            dtostrf(local_clock_hours, 0, 0, workstring2);
+            strcpy(workstring1,workstring2);
+          }    
+        #else    
+          dtostrf(local_clock_hours, 0, 0, workstring2);
+          strcpy(workstring1,workstring2);
+        #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+        strcat(workstring1,":");
+        if (local_clock_minutes < 10) {
+          strcat(workstring1, "0");
+        }
+        dtostrf(local_clock_minutes, 0, 0, workstring2);
+        strcat(workstring1,workstring2);
+        strcat(workstring1,":");
+        if (local_clock_seconds < 10) {
+          strcat(workstring1, "0");
+        }
+        dtostrf(local_clock_seconds, 0, 0, workstring2);
+        strcat(workstring1,workstring2);
+        tClock.setText(workstring1);
+      }
+    #endif //FEATURE_CLOCK
+
+    // GPS
+    #if defined(FEATURE_GPS) && defined(FEATURE_CLOCK) && defined(NEXTION_OBJNAME_GPS) && defined(NEXTION_OBJID_GPS)
+      if (((last_clock_status != clock_status) || (last_gps_sats != gps.satellites()))  || (last_nextion_current_screen != nextion_current_screen)){
+        if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {
+          strcpy(workstring1,GPS_STRING);
+          strcat(workstring1," ");
+          dtostrf(gps.satellites(),0,0,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1," Sats");
+          tGPS.setText(workstring1);
+          last_gps_sats = gps.satellites();
+        } else {
+          tGPS.setText("");
+        }
+        last_clock_status = clock_status;
+      }
+    #endif //defined(FEATURE_GPS) 
+
+
+    //GRID
+    #if defined(FEATURE_GPS) && defined(NEXTION_OBJNAME_GRID) && defined(NEXTION_OBJID_GRID)
+      if (((millis() - last_grid_update) > 5000)  || (last_nextion_current_screen != nextion_current_screen)){
+        tGrid.setText(coordinates_to_maidenhead(latitude,longitude));
+        last_grid_update = millis();
+      }
+    #endif
+
+
+    //COORDINATES
+    #if defined(FEATURE_GPS) && defined(NEXTION_OBJNAME_COORDINATES) && defined(NEXTION_OBJID_COORDINATES)
+      if (((millis() - last_coord_update) > 5100) || (last_nextion_current_screen != nextion_current_screen)){
+
+        gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp);
+        dtostrf(gps_lat_temp,4,4,workstring1);
+        strcat(workstring1," ");
+        dtostrf(gps_long_temp,4,4,workstring2);
+        strcat(workstring1,workstring2);
+        strcat(workstring1," ");
+        dtostrf(gps.altitude()/100,0,0,workstring2);
+        strcat(workstring1,workstring2);
+        strcat(workstring1,"m");
+        tCoordinates.setText(workstring1);
+        last_coord_update = millis();
+      }
+    #endif
+
+
+    // STATUS
+    #if !defined(FEATURE_ELEVATION_CONTROL) // ---------------- az only ----------------------------------------------
+      strcpy(workstring1,"");
+      if ((az_state != last_az_state) || (last_nextion_current_screen != nextion_current_screen)) {
+        if (az_request_queue_state == IN_PROGRESS_TO_TARGET) { 
+          if (current_az_state() == ROTATING_CW) {
+            strcpy(workstring1,CW_STRING);
+          } else {
+            if (current_az_state() == ROTATING_CCW){
+              strcpy(workstring1,CCW_STRING);
+            }
+          }
+          strcat(workstring1," ");
+          switch(configuration.azimuth_display_mode){
+            case AZ_DISPLAY_MODE_NORMAL:
+            case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+              dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;
+            case AZ_DISPLAY_MODE_RAW:
+              dtostrf(target_raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;              
+          }
+          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+            strcat(workstring1,"+");
+          }           
+          strcat(workstring1,workstring2);
+          strcat(workstring1,DISPLAY_DEGREES_STRING);
+        } else {
+          if (current_az_state() == ROTATING_CW) {
+            strcpy(workstring1,CW_STRING);
+          } else {
+            if (current_az_state() == ROTATING_CCW){
+              strcpy(workstring1,CCW_STRING);
+            }
+          }
+        }
+        tStatus.setText(workstring1);
+        last_az_state = az_state;
+      }
+
+      #if defined(FEATURE_PARK)
+        static byte last_park_status = NOT_PARKED;
+        static unsigned long last_park_message_update_time = 0;
+        static byte park_message_in_effect = 0;
+        if (park_status != last_park_status){
+          switch(park_status){
+            case PARKED: 
+              k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              park_message_in_effect = 1;
+              break;              
+            case PARK_INITIATED:
+              k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              park_message_in_effect = 1;
+              break;
+            case NOT_PARKED: 
+              park_message_in_effect = 0;
+              break;
+          }
+          last_park_status = park_status;
+          last_park_message_update_time = millis();
+        }
+        
+        if (park_message_in_effect){
+          if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
+            park_message_in_effect = 0;
+          } else {
+            row_override[LCD_STATUS_ROW] = 1;
+            switch(park_status){
+              case PARKED: 
+                k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
+                break;              
+              case PARK_INITIATED:
+                k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+                break;
+            }
+          }
+        }
+      #endif // FEATURE_PARK
+
+      #ifdef FEATURE_AZ_PRESET_ENCODER 
+        float target = 0; 
+        if (preset_encoders_state == ENCODER_AZ_PENDING) {
+          target = az_encoder_raw_degrees;
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          strcpy(workstring,TARGET_STRING);
+          dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,DISPLAY_DEGREES_STRING);
+          k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+          row_override[LCD_STATUS_ROW] = 1;
+        }
+      #endif //FEATURE_AZ_PRESET_ENCODER
+
+    #else  // az & el ----------------------------------------------------------------------------
+
+      strcpy(workstring1,"");
+      if ((az_state != IDLE) || (last_nextion_current_screen != nextion_current_screen)) {
+        if (az_request_queue_state == IN_PROGRESS_TO_TARGET) { 
+          if (current_az_state() == ROTATING_CW) {
+            strcat(workstring1,CW_STRING);
+          } else {
+            if (current_az_state() == ROTATING_CCW) {
+              strcat(workstring1,CCW_STRING);
+            }
+          }
+          strcat(workstring1," ");
+          switch(configuration.azimuth_display_mode){
+            case AZ_DISPLAY_MODE_NORMAL:
+            case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+              dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;
+            case AZ_DISPLAY_MODE_RAW:
+              dtostrf(target_raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;              
+          }
+          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+            strcat(workstring1,"+");
+          }    
+          strcat(workstring1,workstring2);
+          strcat(workstring1,DISPLAY_DEGREES_STRING);
+        } else {
+          if (current_az_state() == ROTATING_CW) {
+            strcpy(workstring1,CW_STRING);
+          } else {
+            if (current_az_state() == ROTATING_CCW) {
+              strcpy(workstring1,CCW_STRING);
+            }
+          }
+        }        
+      }
+      if ((el_state != IDLE) || (last_nextion_current_screen != nextion_current_screen)) {
+        if (az_state != IDLE){
+          strcat(workstring1," ");
+        }
+        if (el_request_queue_state == IN_PROGRESS_TO_TARGET) { 
+          if (current_el_state() == ROTATING_UP) {
+            strcat(workstring1,UP_STRING);
+          } else {
+            if (current_el_state() == ROTATING_DOWN) {
+              strcat(workstring1,DOWN_STRING);
+            }
+          }
+          strcat(workstring1," ");
+          dtostrf(target_elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,DISPLAY_DEGREES_STRING);
+        } else {
+          if (current_el_state() == ROTATING_UP) {
+            strcat(workstring1,UP_STRING);
+          } else {
+            if (current_el_state() == ROTATING_DOWN) {
+              strcat(workstring1,DOWN_STRING);
+            }
+          }
+        }        
+      }
+
+      //if ((az_state != IDLE) || (el_state != IDLE)){ 
+      if (((az_state != last_az_state) || (el_state != last_el_state)) || (last_nextion_current_screen != nextion_current_screen)){
+        tStatus.setText(workstring1);
+        last_az_state = az_state;
+        last_el_state = el_state;
+      }
+
+      #if defined(FEATURE_PARK)
+        static byte last_park_status = NOT_PARKED;
+        static unsigned long last_park_message_update_time = 0;
+        static byte park_message_in_effect = 0;
+        if (park_status != last_park_status){
+          switch(park_status){
+            case PARKED: 
+              k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              park_message_in_effect = 1;
+              break;              
+            case PARK_INITIATED:
+              k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              park_message_in_effect = 1;
+              break;
+            case NOT_PARKED: 
+              park_message_in_effect = 0;
+              break;
+          }
+          last_park_status = park_status;
+          last_park_message_update_time = millis();
+        }
+        
+        if (park_message_in_effect){
+          if ((millis() - last_park_message_update_time) > PARKING_STATUS_DISPLAY_TIME_MS){
+            park_message_in_effect = 0;
+          } else {
+            row_override[LCD_STATUS_ROW] = 1;
+            switch(park_status){
+              case PARKED: 
+                k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
+                break;              
+              case PARK_INITIATED:
+                k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+                break;
+            }
+          }
+        }
+      #endif // FEATURE_PARK
+
+      #if defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER)
+        float target = 0; 
+        if (preset_encoders_state == ENCODER_AZ_PENDING) {
+            target = az_encoder_raw_degrees;
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+            target = target - (360 * LCD_HEADING_MULTIPLIER);
+          }
+          strcpy(workstring,TARGET_STRING);
+          dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,DISPLAY_DEGREES_STRING);
+          k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+          row_override[LCD_STATUS_ROW] = 1;
+        }
+      #endif //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER) 
+
+      #if defined(FEATURE_AZ_PRESET_ENCODER) && defined(FEATURE_EL_PRESET_ENCODER)  
+        float target = az_encoder_raw_degrees;
+        if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+          target = target - (360 * LCD_HEADING_MULTIPLIER);
+        }
+        if (target > (359 * LCD_HEADING_MULTIPLIER)) {
+          target = target - (360 * LCD_HEADING_MULTIPLIER);
+        }
+
+        if (preset_encoders_state != ENCODER_IDLE) {
+          switch (preset_encoders_state) {
+            case ENCODER_AZ_PENDING:
+              strcpy(workstring,AZ_TARGET_STRING);
+              dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);
+              k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              break;
+            case ENCODER_EL_PENDING:
+              strcpy(workstring,EL_TARGET_STRING);
+              dtostrf(el_encoder_degrees / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);
+              k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              break;
+            case ENCODER_AZ_EL_PENDING:
+              strcpy(workstring,TARGET_STRING);
+              dtostrf(target / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);
+              strcat(workstring," ");
+              dtostrf(el_encoder_degrees / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              strcat(workstring,workstring2);
+              strcat(workstring,DISPLAY_DEGREES_STRING);              
+              k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              row_override[LCD_STATUS_ROW] = 1;
+              break;
+          } // switch 
+        } //if (preset_encoders_state != ENCODER_IDLE)
+      #endif  //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER)
+    #endif //!defined(FEATURE_ELEVATION_CONTROL)
+
+  } //if (nextion_current_screen == NEXTION_PAGE_MAIN_ID)
+
+  last_nextion_current_screen = nextion_current_screen;
+
+
+
+//   #ifdef FEATURE_MOON_TRACKING
+//     static unsigned long last_moon_tracking_check_time = 0;
+//   #endif 
+
+//   #ifdef FEATURE_SUN_TRACKING
+//     static unsigned long last_sun_tracking_check_time = 0;
+//   #endif
+
+//   // OPTION_DISPLAY_DIRECTION_STATUS - azimuth direction display ***********************************************************************************
+//   #if defined(OPTION_DISPLAY_DIRECTION_STATUS)   
+//   strcpy(workstring,azimuth_direction(azimuth));  // TODO - add left/right/center
+//   k3ngdisplay.print_center_fixed_field_size(workstring,LCD_DIRECTION_ROW-1,LCD_STATUS_FIELD_SIZE);
+//   #endif //defined(OPTION_DISPLAY_DIRECTION_STATUS)
+
+
+//   // OPTION_DISPLAY_HEADING - show heading ***********************************************************************************
+//   #if defined(OPTION_DISPLAY_HEADING)
+//     #if !defined(FEATURE_ELEVATION_CONTROL)                    // ---------------- az only -----------------------------------
+//       strcpy(workstring,AZIMUTH_STRING);
+//       switch(configuration.azimuth_display_mode){
+//         case AZ_DISPLAY_MODE_NORMAL:
+//         case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+//           dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+//           break;
+//         case AZ_DISPLAY_MODE_RAW:
+//           dtostrf(raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+//           break;  
+//       }               
+//       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+//         switch(configuration.azimuth_display_mode){
+//           case AZ_DISPLAY_MODE_NORMAL:
+//           case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+//             if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+//             if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+//             break;
+//           case AZ_DISPLAY_MODE_RAW:
+//             if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+//             if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+//             break;            
+//         }
+//       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE  
+//       if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+//         strcat(workstring,"+");
+//       } 
+//       strcat(workstring,workstring2);
+//       strcat(workstring,DISPLAY_DEGREES_STRING);
+//       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);
+//     #else                                                       // --------------------az & el---------------------------------
+//       #if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+//         if ((azimuth >= 1000) && (elevation >= 1000)) {
+//           strcpy(workstring,AZ_STRING);
+//         } else {
+//           strcpy(workstring,AZ_SPACE_STRING);
+//         }
+//       #else
+//         strcpy(workstring,AZ_SPACE_STRING);
+//       #endif // efined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+//       switch(configuration.azimuth_display_mode){
+//         case AZ_DISPLAY_MODE_NORMAL:
+//         case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+//           dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 3, LCD_DECIMAL_PLACES, workstring2);
+//           break;
+//         case AZ_DISPLAY_MODE_RAW:
+//           dtostrf(raw_azimuth / LCD_HEADING_MULTIPLIER, 3, LCD_DECIMAL_PLACES, workstring2);
+//           break;  
+//       }  
+//       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+//         switch(configuration.azimuth_display_mode){
+//           case AZ_DISPLAY_MODE_NORMAL:
+//           case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+//             if ((azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+//             if ((azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+//             break;
+//           case AZ_DISPLAY_MODE_RAW:
+//             if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+//             if ((raw_azimuth/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}  
+//             break;            
+//         }
+//       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+//       if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+//         strcat(workstring,"+");
+//       }         
+//       strcat(workstring,workstring2);
+//       #if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+//         if (LCD_COLUMNS > 14) {
+//           strcat(workstring,DISPLAY_DEGREES_STRING);
+//         }
+//       #else
+//         if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {
+//           strcat(workstring,DISPLAY_DEGREES_STRING);
+//         }
+//       #endif
+//       #if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+//         if ((elevation >= 1000) && (azimuth >= 1000)) {
+//           strcat(workstring,SPACE_EL_STRING);
+//         } else {
+//           strcat(workstring,SPACE_EL_SPACE_STRING);
+//         }
+//       #else
+//         strcat(workstring,SPACE_EL_SPACE_STRING);
+//       #endif // defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+//       dtostrf(elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+//       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
+//         if ((elevation/ LCD_HEADING_MULTIPLIER) < 100){strcat(workstring," ");}
+//         if ((elevation/ LCD_HEADING_MULTIPLIER) < 10){strcat(workstring," ");}    
+//       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE  
+//       strcat(workstring,workstring2);
+//       #if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+//         if (LCD_COLUMNS > 14) {
+//           strcat(workstring,DISPLAY_DEGREES_STRING);
+//         }
+//       #else
+//         if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {
+//           strcat(workstring,DISPLAY_DEGREES_STRING);
+//         }
+//       #endif
+//       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);    
+//     #endif // FEATURE_ELEVATION_CONTROL
+//   #endif //defined(OPTION_DISPLAY_HEADING)  
+
+
+
+
+
+
+//   // OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY *************************************************************
+//   #if defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
+
+//     // static unsigned long last_moon_tracking_check_time = 0;
+
+//     if (!row_override[LCD_MOON_TRACKING_ROW]){
+//       if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
+//         update_moon_position();
+//         last_moon_tracking_check_time = millis();
+//       }
+//       strcpy(workstring,"");
+//       if (moon_tracking_active){
+//         if (moon_visible){
+//           strcat(workstring,TRACKING_ACTIVE_CHAR);
+//         } else {
+//           strcat(workstring,TRACKING_INACTIVE_CHAR);
+//         }
+//       }
+//       strcat(workstring,MOON_STRING);
+//       dtostrf(moon_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+//       strcat(workstring,workstring2);
+//       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//       strcat(workstring," ");
+//       dtostrf(moon_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+//       strcat(workstring,workstring2);
+//       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//       if (moon_tracking_active){
+//         if (moon_visible){
+//           strcat(workstring,TRACKING_ACTIVE_CHAR);
+//         } else {
+//           strcat(workstring,TRACKING_INACTIVE_CHAR);
+//         }
+//       }
+//       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_TRACKING_ROW-1,LCD_COLUMNS); 
+//     } else {
+//       #if defined(DEBUG_DISPLAY)
+//         debug.println(F("update_lcd_display: OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY row override"));
+//       #endif
+//     }
+//   #endif //defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
+
+//   // OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY **********************************************************
+//   #if defined(OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY) && defined(FEATURE_SUN_TRACKING)
+
+//   // static unsigned long last_sun_tracking_check_time = 0;
+
+//   if (!row_override[LCD_SUN_TRACKING_ROW]){
+//     if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
+//       update_sun_position();
+//       last_sun_tracking_check_time = millis();
+//     }
+//     strcpy(workstring,"");
+//     if (sun_tracking_active){
+//       if (sun_visible){
+//         strcat(workstring,TRACKING_ACTIVE_CHAR);
+//       } else {
+//         strcat(workstring,TRACKING_INACTIVE_CHAR);
+//       }
+//     }
+//     strcat(workstring,SUN_STRING);
+//     dtostrf(sun_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+//     strcat(workstring,workstring2);
+//     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//     strcat(workstring," ");
+//     dtostrf(sun_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+//     strcat(workstring,workstring2);
+//     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//     if (sun_tracking_active){
+//       if (sun_visible){
+//         strcat(workstring,TRACKING_ACTIVE_CHAR);
+//       } else {
+//         strcat(workstring,TRACKING_INACTIVE_CHAR);
+//       }
+//     }
+//     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SUN_TRACKING_ROW-1,LCD_COLUMNS);
+//   } else {
+//     #if defined(DEBUG_DISPLAY)
+//       debug.println(F("update_lcd_display: OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY row override"));
+//     #endif
+//   }
+//   #endif //defined(OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY) && defined(FEATURE_SUN_TRACKING)
+
+
+// // OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD ****************************************************
+//   #if defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
+
+//   static byte displaying_clock = 1;
+//   static unsigned long last_hhmm_clock_maidenhead_switch_time = 0;
+
+
+//   if (!row_override[LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW]){
+//     if ((millis()-last_hhmm_clock_maidenhead_switch_time) > 5000){
+//       if (displaying_clock){
+//         displaying_clock = 0;
+//       } else {
+//         displaying_clock = 1;
+//       }
+//       last_hhmm_clock_maidenhead_switch_time = millis();
+//     }
+//     if (displaying_clock){
+//       update_time();
+//       strcpy(workstring, "");
+//       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+//         if (local_clock_hours < 10) {
+//           strcpy(workstring, "0");
+//           dtostrf(local_clock_hours, 0, 0, workstring2);
+//           strcat(workstring,workstring2); 
+//         } else { 
+//           dtostrf(local_clock_hours, 0, 0, workstring2);
+//           strcpy(workstring,workstring2);
+//         }    
+//       #else          
+//       dtostrf(local_clock_hours, 0, 0, workstring2);
+//       strcpy(workstring,workstring2);
+//       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+//       strcat(workstring,":");
+//       if (local_clock_minutes < 10) {
+//         strcat(workstring, "0");
+//       }
+//       dtostrf(local_clock_minutes, 0, 0, workstring2);
+//       strcat(workstring,workstring2);
+//       switch (LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION){
+//         case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
+//         case RIGHT: k3ngdisplay.print_right_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
+//         case CENTER: k3ngdisplay.print_center_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
+//       }
+//     } else {
+//       switch (LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION){
+//         case LEFT: k3ngdisplay.print_left_fixed_field_size(coordinates_to_maidenhead(latitude,longitude),LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
+//         case RIGHT: k3ngdisplay.print_right_fixed_field_size(coordinates_to_maidenhead(latitude,longitude),LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
+//         case CENTER: k3ngdisplay.print_center_fixed_field_size(coordinates_to_maidenhead(latitude,longitude),LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
+//       } 
+//     }
+//   }
+//   #endif //defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
+
+//   // OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD **********************************************************************
+//   #if defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
+
+//     static int last_clock_seconds_clock_and_maidenhead = 0;
+
+//     if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
+//       update_time();
+//       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+//         if (local_clock_hours < 10) {
+//           strcpy(workstring, "0");
+//           dtostrf(local_clock_hours, 0, 0, workstring2);
+//           strcat(workstring,workstring2); 
+//         } else { 
+//           dtostrf(local_clock_hours, 0, 0, workstring2);
+//           strcpy(workstring,workstring2);
+//         }    
+//       #else    
+//         dtostrf(local_clock_hours, 0, 0, workstring2);
+//         strcpy(workstring,workstring2);
+//       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+//       strcat(workstring,":");
+//       if (local_clock_minutes < 10) {
+//         strcat(workstring, "0");
+//       }
+//       dtostrf(local_clock_minutes, 0, 0, workstring2);
+//       strcat(workstring,workstring2);
+//       strcat(workstring,":");
+//       if (local_clock_seconds < 10) {
+//         strcat(workstring, "0");
+//       }
+//       dtostrf(local_clock_seconds, 0, 0, workstring2);
+//       strcat(workstring,workstring2);
+//       strcat(workstring," ");
+//       strcat(workstring,coordinates_to_maidenhead(latitude,longitude));
+//       switch(LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION){
+//         case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
+//         case RIGHT: k3ngdisplay.print_right_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
+//         case CENTER: k3ngdisplay.print_center_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
+//       }
+//       if (last_clock_seconds_clock_and_maidenhead != local_clock_seconds) {force_display_update_now = 1;}
+//       last_clock_seconds_clock_and_maidenhead = local_clock_seconds;
+//     }
+
+//   #endif //defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
+
+
+
+//   // OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL *******************************************************
+//   #ifdef OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+
+//     //  moon tracking ----
+//     #ifdef FEATURE_MOON_TRACKING
+
+//       // static unsigned long last_moon_tracking_check_time = 0;
+
+//       if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW])  && (moon_tracking_active)) {
+//         if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
+//           update_moon_position();
+//           last_moon_tracking_check_time = millis();
+//         }
+//         if (moon_visible){
+//           strcpy(workstring,TRACKING_ACTIVE_CHAR);
+//         } else {
+//           strcpy(workstring,TRACKING_INACTIVE_CHAR);
+//         }
+//         strcat(workstring,MOON_STRING);
+//         dtostrf(moon_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+//         strcat(workstring,workstring2);
+//         if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//         strcat(workstring," ");
+//         dtostrf(moon_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+//         strcat(workstring,workstring2);
+//         if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//         if (moon_visible){
+//           strcat(workstring,TRACKING_ACTIVE_CHAR);
+//         } else {
+//           strcat(workstring,TRACKING_INACTIVE_CHAR);
+//         }
+//         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS); 
+//       }
+//     #endif //FEATURE_MOON_TRACKING
+
+
+//     //  sun tracking ----
+//     #ifdef FEATURE_SUN_TRACKING
+//       // static unsigned long last_sun_tracking_check_time = 0;
+
+//       if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW]) && (sun_tracking_active)){
+//         if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
+//           update_sun_position();
+//           last_sun_tracking_check_time = millis();
+//         }
+//         if (sun_visible){
+//           strcpy(workstring,TRACKING_ACTIVE_CHAR);
+//         } else {
+//           strcpy(workstring,TRACKING_INACTIVE_CHAR);
+//         }
+//         strcat(workstring,SUN_STRING);
+//         dtostrf(sun_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+//         strcat(workstring,workstring2);
+//         if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//         strcat(workstring," ");
+//         dtostrf(sun_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+//         strcat(workstring,workstring2);
+//         if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//         if (sun_visible){
+//           strcat(workstring,TRACKING_ACTIVE_CHAR);
+//         } else {
+//           strcat(workstring,TRACKING_INACTIVE_CHAR);
+//         }
+//         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS);
+//       }
+
+//     #endif //FEATURE_SUN_TRACKING
+
+//   #endif //OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+
+
+}  
+#endif // defined(FEATURE_NEXTION_DISPLAY) 
+
+// --------------------------------------------------------------
+
+
+
+
 #if defined(FEATURE_LCD_DISPLAY)
-void update_display(){
+void update_lcd_display(){
 
     
   byte force_display_update_now = 0;
@@ -4232,13 +5279,13 @@ void update_display(){
   #if defined(OPTION_DISPLAY_GPS_INDICATOR) && defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
     if (((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) && (!row_override[LCD_GPS_INDICATOR_ROW])){
       if (LCD_GPS_INDICATOR_POSITION == LEFT){
-        k3ngdisplay.print_left_fixed_field_size(GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
+        k3ngdisplay.print_left_fixed_field_size((char *)GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
       }
       if (LCD_GPS_INDICATOR_POSITION == RIGHT){
-        k3ngdisplay.print_right_fixed_field_size(GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
+        k3ngdisplay.print_right_fixed_field_size((char *)GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
       }
       if (LCD_GPS_INDICATOR_POSITION == CENTER){
-        k3ngdisplay.print_center_fixed_field_size(GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
+        k3ngdisplay.print_center_fixed_field_size((char *)GPS_STRING,LCD_GPS_INDICATOR_ROW-1,3);
       }            
     }
   #endif //defined(OPTION_DISPLAY_GPS_INDICATOR) && defined(FEATURE_GPS)  && defined(FEATURE_CLOCK)
@@ -4280,7 +5327,7 @@ void update_display(){
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_TRACKING_ROW-1,LCD_COLUMNS); 
     } else {
       #if defined(DEBUG_DISPLAY)
-        debug.println(F("update_display: OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY row override"));
+        debug.println(F("update_lcd_display: OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY row override"));
       #endif
     }
   #endif //defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
@@ -4321,7 +5368,7 @@ void update_display(){
     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SUN_TRACKING_ROW-1,LCD_COLUMNS);
   } else {
     #if defined(DEBUG_DISPLAY)
-      debug.println(F("update_display: OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY row override"));
+      debug.println(F("update_lcd_display: OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY row override"));
     #endif
   }
   #endif //defined(OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY) && defined(FEATURE_SUN_TRACKING)
@@ -4759,7 +5806,6 @@ void az_check_operation_timeout(){
 }
 
 // --------------------------------------------------------------
-//zzzzzzz
 #if defined(FEATURE_AZ_ROTATION_STALL_DETECTION)
 void az_check_rotation_stall(){
 
@@ -4802,7 +5848,6 @@ void az_check_rotation_stall(){
 }
 #endif //FEATURE_AZ_ROTATION_STALL_DETECTION
 // --------------------------------------------------------------
-//zzzzzzz
 #if defined(FEATURE_EL_ROTATION_STALL_DETECTION) && defined(FEATURE_ELEVATION_CONTROL)
 void el_check_rotation_stall(){
 
@@ -7607,9 +8652,9 @@ void initialize_display(){
     #endif
 
     #ifdef OPTION_DISPLAY_VERSION_ON_STARTUP 
-      k3ngdisplay.print_center_timed_message("\x4B\x33\x4E\x47","\x52\x6F\x74\x6F\x72\x20\x43\x6F\x6E\x74\x72\x6F\x6C\x6C\x65\x72",CODE_VERSION,SPLASH_SCREEN_TIME);
+      k3ngdisplay.print_center_timed_message((char *)"\x4B\x33\x4E\x47",(char *)"\x52\x6F\x74\x6F\x72\x20\x43\x6F\x6E\x74\x72\x6F\x6C\x6C\x65\x72",(char *)CODE_VERSION,SPLASH_SCREEN_TIME);
     #else
-      k3ngdisplay.print_center_timed_message("\x4B\x33\x4E\x47","\x52\x6F\x74\x6F\x72\x20\x43\x6F\x6E\x74\x72\x6F\x6C\x6C\x65\x72",SPLASH_SCREEN_TIME);
+      k3ngdisplay.print_center_timed_message((char *)"\x4B\x33\x4E\x47",(char *)"\x52\x6F\x74\x6F\x72\x20\x43\x6F\x6E\x74\x72\x6F\x6C\x6C\x65\x72",SPLASH_SCREEN_TIME);
     #endif
 
     k3ngdisplay.service(0);
@@ -7640,6 +8685,50 @@ void initialize_peripherals(){
   #ifdef FEATURE_WIRE_SUPPORT
     Wire.begin();
   #endif
+
+//zzzzzzzzz
+
+  #ifdef FEATURE_NEXTION_DISPLAY
+    nexInit();
+    NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
+
+    // Register events
+    #if defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
+      bCW.attachPush(NextionbCWPushCallback, &bCW);
+    #endif    
+    #if defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
+      bCCW.attachPush(NextionbCCWPushCallback, &bCCW);
+    #endif     
+    #if defined(NEXTION_OBJNAME_BUTTON_STOP) && defined(NEXTION_OBJID_BUTTON_STOP)
+      bSTOP.attachPush(NextionbSTOPPushAndPopCallback, &bSTOP);
+      bSTOP.attachPop(NextionbSTOPPushAndPopCallback, &bSTOP);
+    #endif 
+
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      #if defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
+        bUp.attachPush(NextionbUpPushCallback, &bUp);
+      #endif    
+      #if defined(NEXTION_OBJNAME_BUTTON_DOWN) && defined(NEXTION_OBJID_BUTTON_DOWN)
+        bDown.attachPush(NextionbDownPushCallback, &bDown);
+      #endif     
+    #endif
+    
+    bBackPageMain.attachPush(NextionbBackPageMainPushCallback, &bBackPageMain);
+    bNextPageMain.attachPush(NextionbNextPageMainPushCallback, &bNextPageMain);
+
+    bBackPageConfiguration.attachPush(NextionbBackPageConfigurationPushCallback, &bBackPageConfiguration);
+    bNextPageConfiguration.attachPush(NextionbNextPageConfigurationPushCallback, &bNextPageConfiguration);
+
+    bBackPageDiagnostics.attachPush(NextionbBackPageDiagnosticsPushCallback, &bBackPageDiagnostics);
+    bNextPageDiagnostics.attachPush(NextionbNextPageDiagnosticsPushCallback, &bNextPageDiagnostics);
+    
+    bBackPageAbout.attachPush(NextionbBackPageAboutPushCallback, &bBackPageAbout);
+    bNextPageAbout.attachPush(NextionbNextPageAboutPushCallback, &bNextPageAbout);
+
+    
+  #endif
+
+
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L
     compass = HMC5883L();
@@ -11153,11 +12242,11 @@ void sync_master_clock_to_slave(){
 char * clock_status_string(){
 
   switch (clock_status) {
-    case FREE_RUNNING: return("FREE_RUNNING"); break;
-    case GPS_SYNC: return("GPS_SYNC"); break;
-    case RTC_SYNC: return("RTC_SYNC"); break;
-    case SLAVE_SYNC: return("SLAVE_SYNC"); break;
-    case SLAVE_SYNC_GPS: return("SLAVE_SYNC_GPS"); break;
+    case FREE_RUNNING: return((char *)"FREE_RUNNING"); break;
+    case GPS_SYNC: return((char *)"GPS_SYNC"); break;
+    case RTC_SYNC: return((char *)"RTC_SYNC"); break;
+    case SLAVE_SYNC: return((char *)"SLAVE_SYNC"); break;
+    case SLAVE_SYNC_GPS: return((char *)"SLAVE_SYNC_GPS"); break;
   }
 }
 #endif //FEATURE_CLOCK
@@ -11614,7 +12703,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     #if defined(FEATURE_LCD_DISPLAY)
       case 'H':
-        k3ngdisplay.clear();
+        //k3ngdisplay.clear();
         k3ngdisplay.redraw();
         break;
     #endif  

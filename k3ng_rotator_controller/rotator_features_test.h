@@ -17,8 +17,8 @@
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 // #define FEATURE_DCU_1_EMULATION            // DCU-1 protocol emulation on control port
 
-#define FEATURE_MOON_TRACKING
-#define FEATURE_SUN_TRACKING
+// #define FEATURE_MOON_TRACKING
+// #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
 #define FEATURE_RTC_DS1307
@@ -86,6 +86,8 @@
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY
 // #define FEATURE_HD44780_I2C_DISPLAY    // Not working yet
 
+// #define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+
 // #define FEATURE_ANALOG_OUTPUT_PINS
 
 // #define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
@@ -94,7 +96,7 @@
 // #define FEATURE_AUDIBLE_ALERT
 
 /* preset rotary encoder features and options */
-#define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
+// #define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
 // #define FEATURE_EL_PRESET_ENCODER            // Uncomment for Rotary Encoder Elevation Preset support (requires FEATURE_AZ_PRESET_ENCODER above)
 #define OPTION_ENCODER_HALF_STEP_MODE
 #define OPTION_ENCODER_ENABLE_PULLUPS          // define to enable weak pullups on rotary encoder pins

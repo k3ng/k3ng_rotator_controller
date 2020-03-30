@@ -141,10 +141,10 @@ You can tweak these, but read the online documentation!
 #define LCD_MOON_TRACKING_UPDATE_INTERVAL 5000
 #define LCD_SUN_TRACKING_ROW 4                                    // LCD display row for OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000
-#define LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW 3                // LCD display row for OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+#define LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW 4                // LCD display row for OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
 #define SPLASH_SCREEN_TIME 3000
 #define LCD_PERIODIC_REDRAW_TIME_SECS 0      // set to 0 to totally disable periodically redrawing the screen
-#define LCD_CLEAR_BEFORE_REDRAW 1            // set to 0 to disable doing a clear before redraw
+#define LCD_CLEAR_BEFORE_REDRAW 0            // set to 0 to disable doing a clear before redraw
 #define LCD_REDRAW_UPON_COMMANDS 0           // set to 1 to enable screen redraws upon commands and button presses
 
 #define LCD_HEADING_ROW 2
@@ -243,8 +243,6 @@ You can tweak these, but read the online documentation!
 #define SUN_AOS_ELEVATION_MIN 0
 #define SUN_AOS_ELEVATION_MAX 180
 
-
-
 #define TRACKING_ACTIVE_CHAR "*"
 #define TRACKING_INACTIVE_CHAR "-"
 #define DISPLAY_DEGREES_STRING "\xDF"
@@ -263,7 +261,6 @@ You can tweak these, but read the online documentation!
 #define SYNC_MASTER_CLOCK_TO_SLAVE_CLOCK_SECS 10 // for OPTION_SYNC_MASTER_CLOCK_TO_SLAVE - use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit clock
 #define SYNC_MASTER_COORDINATES_TO_SLAVE_SECS 20 // for OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE - use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
 
-
 #define ETHERNET_MAC_ADDRESS 0xDE,0xAD,0xBE,0xEF,0xFE,0xEE  //<-DON'T FORGET TO USE DIFFERENT MAC ADDRESSES FOR MASTER AND SLAVE!!!
 #define ETHERNET_IP_ADDRESS 192,168,1,172  //<-DON'T FORGET TO USE DIFFERENT IP ADDRESSES FOR MASTER AND SLAVE!!!
 #define ETHERNET_IP_GATEWAY 192,168,1,1
@@ -280,11 +277,11 @@ You can tweak these, but read the online documentation!
 #define POWER_SWITCH_IDLE_TIMEOUT 15  // use with FEATURE_POWER_SWITCH; units are minutes
 
 #ifdef HARDWARE_EA4TX_ARS_USB
-#define BUTTON_ACTIVE_STATE HIGH
-#define BUTTON_INACTIVE_STATE LOW
+  #define BUTTON_ACTIVE_STATE HIGH
+  #define BUTTON_INACTIVE_STATE LOW
 #else
-#define BUTTON_ACTIVE_STATE LOW
-#define BUTTON_INACTIVE_STATE HIGH
+  #define BUTTON_ACTIVE_STATE LOW
+  #define BUTTON_INACTIVE_STATE HIGH
 #endif
 
 /*

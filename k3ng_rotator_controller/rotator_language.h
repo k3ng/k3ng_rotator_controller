@@ -6,23 +6,16 @@
 #define TARGET_STRING "Target "
 #define PARKING_STRING "Parking"
 #define PARKED_STRING "Parked"
-/*
-#define ROTATING_CW_STRING "Rotating CW"    // depricated in 2015090402
-#define ROTATING_CCW_STRING "Rotating CCW"
-#define ROTATING_TO_STRING "Rotating to "
-#define ELEVATING_TO_STRING "Elevating to "
-#define ELEVATING_UP_STRING "Elevating Up"
-#define ELEVATING_DOWN_STRING "Elevating Down"
-#define ROTATING_STRING "Rotating "
-*/
 #define CW_STRING "CW"
 #define CCW_STRING "CCW"
 #define UP_STRING "UP"
 #define DOWN_STRING "DOWN"
 #define AZIMUTH_STRING "Azimuth "
+#define AZIMUTH_STRING_NO_SPACE "Azimuth"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " El"
 #define SPACE_EL_SPACE_STRING " El "
 #define GPS_STRING "GPS"
@@ -42,6 +35,8 @@
 #define ESE_STRING "ESE"
 #define ENE_STRING "ENE"
 #define NNE_STRING "NNE"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Stop"
 #endif //LANGUAGE_ENGLISH
 
 #ifdef LANGUAGE_SPANISH               // Courtesy of Maximo, EA1DDO
@@ -66,9 +61,11 @@
 #define UP_STRING "Arriba"
 #define DOWN_STRING "Abajo"
 #define AZIMUTH_STRING "Azimuth "
+#define AZIMUTH_STRING_NO_SPACE "Azimuth"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " El"
 #define SPACE_EL_SPACE_STRING " El "
 #define GPS_STRING "GPS"
@@ -88,6 +85,8 @@
 #define ESE_STRING "ESE"
 #define ENE_STRING "ENE"
 #define NNE_STRING "NNE"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Stop"
 #endif //LANGUAGE_SPANISH
 
 #ifdef LANGUAGE_CZECH            // courtesy of Jan, OK2ZAW
@@ -112,9 +111,11 @@
 #define UP_STRING "Nahoru"
 #define DOWN_STRING "Dolu"
 #define AZIMUTH_STRING "Azimut "
+#define AZIMUTH_STRING_NO_SPACE "Azimut"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " El"
 #define SPACE_EL_SPACE_STRING " El "
 #define GPS_STRING "GPS"
@@ -134,6 +135,8 @@
 #define ESE_STRING "smer   >   8Q"
 #define ENE_STRING "smer   >   ZL"
 #define NNE_STRING "smer   ^  UA0"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Stop"
 #endif //LANGUAGE_CZECH
 
 #ifdef LANGUAGE_ITALIAN    // courtesy of Paolo, IT9IPQ           
@@ -158,9 +161,11 @@
 #define UP_STRING "SU"
 #define DOWN_STRING "GIU'"
 #define AZIMUTH_STRING "Azimuth "
+#define AZIMUTH_STRING_NO_SPACE "Azimuth"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " El"
 #define SPACE_EL_SPACE_STRING " El "
 #define GPS_STRING "GPS"
@@ -180,6 +185,8 @@
 #define ESE_STRING "ESE"
 #define ENE_STRING "ENE"
 #define NNE_STRING "NNE"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Stop"
 #endif //LANGUAGE_ITALIAN
 
 #ifdef LANGUAGE_PORTUGUESE_BRASIL // courtesy of Ismael, PY4PI
@@ -204,9 +211,11 @@
 #define UP_STRING "SOBE"
 #define DOWN_STRING "DESCE"
 #define AZIMUTH_STRING "Azimute "
+#define AZIMUTH_STRING_NO_SPACE "Azimute"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " El"
 #define SPACE_EL_SPACE_STRING " El "
 #define GPS_STRING "GPS"
@@ -226,6 +235,8 @@
 #define ESE_STRING "LSL"
 #define ENE_STRING "LNL"
 #define NNE_STRING "NNL"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Stop"
 #endif //LANGUAGE_PORTUGUESE_BRASIL
 
 
@@ -251,9 +262,11 @@
 #define UP_STRING "AUF"
 #define DOWN_STRING "AB"
 #define AZIMUTH_STRING "Azimuth "
+#define AZIMUTH_STRING_NO_SPACE "Azimuth"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " El"
 #define SPACE_EL_SPACE_STRING " El "
 #define GPS_STRING "GPS"
@@ -273,6 +286,8 @@
 #define ESE_STRING "OSO (8Q)"
 #define ENE_STRING "ONO (ZL)"
 #define NNE_STRING "NNO (UA0)"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Stop"
 #endif //LANGUAGE_GERMAN
 
 #ifdef LANGUAGE_FRENCH  // contributed by Marc-Andre, VE2EVN
@@ -290,9 +305,11 @@
 #define CW_STRING "SH"
 #define CCW_STRING "SAH"
 #define AZIMUTH_STRING "Azimut "
+#define AZIMUTH_STRING_NO_SPACE "Azimut"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " Él"
 #define SPACE_EL_SPACE_STRING " Él "
 #define GPS_STRING "GPS"
@@ -312,6 +329,8 @@
 #define ESE_STRING "ESE"
 #define ENE_STRING "ENE"
 #define NNE_STRING "NNE"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Arret"
 #endif //LANGUAGE_FRENCH
 
 #ifdef LANGUAGE_DUTCH               // Dutch language support courtesy of David, ON4BDS
@@ -336,9 +355,11 @@
 #define UP_STRING "OP"
 #define DOWN_STRING "Neer"
 #define AZIMUTH_STRING "Azimuth "
+#define AZIMUTH_STRING_NO_SPACE "Azimuth"
 #define AZ_STRING "Az"
 #define AZ_SPACE_STRING "Az "
 #define ELEVATION_STRING "Elevation "
+#define ELEVATION_STRING_NO_SPACE "Elevation"
 #define SPACE_EL_STRING " El"
 #define SPACE_EL_SPACE_STRING " El "
 #define GPS_STRING "GPS"
@@ -358,4 +379,6 @@
 #define ESE_STRING "OZO"
 #define ENE_STRING "ONO"
 #define NNE_STRING "NNO"
+#define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
+#define TOUCH_DISPLAY_STOP_STRING "Stop"
 #endif //LANGUAGE_DUTCH

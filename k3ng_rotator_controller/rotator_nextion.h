@@ -1,0 +1,222 @@
+/* Nextion display settings and macros 
+
+  Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+
+
+  IMPORTANT !
+
+
+    Be sure to edit NexConfig.h in your Nextion library directory:
+
+    Comment out line 27 as follows:
+    //#define DEBUG_SERIAL_ENABLE
+    
+    Comment out line 32 as follows:
+    //#define dbSerial Serial
+
+    Edit line 37:
+    #define nexSerial Serial    //<-- Change "Serial to whatever Arduino Serial port you're connecting the Nextion display to (probably Serial1 or Serial2)
+
+*/
+
+
+// Page IDs
+#define NEXTION_PAGE_MAIN_ID 0
+#define NEXTION_PAGE_CONFIGURATION_ID 1
+#define NEXTION_PAGE_DIAGNOSTICS_ID 2
+#define NEXTION_PAGE_ABOUT_ID 3
+
+
+// Object Mappings - Update these to match the object names and IDs of the objects in your Nextion Editor HMI file.  Comment out unused objects.
+
+#define NEXTION_OBJNAME_MAIN_TITLE "tTitle"
+#define NEXTION_OBJID_MAIN_TITLE 1
+
+#define NEXTION_OBJNAME_STATUS "tStat"
+#define NEXTION_OBJID_STATUS 7
+
+#define NEXTION_OBJNAME_AZIMUTH_LABEL "tlblAz"
+#define NEXTION_OBJID_AZIMUTH_LABEL 2
+
+#define NEXTION_OBJNAME_AZIMUTH_VALUE "tAz"
+#define NEXTION_OBJID_AZIMUTH_VALUE 3
+
+#define NEXTION_OBJNAME_BUTTON_CW "bCW"
+#define NEXTION_OBJID_BUTTON_CW 17
+
+#define NEXTION_OBJNAME_BUTTON_CCW "bCCW"
+#define NEXTION_OBJID_BUTTON_CCW 4
+
+#define NEXTION_OBJNAME_BUTTON_UP "bUp"
+#define NEXTION_OBJID_BUTTON_UP 15
+
+#define NEXTION_OBJNAME_BUTTON_DOWN "bDown"
+#define NEXTION_OBJID_BUTTON_DOWN 16
+
+#define NEXTION_OBJNAME_BUTTON_STOP "bSTOP"
+#define NEXTION_OBJID_BUTTON_STOP 5
+
+#define NEXTION_OBJNAME_ELEVATION_LABEL "tlblEl"
+#define NEXTION_OBJID_ELEVATION_LABEL 13
+
+#define NEXTION_OBJNAME_ELEVATION_VALUE "tEl"
+#define NEXTION_OBJID_ELEVATION_VALUE 14
+
+#define NEXTION_OBJNAME_GPS "tGPS"
+#define NEXTION_OBJID_GPS 7
+
+#define NEXTION_OBJNAME_CLOCK "tClk"
+#define NEXTION_OBJID_CLOCK 8
+
+#define NEXTION_OBJNAME_GRID "tGrid"
+#define NEXTION_OBJID_GRID 9
+
+#define NEXTION_OBJNAME_COORDINATES "tCoord"
+#define NEXTION_OBJID_COORDINATES 10
+
+#define NEXTION_OBJNAME_CODEVERSION "tCV"
+#define NEXTION_OBJID_CODEVERSION 5
+
+#define NEXTION_OBJNAME_DIAGWINDOW "tDiag"
+#define NEXTION_OBJID_DIAGWINDOW 4
+
+// Declare Nextion objects (page id, component id,component name) - do not touch these unless you know what you are doing
+
+// Main Page
+#if defined(NEXTION_OBJNAME_MAIN_TITLE) && defined(NEXTION_OBJID_MAIN_TITLE)
+  NexText tTitle = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_MAIN_TITLE, NEXTION_OBJNAME_MAIN_TITLE); 
+#endif
+
+#if defined(NEXTION_OBJNAME_STATUS) && defined(NEXTION_OBJID_STATUS)
+  NexText tStatus = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_STATUS, NEXTION_OBJNAME_STATUS); 
+#endif
+
+#if defined(NEXTION_OBJNAME_GPS) && defined(NEXTION_OBJID_GPS)
+  NexText tGPS = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_GPS, NEXTION_OBJNAME_GPS);
+#endif
+
+#if defined(NEXTION_OBJNAME_CLOCK) && defined(NEXTION_OBJID_CLOCK)
+  NexText tClock = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_CLOCK, NEXTION_OBJNAME_CLOCK);
+#endif
+
+#if defined(NEXTION_OBJNAME_AZIMUTH_LABEL) && defined(NEXTION_OBJID_AZIMUTH_LABEL)
+  NexText tAzLabel = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_LABEL, NEXTION_OBJNAME_AZIMUTH_LABEL); 
+#endif
+
+#if defined(NEXTION_OBJNAME_AZIMUTH_VALUE) && defined(NEXTION_OBJID_AZIMUTH_VALUE)
+  NexText tAzValue = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_VALUE, NEXTION_OBJNAME_AZIMUTH_VALUE); 
+#endif
+
+#if defined(NEXTION_OBJNAME_ELEVATION_LABEL) && defined(NEXTION_OBJID_ELEVATION_LABEL)
+  NexText tElLabel = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_ELEVATION_LABEL, NEXTION_OBJNAME_ELEVATION_LABEL); 
+#endif
+
+#if defined(NEXTION_OBJNAME_ELEVATION_VALUE) && defined(NEXTION_OBJID_ELEVATION_VALUE)
+  NexText tElValue = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_ELEVATION_VALUE, NEXTION_OBJNAME_ELEVATION_VALUE); 
+#endif
+
+#if defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
+  NexButton bCW = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_BUTTON_CW, NEXTION_OBJNAME_BUTTON_CW);
+#endif
+
+#if defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
+  NexButton bCCW = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_BUTTON_CCW, NEXTION_OBJNAME_BUTTON_CCW);
+#endif
+
+#if defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
+  NexButton bUp = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_BUTTON_UP, NEXTION_OBJNAME_BUTTON_UP);
+#endif
+
+#if defined(NEXTION_OBJNAME_BUTTON_DOWN) && defined(NEXTION_OBJID_BUTTON_DOWN)
+  NexButton bDown = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_BUTTON_DOWN, NEXTION_OBJNAME_BUTTON_DOWN);
+#endif
+
+#if defined(NEXTION_OBJNAME_BUTTON_STOP) && defined(NEXTION_OBJID_BUTTON_STOP)
+  NexButton bSTOP = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_BUTTON_STOP, NEXTION_OBJNAME_BUTTON_STOP);
+#endif
+
+#if defined(NEXTION_OBJNAME_GRID) && defined(NEXTION_OBJID_GRID)
+  NexText tGrid = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_GRID, NEXTION_OBJNAME_GRID); 
+#endif
+
+#if defined(NEXTION_OBJNAME_COORDINATES) && defined(NEXTION_OBJID_COORDINATES)
+  NexText tCoordinates = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_COORDINATES, NEXTION_OBJNAME_COORDINATES); 
+#endif
+
+#if defined(NEXTION_OBJID_CODEVERSION) && defined(NEXTION_OBJNAME_CODEVERSION)
+  NexText tCV = NexText(NEXTION_PAGE_ABOUT_ID, NEXTION_OBJID_CODEVERSION, NEXTION_OBJNAME_CODEVERSION); 
+#endif
+
+
+// Diagnostics Page
+#if defined(NEXTION_OBJNAME_DIAGWINDOW) && defined(NEXTION_OBJID_DIAGWINDOW)
+  NexText tDiag = NexText(NEXTION_PAGE_DIAGNOSTICS_ID, NEXTION_OBJID_DIAGWINDOW, NEXTION_OBJNAME_DIAGWINDOW); 
+#endif
+
+
+// Page Navigation Buttons - we have to detect page changes because the data in the objects is volatile.  (Why, Nextion, why?)
+#define NEXTION_OBJNAME_BUTTON_BACK "bBack"
+#define NEXTION_OBJNAME_BUTTON_NEXT "bNext"
+
+#define NEXTION_OBJID_PAGE_MAIN_BUTTON_BACK 12
+#define NEXTION_OBJID_PAGE_MAIN_BUTTON_NEXT 11
+
+#define NEXTION_OBJID_PAGE_CONFIGURATION_BUTTON_BACK 1
+#define NEXTION_OBJID_PAGE_CONFIGURATION_BUTTON_NEXT 2
+
+#define NEXTION_OBJID_PAGE_DIAGNOSTICS_BUTTON_BACK 2
+#define NEXTION_OBJID_PAGE_DIAGNOSTICS_BUTTON_NEXT 1
+
+#define NEXTION_OBJID_PAGE_ABOUT_BUTTON_BACK 3 
+#define NEXTION_OBJID_PAGE_ABOUT_BUTTON_NEXT 4
+
+
+NexButton bBackPageMain = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_PAGE_MAIN_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
+NexButton bNextPageMain = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_PAGE_MAIN_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
+
+NexButton bBackPageConfiguration = NexButton(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_OBJID_PAGE_CONFIGURATION_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
+NexButton bNextPageConfiguration = NexButton(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_OBJID_PAGE_CONFIGURATION_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
+
+NexButton bBackPageDiagnostics = NexButton(NEXTION_PAGE_DIAGNOSTICS_ID, NEXTION_OBJID_PAGE_DIAGNOSTICS_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
+NexButton bNextPageDiagnostics = NexButton(NEXTION_PAGE_DIAGNOSTICS_ID, NEXTION_OBJID_PAGE_DIAGNOSTICS_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
+
+NexButton bBackPageAbout = NexButton(NEXTION_PAGE_ABOUT_ID, NEXTION_OBJID_PAGE_ABOUT_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
+NexButton bNextPageAbout = NexButton(NEXTION_PAGE_ABOUT_ID, NEXTION_OBJID_PAGE_ABOUT_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
+
+// Pages
+NexPage pageMain = NexPage(NEXTION_PAGE_MAIN_ID, 0, "Main");
+NexPage pageConfiguration = NexPage(NEXTION_PAGE_CONFIGURATION_ID, 0, "Configuration");
+NexPage pageDiagnostics = NexPage(NEXTION_PAGE_DIAGNOSTICS_ID, 0, "Diagnostics");
+NexPage pageAbout = NexPage(NEXTION_PAGE_ABOUT_ID, 0, "About");
+
+
+// Button registrations - do not touch these unless you know what you are doing
+NexTouch *nex_listen_list[] = {
+  #if defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
+    &bCW,
+  #endif
+  #if defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
+    &bCCW,
+  #endif 
+  #if defined(NEXTION_OBJNAME_BUTTON_STOP) && defined(NEXTION_OBJID_BUTTON_STOP)
+    &bSTOP,
+  #endif 
+  #if defined(NEXTION_OBJNAME_BUTTON_DOWN) && defined(NEXTION_OBJID_BUTTON_DOWN)
+    &bDown,
+  #endif
+  #if defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
+    &bUp,
+  #endif
+  &bBackPageMain,
+  &bNextPageMain,
+  &bBackPageConfiguration,
+  &bNextPageConfiguration,
+  &bBackPageDiagnostics,
+  &bNextPageDiagnostics,
+  &bBackPageAbout,
+  &bNextPageAbout,
+  NULL
+};
+
+
+
