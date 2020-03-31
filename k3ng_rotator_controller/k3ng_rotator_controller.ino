@@ -434,6 +434,8 @@
       Added file rotator_nextion.h
       Documentation in progress: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
+    2020.03.30.02
+      Fixed potential calculation issue with AZIMUTH_SMOOTHING_FACTOR and ELEVATION_SMOOTHING_FACTOR
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -444,7 +446,7 @@
 
   */
 
-#define CODE_VERSION "2020.03.30.01"
+#define CODE_VERSION "2020.03.30.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3961,7 +3963,7 @@ void service_nextion_display(){
     // Azimuth
     if (((azimuth != last_azimuth) && ((millis() - last_az_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
       dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring1);
-      strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
+      //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
       tAzValue.setText(workstring1);
       last_azimuth = azimuth;
       last_az_update = millis();
@@ -3971,14 +3973,12 @@ void service_nextion_display(){
     #if defined(FEATURE_ELEVATION_CONTROL)
       if (((elevation != last_elevation) && ((millis() - last_el_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
         dtostrf(elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring1);
-        strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
+        //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
         tElValue.setText(workstring1);
         last_elevation = elevation;
         last_el_update = millis();
       }
     #endif
-
-
 
 
     // Clock
@@ -6026,7 +6026,7 @@ void read_azimuth(byte force_read){
       #endif // FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100.))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100.));
+        raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
         azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
@@ -6071,7 +6071,7 @@ void read_azimuth(byte force_read){
           raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
 
           if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-            raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+            raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
           }
           if (raw_azimuth >= (360 * HEADING_MULTIPLIER)) {
             azimuth = raw_azimuth - (360 * HEADING_MULTIPLIER);
@@ -6230,7 +6230,7 @@ void read_azimuth(byte force_read){
       if (heading > 2 * PI) heading -= 2 * PI;
       raw_azimuth = (heading * RAD_TO_DEG) * HEADING_MULTIPLIER; // radians to degree
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+        raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
@@ -6274,7 +6274,7 @@ void read_azimuth(byte force_read){
       raw_azimuth = heading * 180 / M_PI; 
 
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+        raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
@@ -6319,7 +6319,7 @@ void read_azimuth(byte force_read){
       raw_azimuth = heading * 180 / M_PI; 
 
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+        raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
@@ -6364,7 +6364,7 @@ void read_azimuth(byte force_read){
       raw_azimuth = mecha_azimuth;
 
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+        raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
@@ -6388,7 +6388,7 @@ void read_azimuth(byte force_read){
       #endif // FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+        raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_ADAFRUIT_LSM303
@@ -6444,7 +6444,7 @@ void read_azimuth(byte force_read){
       #endif // FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = raw_azimuth + (configuration.azimuth_offset * HEADING_MULTIPLIER);
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
-        raw_azimuth = (raw_azimuth * (1 - (AZIMUTH_SMOOTHING_FACTOR / 100))) + (previous_raw_azimuth * (AZIMUTH_SMOOTHING_FACTOR / 100));
+        raw_azimuth = int((float)raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_POLOLU_LSM303
@@ -7193,7 +7193,7 @@ void read_elevation(byte force_read){
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
-        elevation = (elevation * (1 - (ELEVATION_SMOOTHING_FACTOR / 100))) + (previous_elevation * (ELEVATION_SMOOTHING_FACTOR / 100));
+        elevation = int((float)elevation * ((float)1 - ((float)ELEVATION_SMOOTHING_FACTOR / (float)100))) + ((float)previous_elevation * ((float)ELEVATION_SMOOTHING_FACTOR / (float)100));
       }
       if (elevation < 0) {
         elevation = 0;
@@ -7310,7 +7310,7 @@ void read_elevation(byte force_read){
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
-        elevation = (elevation * (1 - (ELEVATION_SMOOTHING_FACTOR / 100))) + (previous_elevation * (ELEVATION_SMOOTHING_FACTOR / 100));
+        elevation = int((float)elevation * ((float)1 - ((float)ELEVATION_SMOOTHING_FACTOR / (float)100))) + ((float)previous_elevation * ((float)ELEVATION_SMOOTHING_FACTOR / (float)100));
       }
     #endif // FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB
 
@@ -7422,7 +7422,7 @@ void read_elevation(byte force_read){
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
-        elevation = (elevation * (1 - (ELEVATION_SMOOTHING_FACTOR / 100))) + (previous_elevation * (ELEVATION_SMOOTHING_FACTOR / 100));
+        elevation = int((float)elevation * ((float)1 - ((float)ELEVATION_SMOOTHING_FACTOR / (float)100))) + ((float)previous_elevation * ((float)ELEVATION_SMOOTHING_FACTOR / (float)100));
       }
       remote_unit_command_results_available = 0;
     } else {
