@@ -441,6 +441,9 @@
       Fixed bug with AZIMUTH_SMOOTHING_FACTOR and ELEVATION_SMOOTHING_FACTOR (Thanks Steve VE3RX)
       More work on FEATURE_NEXTION_DISPLAY (UNDER DEVELOPMENT)
 
+    2020.04.02.02
+      Improved FEATURE_PARK not parked mode detection
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -450,7 +453,7 @@
 
   */
 
-#define CODE_VERSION "2020.04.02.01"
+#define CODE_VERSION "2020.04.02.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4163,6 +4166,7 @@ void service_nextion_display(){
 
 
     // STATUS
+    strcpy(workstring1,"");
     #if !defined(FEATURE_ELEVATION_CONTROL) // ---------------- az only ----------------------------------------------
       if ((az_state != last_az_state) || (last_nextion_current_screen != nextion_current_screen)) {
         if (az_request_queue_state == IN_PROGRESS_TO_TARGET) { 
@@ -4653,12 +4657,12 @@ void update_lcd_display(){
         if (park_status != last_park_status){
           switch(park_status){
             case PARKED: 
-              k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              k3ngdisplay.print_center_fixed_field_size((char *)PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
               row_override[LCD_STATUS_ROW] = 1;
               park_message_in_effect = 1;
               break;              
             case PARK_INITIATED:
-              k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+              k3ngdisplay.print_center_fixed_field_size((char *)PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
               row_override[LCD_STATUS_ROW] = 1;
               park_message_in_effect = 1;
               break;
@@ -4677,10 +4681,10 @@ void update_lcd_display(){
             row_override[LCD_STATUS_ROW] = 1;
             switch(park_status){
               case PARKED: 
-                k3ngdisplay.print_center_fixed_field_size(PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
+                k3ngdisplay.print_center_fixed_field_size((char *)PARKED_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);                
                 break;              
               case PARK_INITIATED:
-                k3ngdisplay.print_center_fixed_field_size(PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
+                k3ngdisplay.print_center_fixed_field_size((char *)PARKING_STRING,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
                 break;
             }
           }
@@ -10783,22 +10787,62 @@ void service_park(){
 
   static byte last_park_status = NOT_PARKED;
 
+  static unsigned long time_first_detect_not_parked = 0;
+
   if (park_status == PARKED) {
-    if (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER)) {
-      park_status = NOT_PARKED;
-      #ifdef DEBUG_PARK
-        debug.println(F("service_park: az NOT_PARKED"));
-      #endif // DEBUG_PARK      
-    }
-    #ifdef FEATURE_ELEVATION_CONTROL
-    if (abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) {
-      park_status = NOT_PARKED;
-      #ifdef DEBUG_PARK
-        debug.println(F("service_park: el NOT_PARKED"));
-      #endif // DEBUG_PARK          
-    }
+
+    #if !defined(FEATURE_ELEVATION_CONTROL)
+      if (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER)) {
+        if (time_first_detect_not_parked == 0){
+          time_first_detect_not_parked = millis();
+        } else {
+          if ((millis() - time_first_detect_not_parked) > NOT_PARKED_DETECT_TIME_MS){
+            park_status = NOT_PARKED;
+            #ifdef DEBUG_PARK
+              debug.println(F("service_park: NOT_PARKED"));
+            #endif // DEBUG_PARK  
+            time_first_detect_not_parked = 0;
+          }
+        }     
+      }
+
+    #else
+
+      if ((abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) || (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER))){
+        if (time_first_detect_not_parked == 0){
+          time_first_detect_not_parked = millis();
+        } else {        
+          if ((millis() - time_first_detect_not_parked) > NOT_PARKED_DETECT_TIME_MS){
+            park_status = NOT_PARKED;
+            #ifdef DEBUG_PARK
+              debug.println(F("service_park: NOT_PARKED"));
+            #endif // DEBUG_PARK  
+            time_first_detect_not_parked = 0;
+          }
+        }  
+      }
+
     #endif // FEATURE_ELEVATION_CONTROL
+
   }
+
+
+  // if (park_status == PARKED) {
+  //   if (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE * HEADING_MULTIPLIER)) {
+  //     park_status = NOT_PARKED;
+  //     #ifdef DEBUG_PARK
+  //       debug.println(F("service_park: az NOT_PARKED"));
+  //     #endif // DEBUG_PARK      
+  //   }
+  //   #ifdef FEATURE_ELEVATION_CONTROL
+  //   if (abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE * HEADING_MULTIPLIER)) {
+  //     park_status = NOT_PARKED;
+  //     #ifdef DEBUG_PARK
+  //       debug.println(F("service_park: el NOT_PARKED"));
+  //     #endif // DEBUG_PARK          
+  //   }
+  //   #endif // FEATURE_ELEVATION_CONTROL
+  // }
 
 
   if (park_status != last_park_status) {
