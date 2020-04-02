@@ -19,12 +19,17 @@
 
 */
 
+// Various Settings
+#define NEXTION_DISPLAY_UPDATE_MS 500
+#define NEXTION_DISPLAY_OVERLAP_UPDATE_MS 1500
+#define NEXTION_OBJECT_DISABLE_COLOR 65535  // WHITE
 
 // Page IDs
 #define NEXTION_PAGE_MAIN_ID 0
 #define NEXTION_PAGE_CONFIGURATION_ID 1
 #define NEXTION_PAGE_DIAGNOSTICS_ID 2
 #define NEXTION_PAGE_ABOUT_ID 3
+#define NEXTION_PAGE_DATA_ENTRY 4
 
 
 // Object Mappings - Update these to match the object names and IDs of the objects in your Nextion Editor HMI file.  Comment out unused objects.
@@ -34,6 +39,12 @@
 
 #define NEXTION_OBJNAME_STATUS "tStat"
 #define NEXTION_OBJID_STATUS 7
+
+#define NEXTION_OBJNAME_STATUS2 "tStat2"
+#define NEXTION_OBJID_STATUS2 19
+
+#define NEXTION_OBJNAME_STATUS3 "tStat3"
+#define NEXTION_OBJID_STATUS3 18
 
 #define NEXTION_OBJNAME_AZIMUTH_LABEL "tlblAz"
 #define NEXTION_OBJID_AZIMUTH_LABEL 2
@@ -80,6 +91,20 @@
 #define NEXTION_OBJNAME_DIAGWINDOW "tDiag"
 #define NEXTION_OBJID_DIAGWINDOW 4
 
+#define NEXTION_OBJNAME_DATAENT_CANCEL "bCan"
+#define NEXTION_OBJID_DATAENT_CANCEL 14
+
+#define NEXTION_OBJNAME_DATAENT_ENTER "bEnt"
+#define NEXTION_OBJID_DATAENT_ENTER 13
+
+#define NEXTION_OBJNAME_DATAENT_DEL "bDel"
+#define NEXTION_OBJID_DATAENT_DEL 12
+
+#define NEXTION_OBJNAME_DATAENT_SEPERATOR "bSep"
+#define NEXTION_OBJID_DATAENT_SEPERATOR 11
+
+          
+
 // Declare Nextion objects (page id, component id,component name) - do not touch these unless you know what you are doing
 
 // Main Page
@@ -89,6 +114,14 @@
 
 #if defined(NEXTION_OBJNAME_STATUS) && defined(NEXTION_OBJID_STATUS)
   NexText tStatus = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_STATUS, NEXTION_OBJNAME_STATUS); 
+#endif
+
+#if defined(NEXTION_OBJNAME_STATUS2) && defined(NEXTION_OBJID_STATUS2)
+  NexText tStatus2 = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_STATUS2, NEXTION_OBJNAME_STATUS2); 
+#endif
+
+#if defined(NEXTION_OBJNAME_STATUS3) && defined(NEXTION_OBJID_STATUS3)
+  NexText tStatus3 = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_STATUS3, NEXTION_OBJNAME_STATUS3); 
 #endif
 
 #if defined(NEXTION_OBJNAME_GPS) && defined(NEXTION_OBJID_GPS)
@@ -154,6 +187,23 @@
 #endif
 
 
+// Data Entry Page
+
+#if defined(NEXTION_OBJNAME_DATAENT_CANCEL) && defined(NEXTION_OBJID_DATAENT_CANCEL)
+   NexButton bDataEntryCancel = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_CANCEL, NEXTION_OBJNAME_DATAENT_CANCEL);
+#endif
+#if defined(NEXTION_OBJNAME_DATAENT_ENTER) && defined(NEXTION_OBJID_DATAENT_ENTER)
+  NexButton bDataEntryEnter = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_ENTER, NEXTION_OBJNAME_DATAENT_ENTER);
+#endif
+#if defined(NEXTION_OBJNAME_DATAENT_DEL) && defined(NEXTION_OBJID_DATAENT_DEL)
+  NexButton bDataEntryDelete = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_DEL, NEXTION_OBJNAME_DATAENT_DEL);
+#endif
+#if defined(NEXTION_OBJNAME_DATAENT_SEPERATOR) && defined(NEXTION_OBJID_DATAENT_SEPERATOR)
+  NexButton bDataEntrySeperator = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_SEPERATOR, NEXTION_OBJNAME_DATAENT_SEPERATOR);
+#endif
+
+
+
 // Page Navigation Buttons - we have to detect page changes because the data in the objects is volatile.  (Why, Nextion, why?)
 #define NEXTION_OBJNAME_BUTTON_BACK "bBack"
 #define NEXTION_OBJNAME_BUTTON_NEXT "bNext"
@@ -188,6 +238,7 @@ NexPage pageMain = NexPage(NEXTION_PAGE_MAIN_ID, 0, "Main");
 NexPage pageConfiguration = NexPage(NEXTION_PAGE_CONFIGURATION_ID, 0, "Configuration");
 NexPage pageDiagnostics = NexPage(NEXTION_PAGE_DIAGNOSTICS_ID, 0, "Diagnostics");
 NexPage pageAbout = NexPage(NEXTION_PAGE_ABOUT_ID, 0, "About");
+NexPage pageDataEntry = NexPage(NEXTION_PAGE_DATA_ENTRY, 0, "DataEntry");
 
 
 // Button registrations - do not touch these unless you know what you are doing
@@ -207,6 +258,24 @@ NexTouch *nex_listen_list[] = {
   #if defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
     &bUp,
   #endif
+  #if defined(NEXTION_OBJNAME_DATAENT_CANCEL) && defined(NEXTION_OBJNAME_DATAENT_CANCEL)
+    &bDataEntryCancel,
+  #endif
+  #if defined(NEXTION_OBJNAME_DATAENT_ENTER) && defined(NEXTION_OBJID_DATAENT_ENTER)
+    &bDataEntryEnter,
+  #endif
+  #if defined(NEXTION_OBJNAME_DATAENT_DEL) && defined(NEXTION_OBJID_DATAENT_DEL)
+    &bDataEntryDelete,
+  #endif
+  #if defined(NEXTION_OBJNAME_DATAENT_SEPERATOR) && defined(NEXTION_OBJID_DATAENT_SEPERATOR)
+    &bDataEntrySeperator,
+  #endif
+  #if defined(NEXTION_OBJNAME_AZIMUTH_VALUE) && defined(NEXTION_OBJID_AZIMUTH_VALUE)
+    &tAzValue,
+  #endif
+  #if defined(NEXTION_OBJNAME_ELEVATION_VALUE) && defined(NEXTION_OBJID_ELEVATION_VALUE)
+    &tElValue,
+  #endif  
   &bBackPageMain,
   &bNextPageMain,
   &bBackPageConfiguration,

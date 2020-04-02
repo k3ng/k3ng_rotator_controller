@@ -40,7 +40,7 @@ You can tweak these, but read the online documentation!
 #define ANALOG_EL_0_DEGREES 6 //2
 #define ANALOG_EL_MAX_ELEVATION 1019 //1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
-#define ANALOG_AZ_OVERLAP_DEGREES 540         // if overlap_led above is enabled, turn on overlap led line if azimuth is greater than this setting
+#define ANALOG_AZ_OVERLAP_DEGREES 360         // if overlap_led above is enabled, turn on overlap led line if azimuth is greater than this setting
                                               // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
                                               // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED
                                               // turning on when going CW and crossing 180, ANALOG_AZ_OVERLAP_DEGREES should be set for 540 (180 + 360)
@@ -110,8 +110,8 @@ You can tweak these, but read the online documentation!
 #define ENCODER_PRESET_TIMEOUT 5000
 
 // various code settings
-#define AZIMUTH_TOLERANCE 3.0            // rotator will stop within X degrees when doing autorotation
-#define ELEVATION_TOLERANCE 0.1 //1.0
+#define AZIMUTH_TOLERANCE 5.0            // rotator will stop within X degrees when doing autorotation
+#define ELEVATION_TOLERANCE 5.0
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
@@ -194,7 +194,7 @@ You can tweak these, but read the online documentation!
 #define AZ_POSITION_PULSE_DEG_PER_PULSE 0.5
 #define EL_POSITION_PULSE_DEG_PER_PULSE 0.5
 
-#define PARK_AZIMUTH 360.0 * HEADING_MULTIPLIER      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
+#define PARK_AZIMUTH 0.0 * HEADING_MULTIPLIER      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
 #define PARK_ELEVATION 0.0 * HEADING_MULTIPLIER    // replace the 0.0 with your park elevation
 
 #define COMMAND_BUFFER_SIZE 50
@@ -207,7 +207,7 @@ You can tweak these, but read the online documentation!
 #define ROTATE_PIN_INACTIVE_VALUE LOW
 #define ROTATE_PIN_ACTIVE_VALUE HIGH
 
-#define AZIMUTH_SMOOTHING_FACTOR 0      // value = 0 to 99.9
+#define AZIMUTH_SMOOTHING_FACTOR 30      // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR 0    // value = 0 to 99.9
 
 #define AZIMUTH_MEASUREMENT_FREQUENCY_MS 100        // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT

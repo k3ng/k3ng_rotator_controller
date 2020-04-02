@@ -37,6 +37,14 @@
 #define NNE_STRING "NNE"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Stop"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
+#define TOUCH_DISPLAY_DATA_ENTRY_CANCEL "cancel"
+#define TOUCH_DISPLAY_DATA_ENTRY_ENTER "enter"
+#define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
+#define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
+
+#define TOUCH_DISPLAY_PARKED_STRING "parked"
+#define TOUCH_DISPLAY_PARKING_STRING "Parking"
 #endif //LANGUAGE_ENGLISH
 
 #ifdef LANGUAGE_SPANISH               // Courtesy of Maximo, EA1DDO
@@ -87,6 +95,7 @@
 #define NNE_STRING "NNE"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Stop"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
 #endif //LANGUAGE_SPANISH
 
 #ifdef LANGUAGE_CZECH            // courtesy of Jan, OK2ZAW
@@ -137,6 +146,11 @@
 #define NNE_STRING "smer   ^  UA0"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Stop"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
+#define TOUCH_DISPLAY_DATA_ENTRY_CANCEL "cancel"
+#define TOUCH_DISPLAY_DATA_ENTRY_ENTER "enter"
+#define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
+#define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
 #endif //LANGUAGE_CZECH
 
 #ifdef LANGUAGE_ITALIAN    // courtesy of Paolo, IT9IPQ           
@@ -187,6 +201,11 @@
 #define NNE_STRING "NNE"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Stop"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
+#define TOUCH_DISPLAY_DATA_ENTRY_CANCEL "cancel"
+#define TOUCH_DISPLAY_DATA_ENTRY_ENTER "enter"
+#define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
+#define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
 #endif //LANGUAGE_ITALIAN
 
 #ifdef LANGUAGE_PORTUGUESE_BRASIL // courtesy of Ismael, PY4PI
@@ -237,6 +256,11 @@
 #define NNE_STRING "NNL"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Stop"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
+#define TOUCH_DISPLAY_DATA_ENTRY_CANCEL "cancel"
+#define TOUCH_DISPLAY_DATA_ENTRY_ENTER "enter"
+#define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
+#define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
 #endif //LANGUAGE_PORTUGUESE_BRASIL
 
 
@@ -288,6 +312,11 @@
 #define NNE_STRING "NNO (UA0)"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Stop"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
+#define TOUCH_DISPLAY_DATA_ENTRY_CANCEL "cancel"
+#define TOUCH_DISPLAY_DATA_ENTRY_ENTER "enter"
+#define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
+#define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
 #endif //LANGUAGE_GERMAN
 
 #ifdef LANGUAGE_FRENCH  // contributed by Marc-Andre, VE2EVN
@@ -331,6 +360,11 @@
 #define NNE_STRING "NNE"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Arret"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
+#define TOUCH_DISPLAY_DATA_ENTRY_CANCEL "cancel"
+#define TOUCH_DISPLAY_DATA_ENTRY_ENTER "enter"
+#define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
+#define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
 #endif //LANGUAGE_FRENCH
 
 #ifdef LANGUAGE_DUTCH               // Dutch language support courtesy of David, ON4BDS
@@ -381,4 +415,9 @@
 #define NNE_STRING "NNO"
 #define TOUCH_DISPLAY_TITLE "K3NG Rotator Controller"
 #define TOUCH_DISPLAY_STOP_STRING "Stop"
+#define TOUCH_DISPLAY_OVERLAP_STRING "overlap"
+#define TOUCH_DISPLAY_DATA_ENTRY_CANCEL "cancel"
+#define TOUCH_DISPLAY_DATA_ENTRY_ENTER "enter"
+#define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
+#define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
 #endif //LANGUAGE_DUTCH
