@@ -444,6 +444,9 @@
     2020.04.02.02
       Improved FEATURE_PARK not parked mode detection
 
+    2020.04.03.01
+      Fixed issue with 20 column LCD displays and spacing of az and el readings (Thanks Steve VE3RX) 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -453,7 +456,7 @@
 
   */
 
-#define CODE_VERSION "2020.04.02.02"
+#define CODE_VERSION "2020.04.03.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4480,7 +4483,7 @@ void update_lcd_display(){
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);
     #else                                                       // --------------------az & el---------------------------------
       #if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-        if ((azimuth >= 1000) && (elevation >= 1000)) {
+        if ((azimuth >= 1000) && (elevation >= 1000) && (LCD_COLUMNS < 18)) {
           strcpy(workstring,AZ_STRING);
         } else {
           strcpy(workstring,AZ_SPACE_STRING);
@@ -4510,25 +4513,25 @@ void update_lcd_display(){
             break;            
         }
       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-      if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
-        strcat(workstring,"+");
-      }         
-      strcat(workstring,workstring2);
-      #if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-        if (LCD_COLUMNS > 14) {
-          strcat(workstring,DISPLAY_DEGREES_STRING);
-        }
-      #else
-        if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {
-          strcat(workstring,DISPLAY_DEGREES_STRING);
-        }
-      #endif
-      #if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-        if ((elevation >= 1000) && (azimuth >= 1000)) {
-          strcat(workstring,SPACE_EL_STRING);
-        } else {
-          strcat(workstring,SPACE_EL_SPACE_STRING);
-        }
+        if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/LCD_HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+          strcat(workstring,"+");
+        }         
+        strcat(workstring,workstring2);
+        #if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+          if (LCD_COLUMNS > 14) {
+            strcat(workstring,DISPLAY_DEGREES_STRING);
+          }
+        #else
+          if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {
+            strcat(workstring,DISPLAY_DEGREES_STRING);
+          }
+        #endif
+        #if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+          if ((elevation >= 1000) && (azimuth >= 1000) && (LCD_COLUMNS < 18)) {
+            strcat(workstring,SPACE_EL_STRING);
+          } else {
+            strcat(workstring,SPACE_EL_SPACE_STRING);
+          }
       #else
         strcat(workstring,SPACE_EL_SPACE_STRING);
       #endif // defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) || defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
@@ -4711,9 +4714,6 @@ void update_lcd_display(){
       #endif //FEATURE_AZ_PRESET_ENCODER
 
     #else                          // az & el ----------------------------------------------------------------------------
-
-
-
       strcpy(workstring,"");
       if (az_state != IDLE) {
         if (az_request_queue_state == IN_PROGRESS_TO_TARGET) { 
@@ -4876,8 +4876,7 @@ void update_lcd_display(){
           } // switch 
         } //if (preset_encoders_state != ENCODER_IDLE)
       #endif  //defined(FEATURE_AZ_PRESET_ENCODER) && !defined(FEATURE_EL_PRESET_ENCODER)
-/*
-*/
+
     #endif //!defined(FEATURE_ELEVATION_CONTROL)
 
   #endif //defined(OPTION_DISPLAY_STATUS)
@@ -5022,39 +5021,36 @@ void update_lcd_display(){
 
   // OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY **********************************************************
   #if defined(OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY) && defined(FEATURE_SUN_TRACKING)
-
-  // static unsigned long last_sun_tracking_check_time = 0;
-
-  if (!row_override[LCD_SUN_TRACKING_ROW]){
-    if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
-      update_sun_position();
-      last_sun_tracking_check_time = millis();
-    }
-    strcpy(workstring,"");
-    if (sun_tracking_active){
-      if (sun_visible){
-        strcat(workstring,TRACKING_ACTIVE_CHAR);
-      } else {
-        strcat(workstring,TRACKING_INACTIVE_CHAR);
+    if (!row_override[LCD_SUN_TRACKING_ROW]){
+      if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
+        update_sun_position();
+        last_sun_tracking_check_time = millis();
       }
-    }
-    strcat(workstring,SUN_STRING);
-    dtostrf(sun_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
-    strcat(workstring,workstring2);
-    if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
-    strcat(workstring," ");
-    dtostrf(sun_elevation,0,LCD_DECIMAL_PLACES,workstring2);
-    strcat(workstring,workstring2);
-    if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
-    if (sun_tracking_active){
-      if (sun_visible){
-        strcat(workstring,TRACKING_ACTIVE_CHAR);
-      } else {
-        strcat(workstring,TRACKING_INACTIVE_CHAR);
+      strcpy(workstring,"");
+      if (sun_tracking_active){
+        if (sun_visible){
+          strcat(workstring,TRACKING_ACTIVE_CHAR);
+        } else {
+          strcat(workstring,TRACKING_INACTIVE_CHAR);
+        }
       }
-    }
-    k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SUN_TRACKING_ROW-1,LCD_COLUMNS);
-  } else {
+      strcat(workstring,SUN_STRING);
+      dtostrf(sun_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+      strcat(workstring,workstring2);
+      if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+      strcat(workstring," ");
+      dtostrf(sun_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+      strcat(workstring,workstring2);
+      if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+      if (sun_tracking_active){
+        if (sun_visible){
+          strcat(workstring,TRACKING_ACTIVE_CHAR);
+        } else {
+          strcat(workstring,TRACKING_INACTIVE_CHAR);
+        }
+      }
+      k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SUN_TRACKING_ROW-1,LCD_COLUMNS);
+    } else {
     #if defined(DEBUG_DISPLAY)
       debug.println(F("update_lcd_display: OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY row override"));
     #endif
@@ -5268,7 +5264,7 @@ void update_lcd_display(){
 
     // do it ! ************************************
     k3ngdisplay.service(force_display_update_now);
-    //force_display_update_now = 0;
+
 
   }
 

@@ -208,7 +208,7 @@ You can tweak these, but read the online documentation!
 #define ROTATE_PIN_INACTIVE_VALUE LOW
 #define ROTATE_PIN_ACTIVE_VALUE HIGH
 
-#define AZIMUTH_SMOOTHING_FACTOR 30      // value = 0 to 99.9
+#define AZIMUTH_SMOOTHING_FACTOR 0      // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR 0    // value = 0 to 99.9
 
 #define AZIMUTH_MEASUREMENT_FREQUENCY_MS 100        // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
