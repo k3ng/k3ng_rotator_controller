@@ -43,8 +43,11 @@
 #define TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR "."
 #define TOUCH_DISPLAY_DATA_ENTRY_DELETE "del"
 
+//need to be copied below
 #define TOUCH_DISPLAY_PARKED_STRING "parked"
 #define TOUCH_DISPLAY_PARKING_STRING "Parking"
+#define TOUCH_DISPLAY_ENTER_AZ "Enter Azimuth"
+#define TOUCH_DISPLAY_ENTER_EL "Enter Elevation"
 #endif //LANGUAGE_ENGLISH
 
 #ifdef LANGUAGE_SPANISH               // Courtesy of Maximo, EA1DDO

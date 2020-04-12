@@ -17,11 +17,11 @@
 
 
 #define pins_h
-#define rotate_cw 33 //A3 //6             // goes high to activate rotator R (CW) rotation - pin 1 on Yaesu connector  
-#define rotate_ccw 31 //A2 //7            // goes high to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
+#define rotate_cw 7 //33 //A3 //6             // goes high to activate rotator R (CW) rotation - pin 1 on Yaesu connector  
+#define rotate_ccw 6 //31 //A2 //7            // goes high to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
 #define rotate_cw_ccw  0         // goes high for both CW and CCW rotation
-#define rotate_cw_pwm 0          // optional - PWM CW output - set to 0 to disable (must be PWM capable pin)
-#define rotate_ccw_pwm 0         // optional - PWM CCW output - set to 0 to disable (must be PWM capable pin)
+#define rotate_cw_pwm 0 //7          // optional - PWM CW output - set to 0 to disable (must be PWM capable pin)
+#define rotate_ccw_pwm 0 //6         // optional - PWM CCW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_cw_ccw_pwm 0
 #define rotate_cw_freq 0         
 #define rotate_ccw_freq 0        
@@ -46,11 +46,11 @@
 // elevation pins
 #ifdef FEATURE_ELEVATION_CONTROL
 #define elevation_speed_voltage  0 // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_up_pwm and rotate_down_pwm)
-#define rotate_up 37 //A5 //9//9               // goes high to activate rotator elevation up
-#define rotate_down 35 //A4 //8             // goes high to activate rotator elevation down
+#define rotate_up 9 //37 //A5 //9//9               // goes high to activate rotator elevation up
+#define rotate_down 8 //35 //A4 //8             // goes high to activate rotator elevation down
 #define rotate_up_or_down 0
-#define rotate_up_pwm 0          
-#define rotate_down_pwm 0         
+#define rotate_up_pwm 0 //9          
+#define rotate_down_pwm 0 //8         
 #define rotate_up_down_pwm 0  
 #define rotate_up_freq 0          
 #define rotate_down_freq 0        

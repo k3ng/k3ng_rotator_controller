@@ -8,14 +8,25 @@
 
     Be sure to edit NexConfig.h in your Nextion library directory:
 
-    Comment out line 27 as follows:
-    //#define DEBUG_SERIAL_ENABLE
-    
-    Comment out line 32 as follows:
-    //#define dbSerial Serial
+      Comment out line 27 as follows:
+      //#define DEBUG_SERIAL_ENABLE
+      
+      Comment out line 32 as follows:
+      //#define dbSerial Serial
 
-    Edit line 37:
-    #define nexSerial Serial    //<-- Change "Serial to whatever Arduino Serial port you're connecting the Nextion display to (probably Serial1 or Serial2)
+      Edit line 37:
+      #define nexSerial Serial    //<-- Change "Serial to whatever Arduino Serial port you're connecting the Nextion display to (probably Serial1 or Serial2)
+
+
+    Also, change the following lines in NexHardware.cpp from:
+
+      dbSerialBegin(9600);
+      nexSerial.begin(9600);
+
+    To:
+
+      dbSerialBegin(115200);
+      nexSerial.begin(115200);  
 
 */
 
@@ -30,87 +41,166 @@
 #define NEXTION_PAGE_DIAGNOSTICS_ID 2
 #define NEXTION_PAGE_ABOUT_ID 3
 #define NEXTION_PAGE_DATA_ENTRY 4
+#define NEXTION_PAGE_SPLASH 5
+#define NEXTION_PAGE_SECONDARY 6
+#define NEXTION_PAGE_TERTIARY 7
 
 
 // Object Mappings - Update these to match the object names and IDs of the objects in your Nextion Editor HMI file.  Comment out unused objects.
 
-#define NEXTION_OBJNAME_MAIN_TITLE "tTitle"
-#define NEXTION_OBJID_MAIN_TITLE 1
+  
+  // Page Main (and global stuff)
 
-#define NEXTION_OBJNAME_STATUS "tStat"
-#define NEXTION_OBJID_STATUS 7
+  #define NEXTION_OBJNAME_TIMER_RESET "tmInvokeReset"  // this timer is enabled to trigger a reset and fix weirdness with the data entry screen
+  #define NEXTION_OBJID_TIMER_RESET 20
 
-#define NEXTION_OBJNAME_STATUS2 "tStat2"
-#define NEXTION_OBJID_STATUS2 19
+  #define NEXTION_OBJNAME_TIMER_AZ_ONLY "tmAzOnly"  // this timer is enabled to make elevation objects disappear
+  #define NEXTION_OBJID_TIMER_AZ_ONLY 21
 
-#define NEXTION_OBJNAME_STATUS3 "tStat3"
-#define NEXTION_OBJID_STATUS3 18
+  #define NEXTION_OBJNAME_TIMER_AZ_EL "tmAzEl"  // this timer is enabled to make elevation objects disappear
+  #define NEXTION_OBJID_TIMER_AZ_EL 24
 
-#define NEXTION_OBJNAME_AZIMUTH_LABEL "tlblAz"
-#define NEXTION_OBJID_AZIMUTH_LABEL 2
+  #define NEXTION_OBJNAME_MAIN_TITLE "tTitle"
+  #define NEXTION_OBJID_MAIN_TITLE 1
 
-#define NEXTION_OBJNAME_AZIMUTH_VALUE "tAz"
-#define NEXTION_OBJID_AZIMUTH_VALUE 3
+  #define NEXTION_OBJNAME_STATUS "tStat"
+  #define NEXTION_OBJID_STATUS 7
 
-#define NEXTION_OBJNAME_BUTTON_CW "bCW"
-#define NEXTION_OBJID_BUTTON_CW 17
+  #define NEXTION_OBJNAME_STATUS2 "tStat2"
+  #define NEXTION_OBJID_STATUS2 19
 
-#define NEXTION_OBJNAME_BUTTON_CCW "bCCW"
-#define NEXTION_OBJID_BUTTON_CCW 4
+  #define NEXTION_OBJNAME_STATUS3 "tStat3"
+  #define NEXTION_OBJID_STATUS3 18
 
-#define NEXTION_OBJNAME_BUTTON_UP "bUp"
-#define NEXTION_OBJID_BUTTON_UP 15
+  // Small Azimuth - az / el system
+  #define NEXTION_OBJNAME_AZIMUTH_LABEL_SMALL "tlblAzSm"
+  #define NEXTION_OBJID_AZIMUTH_LABEL_SMALL 2
 
-#define NEXTION_OBJNAME_BUTTON_DOWN "bDown"
-#define NEXTION_OBJID_BUTTON_DOWN 16
+  #define NEXTION_OBJNAME_AZIMUTH_VALUE_SMALL "tAzSm"
+  #define NEXTION_OBJID_AZIMUTH_VALUE_SMALL 3
 
-#define NEXTION_OBJNAME_BUTTON_STOP "bSTOP"
-#define NEXTION_OBJID_BUTTON_STOP 5
+  // Large Azimuth - az only system
+  #define NEXTION_OBJNAME_AZIMUTH_LABEL_LARGE "tlblAzLg"
+  #define NEXTION_OBJID_AZIMUTH_LABEL_LARGE 22
 
-#define NEXTION_OBJNAME_ELEVATION_LABEL "tlblEl"
-#define NEXTION_OBJID_ELEVATION_LABEL 13
+  #define NEXTION_OBJNAME_AZIMUTH_VALUE_LARGE "tAzLg"
+  #define NEXTION_OBJID_AZIMUTH_VALUE_LARGE 23
 
-#define NEXTION_OBJNAME_ELEVATION_VALUE "tEl"
-#define NEXTION_OBJID_ELEVATION_VALUE 14
 
-#define NEXTION_OBJNAME_GPS "tGPS"
-#define NEXTION_OBJID_GPS 7
+  #define NEXTION_OBJNAME_BUTTON_CW "bCW"
+  #define NEXTION_OBJID_BUTTON_CW 17
 
-#define NEXTION_OBJNAME_CLOCK "tClk"
-#define NEXTION_OBJID_CLOCK 8
+  #define NEXTION_OBJNAME_BUTTON_CCW "bCCW"
+  #define NEXTION_OBJID_BUTTON_CCW 4
 
-#define NEXTION_OBJNAME_GRID "tGrid"
-#define NEXTION_OBJID_GRID 9
+  #define NEXTION_OBJNAME_BUTTON_UP "bUp"
+  #define NEXTION_OBJID_BUTTON_UP 15
 
-#define NEXTION_OBJNAME_COORDINATES "tCoord"
-#define NEXTION_OBJID_COORDINATES 10
+  #define NEXTION_OBJNAME_BUTTON_DOWN "bDown"
+  #define NEXTION_OBJID_BUTTON_DOWN 16
 
-#define NEXTION_OBJNAME_CODEVERSION "tCV"
-#define NEXTION_OBJID_CODEVERSION 5
+  #define NEXTION_OBJNAME_BUTTON_STOP "bSTOP"
+  #define NEXTION_OBJID_BUTTON_STOP 5
 
-#define NEXTION_OBJNAME_DIAGWINDOW "tDiag"
-#define NEXTION_OBJID_DIAGWINDOW 4
+  #define NEXTION_OBJNAME_ELEVATION_LABEL "tlblEl"
+  #define NEXTION_OBJID_ELEVATION_LABEL 13
 
-#define NEXTION_OBJNAME_DATAENT_CANCEL "bCan"
-#define NEXTION_OBJID_DATAENT_CANCEL 14
+  #define NEXTION_OBJNAME_ELEVATION_VALUE "tEl"
+  #define NEXTION_OBJID_ELEVATION_VALUE 14
 
-#define NEXTION_OBJNAME_DATAENT_ENTER "bEnt"
-#define NEXTION_OBJID_DATAENT_ENTER 13
+  #define NEXTION_OBJNAME_GPS "tGPS"
+  #define NEXTION_OBJID_GPS 7
 
-#define NEXTION_OBJNAME_DATAENT_DEL "bDel"
-#define NEXTION_OBJID_DATAENT_DEL 12
+  #define NEXTION_OBJNAME_CLOCK "tClk"
+  #define NEXTION_OBJID_CLOCK 8
 
-#define NEXTION_OBJNAME_DATAENT_SEPERATOR "bSep"
-#define NEXTION_OBJID_DATAENT_SEPERATOR 11
+  #define NEXTION_OBJNAME_GRID "tGrid"
+  #define NEXTION_OBJID_GRID 9
 
-          
+  #define NEXTION_OBJNAME_COORDINATES "tCoord"
+  #define NEXTION_OBJID_COORDINATES 10
+
+  #define NEXTION_OBJNAME_CODEVERSION "tCV"
+  #define NEXTION_OBJID_CODEVERSION 5
+
+  // Page Diagnostics
+
+  #define NEXTION_OBJNAME_DIAGWINDOW "tDiag"
+  #define NEXTION_OBJID_DIAGWINDOW 4
+
+  // Page Data Entry
+
+  #define NEXTION_OBJNAME_DATAENT_TITLE "tTitle"
+  #define NEXTION_OBJID_DATAENT_TITLE 20
+
+  #define NEXTION_OBJNAME_DATAENT_ENTRY "tEntry"
+  #define NEXTION_OBJID_DATAENT_ENTRY 15
+
+  #define NEXTION_OBJNAME_DATAENT_MSG "tMsg"
+  #define NEXTION_OBJID_DATAENT_MSG 16
+
+  #define NEXTION_OBJNAME_DATAENT_CANCEL "bCan"
+  #define NEXTION_OBJID_DATAENT_CANCEL 14
+
+  #define NEXTION_OBJNAME_DATAENT_ENTER "bEnt"
+  #define NEXTION_OBJID_DATAENT_ENTER 13
+
+  #define NEXTION_OBJNAME_DATAENT_DEL "bDel"
+  #define NEXTION_OBJID_DATAENT_DEL 12
+
+  #define NEXTION_OBJNAME_DATAENT_SEPERATOR "bSep"
+  #define NEXTION_OBJID_DATAENT_SEPERATOR 11
+
+  #define NEXTION_OBJNAME_VAR_SEPERATOR "vaSepEntered"
+  #define NEXTION_OBJID_VAR_SEPERATOR 17
+
+  #define NEXTION_OBJNAME_VAR_ENTRYVAL "vaEntValue"
+  #define NEXTION_OBJID_VAR_ENTRYVAL 18
+
+  #define NEXTION_OBJNAME_VAR_ENTRYMODE "vaEntryMode"
+  #define NEXTION_OBJID_VAR_ENTRYMODE 19
+
+  #define NEXTION_OBJNAME_VAR_ENTLEN "vaEntLen"
+  #define NEXTION_OBJID_VAR_ENTLEN 21 
+            
 
 // Declare Nextion objects (page id, component id,component name) - do not touch these unless you know what you are doing
 
 // Main Page
+
+#if defined(NEXTION_OBJNAME_TIMER_RESET) && defined(NEXTION_OBJID_TIMER_RESET)
+  NexTimer timerInvokeReset= NexTimer(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_TIMER_RESET,NEXTION_OBJNAME_TIMER_RESET);
+#endif
+
+#if defined(NEXTION_OBJNAME_TIMER_AZ_ONLY) && defined(NEXTION_OBJID_TIMER_AZ_ONLY)
+  NexTimer timerAzOnly= NexTimer(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_TIMER_AZ_ONLY,NEXTION_OBJNAME_TIMER_AZ_ONLY);
+#endif
+
+#if defined(NEXTION_OBJNAME_TIMER_AZ_EL) && defined(NEXTION_OBJID_TIMER_AZ_EL)
+  NexTimer timerAzEl= NexTimer(NEXTION_OBJID_TIMER_AZ_EL, NEXTION_OBJID_TIMER_AZ_EL,NEXTION_OBJNAME_TIMER_AZ_EL);
+#endif
+
 #if defined(NEXTION_OBJNAME_MAIN_TITLE) && defined(NEXTION_OBJID_MAIN_TITLE)
   NexText tTitle = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_MAIN_TITLE, NEXTION_OBJNAME_MAIN_TITLE); 
 #endif
+
+#if defined(FEATURE_ELEVATION_CONTROL) // switch between large and small azimuth object for az-only and az/el systems
+  #if defined(NEXTION_OBJNAME_AZIMUTH_LABEL_SMALL) && defined(NEXTION_OBJID_AZIMUTH_LABEL_SMALL)
+    NexText tAzLabel = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_LABEL_SMALL, NEXTION_OBJNAME_AZIMUTH_LABEL_SMALL); 
+  #endif
+  #if defined(NEXTION_OBJNAME_AZIMUTH_VALUE_SMALL) && defined(NEXTION_OBJID_AZIMUTH_VALUE_SMALL)
+    NexText tAzValue = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_VALUE_SMALL, NEXTION_OBJNAME_AZIMUTH_VALUE_SMALL); 
+  #endif  
+#else
+  #if defined(NEXTION_OBJNAME_AZIMUTH_LABEL_LARGE) && defined(NEXTION_OBJID_AZIMUTH_LABEL_LARGE)
+    NexText tAzLabel = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_LABEL_LARGE, NEXTION_OBJNAME_AZIMUTH_LABEL_LARGE); 
+  #endif
+  #if defined(NEXTION_OBJNAME_AZIMUTH_VALUE_LARGE) && defined(NEXTION_OBJID_AZIMUTH_VALUE_LARGE)
+    NexText tAzValue = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_VALUE_LARGE, NEXTION_OBJNAME_AZIMUTH_VALUE_LARGE); 
+  #endif
+#endif
+
+
 
 #if defined(NEXTION_OBJNAME_STATUS) && defined(NEXTION_OBJID_STATUS)
   NexText tStatus = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_STATUS, NEXTION_OBJNAME_STATUS); 
@@ -130,14 +220,6 @@
 
 #if defined(NEXTION_OBJNAME_CLOCK) && defined(NEXTION_OBJID_CLOCK)
   NexText tClock = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_CLOCK, NEXTION_OBJNAME_CLOCK);
-#endif
-
-#if defined(NEXTION_OBJNAME_AZIMUTH_LABEL) && defined(NEXTION_OBJID_AZIMUTH_LABEL)
-  NexText tAzLabel = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_LABEL, NEXTION_OBJNAME_AZIMUTH_LABEL); 
-#endif
-
-#if defined(NEXTION_OBJNAME_AZIMUTH_VALUE) && defined(NEXTION_OBJID_AZIMUTH_VALUE)
-  NexText tAzValue = NexText(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_AZIMUTH_VALUE, NEXTION_OBJNAME_AZIMUTH_VALUE); 
 #endif
 
 #if defined(NEXTION_OBJNAME_ELEVATION_LABEL) && defined(NEXTION_OBJID_ELEVATION_LABEL)
@@ -189,20 +271,49 @@
 
 // Data Entry Page
 
-#if defined(NEXTION_OBJNAME_DATAENT_CANCEL) && defined(NEXTION_OBJID_DATAENT_CANCEL)
-   NexButton bDataEntryCancel = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_CANCEL, NEXTION_OBJNAME_DATAENT_CANCEL);
+#if defined(NEXTION_OBJID_DATAENT_TITLE) && defined(NEXTION_OBJNAME_DATAENT_TITLE)
+  NexText tDataEntryTitle = NexText(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_TITLE, NEXTION_OBJNAME_DATAENT_TITLE);
 #endif
+
+#if defined(NEXTION_OBJID_DATAENT_ENTRY) && defined(NEXTION_OBJNAME_DATAENT_ENTRY)
+  NexText tDataEntryEntry = NexText(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_ENTRY, NEXTION_OBJNAME_DATAENT_ENTRY);
+#endif
+
+#if defined(NEXTION_OBJNAME_DATAENT_CANCEL) && defined(NEXTION_OBJID_DATAENT_CANCEL)
+  NexButton bDataEntryCancel = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_CANCEL, NEXTION_OBJNAME_DATAENT_CANCEL);
+#endif
+
 #if defined(NEXTION_OBJNAME_DATAENT_ENTER) && defined(NEXTION_OBJID_DATAENT_ENTER)
   NexButton bDataEntryEnter = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_ENTER, NEXTION_OBJNAME_DATAENT_ENTER);
 #endif
+
 #if defined(NEXTION_OBJNAME_DATAENT_DEL) && defined(NEXTION_OBJID_DATAENT_DEL)
   NexButton bDataEntryDelete = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_DEL, NEXTION_OBJNAME_DATAENT_DEL);
 #endif
+
 #if defined(NEXTION_OBJNAME_DATAENT_SEPERATOR) && defined(NEXTION_OBJID_DATAENT_SEPERATOR)
   NexButton bDataEntrySeperator = NexButton(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_SEPERATOR, NEXTION_OBJNAME_DATAENT_SEPERATOR);
 #endif
 
+#if defined(NEXTION_OBJID_DATAENT_MSG) && defined(NEXTION_OBJNAME_DATAENT_MSG)
+  NexText tDataEntryMsg = NexText(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_DATAENT_MSG, NEXTION_OBJNAME_DATAENT_MSG);
+#endif
 
+#if defined(NEXTION_OBJID_VAR_SEPERATOR) && defined(NEXTION_OBJNAME_VAR_SEPERATOR)
+  NexVariable vDataEntrySeperatorEntered = NexVariable(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_VAR_SEPERATOR, NEXTION_OBJNAME_VAR_SEPERATOR);
+#endif
+
+#if defined(NEXTION_OBJID_VAR_ENTRYVAL) && defined(NEXTION_OBJNAME_VAR_ENTRYVAL)
+  NexVariable vDataEntryValue = NexVariable(NEXTION_PAGE_DATA_ENTRY,NEXTION_OBJID_VAR_ENTRYVAL,NEXTION_OBJNAME_VAR_ENTRYVAL);
+#endif
+
+#if defined(NEXTION_OBJID_VAR_ENTRYMODE) && defined(NEXTION_OBJNAME_VAR_ENTRYMODE)
+  NexVariable vDataEntryMode = NexVariable(NEXTION_PAGE_DATA_ENTRY,NEXTION_OBJID_VAR_ENTRYMODE,NEXTION_OBJNAME_VAR_ENTRYMODE);
+#endif
+
+#if defined(NEXTION_OBJID_VAR_ENTLEN) && defined(NEXTION_OBJNAME_VAR_ENTLEN)
+  NexVariable vDataEntryDataEntryLength = NexVariable(NEXTION_PAGE_DATA_ENTRY, NEXTION_OBJID_VAR_ENTLEN, NEXTION_OBJNAME_VAR_ENTLEN);
+#endif
 
 // Page Navigation Buttons - we have to detect page changes because the data in the objects is volatile.  (Why, Nextion, why?)
 #define NEXTION_OBJNAME_BUTTON_BACK "bBack"
@@ -217,12 +328,24 @@
 #define NEXTION_OBJID_PAGE_DIAGNOSTICS_BUTTON_BACK 2
 #define NEXTION_OBJID_PAGE_DIAGNOSTICS_BUTTON_NEXT 1
 
-#define NEXTION_OBJID_PAGE_ABOUT_BUTTON_BACK 3 
+#define NEXTION_OBJID_PAGE_ABOUT_BUTTON_BACK 3
 #define NEXTION_OBJID_PAGE_ABOUT_BUTTON_NEXT 4
+
+#define NEXTION_OBJID_PAGE_SECONDARY_BUTTON_BACK 1
+#define NEXTION_OBJID_PAGE_SECONDARY_BUTTON_NEXT 12
+
+#define NEXTION_OBJID_PAGE_TERTIARY_BUTTON_BACK 1
+#define NEXTION_OBJID_PAGE_TERTIARY_BUTTON_NEXT 3
 
 
 NexButton bBackPageMain = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_PAGE_MAIN_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
 NexButton bNextPageMain = NexButton(NEXTION_PAGE_MAIN_ID, NEXTION_OBJID_PAGE_MAIN_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
+
+NexButton bBackPageSecondary = NexButton(NEXTION_PAGE_SECONDARY, NEXTION_OBJID_PAGE_SECONDARY_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
+NexButton bNextPageSecondary = NexButton(NEXTION_PAGE_SECONDARY, NEXTION_OBJID_PAGE_SECONDARY_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
+
+NexButton bBackPageTertiary = NexButton(NEXTION_PAGE_TERTIARY, NEXTION_OBJID_PAGE_TERTIARY_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
+NexButton bNextPageTertiary = NexButton(NEXTION_PAGE_TERTIARY, NEXTION_OBJID_PAGE_TERTIARY_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
 
 NexButton bBackPageConfiguration = NexButton(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_OBJID_PAGE_CONFIGURATION_BUTTON_BACK, NEXTION_OBJNAME_BUTTON_BACK);
 NexButton bNextPageConfiguration = NexButton(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_OBJID_PAGE_CONFIGURATION_BUTTON_NEXT, NEXTION_OBJNAME_BUTTON_NEXT);
@@ -239,7 +362,8 @@ NexPage pageConfiguration = NexPage(NEXTION_PAGE_CONFIGURATION_ID, 0, "Configura
 NexPage pageDiagnostics = NexPage(NEXTION_PAGE_DIAGNOSTICS_ID, 0, "Diagnostics");
 NexPage pageAbout = NexPage(NEXTION_PAGE_ABOUT_ID, 0, "About");
 NexPage pageDataEntry = NexPage(NEXTION_PAGE_DATA_ENTRY, 0, "DataEntry");
-
+NexPage pageSecondary = NexPage(NEXTION_PAGE_SECONDARY, 0, "Secondary");
+NexPage pageTertiary = NexPage(NEXTION_PAGE_TERTIARY, 0, "Tertiary");
 
 // Button registrations - do not touch these unless you know what you are doing
 NexTouch *nex_listen_list[] = {
@@ -270,11 +394,13 @@ NexTouch *nex_listen_list[] = {
   #if defined(NEXTION_OBJNAME_DATAENT_SEPERATOR) && defined(NEXTION_OBJID_DATAENT_SEPERATOR)
     &bDataEntrySeperator,
   #endif
-  #if defined(NEXTION_OBJNAME_AZIMUTH_VALUE) && defined(NEXTION_OBJID_AZIMUTH_VALUE)
-    &tAzValue,
-  #endif
+  &tAzValue,
   #if defined(NEXTION_OBJNAME_ELEVATION_VALUE) && defined(NEXTION_OBJID_ELEVATION_VALUE)
     &tElValue,
+  #endif  
+  &tAzLabel,
+  #if defined(NEXTION_OBJNAME_ELEVATION_LABEL) && defined(NEXTION_OBJID_ELEVATION_LABEL)
+    &tElLabel,
   #endif  
   &bBackPageMain,
   &bNextPageMain,
@@ -284,8 +410,17 @@ NexTouch *nex_listen_list[] = {
   &bNextPageDiagnostics,
   &bBackPageAbout,
   &bNextPageAbout,
+  &bBackPageSecondary,
+  &bNextPageSecondary,
+  &bBackPageTertiary,
+  &bNextPageTertiary,
   NULL
 };
 
 
+// Macros for stuff
+
+#define NEXTION_UNDEFINED 0
+#define NEXTION_DATA_ENTRY_MODE_AZ 1
+#define NEXTION_DATA_ENTRY_MODE_EL 2
 

@@ -456,7 +456,7 @@
 
   */
 
-#define CODE_VERSION "2020.04.03.01"
+#define CODE_VERSION "2020.04.06.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -623,6 +623,10 @@
 #endif
 
 #ifdef FEATURE_NEXTION_DISPLAY
+  #include "Nextion.h"
+#endif
+
+#ifdef FEATURE_NEXTION_DISPLAY_2
   #include "Nextion.h"
 #endif
 
@@ -1134,8 +1138,13 @@ DebugClass debug;
 
 #ifdef FEATURE_NEXTION_DISPLAY
   #include "rotator_nextion.h"
-  byte nextion_current_screen = NEXTION_PAGE_MAIN_ID;
+  byte nextion_current_screen = NEXTION_PAGE_SPLASH;
 #endif
+
+#ifdef FEATURE_NEXTION_DISPLAY_2
+  #include "rotator_nextion_api.h"
+#endif
+
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 
@@ -3776,141 +3785,151 @@ void NextionbDownPushCallback(void *ptr) {   // button press
 // --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbBackPageMainPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID);
-
+  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbNextPageMainPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID);
-
+  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbBackPageConfigurationPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
-  
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);  
 }
-#endif
-
-
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbNextPageConfigurationPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID);
-
+  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbBackPageDiagnosticsPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID);
-
+  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbNextPageDiagnosticsPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID);
-
+  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)    
 void NextionbBackPageAboutPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID);
-
+  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbNextPageAboutPushCallback(void *ptr){
-
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
-
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
+void NextionbBackPageSecondaryPushCallback(void *ptr){
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
+}
+void NextionbNextPageSecondaryPushCallback(void *ptr){
+  NextionPageRefresh(NEXTION_PAGE_TERTIARY, NEXTION_UNDEFINED);
+}
+void NextionbBackPageTertiaryPushCallback(void *ptr){
+  NextionPageRefresh(NEXTION_PAGE_SECONDARY, NEXTION_UNDEFINED);
+}
+void NextionbNextPageTertiaryPushCallback(void *ptr){
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
+}
+
+
 void NextionbDataEntryCancelPushCallback(void *ptr){
-
-  // TODO: Processing of Data Entry Cancel
-
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
-
-
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextionbDataEntryEnterPushCallback(void *ptr){
+  float entered_data_float = 0;
+  uint32_t data_entry_mode = NEXTION_UNDEFINED;
+  uint32_t decimal_position = 99;
+  uint32_t entry_value = 0;
+  byte request_type = REQUEST_STOP;
+  byte request_axis = 0;
+  uint32_t text_entered_length = 0;
 
-  // TODO: Processing of Data Entry Enter
+  #if defined(DEBUG_NEXTION_DISPLAY)
+    debug.print("NextionbDataEntryEnterPushCallback: data_entry_mode: ");
+  #endif
 
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
+  //get the values from the page
+  vDataEntryMode.getValue(&data_entry_mode);
+  vDataEntrySeperatorEntered.getValue(&decimal_position);
+  vDataEntryValue.getValue(&entry_value);
+  //tDataEntryEntry.getText(dummy_buffer,dummy_length);  // couldn't get this to work for deriving entry length
+  vDataEntryDataEntryLength.getValue(&text_entered_length);
+
+  #if defined(DEBUG_NEXTION_DISPLAY)
+    debug.print("NextionbDataEntryEnterPushCallback: data_entry_mode: ");
+  #endif 
+
+  if (data_entry_mode == NEXTION_DATA_ENTRY_MODE_AZ){
+    request_type = REQUEST_AZIMUTH;
+    request_axis = AZ;
+    #if defined(DEBUG_NEXTION_DISPLAY)
+      debug.print("NEXTION_DATA_ENTRY_MODE_AZ ");
+    #endif 
+  }
+
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    if (data_entry_mode == NEXTION_DATA_ENTRY_MODE_EL){
+      request_type = REQUEST_ELEVATION;
+      request_axis = EL;
+      #if defined(DEBUG_NEXTION_DISPLAY)
+        debug.print("NEXTION_DATA_ENTRY_MODE_EL ");
+      #endif 
+    }
+  #endif
+
+  #if defined(DEBUG_NEXTION_DISPLAY)
+    debug.print("sep: ");
+    debug.print(decimal_position);
+    debug.print(" val: ");
+    debug.print(entry_value);
+    debug.print(" len: ");
+    debug.print(text_entered_length);    
+    debug.println("");
+  #endif 
+
+  if (request_type != REQUEST_STOP){
+    entered_data_float = entry_value;
+    if (decimal_position != 99){  // 99 == no decimal place - do nothing
+      entered_data_float = entered_data_float / pow(10,(text_entered_length - decimal_position));
+      #if defined(DEBUG_NEXTION_DISPLAY)
+        debug.print("NextionbDataEntryEnterPushCallback: entered_data_float: ");
+        debug.println(entered_data_float);
+      #endif       
+    }
+    // TODO: az / el validation
+    submit_request(request_axis, request_type, int(entered_data_float * HEADING_MULTIPLIER), DBG_NEXTION_DATA_ENT_ENTER_PUSH_CALLBK);
+  }
+
+
+  // go back to the main page
+  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
 
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextiontAzValuePushCallback(void *ptr){
-
-  // TODO: setup screen for azimuth entry
-
-  NextionPageRefresh(NEXTION_PAGE_DATA_ENTRY);
-  
-
+  NextionPageRefresh(NEXTION_PAGE_DATA_ENTRY,NEXTION_DATA_ENTRY_MODE_AZ);
 }
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
 void NextiontElValuePushCallback(void *ptr){
-
-  // TODO: setup screen for elevation entry
-
-  NextionPageRefresh(NEXTION_PAGE_DATA_ENTRY);
-
+  NextionPageRefresh(NEXTION_PAGE_DATA_ENTRY,NEXTION_DATA_ENTRY_MODE_EL);
 }
+
+void NextiontAzLabelPushCallback(void *ptr){
+  NextionPageRefresh(NEXTION_PAGE_SECONDARY,NEXTION_UNDEFINED);
+}
+void NextiontElLabelPushCallback(void *ptr){
+  NextionPageRefresh(NEXTION_PAGE_SECONDARY,NEXTION_UNDEFINED);
+}
+
 #endif
 
 // --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
-void NextionPageRefresh(byte page_id){
+void NextionPageRefresh(byte page_id,byte other_information){
 
-  
+  // load up pages and populate as appropriate
 
   switch (page_id){
     case NEXTION_PAGE_MAIN_ID:
       pageMain.show();
-      tTitle.setText(TOUCH_DISPLAY_TITLE);
-      tAzLabel.setText(AZIMUTH_STRING_NO_SPACE);
+
       #if defined(FEATURE_ELEVATION_CONTROL)
         tElLabel.setText(ELEVATION_STRING_NO_SPACE);
+        timerAzEl.enable();
+      #else
+        timerAzOnly.enable();  // this runs code on the display that makes elevation related objects disappear
       #endif
 
-      // Make the Up and Down buttons disappear if they're defined but we're azimuth onluy
-      #if !defined(FEATURE_ELEVATION_CONTROL) && defined(NEXTION_OBJNAME_BUTTON_DOWN) && defined(NEXTION_OBJID_BUTTON_DOWN)
-        bDown.Set_background_color_bco(NEXTION_OBJECT_DISABLE_COLOR);
-        bDown.Set_press_background_color_bco2(NEXTION_OBJECT_DISABLE_COLOR);
-        bDown.Set_font_color_pco(NEXTION_OBJECT_DISABLE_COLOR);
-        bDown.Set_press_font_color_pco2(NEXTION_OBJECT_DISABLE_COLOR);
-      #endif
-      #if !defined(FEATURE_ELEVATION_CONTROL) && defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
-        bUp.Set_background_color_bco(NEXTION_OBJECT_DISABLE_COLOR);
-        bUp.Set_press_background_color_bco2(NEXTION_OBJECT_DISABLE_COLOR);
-        bUp.Set_font_color_pco(NEXTION_OBJECT_DISABLE_COLOR);
-        bUp.Set_press_font_color_pco2(NEXTION_OBJECT_DISABLE_COLOR);
-      #endif
-
+      tTitle.setText(TOUCH_DISPLAY_TITLE);
+      tAzLabel.setText(AZIMUTH_STRING_NO_SPACE);
 
       bCW.setText(CW_STRING);
       bCCW.setText(CCW_STRING);
@@ -3942,6 +3961,25 @@ void NextionPageRefresh(byte page_id){
       bDataEntryEnter.setText(TOUCH_DISPLAY_DATA_ENTRY_ENTER);
       bDataEntryDelete.setText(TOUCH_DISPLAY_DATA_ENTRY_DELETE);
       bDataEntrySeperator.setText(TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR);
+      vDataEntryMode.setValue(other_information); // the data entry mode (az or el) gets passed to a Nextion global variable
+      switch(other_information){
+        case NEXTION_DATA_ENTRY_MODE_AZ:
+          tDataEntryTitle.setText(TOUCH_DISPLAY_ENTER_AZ);
+          break;
+        case NEXTION_DATA_ENTRY_MODE_EL:
+          tDataEntryTitle.setText(TOUCH_DISPLAY_ENTER_EL);
+          break;  
+      }
+      break;  
+
+    case NEXTION_PAGE_SECONDARY:
+      pageSecondary.show();
+      //tTitleSecondary.setText(TOUCH_DISPLAY_TITLE);      
+      break;  
+
+    case NEXTION_PAGE_TERTIARY:
+      pageTertiary.show();
+      //tTitleTertiary.setText(TOUCH_DISPLAY_TITLE);
       break;  
 
   }
@@ -3957,17 +3995,18 @@ void service_nextion_display(){
 
     TODO:
 
-      Preset Encoder Status ?
-      Park Status
-      Moon & Sun (Buttons, another Page?)
-      PARK Buttons
       Azimuth & Elevation Data Entry in Display
       Azimuth Direction
       
-      New Pages
+      Pages
+        Secondary
+          Presets
+          Park Button
+          Long path
+          Moon
+          Sun
         Data Entry
         Configuration
-        Moon & Sun?
         Event Log?
         Diagnostics
           Serial Sniff?
@@ -3982,6 +4021,7 @@ void service_nextion_display(){
   static int last_azimuth = 0;
   static unsigned long last_az_update = 0;
   static byte last_nextion_current_screen = NEXTION_PAGE_MAIN_ID;
+  static byte unloaded_splash_screen = 0;
 
   #if defined(FEATURE_ELEVATION_CONTROL)
     static int last_elevation = 0;
@@ -4025,6 +4065,11 @@ void service_nextion_display(){
   #if defined(ANALOG_AZ_OVERLAP_DEGREES)
     static unsigned long last_status3_update = 0;
   #endif
+
+  if ((!unloaded_splash_screen) && (millis()>3000)){
+    NextionPageRefresh(NEXTION_PAGE_MAIN_ID,NEXTION_UNDEFINED);
+    unloaded_splash_screen = 1;
+  }
 
   nexLoop(nex_listen_list);
 
@@ -4118,17 +4163,20 @@ void service_nextion_display(){
     //COORDINATES
     #if defined(FEATURE_GPS) && defined(NEXTION_OBJNAME_COORDINATES) && defined(NEXTION_OBJID_COORDINATES)
       if (((millis() - last_coord_update) > 5100) || (last_nextion_current_screen != nextion_current_screen)){
-
-        gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp);
-        dtostrf(gps_lat_temp,4,4,workstring1);
-        strcat(workstring1," ");
-        dtostrf(gps_long_temp,4,4,workstring2);
-        strcat(workstring1,workstring2);
-        strcat(workstring1," ");
-        dtostrf(gps.altitude()/100,0,0,workstring2);
-        strcat(workstring1,workstring2);
-        strcat(workstring1,"m");
-        tCoordinates.setText(workstring1);
+        if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {
+          gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp);
+          dtostrf(gps_lat_temp,4,4,workstring1);
+          strcat(workstring1," ");
+          dtostrf(gps_long_temp,4,4,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1," ");
+          dtostrf(gps.altitude()/100,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"m");
+          tCoordinates.setText(workstring1);
+        } else {
+          tCoordinates.setText("");
+        }
         last_coord_update = millis();
       }
     #endif
@@ -8385,8 +8433,9 @@ void initialize_peripherals(){
 
   #ifdef FEATURE_NEXTION_DISPLAY
     nexInit();
-    NextionPageRefresh(NEXTION_PAGE_MAIN_ID);
 
+    timerInvokeReset.enable();  // manually invoke a hardware reset - this is to fix issues with data entry page
+  
     // Register events
     #if defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
       bCW.attachPush(NextionbCWPushCallback, &bCW);
@@ -8399,11 +8448,9 @@ void initialize_peripherals(){
       bSTOP.attachPop(NextionbSTOPPushAndPopCallback, &bSTOP);
     #endif 
 
-      // Azimuth Value Press (go to data entry page)
-    #if defined(NEXTION_OBJNAME_AZIMUTH_VALUE) && defined(NEXTION_OBJID_AZIMUTH_VALUE)
-      tAzValue.attachPush(NextiontAzValuePushCallback, &tAzValue);
-    #endif
-
+    // Azimuth Value Press (go to data entry page)
+    tAzValue.attachPush(NextiontAzValuePushCallback, &tAzValue);
+  
     #if defined(FEATURE_ELEVATION_CONTROL)
       #if defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
         bUp.attachPush(NextionbUpPushCallback, &bUp);
@@ -8416,7 +8463,15 @@ void initialize_peripherals(){
         tElValue.attachPush(NextiontElValuePushCallback, &tElValue);
       #endif  
     #endif
-    
+
+    // Azimuth and Elevation Label pushes (go to Secondary page)
+
+    tAzLabel.attachPush(NextiontAzLabelPushCallback, &tAzLabel);
+  
+    #if defined(FEATURE_ELEVATION_CONTROL) && defined(NEXTION_OBJNAME_ELEVATION_LABEL) && defined(NEXTION_OBJID_ELEVATION_LABEL)
+      tElLabel.attachPush(NextiontElLabelPushCallback, &tElLabel);
+    #endif 
+ 
     #if defined(NEXTION_OBJNAME_DATAENT_CANCEL) && defined(NEXTION_OBJNAME_DATAENT_CANCEL)
       bDataEntryCancel.attachPush(NextionbDataEntryCancelPushCallback, &bDataEntryCancel);
     #endif
@@ -8436,6 +8491,11 @@ void initialize_peripherals(){
     bBackPageAbout.attachPush(NextionbBackPageAboutPushCallback, &bBackPageAbout);
     bNextPageAbout.attachPush(NextionbNextPageAboutPushCallback, &bNextPageAbout);
 
+    bBackPageSecondary.attachPush(NextionbBackPageSecondaryPushCallback, &bBackPageSecondary);
+    bNextPageSecondary.attachPush(NextionbNextPageSecondaryPushCallback, &bNextPageSecondary);
+
+    bBackPageTertiary.attachPush(NextionbBackPageTertiaryPushCallback, &bBackPageTertiary);
+    bNextPageTertiary.attachPush(NextionbNextPageTertiaryPushCallback, &bNextPageTertiary);
     
   #endif
 

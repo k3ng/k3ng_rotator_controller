@@ -86,7 +86,10 @@
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY
 // #define FEATURE_HD44780_I2C_DISPLAY    // Not working yet
 
-#define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+// #define FEATURE_NEXTION_DISPLAY  // Under Development Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+
+// #define FEATURE_NEXTION_DISPLAY_2
+
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
 
