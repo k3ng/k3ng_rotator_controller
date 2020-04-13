@@ -88,7 +88,7 @@
 
 // #define FEATURE_NEXTION_DISPLAY  // Under Development Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
-// #define FEATURE_NEXTION_DISPLAY_2
+#define FEATURE_NEXTION_DISPLAY_2
 
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
