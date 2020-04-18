@@ -430,7 +430,7 @@
       Implemented a round robin screen redraw in rotator_k3ngdisplay.cpp 
 
     2020.03.30.01
-      FEATURE_NEXTION_DISPLAY - Nextion display support UNDER DEVELOPMENT
+      FEATURE_NEXTION_DISPLAY_OLD - Nextion display support UNDER DEVELOPMENT
       Added file rotator_nextion.h
       Documentation in progress: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
@@ -447,6 +447,10 @@
     2020.04.03.01
       Fixed issue with 20 column LCD displays and spacing of az and el readings (Thanks Steve VE3RX) 
 
+    2020.04.18.01  
+      More work on FEATURE_NEXTION_DISPLAY, Nextion Display API (UNDER DEVELOPMENT)
+      Documentation in progress: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -456,7 +460,7 @@
 
   */
 
-#define CODE_VERSION "2020.04.06.01"
+#define CODE_VERSION "2020.04.18.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -620,14 +624,6 @@
   #else
     #include <TimerFive.h>
   #endif
-#endif
-
-#ifdef FEATURE_NEXTION_DISPLAY
-  #include "Nextion.h"
-#endif
-
-#ifdef FEATURE_NEXTION_DISPLAY_2
-  #include "Nextion.h"
 #endif
 
 #include "rotator_language.h"
@@ -1136,15 +1132,6 @@ DebugClass debug;
   unsigned long last_activity_time_autopark = 0;
 #endif  
 
-#ifdef FEATURE_NEXTION_DISPLAY
-  #include "rotator_nextion.h"
-  byte nextion_current_screen = NEXTION_PAGE_SPLASH;
-#endif
-
-#ifdef FEATURE_NEXTION_DISPLAY_2
-  #include "rotator_nextion_api.h"
-#endif
-
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 
@@ -1215,7 +1202,7 @@ void loop() {
     update_lcd_display();
   #endif
 
-  #ifdef FEATURE_NEXTION_DISPLAY
+  #if defined(FEATURE_NEXTION_DISPLAY)
     service_nextion_display();
   #endif
 
@@ -3717,302 +3704,9 @@ char * azimuth_direction(int azimuth_in){
 #endif /* ifdef FEATURE_LCD_DISPLAY */
 
 // --------------------------------------------------------------
-// #if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
-// void NextionbCWPopCallback(void *ptr) {  // button release
 
-//   submit_request(AZ, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
-
-// }
-// #endif
-
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
-void NextionbCWPushCallback(void *ptr) {  // button press
-
-  submit_request(AZ, REQUEST_CW, 0, DBG_NEXTION_BUTTON);
-  
-}
-#endif
-
-// --------------------------------------------------------------
-//#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
-// void NextionbCCWPopCallback(void *ptr) {    // button release
-
- 
-//   submit_request(AZ, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
-
-// }
-// #endif
-
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
-void NextionbCCWPushCallback(void *ptr) {   // button press
-
-  submit_request(AZ, REQUEST_CCW, 0, DBG_NEXTION_BUTTON);
-
-}
-#endif
-
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_STOP) && defined(NEXTION_OBJID_BUTTON_STOP)
-void NextionbSTOPPushAndPopCallback(void *ptr) {  // button press and release, just to be safe
-
-  submit_request(AZ, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
-  #if defined(FEATURE_ELEVATION_CONTROL)
-    submit_request(EL, REQUEST_STOP, 0, DBG_NEXTION_BUTTON);
-  #endif
-
-}
-#endif
-
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW) && defined(FEATURE_ELEVATION_CONTROL)
-void NextionbUpPushCallback(void *ptr) {   // button press
-
-  submit_request(EL, REQUEST_UP, 0, DBG_NEXTION_BUTTON);
-
-}
-#endif
-
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY) && defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW) && defined(FEATURE_ELEVATION_CONTROL)
-void NextionbDownPushCallback(void *ptr) {   // button press
-
-  submit_request(EL, REQUEST_DOWN, 0, DBG_NEXTION_BUTTON);
-
-}
-#endif
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
-void NextionbBackPageMainPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID, NEXTION_UNDEFINED);
-}
-void NextionbNextPageMainPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_UNDEFINED);
-}
-void NextionbBackPageConfigurationPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);  
-}
-void NextionbNextPageConfigurationPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID, NEXTION_UNDEFINED);
-}
-void NextionbBackPageDiagnosticsPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_CONFIGURATION_ID, NEXTION_UNDEFINED);
-}
-void NextionbNextPageDiagnosticsPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_ABOUT_ID, NEXTION_UNDEFINED);
-}
-void NextionbBackPageAboutPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_DIAGNOSTICS_ID, NEXTION_UNDEFINED);
-}
-void NextionbNextPageAboutPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
-}
-void NextionbBackPageSecondaryPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
-}
-void NextionbNextPageSecondaryPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_TERTIARY, NEXTION_UNDEFINED);
-}
-void NextionbBackPageTertiaryPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_SECONDARY, NEXTION_UNDEFINED);
-}
-void NextionbNextPageTertiaryPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
-}
-
-
-void NextionbDataEntryCancelPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
-}
-void NextionbDataEntryEnterPushCallback(void *ptr){
-  float entered_data_float = 0;
-  uint32_t data_entry_mode = NEXTION_UNDEFINED;
-  uint32_t decimal_position = 99;
-  uint32_t entry_value = 0;
-  byte request_type = REQUEST_STOP;
-  byte request_axis = 0;
-  uint32_t text_entered_length = 0;
-
-  #if defined(DEBUG_NEXTION_DISPLAY)
-    debug.print("NextionbDataEntryEnterPushCallback: data_entry_mode: ");
-  #endif
-
-  //get the values from the page
-  vDataEntryMode.getValue(&data_entry_mode);
-  vDataEntrySeperatorEntered.getValue(&decimal_position);
-  vDataEntryValue.getValue(&entry_value);
-  //tDataEntryEntry.getText(dummy_buffer,dummy_length);  // couldn't get this to work for deriving entry length
-  vDataEntryDataEntryLength.getValue(&text_entered_length);
-
-  #if defined(DEBUG_NEXTION_DISPLAY)
-    debug.print("NextionbDataEntryEnterPushCallback: data_entry_mode: ");
-  #endif 
-
-  if (data_entry_mode == NEXTION_DATA_ENTRY_MODE_AZ){
-    request_type = REQUEST_AZIMUTH;
-    request_axis = AZ;
-    #if defined(DEBUG_NEXTION_DISPLAY)
-      debug.print("NEXTION_DATA_ENTRY_MODE_AZ ");
-    #endif 
-  }
-
-  #if defined(FEATURE_ELEVATION_CONTROL)
-    if (data_entry_mode == NEXTION_DATA_ENTRY_MODE_EL){
-      request_type = REQUEST_ELEVATION;
-      request_axis = EL;
-      #if defined(DEBUG_NEXTION_DISPLAY)
-        debug.print("NEXTION_DATA_ENTRY_MODE_EL ");
-      #endif 
-    }
-  #endif
-
-  #if defined(DEBUG_NEXTION_DISPLAY)
-    debug.print("sep: ");
-    debug.print(decimal_position);
-    debug.print(" val: ");
-    debug.print(entry_value);
-    debug.print(" len: ");
-    debug.print(text_entered_length);    
-    debug.println("");
-  #endif 
-
-  if (request_type != REQUEST_STOP){
-    entered_data_float = entry_value;
-    if (decimal_position != 99){  // 99 == no decimal place - do nothing
-      entered_data_float = entered_data_float / pow(10,(text_entered_length - decimal_position));
-      #if defined(DEBUG_NEXTION_DISPLAY)
-        debug.print("NextionbDataEntryEnterPushCallback: entered_data_float: ");
-        debug.println(entered_data_float);
-      #endif       
-    }
-    // TODO: az / el validation
-    submit_request(request_axis, request_type, int(entered_data_float * HEADING_MULTIPLIER), DBG_NEXTION_DATA_ENT_ENTER_PUSH_CALLBK);
-  }
-
-
-  // go back to the main page
-  NextionPageRefresh(NEXTION_PAGE_MAIN_ID, NEXTION_UNDEFINED);
-
-}
-void NextiontAzValuePushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_DATA_ENTRY,NEXTION_DATA_ENTRY_MODE_AZ);
-}
-void NextiontElValuePushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_DATA_ENTRY,NEXTION_DATA_ENTRY_MODE_EL);
-}
-
-void NextiontAzLabelPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_SECONDARY,NEXTION_UNDEFINED);
-}
-void NextiontElLabelPushCallback(void *ptr){
-  NextionPageRefresh(NEXTION_PAGE_SECONDARY,NEXTION_UNDEFINED);
-}
-
-#endif
-
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
-void NextionPageRefresh(byte page_id,byte other_information){
-
-  // load up pages and populate as appropriate
-
-  switch (page_id){
-    case NEXTION_PAGE_MAIN_ID:
-      pageMain.show();
-
-      #if defined(FEATURE_ELEVATION_CONTROL)
-        tElLabel.setText(ELEVATION_STRING_NO_SPACE);
-        timerAzEl.enable();
-      #else
-        timerAzOnly.enable();  // this runs code on the display that makes elevation related objects disappear
-      #endif
-
-      tTitle.setText(TOUCH_DISPLAY_TITLE);
-      tAzLabel.setText(AZIMUTH_STRING_NO_SPACE);
-
-      bCW.setText(CW_STRING);
-      bCCW.setText(CCW_STRING);
-      bSTOP.setText(TOUCH_DISPLAY_STOP_STRING);
-      nextion_current_screen = NEXTION_PAGE_MAIN_ID;
-      break;
-
-    case NEXTION_PAGE_CONFIGURATION_ID:
-      pageConfiguration.show();
-      nextion_current_screen = NEXTION_PAGE_CONFIGURATION_ID;
-      break;  
-
-    case NEXTION_PAGE_DIAGNOSTICS_ID:
-      pageDiagnostics.show();
-      nextion_current_screen = NEXTION_PAGE_DIAGNOSTICS_ID;
-      tDiag.setText("Test 1 2 3\r\n4 5 6\n7 8 9\r\n");
-      break;
-
-    case NEXTION_PAGE_ABOUT_ID:
-      pageAbout.show();
-      nextion_current_screen = NEXTION_PAGE_ABOUT_ID;
-      tCV.setText(CODE_VERSION);
-      break;
-
-    case NEXTION_PAGE_DATA_ENTRY:
-      pageDataEntry.show();
-      nextion_current_screen = NEXTION_PAGE_DATA_ENTRY;
-      bDataEntryCancel.setText(TOUCH_DISPLAY_DATA_ENTRY_CANCEL);
-      bDataEntryEnter.setText(TOUCH_DISPLAY_DATA_ENTRY_ENTER);
-      bDataEntryDelete.setText(TOUCH_DISPLAY_DATA_ENTRY_DELETE);
-      bDataEntrySeperator.setText(TOUCH_DISPLAY_DATA_ENTRY_SEPERATOR);
-      vDataEntryMode.setValue(other_information); // the data entry mode (az or el) gets passed to a Nextion global variable
-      switch(other_information){
-        case NEXTION_DATA_ENTRY_MODE_AZ:
-          tDataEntryTitle.setText(TOUCH_DISPLAY_ENTER_AZ);
-          break;
-        case NEXTION_DATA_ENTRY_MODE_EL:
-          tDataEntryTitle.setText(TOUCH_DISPLAY_ENTER_EL);
-          break;  
-      }
-      break;  
-
-    case NEXTION_PAGE_SECONDARY:
-      pageSecondary.show();
-      //tTitleSecondary.setText(TOUCH_DISPLAY_TITLE);      
-      break;  
-
-    case NEXTION_PAGE_TERTIARY:
-      pageTertiary.show();
-      //tTitleTertiary.setText(TOUCH_DISPLAY_TITLE);
-      break;  
-
-  }
-
-}
-#endif
-// --------------------------------------------------------------
-//zzzzzz
-#if defined(FEATURE_NEXTION_DISPLAY)
+#if defined(FEATURE_NEXTION_DISPLAY_OLD)
 void service_nextion_display(){
-
-  /*
-
-    TODO:
-
-      Azimuth & Elevation Data Entry in Display
-      Azimuth Direction
-      
-      Pages
-        Secondary
-          Presets
-          Park Button
-          Long path
-          Moon
-          Sun
-        Data Entry
-        Configuration
-        Event Log?
-        Diagnostics
-          Serial Sniff?
-          Debug Log?
-
-  */
 
 
 
@@ -4462,12 +4156,400 @@ void service_nextion_display(){
 
 
 }  
-#endif // defined(FEATURE_NEXTION_DISPLAY) 
+#endif // defined(FEATURE_NEXTION_DISPLAY_OLD) 
 
 // --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void sendNextionCommand(const char* send_command){
+    
+    #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_SEND)
+      debug.print("\r\nsendNextionCommand: send:");
+      debug.println(send_command);
+    #endif   
+
+    nexSerial.print(send_command);
+    nexSerial.write(0xFF);
+    nexSerial.write(0xFF);
+    nexSerial.write(0xFF);
+}
+#endif //FEATURE_NEXTION_DISPLAY
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+uint16_t recvNextionRetString(char *buffer, uint16_t len, uint32_t timeout){
+
+    uint16_t ret = 0;
+    bool received_start_byte = false;
+    uint8_t counter_0xff_bytes = 0;
+    String temp = String("");
+    uint8_t serial_byte = 0;
+    unsigned long start;
+    
+    #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+      debug.print("\r\nrecvNextionRetString: rcv:");
+    #endif   
+
+    start = millis();
+    while ((millis() - start) <= timeout){
+        while (nexSerial.available()){
+            serial_byte = nexSerial.read();
+            #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+                debug.write(serial_byte);
+            #endif               
+            if (received_start_byte){
+                if (serial_byte == 0xFF){
+                  counter_0xff_bytes++;                    
+                  if (counter_0xff_bytes >= 3){
+                    break;
+                  }
+                } else {
+                  temp += (char)serial_byte;
+                }
+            } else if (serial_byte == 0x70){   //0x70 is starting byte that is discarded
+              received_start_byte = true;
+            }
+        }
+        
+        if (counter_0xff_bytes >= 3){
+          break;
+        }
+    }
+
+    #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+      debug.println("$");
+      if (millis() - start > timeout){
+        debug.println("\r\nrecvNextionRetString: timeout");
+      }      
+    #endif    
+
+    ret = temp.length();
+    if (ret > len){
+      ret = len;
+    }
+   
+    strncpy(buffer, temp.c_str(), ret);
+
+    return ret;
+
+}
+#endif //FEATURE_NEXTION_DISPLAY
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void service_nextion_display(){
+
+  char workstring1[32] = "";
+  char workstring2[32] = "";
+  static int last_azimuth = 0;
+  static unsigned long last_az_update = 0;
+  static unsigned long last_various_things_update = 0;
+  int temp = 0;
+  char *buffer;
+  uint16_t len;
 
 
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    static int last_elevation = 0;
+    static unsigned long last_el_update = 0;
+  #endif
 
+  #if defined(FEATURE_CLOCK)
+    static int last_clock_seconds = 0;
+  #endif
+
+  #if defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
+    static byte last_clock_status = clock_status;
+    static byte last_gps_sats = 0;
+  #endif
+
+  static byte last_az_state = IDLE;
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    static byte last_el_state = IDLE;
+  #endif
+
+  #if defined(FEATURE_GPS)
+    static unsigned long last_grid_update = 0;
+  #endif
+
+  #if defined(FEATURE_GPS)
+    static unsigned long last_coord_update = 0;
+    static unsigned long last_gps_update = 0;
+    unsigned long gps_fix_age_temp = 0;
+    float gps_lat_temp = 0;
+    float gps_long_temp = 0;    
+  #endif
+
+  #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+    static byte last_overlap_indicator = 0;
+    byte overlap_indicator = 0;;
+  #endif
+
+  #if defined(FEATURE_PARK)
+    static byte last_park_status = NOT_PARKED;
+  #endif
+
+  #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+    static unsigned long last_status3_update = 0;
+  #endif
+
+//zzzzzz
+
+  #define NEXTION_FREQUENT_UPDATE_MS 500
+  #define NEXTION_LESS_FREQUENT_UPDATE_MS 1000
+
+  uint8_t serial_byte = 0;
+  unsigned long last_serial_receive_time = 0;
+  static int nextion_port_buffer_index = 0;
+  static byte nextion_port_buffer[32];
+  char return_string[32];
+  static byte received_backslash = 0;
+
+  // Get incoming commands
+  if (nexSerial.available()){
+    #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+      debug.print("\r\nservice_nextion_display: recv:");
+    #endif
+    while (nexSerial.available()){
+      serial_byte = nexSerial.read();
+
+      #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+        debug.write(serial_byte);
+      #endif
+    
+      last_serial_receive_time = millis();
+      if ((serial_byte > 96) && (serial_byte < 123)) {  // uppercase it
+        serial_byte = serial_byte - 32;
+      }
+
+      if (serial_byte == '\\'){
+        received_backslash = 1;
+      }     
+
+      if ((serial_byte != 10) && (serial_byte != 13) && received_backslash) { // add it to the buffer if it's not a line feed or carriage return
+        nextion_port_buffer[nextion_port_buffer_index] = serial_byte;
+        nextion_port_buffer_index++;
+      }   
+
+      if ((serial_byte == 13) || (nextion_port_buffer_index > 31)){  // do we have a carriage return or have we hit the end of the buffer?
+        process_backslash_command(nextion_port_buffer, nextion_port_buffer_index, 0, return_string);
+        nextion_port_buffer_index = 0;
+        received_backslash = 0;
+        last_serial_receive_time = 0;
+    
+        #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+          debug.print("\r\nservice_nextion_display: recv: return_string:");
+          debug.println(return_string);
+        #endif
+      }
+
+    } //while (nexSerial.available())
+    #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+      debug.println("$");
+    #endif
+
+  } //if (nexSerial.available())
+
+  // timeout the receive buffer if it's been sitting there awhile with no carriage return
+  if ((millis() - last_serial_receive_time) > 3000){
+    nextion_port_buffer_index = 0;
+    received_backslash = 0;
+    last_serial_receive_time = 0;    
+  }
+
+  // Update various things
+  if ((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
+    // Rotator Controller API Implementation Version
+    sendNextionCommand("vRCAPIv.txt=\"2020041701\"");
+
+    // Rotator Controller Arduino Code Version
+    strcpy(workstring1,"vRCVersion.txt=\"");
+    strcat(workstring1,CODE_VERSION);
+    strcat(workstring1,"\"");
+    sendNextionCommand(workstring1);
+
+    // System Capabilities
+    #if defined(FEATURE_YAESU_EMULATION)
+      #if defined(OPTION_GS_232B_EMULATION)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
+      #else
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232A; //1
+      #endif
+    #endif
+    #if defined(FEATURE_EASYCOM_EMULATION)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_EASYCOM; //4
+    #endif
+    #if defined(FEATURE_DCU_1_EMULATION)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_DCU_1; //8
+    #endif
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ELEVATION; //16
+    #endif
+    #if defined(FEATURE_CLOCK)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CLOCK;  //32
+    #endif    
+    #if defined(FEATURE_GPS)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GPS;  //64
+    #endif
+    #if defined(FEATURE_MOON_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_MOON;  //128
+    #endif
+    #if defined(FEATURE_SUN_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
+    #endif
+    #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
+    #endif    
+    strcpy(workstring1,"gSC=");
+    dtostrf(temp, 1, 0, workstring2);
+    strcat(workstring1,workstring2);
+    sendNextionCommand(workstring1);
+
+    last_various_things_update = millis();
+  }
+
+  // Azimuth
+  if (((azimuth != last_azimuth) || ((millis() - last_az_update) > NEXTION_FREQUENT_UPDATE_MS))){
+    dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring1);
+    //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
+    strcpy(workstring2,"vAz.txt=\"");
+    strcat(workstring2,workstring1);
+    strcat(workstring2,"\"");
+    #if defined(DEBUG_NEXTION_DISPLAY)
+      debug.print("service_nextion_display: cmd: ");
+      debug.println(workstring2);
+    #endif
+    sendNextionCommand(workstring2);  
+    last_azimuth = azimuth;
+    last_az_update = millis();
+
+    #if defined(DEBUG_NEXTION_DISPLAY)
+      sendNextionCommand("prints vAz.txt,6");
+      // sendNextionCommand("get vAz.txt");
+      len = 6;
+      recvNextionRetString(buffer,len,500); 
+      debug.print("\r\nservice_nextion_display: get recv len: ");
+      debug.print(len);
+      debug.print(" buffer: ");
+      debug.println(buffer);
+    #endif    
+
+  }
+
+    // Elevation
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      if ((elevation != last_elevation) || ((millis() - last_el_update) > NEXTION_FREQUENT_UPDATE_MS)){
+        dtostrf(elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring1);
+        //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
+        strcpy(workstring2,"vEl.txt=\"");
+        strcat(workstring2,workstring1);
+        strcat(workstring2,"\"");
+        sendNextionCommand(workstring2);  
+
+        last_elevation = elevation;
+        last_el_update = millis();
+      }
+    #endif
+
+
+// Clock
+    #if defined(FEATURE_CLOCK)
+      update_time();
+      if (local_clock_seconds != last_clock_seconds){
+        last_clock_seconds = clock_seconds;
+        strcpy(workstring1,"vClk.txt=\"");
+        #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+          if (local_clock_hours < 10) {
+            strcpy(workstring1, "0");
+            dtostrf(local_clock_hours, 0, 0, workstring2);
+            strcat(workstring1,workstring2); 
+          } else { 
+            dtostrf(local_clock_hours, 0, 0, workstring2);
+            strcpy(workstring1,workstring2);
+          }    
+        #else    
+          dtostrf(local_clock_hours, 0, 0, workstring2);
+          strcat(workstring1,workstring2);
+        #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+        strcat(workstring1,":");
+        if (local_clock_minutes < 10) {
+          strcat(workstring1, "0");
+        }
+        dtostrf(local_clock_minutes, 0, 0, workstring2);
+        strcat(workstring1,workstring2);
+        strcat(workstring1,":");
+        if (local_clock_seconds < 10) {
+          strcat(workstring1, "0");
+        }
+        dtostrf(local_clock_seconds, 0, 0, workstring2);
+        strcat(workstring1,workstring2);
+        strcat(workstring1,"\"");
+        sendNextionCommand(workstring1);         
+      }
+    #endif //FEATURE_CLOCK
+
+    // GPS
+    #if defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
+      if ((last_clock_status != clock_status) || (last_gps_sats != gps.satellites()) || ((millis()-last_gps_update) > NEXTION_FREQUENT_UPDATE_MS)){
+        if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {
+          strcpy(workstring1,"vGPS.txt=\"");
+          strcat(workstring1,GPS_STRING);
+          strcat(workstring1," ");
+          dtostrf(gps.satellites(),0,0,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1," Sats");
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);
+          last_gps_sats = gps.satellites();
+        } else {
+          sendNextionCommand("vGPS.txt=\"\"");
+        }
+        last_gps_sats = gps.satellites();
+        last_clock_status = clock_status;
+        last_gps_update = millis();
+      }
+    #endif //defined(FEATURE_GPS) 
+
+
+    //GRID
+    #if defined(FEATURE_GPS)
+      if ((millis() - last_grid_update) > (NEXTION_LESS_FREQUENT_UPDATE_MS-125)){
+        strcpy(workstring1,"vGrid.txt=\"");
+        strcat(workstring1,coordinates_to_maidenhead(latitude,longitude));
+        strcat(workstring1,"\"");
+        sendNextionCommand(workstring1);        
+        last_grid_update = millis();
+      }
+    #endif
+
+
+    //COORDINATES
+    #if defined(FEATURE_GPS)
+      if ((millis() - last_coord_update) > (NEXTION_LESS_FREQUENT_UPDATE_MS+125)){
+        if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {
+          gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp);
+          strcpy(workstring1,"vCrd.txt=\"");
+          dtostrf(gps_lat_temp,4,4,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1," ");
+          dtostrf(gps_long_temp,4,4,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1," ");
+          dtostrf(gps.altitude()/100,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"m");
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);  
+        } else {
+          sendNextionCommand("vCrd.txt=\"\"");
+        }
+        last_coord_update = millis();
+      }
+    #endif
+
+
+}
+#endif //FEATURE_NEXTION_DISPLAY
+
+
+// --------------------------------------------------------------
 
 #if defined(FEATURE_LCD_DISPLAY)
 void update_lcd_display(){
@@ -5318,6 +5400,8 @@ void update_lcd_display(){
 
 }  
 #endif // defined(FEATURE_LCD_DISPLAY) 
+
+
 
 
 // --------------------------------------------------------------
@@ -8431,75 +8515,16 @@ void initialize_peripherals(){
 
 //zzzzzzzzz
 
+
   #ifdef FEATURE_NEXTION_DISPLAY
-    nexInit();
 
-    timerInvokeReset.enable();  // manually invoke a hardware reset - this is to fix issues with data entry page
+    nexSerial.begin(NEXTION_SERIAL_BAUD);
+    delay(250);
+    sendNextionCommand("rest"); 
+
+  #endif //FEATURE_NEXTION_DISPLAY
+
   
-    // Register events
-    #if defined(NEXTION_OBJNAME_BUTTON_CW) && defined(NEXTION_OBJID_BUTTON_CW)
-      bCW.attachPush(NextionbCWPushCallback, &bCW);
-    #endif    
-    #if defined(NEXTION_OBJNAME_BUTTON_CCW) && defined(NEXTION_OBJID_BUTTON_CCW)
-      bCCW.attachPush(NextionbCCWPushCallback, &bCCW);
-    #endif     
-    #if defined(NEXTION_OBJNAME_BUTTON_STOP) && defined(NEXTION_OBJID_BUTTON_STOP)
-      bSTOP.attachPush(NextionbSTOPPushAndPopCallback, &bSTOP);
-      bSTOP.attachPop(NextionbSTOPPushAndPopCallback, &bSTOP);
-    #endif 
-
-    // Azimuth Value Press (go to data entry page)
-    tAzValue.attachPush(NextiontAzValuePushCallback, &tAzValue);
-  
-    #if defined(FEATURE_ELEVATION_CONTROL)
-      #if defined(NEXTION_OBJNAME_BUTTON_UP) && defined(NEXTION_OBJID_BUTTON_UP)
-        bUp.attachPush(NextionbUpPushCallback, &bUp);
-      #endif    
-      #if defined(NEXTION_OBJNAME_BUTTON_DOWN) && defined(NEXTION_OBJID_BUTTON_DOWN)
-        bDown.attachPush(NextionbDownPushCallback, &bDown);
-      #endif     
-      // Elevation Value Press (go to data entry page)
-      #if defined(NEXTION_OBJNAME_ELEVATION_VALUE) && defined(NEXTION_OBJID_ELEVATION_VALUE)
-        tElValue.attachPush(NextiontElValuePushCallback, &tElValue);
-      #endif  
-    #endif
-
-    // Azimuth and Elevation Label pushes (go to Secondary page)
-
-    tAzLabel.attachPush(NextiontAzLabelPushCallback, &tAzLabel);
-  
-    #if defined(FEATURE_ELEVATION_CONTROL) && defined(NEXTION_OBJNAME_ELEVATION_LABEL) && defined(NEXTION_OBJID_ELEVATION_LABEL)
-      tElLabel.attachPush(NextiontElLabelPushCallback, &tElLabel);
-    #endif 
- 
-    #if defined(NEXTION_OBJNAME_DATAENT_CANCEL) && defined(NEXTION_OBJNAME_DATAENT_CANCEL)
-      bDataEntryCancel.attachPush(NextionbDataEntryCancelPushCallback, &bDataEntryCancel);
-    #endif
-    #if defined(NEXTION_OBJNAME_DATAENT_ENTER) && defined(NEXTION_OBJID_DATAENT_ENTER)
-      bDataEntryEnter.attachPush(NextionbDataEntryEnterPushCallback, &bDataEntryEnter);
-    #endif
-
-    bBackPageMain.attachPush(NextionbBackPageMainPushCallback, &bBackPageMain);
-    bNextPageMain.attachPush(NextionbNextPageMainPushCallback, &bNextPageMain);
-
-    bBackPageConfiguration.attachPush(NextionbBackPageConfigurationPushCallback, &bBackPageConfiguration);
-    bNextPageConfiguration.attachPush(NextionbNextPageConfigurationPushCallback, &bNextPageConfiguration);
-
-    bBackPageDiagnostics.attachPush(NextionbBackPageDiagnosticsPushCallback, &bBackPageDiagnostics);
-    bNextPageDiagnostics.attachPush(NextionbNextPageDiagnosticsPushCallback, &bNextPageDiagnostics);
-    
-    bBackPageAbout.attachPush(NextionbBackPageAboutPushCallback, &bBackPageAbout);
-    bNextPageAbout.attachPush(NextionbNextPageAboutPushCallback, &bNextPageAbout);
-
-    bBackPageSecondary.attachPush(NextionbBackPageSecondaryPushCallback, &bBackPageSecondary);
-    bNextPageSecondary.attachPush(NextionbNextPageSecondaryPushCallback, &bNextPageSecondary);
-
-    bBackPageTertiary.attachPush(NextionbBackPageTertiaryPushCallback, &bBackPageTertiary);
-    bNextPageTertiary.attachPush(NextionbNextPageTertiaryPushCallback, &bNextPageTertiary);
-    
-  #endif
-
-
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L
     compass = HMC5883L();
@@ -13124,7 +13149,8 @@ Not implemented yet:
 
 */
 
-     if ((input_buffer[2] == 'D') && (input_buffer[3] == 'I')) {  // \?DIxx - digital pin initialize as input; xx = pin #
+
+      if ((input_buffer[2] == 'D') && (input_buffer[3] == 'I')) {  // \?DIxx - digital pin initialize as input; xx = pin #
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
           byte pin_value = 0;
           if (toupper(input_buffer[4]) == 'A') {
@@ -13217,33 +13243,85 @@ Not implemented yet:
         }
     }  //if ((input_buffer_index == 6)
 
+    int hit_decimal = 0;
+
+    if ((input_buffer[2] == 'G') && (input_buffer[3] == 'A')) {  // \?GAxxx.x - go to AZ xxx.x
+      heading = 0;
+      for (int x = 4;x < input_buffer_index;x++){
+        if(input_buffer[x] == '.'){
+          hit_decimal = 10;
+        } else {
+          if (hit_decimal > 0){
+            heading = heading + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+            hit_decimal = hit_decimal * 10;
+          } else {
+            heading = (heading * 10) + (input_buffer[x] - 48);
+          }
+        }
+      }   
+      // debug.print("process_backslash_command: heading:");
+      // debug.println(heading);      
+      if ((heading >= 0) && (heading < 451)) {  
+        submit_request(AZ, REQUEST_AZIMUTH, (heading * HEADING_MULTIPLIER), 136);
+        strcpy(return_string,"\\!OKGA");
+      } else {
+        strcpy(return_string,"\\!??GA");
+      }
+    }  
+    if ((input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // \?GExxx.x - go to EL
+      #ifdef FEATURE_ELEVATION_CONTROL
+        heading = 0;
+        for (int x = 4;x < input_buffer_index;x++){
+          if(input_buffer[x] == '.'){
+            hit_decimal = 10;
+          } else {
+            if (hit_decimal > 0){
+              heading = heading + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+              hit_decimal = hit_decimal * 10;
+            } else {
+              heading = (heading * 10) + (input_buffer[x] - 48);
+            }
+          }
+        }   
+        // debug.print("process_backslash_command: heading:");
+        // debug.println(heading);  
+        if ((heading >= 0) && (heading < 181)) {
+          submit_request(EL, REQUEST_ELEVATION, (heading * HEADING_MULTIPLIER), 37);
+          strcpy(return_string,"\\!OKGE");
+        } else {
+          strcpy(return_string,"\\!??GE");
+        }
+      #else 
+        strcpy(return_string,"\\!OKGE");  
+      #endif // #FEATURE_ELEVATION_CONTROL  
+    } 
 
 
 
     if (input_buffer_index == 9) {
 
-      if ((input_buffer[2] == 'G') && (input_buffer[3] == 'A')) {  // \?GAxxx.x - go to AZ xxx.x
-        heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[6] - 48.) + ((input_buffer[8] - 48) / 10.);     
-        if (((heading >= 0) && (heading < 451))  && (input_buffer[7] == '.')) {
-          submit_request(AZ, REQUEST_AZIMUTH, (heading * HEADING_MULTIPLIER), 136);
-          strcpy(return_string,"\\!OKGA");
-        } else {
-          strcpy(return_string,"\\!??GA");
-        }
-      }  
-      if ((input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // \?GExxx.x - go to EL
-        #ifdef FEATURE_ELEVATION_CONTROL
-          heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[5] - 48) + ((input_buffer[8] - 48) / 10.);
-          if (((heading >= 0) && (heading < 181)) && (input_buffer[7] == '.')) {
-            submit_request(EL, REQUEST_ELEVATION, (heading * HEADING_MULTIPLIER), 37);
-            strcpy(return_string,"\\!OKGE");
-          } else {
-            strcpy(return_string,"\\!??GE");
-          }
-        #else 
-          strcpy(return_string,"\\!OKGE");  
-        #endif // #FEATURE_ELEVATION_CONTROL  
-      } 
+      // if ((input_buffer[2] == 'G') && (input_buffer[3] == 'A')) {  // \?GAxxx.x - go to AZ xxx.x
+      //   heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[6] - 48.) + ((input_buffer[8] - 48) / 10.);     
+      //   if (((heading >= 0) && (heading < 451))  && (input_buffer[7] == '.')) {
+      //     submit_request(AZ, REQUEST_AZIMUTH, (heading * HEADING_MULTIPLIER), 136);
+      //     strcpy(return_string,"\\!OKGA");
+      //   } else {
+      //     strcpy(return_string,"\\!??GA");
+      //   }
+      // }  
+      // if ((input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // \?GExxx.x - go to EL
+      //   #ifdef FEATURE_ELEVATION_CONTROL
+      //     heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[5] - 48) + ((input_buffer[8] - 48) / 10.);
+      //     if (((heading >= 0) && (heading < 181)) && (input_buffer[7] == '.')) {
+      //       submit_request(EL, REQUEST_ELEVATION, (heading * HEADING_MULTIPLIER), 37);
+      //       strcpy(return_string,"\\!OKGE");
+      //     } else {
+      //       strcpy(return_string,"\\!??GE");
+      //     }
+      //   #else 
+      //     strcpy(return_string,"\\!OKGE");  
+      //   #endif // #FEATURE_ELEVATION_CONTROL  
+      // } 
 
 
       if ((input_buffer[2] == 'A') && (input_buffer[3] == 'W')) {  // \?AWxxyyy - analog pin write; xx = pin #, yyy = value to write (0 - 255)
