@@ -451,6 +451,10 @@
       More work on FEATURE_NEXTION_DISPLAY, Nextion Display API (UNDER DEVELOPMENT)
       Documentation in progress: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
+    2020.04.19.01  
+      More work on FEATURE_NEXTION_DISPLAY, Nextion Display API (UNDER DEVELOPMENT)
+      Documentation in progress: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -460,7 +464,7 @@
 
   */
 
-#define CODE_VERSION "2020.04.18.01"
+#define CODE_VERSION "2020.04.19.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4241,6 +4245,7 @@ void service_nextion_display(){
   static int last_azimuth = 0;
   static unsigned long last_az_update = 0;
   static unsigned long last_various_things_update = 0;
+  static unsigned long last_statuses_update = 0;
   int temp = 0;
   char *buffer;
   uint16_t len;
@@ -4290,8 +4295,7 @@ void service_nextion_display(){
     static unsigned long last_status3_update = 0;
   #endif
 
-//zzzzzz
-
+  #define NEXTION_VERY_FREQUENT_UPDATE_MS 250
   #define NEXTION_FREQUENT_UPDATE_MS 500
   #define NEXTION_LESS_FREQUENT_UPDATE_MS 1000
 
@@ -4354,6 +4358,98 @@ void service_nextion_display(){
     last_serial_receive_time = 0;    
   }
 
+
+  // Update Statuses
+  if ((millis() - last_statuses_update) > NEXTION_VERY_FREQUENT_UPDATE_MS){
+
+    // gADS - Azimuth Detailed State
+    dtostrf(az_state, 1, 0, workstring1);
+    strcpy(workstring2,"gADS=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2); 
+
+    // gEDS - Elevation Detailed State
+    dtostrf(el_state, 1, 0, workstring1);
+    strcpy(workstring2,"gEDS=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2); 
+
+    // gAOS - Azimuth Overall State
+    dtostrf((int)current_az_state, 1, 0, workstring1);
+    strcpy(workstring2,"gAOS=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2); 
+
+    // gEOS - Elevation Overall State
+    dtostrf((int)current_el_state, 1, 0, workstring1);
+    strcpy(workstring2,"gEOS=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2); 
+
+    // gCS - Clock State
+    #if defined(FEATURE_CLOCK)
+      dtostrf((int)clock_status, 1, 0, workstring1);
+      strcpy(workstring2,"gCS=");
+      strcat(workstring2,workstring1);
+      sendNextionCommand(workstring2); 
+    #endif
+
+    // gVS - Various States
+    temp = 0;
+    if (brake_az_engaged){
+      temp = temp | 1;
+    }
+    if (brake_el_engaged){
+      temp = temp | 2;
+    }    
+
+    switch(az_request_queue_state){
+      case IN_QUEUE:
+          temp = temp | 4;
+        break;     
+      case IN_PROGRESS_TIMED:
+          temp = temp | 8;
+        break;
+      case IN_PROGRESS_TO_TARGET:
+          temp = temp | 16;
+        break;               
+    }
+
+    switch(el_request_queue_state){
+      case IN_QUEUE:
+          temp = temp | 32;
+        break;     
+      case IN_PROGRESS_TIMED:
+          temp = temp | 64;
+        break;
+      case IN_PROGRESS_TO_TARGET:
+          temp = temp | 128;
+        break;               
+    }
+
+
+//zzzzzz
+// TODO
+// #define NOT_PARKED 0
+// #define PARK_INITIATED 1
+// #define PARKED 2
+
+// #define AUTOCORRECT_INACTIVE 0
+// #define AUTOCORRECT_WAITING_AZ 1
+// #define AUTOCORRECT_WAITING_EL 2
+// #define AUTOCORRECT_WATCHING_AZ 3
+// #define AUTOCORRECT_WATCHING_EL 4
+
+    dtostrf((int)temp, 1, 0, workstring1);
+    strcpy(workstring2,"gVS=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2);  
+
+    last_statuses_update = millis();
+  }
+  
+
+
   // Update various things
   if ((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
     // Rotator Controller API Implementation Version
@@ -4407,6 +4503,7 @@ void service_nextion_display(){
 
   // Azimuth
   if (((azimuth != last_azimuth) || ((millis() - last_az_update) > NEXTION_FREQUENT_UPDATE_MS))){
+    // zAz
     dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring1);
     //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
     strcpy(workstring2,"vAz.txt=\"");
@@ -4417,6 +4514,19 @@ void service_nextion_display(){
       debug.println(workstring2);
     #endif
     sendNextionCommand(workstring2);  
+
+    // gAz
+    dtostrf(azimuth / LCD_HEADING_MULTIPLIER, 1, 0, workstring1);
+    strcpy(workstring2,"gAz=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2); 
+
+    // gAzR
+    dtostrf(raw_azimuth / LCD_HEADING_MULTIPLIER, 1, 0, workstring1);
+    strcpy(workstring2,"gAz=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2);     
+
     last_azimuth = azimuth;
     last_az_update = millis();
 
@@ -4442,6 +4552,12 @@ void service_nextion_display(){
         strcat(workstring2,workstring1);
         strcat(workstring2,"\"");
         sendNextionCommand(workstring2);  
+
+        // gEl
+        dtostrf(elevation / LCD_HEADING_MULTIPLIER, 1, 0, workstring1);
+        strcpy(workstring2,"gEl=");
+        strcat(workstring2,workstring1);
+        sendNextionCommand(workstring2); 
 
         last_elevation = elevation;
         last_el_update = millis();
