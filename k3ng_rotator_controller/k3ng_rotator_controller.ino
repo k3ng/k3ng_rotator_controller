@@ -458,6 +458,10 @@
     2020.04.27.01
       New pin: pin_status_led - Status LED - blinks when there is rotation in progress
 
+    2020.04.28.01
+      More work on FEATURE_NEXTION_DISPLAY
+      Nextion HMI file contributed by Jan ZS1VDV 
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -468,7 +472,7 @@
 
   */
 
-#define CODE_VERSION "2020.04.27.01"
+#define CODE_VERSION "2020.04.28.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4427,11 +4431,13 @@ void service_nextion_display(){
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2); 
 
-    // gEDS - Elevation Detailed State
-    dtostrf(el_state, 1, 0, workstring1);
-    strcpy(workstring2,"gEDS=");
-    strcat(workstring2,workstring1);
-    sendNextionCommand(workstring2); 
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      // gEDS - Elevation Detailed State
+      dtostrf(el_state, 1, 0, workstring1);
+      strcpy(workstring2,"gEDS=");
+      strcat(workstring2,workstring1);
+      sendNextionCommand(workstring2); 
+    #endif
 
     // gAOS - Azimuth Overall State
     dtostrf((int)current_az_state, 1, 0, workstring1);
@@ -4439,11 +4445,13 @@ void service_nextion_display(){
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2); 
 
-    // gEOS - Elevation Overall State
-    dtostrf((int)current_el_state, 1, 0, workstring1);
-    strcpy(workstring2,"gEOS=");
-    strcat(workstring2,workstring1);
-    sendNextionCommand(workstring2); 
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      // gEOS - Elevation Overall State
+      dtostrf((int)current_el_state, 1, 0, workstring1);
+      strcpy(workstring2,"gEOS=");
+      strcat(workstring2,workstring1);
+      sendNextionCommand(workstring2); 
+    #endif
 
     // gCS - Clock State
     #if defined(FEATURE_CLOCK)
@@ -4474,17 +4482,19 @@ void service_nextion_display(){
         break;               
     }
 
-    switch(el_request_queue_state){
-      case IN_QUEUE:
-          temp = temp | 32;
-        break;     
-      case IN_PROGRESS_TIMED:
-          temp = temp | 64;
-        break;
-      case IN_PROGRESS_TO_TARGET:
-          temp = temp | 128;
-        break;               
-    }
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      switch(el_request_queue_state){
+        case IN_QUEUE:
+            temp = temp | 32;
+          break;     
+        case IN_PROGRESS_TIMED:
+            temp = temp | 64;
+          break;
+        case IN_PROGRESS_TO_TARGET:
+            temp = temp | 128;
+          break;               
+      }
+    #endif
 
 
 //zzzzzz
