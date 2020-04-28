@@ -240,3 +240,5 @@
 #ifdef FEATURE_AUDIBLE_ALERT
   #define pin_audible_alert 0
 #endif    
+
+#define pin_status_led A8   // Status LED - blinks when there is rotation in progress

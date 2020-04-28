@@ -455,6 +455,10 @@
       More work on FEATURE_NEXTION_DISPLAY, Nextion Display API (UNDER DEVELOPMENT)
       Documentation in progress: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
+    2020.04.27.01
+      New pin: pin_status_led - Status LED - blinks when there is rotation in progress
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -464,7 +468,7 @@
 
   */
 
-#define CODE_VERSION "2020.04.19.01"
+#define CODE_VERSION "2020.04.27.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1347,7 +1351,10 @@ void loop() {
   #if defined(FEATURE_AUDIBLE_ALERT)
     audible_alert(AUDIBLE_ALERT_SERVICE);
   #endif //FEATURE_AUDIBLE_ALERT
-
+  
+  #if defined(pin_status_led)
+    service_status_led();
+  #endif
 
   check_for_reset_flag();
 
@@ -1366,7 +1373,59 @@ void loop() {
 
 
 ----------------------------------------------------------------------------------------------------- */
+//zzzzzz
+#if defined(pin_status_led)
+  void service_status_led(){
 
+    static byte led_is_on = 0;
+    static unsigned long last_led_transition = 0;
+
+    if (pin_status_led){
+      #if defined(FEATURE_ELEVATION_CONTROL)
+        if ((current_az_state() == NOT_DOING_ANYTHING) && (current_el_state() == NOT_DOING_ANYTHING)){
+          if (!led_is_on){
+            digitalWriteEnhanced(pin_status_led, HIGH);
+            led_is_on = 1;
+            last_led_transition = millis();
+          }
+        } else {
+          if ((millis() - last_led_transition) > 500){
+            if (led_is_on){
+              digitalWriteEnhanced(pin_status_led, LOW);
+              led_is_on = 0;
+            } else {
+            digitalWriteEnhanced(pin_status_led, HIGH);
+            led_is_on = 1;           
+            }
+            last_led_transition = millis();
+          }
+        }
+      #else // ! defined(FEATURE_ELEVATION_CONTROL)
+        if (current_az_state() == NOT_DOING_ANYTHING){
+          if (!led_is_on){
+            digitalWriteEnhanced(pin_status_led, HIGH);
+            led_is_on = 1;
+            last_led_transition = millis();
+          }
+        } else {
+          if ((millis() - last_led_transition) > 500){
+            if (led_is_on){
+              digitalWriteEnhanced(pin_status_led, LOW);
+              led_is_on = 0;
+            } else {
+            digitalWriteEnhanced(pin_status_led, HIGH);
+            led_is_on = 1;           
+            }
+            last_led_transition = millis();
+          }
+        }
+      #endif //defined(FEATURE_ELEVATION_CONTROL)
+    }
+
+  }
+#endif //defined(pin_status_led)
+
+// --------------------------------------------------------------
 
 #if defined(FEATURE_AUDIBLE_ALERT)
   void audible_alert(byte how_called){
@@ -8539,6 +8598,13 @@ void initialize_pins(){
     pinModeEnhanced(el_rotation_stall_detected, OUTPUT);
     digitalWriteEnhanced(el_rotation_stall_detected, LOW);
   #endif //FEATURE_EL_ROTATION_STALL_DETECTION  
+
+  #ifdef pin_status_led
+    if (pin_status_led){
+      pinModeEnhanced(pin_status_led, OUTPUT);
+      digitalWriteEnhanced(pin_status_led, HIGH);
+    }
+  #endif 
 
 } /* initialize_pins */
 
