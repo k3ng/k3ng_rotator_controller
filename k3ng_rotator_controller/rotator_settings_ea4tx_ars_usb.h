@@ -344,3 +344,5 @@ You can tweak these, but read the online documentation!
 
 //#define SET_I2C_BUS_SPEED 800000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz
   
+#define nexSerial Serial3
+#define NEXTION_SERIAL_BAUD 115200

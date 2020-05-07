@@ -25,7 +25,7 @@
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_ETHERNET
 // #define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
-// #define FEATURE_AUTOCORRECT
+#define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
@@ -86,9 +86,7 @@
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY
 // #define FEATURE_HD44780_I2C_DISPLAY    // Not working yet
 
-#define FEATURE_NEXTION_DISPLAY  // Under Development Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
-
-
+#define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
 

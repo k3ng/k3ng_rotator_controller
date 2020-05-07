@@ -6,7 +6,9 @@
   
   Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki
 
-  Support: https://groups.yahoo.com/neo/groups/radioartisan/info
+  Support: https://groups.io/g/radioartisan
+
+  YouTube Channel: https://www.youtube.com/channel/UC5o8UM1-heT5kJbwnJRkUYg
   
    Code contributions, testing, ideas, bug fixes, hardware, support, encouragement, and/or bourbon provided by:
      John W3SA
@@ -462,6 +464,9 @@
       More work on FEATURE_NEXTION_DISPLAY
       Nextion HMI file contributed by Jan ZS1VDV 
 
+    2020.05.06.01  
+      More work on FEATURE_NEXTION_DISPLAY
+      Updated Nextion documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -470,9 +475,11 @@
 
   Support: https://groups.io/g/radioartisan
 
+  YouTube Channel: https://www.youtube.com/channel/UC5o8UM1-heT5kJbwnJRkUYg
+
   */
 
-#define CODE_VERSION "2020.04.28.01"
+#define CODE_VERSION "2020.05.06.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1377,7 +1384,7 @@ void loop() {
 
 
 ----------------------------------------------------------------------------------------------------- */
-//zzzzzz
+
 #if defined(pin_status_led)
   void service_status_led(){
 
@@ -4440,14 +4447,14 @@ void service_nextion_display(){
     #endif
 
     // gAOS - Azimuth Overall State
-    dtostrf((int)current_az_state, 1, 0, workstring1);
+    dtostrf(current_az_state(), 1, 0, workstring1);
     strcpy(workstring2,"gAOS=");
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2); 
 
     #if defined(FEATURE_ELEVATION_CONTROL)
       // gEOS - Elevation Overall State
-      dtostrf((int)current_el_state, 1, 0, workstring1);
+      dtostrf(current_el_state(), 1, 0, workstring1);
       strcpy(workstring2,"gEOS=");
       strcat(workstring2,workstring1);
       sendNextionCommand(workstring2); 
@@ -4496,33 +4503,228 @@ void service_nextion_display(){
       }
     #endif
 
+    #if defined(FEATURE_PARK)
+      switch(park_status){
+        case PARK_INITIATED:
+          temp = temp | 256;
+          break;
+        case PARKED:
+          temp = temp | 512; 
+      }
+    #endif //FEATURE_PARK
+
+    #if defined(FEATURE_AUTOCORRECT)
+      switch(autocorrect_state_az){
+        case AUTOCORRECT_WAITING_AZ:
+          temp = temp | 1024;
+          break;  
+        case AUTOCORRECT_WATCHING_AZ:
+          temp = temp | 2048;
+          break;                   
+      }
+      #if defined(FEATURE_ELEVATION_CONTROL)
+        switch(autocorrect_state_el){
+          case AUTOCORRECT_WAITING_EL:
+            temp = temp | 4096;
+            break;  
+          case AUTOCORRECT_WATCHING_EL:
+            temp = temp | 8192;
+            break;                   
+        }
+      #endif  //FEATURE_ELEVATION_CONTROL
+    #endif //FEATURE_AUTOCORRECT
+
+    if ((raw_azimuth/HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES){
+      temp = temp | 16384;
+    }
 
 //zzzzzz
-// TODO
-// #define NOT_PARKED 0
-// #define PARK_INITIATED 1
-// #define PARKED 2
 
-// #define AUTOCORRECT_INACTIVE 0
-// #define AUTOCORRECT_WAITING_AZ 1
-// #define AUTOCORRECT_WAITING_EL 2
-// #define AUTOCORRECT_WATCHING_AZ 3
-// #define AUTOCORRECT_WATCHING_EL 4
 
     dtostrf((int)temp, 1, 0, workstring1);
     strcpy(workstring2,"gVS=");
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2);  
 
+
+
+
+    // vSS1 - Status String 1
+    strcpy(workstring1,"");
+    #if !defined(FEATURE_ELEVATION_CONTROL) // ---------------- az only ----------------------------------------------
+      if (az_request_queue_state == IN_PROGRESS_TO_TARGET) { 
+        if (current_az_state() == ROTATING_CW) {
+          strcpy(workstring1,CW_STRING);
+        } else {
+          if (current_az_state() == ROTATING_CCW){
+            strcpy(workstring1,CCW_STRING);
+          }
+        }
+        strcat(workstring1," ");
+        switch(configuration.azimuth_display_mode){
+          case AZ_DISPLAY_MODE_NORMAL:
+          case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+            dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+            break;
+          case AZ_DISPLAY_MODE_RAW:
+            dtostrf(target_raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+            break;              
+        }
+        if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+          strcat(workstring1,"+");
+        }           
+        strcat(workstring1,workstring2);
+        strcat(workstring1,DISPLAY_DEGREES_STRING);
+      } else {
+        if (current_az_state() == ROTATING_CW) {
+          strcpy(workstring1,CW_STRING);
+        } else {
+          if (current_az_state() == ROTATING_CCW){
+            strcpy(workstring1,CCW_STRING);
+          }
+        }
+      }
+
+
+    #else  // az & el ----------------------------------------------------------------------------
+      if (az_state != IDLE){
+        if (az_request_queue_state == IN_PROGRESS_TO_TARGET) { 
+          if (current_az_state() == ROTATING_CW) {
+            strcat(workstring1,CW_STRING);
+          } else {
+            if (current_az_state() == ROTATING_CCW) {
+              strcat(workstring1,CCW_STRING);
+            }
+          }
+          strcat(workstring1," ");
+          switch(configuration.azimuth_display_mode){
+            case AZ_DISPLAY_MODE_NORMAL:
+            case AZ_DISPLAY_MODE_OVERLAP_PLUS:
+              dtostrf(target_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;
+            case AZ_DISPLAY_MODE_RAW:
+              dtostrf(target_raw_azimuth / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+              break;              
+          }
+          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && ((raw_azimuth/HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES)){
+            strcat(workstring1,"+");
+          }    
+          strcat(workstring1,workstring2);
+          strcat(workstring1,DISPLAY_DEGREES_STRING);
+        } else {
+          if (current_az_state() == ROTATING_CW) {
+            strcpy(workstring1,CW_STRING);
+          } else {
+            if (current_az_state() == ROTATING_CCW) {
+              strcpy(workstring1,CCW_STRING);
+            }
+          }
+        }        
+      }
+      if (el_state != IDLE){
+        if (az_state != IDLE){
+          strcat(workstring1," ");
+        }
+        if (el_request_queue_state == IN_PROGRESS_TO_TARGET) { 
+          if (current_el_state() == ROTATING_UP) {
+            strcat(workstring1,UP_STRING);
+          } else {
+            if (current_el_state() == ROTATING_DOWN) {
+              strcat(workstring1,DOWN_STRING);
+            }
+          }
+          strcat(workstring1," ");
+          dtostrf(target_elevation / LCD_HEADING_MULTIPLIER, 1, LCD_DECIMAL_PLACES, workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,DISPLAY_DEGREES_STRING);
+        } else {
+          if (current_el_state() == ROTATING_UP) {
+            strcat(workstring1,UP_STRING);
+          } else {
+            if (current_el_state() == ROTATING_DOWN) {
+              strcat(workstring1,DOWN_STRING);
+            }
+          }
+        }        
+      }
+    #endif //!defined(FEATURE_ELEVATION_CONTROL)
+    strcpy(workstring2,"vSS1.txt=\"");
+    strcat(workstring2,workstring1);
+    strcat(workstring2,"\"");
+    sendNextionCommand(workstring2);  
+    // end - vSS1 - Status String 1
+
+
+/*
+
+TODO:
+
+  FEATURE_AZ_ROTATION_STALL_DETECTION // Azimuth rotation stall detection - pin: az_rotation_stall_detected
+  FEATURE_EL_ROTATION_STALL_DETECTION // Elevation rotation stall detection - pin: el_rotation_stall_detected
+  OPTION_ROTATION_STALL_DETECTION_SERIAL_MESSAGE
+  Rotation Timeout?
+
+  Azimuth Display Mode: Raw Degrees
+  Azimuth Display Mode: +Overlap
+
+  New Extended Commands
+  \?AO - Azimuth Full CCW Calibration
+  \?AF - Azimuth Full CW Calibration
+  \?EO - Elevation Full DOWN Calibration
+  \?EF - Elevation Full UP Calibration
+
+*/
+
+    // vSS2 - Status String 2 - Parking Messages
+    strcpy(workstring1,"");
+    #if defined(FEATURE_PARK)
+      switch(park_status){
+        case PARK_INITIATED:
+          strcat(workstring1,"PARKING"); 
+          break;
+        // case PARKED:
+        //   strcat(workstring1,"PARKED"); 
+      }    
+    #endif
+    strcpy(workstring2,"vSS2.txt=\"");
+    strcat(workstring2,workstring1);
+    strcat(workstring2,"\"");
+    sendNextionCommand(workstring2);  
+    // end - vSS2 - Status String 2
+
+//zzzzzz
+    // vSS3 - Status String 3 - Overlap, Parked Message
+    strcpy(workstring1,"");
+    if ((raw_azimuth/HEADING_MULTIPLIER) > ANALOG_AZ_OVERLAP_DEGREES){
+      strcat(workstring1,"OVERLAP");
+      strcat(workstring1,"\r\n");
+    }
+    #if defined(FEATURE_PARK)
+      switch(park_status){
+        // case PARK_INITIATED:
+        //   strcat(workstring1,"PARKING"); 
+        //   break;
+        case PARKED:
+          strcat(workstring1,"PARKED"); 
+      }    
+    #endif
+    strcpy(workstring2,"vSS3.txt=\"");
+    strcat(workstring2,workstring1);
+    strcat(workstring2,"\"");
+    sendNextionCommand(workstring2);  
+    // end - vSS3 - Status String 3
+
+
     last_statuses_update = millis();
-  }
+
+  } //if ((millis() - last_statuses_update) > NEXTION_VERY_FREQUENT_UPDATE_MS){
   
 
 
   // Update various things
   if ((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
     // Rotator Controller API Implementation Version
-    sendNextionCommand("vRCAPIv.txt=\"2020041701\"");
+    sendNextionCommand("vRCAPIv.val=2020050601");
 
     // Rotator Controller Arduino Code Version
     strcpy(workstring1,"vRCVersion.txt=\"");
@@ -8705,18 +8907,13 @@ void initialize_peripherals(){
     Wire.begin();
   #endif
 
-//zzzzzzzzz
-
-
   #ifdef FEATURE_NEXTION_DISPLAY
 
     nexSerial.begin(NEXTION_SERIAL_BAUD);
     delay(250);
-    sendNextionCommand("rest"); 
+    sendNextionCommand("rest");      // reset the Nextion unit
 
   #endif //FEATURE_NEXTION_DISPLAY
-
-  
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L
     compass = HMC5883L();
