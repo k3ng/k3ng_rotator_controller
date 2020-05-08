@@ -137,7 +137,7 @@ You can tweak these, but read the online documentation!
 #define LCD_BIG_CLOCK_ROW 4
 #define LCD_GPS_INDICATOR_POSITION RIGHT //LEFT or RIGHT
 #define LCD_GPS_INDICATOR_ROW 1
-#define LCD_MOON_TRACKING_ROW 3                                   // LCD display row for OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+#define LCD_MOON_TRACKING_ROW 4                                   // LCD display row for OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 #define LCD_MOON_TRACKING_UPDATE_INTERVAL 5000
 #define LCD_SUN_TRACKING_ROW 4                                    // LCD display row for OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000

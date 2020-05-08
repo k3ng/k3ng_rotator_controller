@@ -468,6 +468,18 @@
       More work on FEATURE_NEXTION_DISPLAY
       Updated Nextion documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
+    2020.05.07.01
+      More work on FEATURE_NEXTION_DISPLAY
+      Updated Nextion documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+      New Extended Backslash Commands
+        \?AO - Azimuth Full CCW Calibration
+        \?AF - Azimuth Full CW Calibration
+        \?EO - Elevation Full DOWN Calibration
+        \?EF - Elevation Full UP Calibration
+      Fixed several issues with debug dump log  
+      Updated command reference: https://github.com/k3ng/k3ng_rotator_controller/wiki/820-Command-Reference
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -479,7 +491,7 @@
 
   */
 
-#define CODE_VERSION "2020.05.06.01"
+#define CODE_VERSION "2020.05.07.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4310,16 +4322,19 @@ uint16_t recvNextionRetString(char *buffer, uint16_t len, uint32_t timeout){
 #if defined(FEATURE_NEXTION_DISPLAY)
 void service_nextion_display(){
 
+  #define NEXTION_VERY_FREQUENT_UPDATE_MS 250
+  #define NEXTION_FREQUENT_UPDATE_MS 500
+  #define NEXTION_LESS_FREQUENT_UPDATE_MS 1000
+
   char workstring1[32] = "";
   char workstring2[32] = "";
   static int last_azimuth = 0;
   static unsigned long last_az_update = 0;
   static unsigned long last_various_things_update = 0;
   static unsigned long last_statuses_update = 0;
-  int temp = 0;
+  unsigned int temp = 0;
   char *buffer;
   uint16_t len;
-
 
   #if defined(FEATURE_ELEVATION_CONTROL)
     static int last_elevation = 0;
@@ -4364,10 +4379,6 @@ void service_nextion_display(){
   #if defined(ANALOG_AZ_OVERLAP_DEGREES)
     static unsigned long last_status3_update = 0;
   #endif
-
-  #define NEXTION_VERY_FREQUENT_UPDATE_MS 250
-  #define NEXTION_FREQUENT_UPDATE_MS 500
-  #define NEXTION_LESS_FREQUENT_UPDATE_MS 1000
 
   uint8_t serial_byte = 0;
   unsigned long last_serial_receive_time = 0;
@@ -4538,7 +4549,10 @@ void service_nextion_display(){
       temp = temp | 16384;
     }
 
-//zzzzzz
+    // Future: 32768
+    // Future: 65536
+
+
 
 
     dtostrf((int)temp, 1, 0, workstring1);
@@ -4674,6 +4688,7 @@ TODO:
   \?EF - Elevation Full UP Calibration
 
 */
+//zzzzzz
 
     // vSS2 - Status String 2 - Parking Messages
     strcpy(workstring1,"");
@@ -4931,6 +4946,64 @@ TODO:
       }
     #endif
 
+    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+
+      static unsigned long last_moon_and_sun_update = 0;
+      temp = 0;
+
+      if ((millis() - last_moon_and_sun_update) > (NEXTION_LESS_FREQUENT_UPDATE_MS+525)){
+
+        #ifdef FEATURE_MOON_TRACKING
+          strcpy(workstring1,"vMAS.txt=\"");
+          dtostrf(moon_azimuth,0,2,workstring2);
+          strcpy(workstring1,workstring2);
+          strcpy(workstring1,"\"");
+          sendNextionCommand(workstring1); 
+ 
+          strcpy(workstring1,"vMES.txt=\"");
+          dtostrf(moon_elevation,0,2,workstring2);
+          strcpy(workstring1,workstring2);
+          strcpy(workstring1,"\"");
+          sendNextionCommand(workstring1); 
+
+          if (moon_tracking_active) {
+            temp = temp | 1;
+          }
+          if (moon_visible) {
+            temp = temp | 2;
+          }
+        #endif // FEATURE_MOON_TRACKING
+
+        #ifdef FEATURE_SUN_TRACKING
+
+          strcpy(workstring1,"vSAS.txt=\"");
+          dtostrf(sun_azimuth,0,2,workstring2);
+          strcpy(workstring1,workstring2);
+          strcpy(workstring1,"\"");
+          sendNextionCommand(workstring1); 
+           
+          strcpy(workstring1,"vSES.txt=\"");
+          dtostrf(sun_elevation,0,2,workstring2);
+          strcpy(workstring1,workstring2);
+          strcpy(workstring1,"\"");
+          sendNextionCommand(workstring1); 
+
+          if (sun_tracking_active) {
+            temp = temp | 4;
+          }
+          if (sun_visible) {
+            temp = temp | 8;
+          }
+        #endif // FEATURE_SUN_TRACKING
+
+        strcpy(workstring1,"gMSS=");
+        dtostrf(temp, 1, 0, workstring2);
+        strcat(workstring1,workstring2);
+        sendNextionCommand(workstring1);
+
+        last_moon_and_sun_update = millis();
+      }
+    #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)  
 
 }
 #endif //FEATURE_NEXTION_DISPLAY
@@ -6804,7 +6877,7 @@ void output_debug(){
 
   #ifdef DEBUG_DUMP
 
-    char tempstring[32] = "";
+    char tempstring[32];
 
     #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
 
@@ -6863,8 +6936,11 @@ void output_debug(){
 
         #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
           debug.print("\t");
-          sprintf(tempstring, "%s", coordinate_string());
-          debug.print(tempstring); 
+          dtostrf(latitude,0,4,tempstring);
+          debug.print(tempstring);
+          debug.print(" ");
+          dtostrf(longitude,0,4,tempstring);
+          debug.print(tempstring);
           debug.print(" ");
           debug.print(coordinates_to_maidenhead(latitude,longitude));
         #endif
@@ -7172,17 +7248,46 @@ void output_debug(){
           debug.println("");
         #endif
 
-
-
-
         #ifdef FEATURE_MOON_TRACKING
           update_moon_position();
-          debug.print(moon_status_string());
+          debug.print("\tmoon: AZ:");
+          dtostrf(moon_azimuth,0,2,tempstring);
+          debug.print(tempstring);
+          debug.print(" EL:");
+          dtostrf(moon_elevation,0,2,tempstring);
+          debug.print(tempstring);
+          debug.print("  TRACKING_");
+          if (!moon_tracking_active) {
+            debug.print("IN");
+          }
+          debug.print("ACTIVE ");
+          if (moon_tracking_active) {
+            if (!moon_visible) {
+              debug.print("NOT_");
+            }
+            debug.print("VISIBLE");
+          }
         #endif // FEATURE_MOON_TRACKING
 
         #ifdef FEATURE_SUN_TRACKING
           update_sun_position();
-          debug.print(sun_status_string());
+          debug.print("\tsun: AZ:");
+          dtostrf(sun_azimuth,0,2,tempstring);
+          debug.print(tempstring);
+          debug.print(" EL:");
+          dtostrf(sun_elevation,0,2,tempstring);
+          debug.print(tempstring);
+          debug.print("  TRACKING_");
+          if (!sun_tracking_active) {
+            debug.print("IN");
+          }
+          debug.print("ACTIVE ");
+          if (sun_tracking_active) {
+            if (!sun_visible) {
+              debug.print("NOT_");
+            }
+            debug.print("VISIBLE");
+          }
         #endif // FEATURE_SUN_TRACKING
 
         #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
@@ -7229,7 +7334,7 @@ void output_debug(){
 
 
         #ifdef FEATURE_AUTOCORRECT
-          debug.print("\t\tAutocorrect: AZ:");
+          debug.print("\tAutocorrect: AZ:");
           switch(autocorrect_state_az){
             case AUTOCORRECT_INACTIVE: debug.print("INACTIVE"); break;
             case AUTOCORRECT_WAITING_AZ: debug.print("AUTOCORRECT_WAITING_AZ: "); debug.print(autocorrect_az,2); break;
@@ -11930,7 +12035,7 @@ byte calibrate_az_el(float new_az, float new_el){
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 char * az_el_calibrated_string(){
 
-  char return_string[48] = "";
+  static char return_string[48] = "";
   char tempstring[16] = "";
 
   read_azimuth(1);
@@ -13489,7 +13594,38 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           strcat(return_string,CODE_VERSION);
         }
 
+        if ((input_buffer[2] == 'A') && (input_buffer[3] == 'O')) {  // \?AO - Azimuth Full CCW Calibration
+          read_azimuth(1);
+          configuration.analog_az_full_ccw = analog_az;
+          write_settings_to_eeprom();        
+          strcpy(return_string,"\\!OKAO");
+        }
+
+        if ((input_buffer[2] == 'A') && (input_buffer[3] == 'F')) {  // \?AF - Azimuth Full CW Calibration
+          read_azimuth(1);
+          configuration.analog_az_full_cw = analog_az;
+          write_settings_to_eeprom();        
+          strcpy(return_string,"\\!OKAF");
+        }
+  
+        #if defined(FEATURE_ELEVATION_CONTROL)
+          if ((input_buffer[2] == 'E') && (input_buffer[3] == 'O')) {  // \?EO - Elevation Full DOWN Calibration
+            read_elevation(1);
+            configuration.analog_el_0_degrees = analog_el;
+            write_settings_to_eeprom();        
+            strcpy(return_string,"\\!OKEO");
+          }
+
+          if ((input_buffer[2] == 'E') && (input_buffer[3] == 'F')) {  // \?EF - Elevation Full UP Calibration
+            read_elevation(1);
+            configuration.analog_el_max_elevation = analog_el;
+            write_settings_to_eeprom();        
+            strcpy(return_string,"\\!OKEF");
+          }
+        #endif  
+
       } //if (input_buffer_index == 4)
+ 
 
     if (input_buffer_index == 6){
       if ((input_buffer[2] == 'D') && (input_buffer[3] == 'O')) {  // \?DOxx - digital pin initialize as output; xx = pin # (01, 02, A0,etc.)
@@ -15395,85 +15531,6 @@ void check_sun_pushbutton_calibration(){
 
 }
 #endif //defined(FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION) && defined(FEATURE_SUN_TRACKING)       
-
-//-------------------------------------------------------
-
-#if defined(FEATURE_SUN_TRACKING) || defined(FEATURE_MOON_TRACKING)
-char * coordinate_string(){
-
-  char returnstring[32] = "";
-  char tempstring[12] = "";
-
-  dtostrf(latitude,0,4,returnstring);
-  strcat(returnstring," ");
-  dtostrf(longitude,0,4,tempstring);
-  strcat(returnstring,tempstring);
-  return returnstring;
-
-}
-#endif //defined(FEATURE_SUN_TRACKING) || defined(FEATURE_MOON_TRACKING)
-
-// --------------------------------------------------------------
-
-#ifdef FEATURE_MOON_TRACKING
-char * moon_status_string(){
-
-    char returnstring[128] = "";
-    char tempstring[16] = "";
-
-    strcpy(returnstring,"\tmoon: AZ:");
-    dtostrf(moon_azimuth,0,2,tempstring);
-    strcat(returnstring,tempstring);
-    strcat(returnstring," EL:");
-    dtostrf(moon_elevation,0,2,tempstring);
-    strcat(returnstring,tempstring);
-    strcat(returnstring,"  TRACKING_");
-    if (!moon_tracking_active) {
-      strcat(returnstring,"IN");
-    }
-    strcat(returnstring,"ACTIVE ");
-    if (moon_tracking_active) {
-      if (!moon_visible) {
-        strcat(returnstring,"NOT_");
-      }
-      strcat(returnstring,"VISIBLE");
-    }
-    return returnstring;
-}
-#endif // FEATURE_MOON_TRACKING
-// --------------------------------------------------------------
-#ifdef FEATURE_SUN_TRACKING
-char * sun_status_string(){
-
-    char returnstring[128] = "";
-    char tempstring[16] = "";
-
-    strcpy(returnstring,"\tsun: AZ:");
-    dtostrf(sun_azimuth,0,2,tempstring);
-    strcat(returnstring,tempstring);
-    strcat(returnstring," EL:");
-    dtostrf(sun_elevation,0,2,tempstring);
-    strcat(returnstring,tempstring);
-    strcat(returnstring,"  TRACKING_");
-    if (!sun_tracking_active) {
-      strcat(returnstring,"IN");
-    }
-    strcat(returnstring,"ACTIVE ");
-    if (sun_tracking_active) {
-      if (!sun_visible) {
-        strcat(returnstring,"NOT_");
-      }
-      strcat(returnstring,"VISIBLE");
-    }
-    return returnstring;
-}
-#endif // FEATURE_SUN_TRACKING
-// --------------------------------------------------------------
-
-
-
-
-
 
 //------------------------------------------------------
 
