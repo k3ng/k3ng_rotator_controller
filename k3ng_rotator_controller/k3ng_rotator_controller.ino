@@ -479,6 +479,8 @@
       Fixed several issues with debug dump log  
       Updated command reference: https://github.com/k3ng/k3ng_rotator_controller/wiki/820-Command-Reference
 
+    2020.05.08.01
+      Made improvement to rotator_k3ngdisplay.cpp to reduce LCD bus traffic from cursor positioning
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -491,7 +493,7 @@
 
   */
 
-#define CODE_VERSION "2020.05.07.01"
+#define CODE_VERSION "2020.05.08.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4245,6 +4247,66 @@ void service_nextion_display(){
 #endif // defined(FEATURE_NEXTION_DISPLAY_OLD) 
 
 // --------------------------------------------------------------
+// #if defined(FEATURE_NEXTION_DISPLAY)
+// uint16_t recvNextionRetString(char *buffer, uint16_t len, uint32_t timeout){
+
+//     uint16_t ret = 0;
+//     bool received_start_byte = false;
+//     uint8_t counter_0xff_bytes = 0;
+//     String temp = String("");
+//     uint8_t serial_byte = 0;
+//     unsigned long start;
+    
+//     #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+//       debug.print("\r\nrecvNextionRetString: rcv:");
+//     #endif   
+
+//     start = millis();
+//     while ((millis() - start) <= timeout){
+//         while (nexSerial.available()){
+//             serial_byte = nexSerial.read();
+//             #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+//                 debug.write(serial_byte);
+//             #endif               
+//             if (received_start_byte){
+//                 if (serial_byte == 0xFF){
+//                   counter_0xff_bytes++;                    
+//                   if (counter_0xff_bytes >= 3){
+//                     break;
+//                   }
+//                 } else {
+//                   temp += (char)serial_byte;
+//                 }
+//             } else if (serial_byte == 0x70){   //0x70 is starting byte that is discarded
+//               received_start_byte = true;
+//             }
+//         }
+        
+//         if (counter_0xff_bytes >= 3){
+//           break;
+//         }
+//     }
+
+//     #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+//       debug.println("$");
+//       if (millis() - start > timeout){
+//         debug.println("\r\nrecvNextionRetString: timeout");
+//       }      
+//     #endif    
+
+//     ret = temp.length();
+//     if (ret > len){
+//       ret = len;
+//     }
+   
+//     strncpy(buffer, temp.c_str(), ret);
+
+//     return ret;
+
+// }
+// #endif //FEATURE_NEXTION_DISPLAY
+
+// --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
 void sendNextionCommand(const char* send_command){
     
@@ -4259,65 +4321,7 @@ void sendNextionCommand(const char* send_command){
     nexSerial.write(0xFF);
 }
 #endif //FEATURE_NEXTION_DISPLAY
-// --------------------------------------------------------------
-#if defined(FEATURE_NEXTION_DISPLAY)
-uint16_t recvNextionRetString(char *buffer, uint16_t len, uint32_t timeout){
 
-    uint16_t ret = 0;
-    bool received_start_byte = false;
-    uint8_t counter_0xff_bytes = 0;
-    String temp = String("");
-    uint8_t serial_byte = 0;
-    unsigned long start;
-    
-    #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
-      debug.print("\r\nrecvNextionRetString: rcv:");
-    #endif   
-
-    start = millis();
-    while ((millis() - start) <= timeout){
-        while (nexSerial.available()){
-            serial_byte = nexSerial.read();
-            #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
-                debug.write(serial_byte);
-            #endif               
-            if (received_start_byte){
-                if (serial_byte == 0xFF){
-                  counter_0xff_bytes++;                    
-                  if (counter_0xff_bytes >= 3){
-                    break;
-                  }
-                } else {
-                  temp += (char)serial_byte;
-                }
-            } else if (serial_byte == 0x70){   //0x70 is starting byte that is discarded
-              received_start_byte = true;
-            }
-        }
-        
-        if (counter_0xff_bytes >= 3){
-          break;
-        }
-    }
-
-    #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
-      debug.println("$");
-      if (millis() - start > timeout){
-        debug.println("\r\nrecvNextionRetString: timeout");
-      }      
-    #endif    
-
-    ret = temp.length();
-    if (ret > len){
-      ret = len;
-    }
-   
-    strncpy(buffer, temp.c_str(), ret);
-
-    return ret;
-
-}
-#endif //FEATURE_NEXTION_DISPLAY
 // --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
 void service_nextion_display(){
@@ -4681,11 +4685,6 @@ TODO:
   Azimuth Display Mode: Raw Degrees
   Azimuth Display Mode: +Overlap
 
-  New Extended Commands
-  \?AO - Azimuth Full CCW Calibration
-  \?AF - Azimuth Full CW Calibration
-  \?EO - Elevation Full DOWN Calibration
-  \?EF - Elevation Full UP Calibration
 
 */
 //zzzzzz
@@ -4809,7 +4808,7 @@ TODO:
 
     // gAzR
     dtostrf(raw_azimuth / LCD_HEADING_MULTIPLIER, 1, 0, workstring1);
-    strcpy(workstring2,"gAz=");
+    strcpy(workstring2,"gAzR=");
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2);     
 

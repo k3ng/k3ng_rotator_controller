@@ -299,14 +299,18 @@ void K3NGdisplay::update(){
 
   // update the screen with changes that are pending in screen_buffer_pending
 
-  static int round_robin_refresh_position = 0;
+  //static int round_robin_refresh_position = 0;
+
+  byte wrote_to_lcd_last_loop = 0;
 
   lcd.noCursor();
   lcd.setCursor(0,0);
 
   for (int x = 0;x < (display_columns*display_rows);x++){  	
-    if ((screen_buffer_live[x] != screen_buffer_pending[x]) || (x == round_robin_refresh_position)){  // do we have a new character to put on the screen ?
-      lcd.setCursor(Xposition(x),Yposition(x));
+    if ((screen_buffer_live[x] != screen_buffer_pending[x]) /*|| (x == round_robin_refresh_position)*/){  // do we have a new character to put on the screen ?
+      if (!wrote_to_lcd_last_loop){
+        lcd.setCursor(Xposition(x),Yposition(x));
+      }
       if (screen_buffer_attributes_pending[x] & ATTRIBUTE_BLINK){  // does this character have the blink attribute
         if (current_blink_state){
           lcd.print(screen_buffer_pending[x]);
@@ -318,24 +322,30 @@ void K3NGdisplay::update(){
       }
       screen_buffer_live[x] = screen_buffer_pending[x];
       screen_buffer_attributes_live[x] = screen_buffer_attributes_pending[x];
+      wrote_to_lcd_last_loop = 1;
     } else {  // not a new character, do we have live character on the screen to blink?
       if (last_blink_state != current_blink_state){
         if (screen_buffer_attributes_live[x] & ATTRIBUTE_BLINK){
-        	lcd.setCursor(Xposition(x),Yposition(x));
+          if (!wrote_to_lcd_last_loop){
+        	  lcd.setCursor(Xposition(x),Yposition(x));
+          }
         	if (current_blink_state){
-              lcd.print(screen_buffer_live[x]);
-      	    } else {
-      	      lcd.print(' ');
-      	    }
+            lcd.print(screen_buffer_live[x]);
+          } else {
+            lcd.print(' ');
+          }
+          wrote_to_lcd_last_loop = 1;
         }
+      } else {
+        wrote_to_lcd_last_loop = 0;
       }
     }
   }
 
-  round_robin_refresh_position++;
-  if (round_robin_refresh_position >= (display_columns*display_rows)){
-    round_robin_refresh_position = 0; 
-  }
+  // round_robin_refresh_position++;
+  // if (round_robin_refresh_position >= (display_columns*display_rows)){
+  //   round_robin_refresh_position = 0; 
+  // }
 
   last_blink_state = current_blink_state;
 
