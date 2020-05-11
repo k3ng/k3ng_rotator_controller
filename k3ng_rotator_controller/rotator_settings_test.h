@@ -368,6 +368,8 @@ You can tweak these, but read the online documentation!
 #define nexSerial Serial3
 #define NEXTION_SERIAL_BAUD 115200
 
+#define ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS 5000 // if OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP is enabled, ignore configuration and rotational command for this many mS after boot up
+
 
 									// ######## ########  ######  ######## 
 									//    ##    ##       ##    ##    ##    

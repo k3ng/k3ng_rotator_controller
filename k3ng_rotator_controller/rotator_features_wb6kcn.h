@@ -152,13 +152,5 @@
 //#define OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING
 //#define OPTION_MORE_SERIAL_CHECKS
 //#define OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE
-  
-  /*
-  
-  Note:
-  
-  Ham Radio Deluxe expects AZ and EL in output for Yaesu C command in AZ/EL mode.  I'm not sure if this is default behavior for
-  the Yaesu interface since the C2 command is supposed to be for AZ and EL.  If you have problems with other software with this code in AZ/EL mode,
-  uncomment #define OPTION_C_COMMAND_SENDS_AZ_AND_EL.
-  
-  */
+// #define OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP // if disabled, rotational and configuration commands will be ignored on the serial port for the first 10 second after boot up
+

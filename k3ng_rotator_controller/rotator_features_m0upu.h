@@ -160,3 +160,4 @@
 //#define OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING
 //#define OPTION_MORE_SERIAL_CHECKS
 //#define OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE  
+//#define OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP // if disabled, rotational and configuration commands will be ignored on the serial port for the first 10 second after boot up

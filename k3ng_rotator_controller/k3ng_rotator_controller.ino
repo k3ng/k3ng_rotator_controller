@@ -485,6 +485,10 @@
     2020.05.11.01
       Handle ARDUINO_AVR_MICRO having Serial port as Serial_ class and Serial1 as HardwareSerial class
 
+    2020.05.11.02
+      Added OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP which is disabled by default.  By default the controller will ignore at boot up GS-232 commands that start rotation or change the configuration.
+        Related setting (new): ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS 5000   (ignore commands the first 5 seconds after boot up)
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -497,7 +501,7 @@
 
   */
 
-#define CODE_VERSION "2020.05.11.01"
+#define CODE_VERSION "2020.05.11.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -10531,19 +10535,19 @@ void az_position_pulse_interrupt_handler(){
   }
 
   #ifdef OPTION_AZ_POSITION_PULSE_HARD_LIMIT
-  if (az_position_pulse_input_azimuth < azimuth_starting_point) {
-    az_position_pulse_input_azimuth = azimuth_starting_point;
-  }
-  if (az_position_pulse_input_azimuth > (azimuth_starting_point + azimuth_rotation_capability)) {
-    az_position_pulse_input_azimuth = (azimuth_starting_point + azimuth_rotation_capability);
-  }
-  #else
-  if (az_position_pulse_input_azimuth < 0) {
-    az_position_pulse_input_azimuth += 360;
-  }
-  if (az_position_pulse_input_azimuth >= 360) {
-    az_position_pulse_input_azimuth -= 360;
-  }
+    if (az_position_pulse_input_azimuth < azimuth_starting_point) {
+      az_position_pulse_input_azimuth = azimuth_starting_point;
+    }
+    if (az_position_pulse_input_azimuth > (azimuth_starting_point + azimuth_rotation_capability)) {
+      az_position_pulse_input_azimuth = (azimuth_starting_point + azimuth_rotation_capability);
+    }
+    #else
+    if (az_position_pulse_input_azimuth < 0) {
+      az_position_pulse_input_azimuth += 360;
+    }
+    if (az_position_pulse_input_azimuth >= 360) {
+      az_position_pulse_input_azimuth -= 360;
+    }
   #endif // OPTION_AZ_POSITION_PULSE_HARD_LIMIT
 
 } /* az_position_pulse_interrupt_handler */
@@ -14538,7 +14542,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
   
 
     #ifdef FEATURE_TIMED_BUFFER
-    int parsed_value2 = 0;
+      int parsed_value2 = 0;
     #endif //FEATURE_TIMED_BUFFER
 
     strcpy(return_string,"");
@@ -14546,9 +14550,9 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
     switch (yaesu_command_buffer[0]) {          // look at the first character of the command
       case 'C':                                // C - return current azimuth
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: C\n");
-        }
+          if (debug_mode) {
+            debug.print("yaesu_serial_command: C\n");
+          }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef OPTION_DELAY_C_CMD_OUTPUT
         delay(400);
@@ -14575,15 +14579,17 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
 
 
         #ifndef OPTION_GS_232B_EMULATION
-        if (elevation < 0) {
-          strcat(return_string,"-0");
-        } else {
-          strcat(return_string,"+0");
-        }
+          if (elevation < 0) {
+            strcat(return_string,"-0");
+          } else {
+            strcat(return_string,"+0");
+          }
         #endif
+
         #ifdef OPTION_GS_232B_EMULATION
-        strcat(return_string,"EL=");
+          strcat(return_string,"EL=");
         #endif
+
         dtostrf(int(elevation / HEADING_MULTIPLIER),0,0,tempstring);
         if (int(elevation / HEADING_MULTIPLIER) < 10) {
           strcat(return_string,("0"));
@@ -14601,15 +14607,15 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         #endif // FEATURE_ELEVATION_CONTROL
       
         #ifndef FEATURE_ELEVATION_CONTROL
-        if ((yaesu_command_buffer[1] == '2') && (yaesu_command_buffer_index > 1)) {     // did we get the C2 command?
-          #ifndef OPTION_GS_232B_EMULATION
-          strcat(return_string,"+0000");    // return a dummy elevation since we don't have the elevation feature turned on
-          #else
-          strcat(return_string,"EL=000");
-          #endif
-        } else {
-          //strcat(return_string,"\n");
-        }
+          if ((yaesu_command_buffer[1] == '2') && (yaesu_command_buffer_index > 1)) {     // did we get the C2 command?
+            #ifndef OPTION_GS_232B_EMULATION
+            strcat(return_string,"+0000");    // return a dummy elevation since we don't have the elevation feature turned on
+            #else
+            strcat(return_string,"EL=000");
+            #endif
+          } else {
+            //strcat(return_string,"\n");
+          }
         #endif // FEATURE_ELEVATION_CONTROL   
         break;
         
@@ -14617,132 +14623,218 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         //-----------------end of C command-----------------
         
       #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
-      case 'F': // F - full scale calibration
-        #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: F\n");
-        }
-        #endif // DEBUG_PROCESS_YAESU
-      
-      
-        #ifdef FEATURE_ELEVATION_CONTROL
-        if ((yaesu_command_buffer[1] == '2') && (yaesu_command_buffer_index > 1)) {     // did we get the F2 command?
+        case 'F': // F - full scale calibration
+          #ifdef DEBUG_PROCESS_YAESU
+            if (debug_mode) {
+              debug.print("yaesu_serial_command: F\n");
+            }
+          #endif // DEBUG_PROCESS_YAESU
+        
+          #ifdef FEATURE_ELEVATION_CONTROL
+            if ((yaesu_command_buffer[1] == '2') && (yaesu_command_buffer_index > 1)) {     // did we get the F2 command?
 
+              clear_serial_buffer();
+
+              #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+                if (source_port == CONTROL_PORT0){
+                  control_port->println(F("Elevate to 180 (or max elevation) and send keystroke..."));
+                }
+                get_keystroke();
+                read_elevation(1);
+                configuration.analog_el_max_elevation = analog_el;
+                write_settings_to_eeprom();
+                strcpy(return_string,"Wrote to memory");
+              #else
+                if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){ 
+                  if (source_port == CONTROL_PORT0){
+                    control_port->println(F("Elevate to 180 (or max elevation) and send keystroke..."));
+                  }
+                  get_keystroke();
+                  read_elevation(1);
+                  configuration.analog_el_max_elevation = analog_el;
+                  write_settings_to_eeprom();
+                  strcpy(return_string,"Wrote to memory");
+                }
+              #endif  // OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP
+
+              return;
+            }
+          #endif  //FEATURE_ELEVATION_CONTROL
+        
           clear_serial_buffer();
-          if (source_port == CONTROL_PORT0){
-            control_port->println(F("Elevate to 180 (or max elevation) and send keystroke..."));
-          }
-          get_keystroke();
-          read_elevation(1);
-          configuration.analog_el_max_elevation = analog_el;
-          write_settings_to_eeprom();
-          strcpy(return_string,"Wrote to memory");
-          return;
-        }
-        #endif
-      
-        clear_serial_buffer();
-        if (source_port == CONTROL_PORT0){
-          control_port->println(F("Rotate to full CW and send keystroke..."));
-          get_keystroke();
-        }
-        read_azimuth(1);
-        configuration.analog_az_full_cw = analog_az;
-        write_settings_to_eeprom();
-        strcpy(return_string,"Wrote to memory");     
-        break;
+
+          #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+            if (source_port == CONTROL_PORT0){
+              control_port->println(F("Rotate to full CW and send keystroke..."));
+              get_keystroke();
+            }
+            read_azimuth(1);
+            configuration.analog_az_full_cw = analog_az;
+            write_settings_to_eeprom();
+            strcpy(return_string,"Wrote to memory");  
+          #else
+            if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+              if (source_port == CONTROL_PORT0){
+                control_port->println(F("Rotate to full CW and send keystroke..."));
+                get_keystroke();
+              }
+              read_azimuth(1);
+              configuration.analog_az_full_cw = analog_az;
+              write_settings_to_eeprom();
+              strcpy(return_string,"Wrote to memory");  
+            }
+          #endif  // OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP
+
+          break;
         #endif // FEATURE_AZ_POSITION_POTENTIOMETER
+
       case 'H': print_help(source_port); break;                     // H - print help - depricated
+
       case 'L':  // L - manual left (CCW) rotation
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: L\n");
-        }
+          if (debug_mode) {
+            debug.print("yaesu_serial_command: L\n");
+          }
         #endif // DEBUG_PROCESS_YAESU
-        submit_request(AZ, REQUEST_CCW, 0, 21);
-        //strcpy(return_string,"\n");
-        #ifdef FEATURE_PARK
-        deactivate_park();
-        #endif // FEATURE_PARK
+
+
+        #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+          submit_request(AZ, REQUEST_CCW, 0, 21);
+          //strcpy(return_string,"\n");
+          #ifdef FEATURE_PARK
+            deactivate_park();
+          #endif // FEATURE_PARK
+        #else
+          if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+            submit_request(AZ, REQUEST_CCW, 0, 21);
+            //strcpy(return_string,"\n");
+            #ifdef FEATURE_PARK
+            deactivate_park();
+            #endif // FEATURE_PARK
+          }  
+        #endif //OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP
+
         break;
         
       #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
-      case 'O':  // O - offset calibration
-        #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: O\n");
-        }
-        #endif // DEBUG_PROCESS_YAESU
+        case 'O':  // O - offset calibration
+          #ifdef DEBUG_PROCESS_YAESU
+            if (debug_mode) {
+              debug.print("yaesu_serial_command: O\n");
+            }
+          #endif // DEBUG_PROCESS_YAESU
 
-        #ifdef FEATURE_ELEVATION_CONTROL
-        if ((yaesu_command_buffer[1] == '2') && (yaesu_command_buffer_index > 1)) {     // did we get the O2 command?       
-          clear_serial_buffer();
-          if (source_port == CONTROL_PORT0){  
-            control_port->println(F("Elevate to 0 degrees and send keystroke..."));
-          }
-          get_keystroke();
-          read_elevation(1);
-          configuration.analog_el_0_degrees = analog_el;
-          write_settings_to_eeprom();
-          strcpy(return_string,"Wrote to memory");
-          return;
-        }
-        #endif
-      
-        clear_serial_buffer();  
-        if (source_port == CONTROL_PORT0){    
-          control_port->println(F("Rotate to full CCW and send keystroke..."));
-        }
-        get_keystroke();
-        read_azimuth(1);
-        configuration.analog_az_full_ccw = analog_az;
-        write_settings_to_eeprom();
-        strcpy(return_string,"Wrote to memory");
-        break;
+          #ifdef FEATURE_ELEVATION_CONTROL
+            if ((yaesu_command_buffer[1] == '2') && (yaesu_command_buffer_index > 1)) {     // did we get the O2 command?       
+              clear_serial_buffer();
+
+              #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+                if (source_port == CONTROL_PORT0){  
+                  control_port->println(F("Elevate to 0 degrees and send keystroke..."));
+                }
+                get_keystroke();
+                read_elevation(1);
+                configuration.analog_el_0_degrees = analog_el;
+                write_settings_to_eeprom();
+                strcpy(return_string,"Wrote to memory");
+              #else
+                if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+                  if (source_port == CONTROL_PORT0){  
+                    control_port->println(F("Elevate to 0 degrees and send keystroke..."));
+                  }
+                  get_keystroke();
+                  read_elevation(1);
+                  configuration.analog_el_0_degrees = analog_el;
+                  write_settings_to_eeprom();
+                  strcpy(return_string,"Wrote to memory"); 
+                }             
+              #endif //OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP
+
+              return;
+            }
+          #endif // FEATURE_ELEVATION_CONTROL
+        
+          clear_serial_buffer();  
+          
+          #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+            if (source_port == CONTROL_PORT0){    
+              control_port->println(F("Rotate to full CCW and send keystroke..."));
+            }
+            get_keystroke();
+            read_azimuth(1);
+            configuration.analog_az_full_ccw = analog_az;
+            write_settings_to_eeprom();
+            strcpy(return_string,"Wrote to memory");
+          #else
+            if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+              if (source_port == CONTROL_PORT0){    
+                control_port->println(F("Rotate to full CCW and send keystroke..."));
+              }
+              get_keystroke();
+              read_azimuth(1);
+              configuration.analog_az_full_ccw = analog_az;
+              write_settings_to_eeprom();
+              strcpy(return_string,"Wrote to memory");
+            }
+          #endif
+
+          break;
         #endif // FEATURE_AZ_POSITION_POTENTIOMETER
       
       case 'R':  // R - manual right (CW) rotation
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: R\n");
-        }
+          if (debug_mode) {
+            debug.print("yaesu_serial_command: R\n");
+          }
         #endif // DEBUG_PROCESS_YAESU
-        submit_request(AZ, REQUEST_CW, 0, 22);
-        strcpy(return_string,"\n");
-        #ifdef FEATURE_PARK
-        deactivate_park();
-        #endif // FEATURE_PARK
+
+        #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+          submit_request(AZ, REQUEST_CW, 0, 22);
+          strcpy(return_string,"\n");
+          #ifdef FEATURE_PARK
+            deactivate_park();
+          #endif // FEATURE_PARK
+        #else
+          if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+            submit_request(AZ, REQUEST_CW, 0, 22);
+            strcpy(return_string,"\n");
+            #ifdef FEATURE_PARK
+              deactivate_park();
+            #endif // FEATURE_PARK
+          }
+        #endif  
+
         break;
         
       case 'A':  // A - CW/CCW rotation stop
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: A\n");
-        }
+          if (debug_mode) {
+            debug.print("yaesu_serial_command: A\n");
+          }
         #endif // DEBUG_PROCESS_YAESU
         submit_request(AZ, REQUEST_STOP, 0, 23);
         //strcpy(return_string,"\n");
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         break;
         
       case 'S':         // S - all stop
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: S\n");
-        }
+          if (debug_mode) {
+            debug.print("yaesu_serial_command: S\n");
+          }
         #endif // DEBUG_PROCESS_YAESU
         submit_request(AZ, REQUEST_STOP, 0, 24);
         #ifdef FEATURE_ELEVATION_CONTROL
-        submit_request(EL, REQUEST_STOP, 0, 25);
+          submit_request(EL, REQUEST_STOP, 0, 25);
         #endif
         #ifdef FEATURE_TIMED_BUFFER
-        clear_timed_buffer();
+          clear_timed_buffer();
         #endif // FEATURE_TIMED_BUFFER
         //strcpy(return_string,"");
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         break;
         
@@ -14758,45 +14850,51 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
   
         if (yaesu_command_buffer_index > 4) {  // if there are more than 4 characters in the command buffer, we got a timed interval command
           #ifdef FEATURE_TIMED_BUFFER
-          clear_timed_buffer();
-          parsed_value = ((int(yaesu_command_buffer[1]) - 48) * 100) + ((int(yaesu_command_buffer[2]) - 48) * 10) + (int(yaesu_command_buffer[3]) - 48);
-          if ((parsed_value > 0) && (parsed_value < 1000)) {
-            timed_buffer_interval_value_seconds = parsed_value;
-            for (int x = 5; x < yaesu_command_buffer_index; x = x + 4) {
-              parsed_value = ((int(yaesu_command_buffer[x]) - 48) * 100) + ((int(yaesu_command_buffer[x + 1]) - 48) * 10) + (int(yaesu_command_buffer[x + 2]) - 48);
-              if ((parsed_value >= 0) && (parsed_value <= (azimuth_starting_point + azimuth_rotation_capability))) {  // is it a valid azimuth?
-                timed_buffer_azimuths[timed_buffer_number_entries_loaded] = parsed_value * HEADING_MULTIPLIER;
-                timed_buffer_number_entries_loaded++;
-                timed_buffer_status = LOADED_AZIMUTHS;
-                if (timed_buffer_number_entries_loaded > TIMED_INTERVAL_ARRAY_SIZE) {   // is the array full?
-                  submit_request(AZ, REQUEST_AZIMUTH, timed_buffer_azimuths[0], 26);  // array is full, go to the first azimuth
-                  timed_buffer_entry_pointer = 1;
+            clear_timed_buffer();
+            parsed_value = ((int(yaesu_command_buffer[1]) - 48) * 100) + ((int(yaesu_command_buffer[2]) - 48) * 10) + (int(yaesu_command_buffer[3]) - 48);
+            if ((parsed_value > 0) && (parsed_value < 1000)) {
+              timed_buffer_interval_value_seconds = parsed_value;
+              for (int x = 5; x < yaesu_command_buffer_index; x = x + 4) {
+                parsed_value = ((int(yaesu_command_buffer[x]) - 48) * 100) + ((int(yaesu_command_buffer[x + 1]) - 48) * 10) + (int(yaesu_command_buffer[x + 2]) - 48);
+                if ((parsed_value >= 0) && (parsed_value <= (azimuth_starting_point + azimuth_rotation_capability))) {  // is it a valid azimuth?
+                  timed_buffer_azimuths[timed_buffer_number_entries_loaded] = parsed_value * HEADING_MULTIPLIER;
+                  timed_buffer_number_entries_loaded++;
+                  timed_buffer_status = LOADED_AZIMUTHS;
+                  if (timed_buffer_number_entries_loaded > TIMED_INTERVAL_ARRAY_SIZE) {   // is the array full?
+                    submit_request(AZ, REQUEST_AZIMUTH, timed_buffer_azimuths[0], 26);  // array is full, go to the first azimuth
+                    timed_buffer_entry_pointer = 1;
+                    return;
+                  }
+                } else {   // we hit an invalid bearing
+                  timed_buffer_status = EMPTY;
+                  timed_buffer_number_entries_loaded = 0;
+                  strcpy(return_string,"?>");  // error
                   return;
                 }
-              } else {   // we hit an invalid bearing
-                timed_buffer_status = EMPTY;
-                timed_buffer_number_entries_loaded = 0;
-                strcpy(return_string,"?>");  // error
-                return;
               }
+              submit_request(AZ, REQUEST_AZIMUTH, timed_buffer_azimuths[0], 27);   // go to the first azimuth
+              timed_buffer_entry_pointer = 1;       
+            } else {
+              strcpy(return_string,"?>");  // error
             }
-            submit_request(AZ, REQUEST_AZIMUTH, timed_buffer_azimuths[0], 27);   // go to the first azimuth
-            timed_buffer_entry_pointer = 1;       
-          } else {
-            strcpy(return_string,"?>");  // error
-          }
           #else
-          strcpy(return_string,"?>");
+            strcpy(return_string,"?>");
           #endif // FEATURE_TIMED_BUFFER
           return;
         } else {                         // if there are four characters, this is just a single direction setting
           if (yaesu_command_buffer_index == 4) {
             parsed_value = ((int(yaesu_command_buffer[1]) - 48) * 100) + ((int(yaesu_command_buffer[2]) - 48) * 10) + (int(yaesu_command_buffer[3]) - 48);
             #ifdef FEATURE_TIMED_BUFFER
-            clear_timed_buffer();
+              clear_timed_buffer();
             #endif // FEATURE_TIMED_BUFFER
             if ((parsed_value >= 0) && (parsed_value <= (azimuth_starting_point + azimuth_rotation_capability))) {
-              submit_request(AZ, REQUEST_AZIMUTH, (parsed_value * HEADING_MULTIPLIER), 28);
+              #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+                submit_request(AZ, REQUEST_AZIMUTH, (parsed_value * HEADING_MULTIPLIER), 28);
+              #else
+                if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+                  submit_request(AZ, REQUEST_AZIMUTH, (parsed_value * HEADING_MULTIPLIER), 28);
+                }
+              #endif
               return;
             }
           }
@@ -14807,12 +14905,12 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       #ifdef FEATURE_TIMED_BUFFER
       case 'N': // N - number of loaded timed interval entries
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: N\n");
-        }
+          if (debug_mode) {
+            debug.print("yaesu_serial_command: N\n");
+          }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         sprintf(return_string,"%d",timed_buffer_number_entries_loaded);
         break;
@@ -14820,9 +14918,15 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         
       #ifdef FEATURE_TIMED_BUFFER
       case 'T': // T - initiate timed tracking
-        initiate_timed_buffer(source_port);
+        #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+          initiate_timed_buffer(source_port);
+        #else
+          if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+            initiate_timed_buffer(source_port);
+          }
+        #endif
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         break;           
         #endif // FEATURE_TIMED_BUFFER
@@ -14881,75 +14985,88 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         break;
         
       #ifdef FEATURE_ELEVATION_CONTROL
-      case 'U':  // U - manual up rotation
-        #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: U\n");
-        }
-        #endif // DEBUG_PROCESS_YAESU
-        #ifdef FEATURE_PARK
-        deactivate_park();
-        #endif // FEATURE_PARK
-        submit_request(EL, REQUEST_UP, 0, 29);
-        //strcpy(return_string,"\n");
-        break;
-        
-      case 'D':  // D - manual down rotation
-        #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: D\n");
-        }
-        #endif // DEBUG_PROCESS_YAESU
-        #ifdef FEATURE_PARK
-        deactivate_park();
-        #endif // FEATURE_PARK
-        submit_request(EL, REQUEST_DOWN, 0, 30);
-        //strcpy(return_string,"\n");
-        break;
-        
-      case 'E':  // E - stop elevation rotation
-        #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: E\n");
-        }
-        #endif // DEBUG_PROCESS_YAESU
-        #ifdef FEATURE_PARK
-        deactivate_park();
-        #endif // FEATURE_PARK
-        submit_request(EL, REQUEST_STOP, 0, 31);
-        //strcpy(return_string,"\n");
-        break;
-        
-      case 'B': // B - return current elevation
-        #ifndef OPTION_GS_232B_EMULATION
-        if (elevation < 0) {
-          strcat(return_string,"-0");
-        } else {
-          strcat(return_string,"+0");
-        }
-        #else
-        strcat(return_string,"EL=");
-        #endif //OPTION_GS_232B_EMULATION
-        dtostrf(int(elevation / HEADING_MULTIPLIER),0,0,tempstring);
-        if (int(elevation / HEADING_MULTIPLIER) < 10) {
-          strcat(return_string,("0"));
-        }
-        if (int(elevation / HEADING_MULTIPLIER) < 100) {
-          strcat(return_string,"0");
-        }
-        strcat(return_string,tempstring);
-      break;        
+        case 'U':  // U - manual up rotation
+          #ifdef DEBUG_PROCESS_YAESU
+              if (debug_mode) {
+                debug.print("yaesu_serial_command: U\n");
+              }
+          #endif // DEBUG_PROCESS_YAESU
+          #ifdef FEATURE_PARK
+            deactivate_park();
+          #endif // FEATURE_PARK
+          #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+            submit_request(EL, REQUEST_UP, 0, 29);
+          #else
+            if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+              submit_request(EL, REQUEST_UP, 0, 29);
+            }
+          #endif
+          //strcpy(return_string,"\n");
+          break;
+          
+        case 'D':  // D - manual down rotation
+          #ifdef DEBUG_PROCESS_YAESU
+            if (debug_mode) {
+              debug.print("yaesu_serial_command: D\n");
+            }
+          #endif // DEBUG_PROCESS_YAESU
+          #ifdef FEATURE_PARK
+            deactivate_park();
+          #endif // FEATURE_PARK
+          #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+            submit_request(EL, REQUEST_DOWN, 0, 30);
+          #else
+            if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+              submit_request(EL, REQUEST_DOWN, 0, 30);
+            }
+          #endif
+          //strcpy(return_string,"\n");
+          break;
+          
+        case 'E':  // E - stop elevation rotation
+          #ifdef DEBUG_PROCESS_YAESU
+            if (debug_mode) {
+              debug.print("yaesu_serial_command: E\n");
+            }
+          #endif // DEBUG_PROCESS_YAESU
+          #ifdef FEATURE_PARK
+            deactivate_park();
+          #endif // FEATURE_PARK
+          submit_request(EL, REQUEST_STOP, 0, 31);
+          //strcpy(return_string,"\n");
+          break;
+          
+        case 'B': // B - return current elevation
+          #ifndef OPTION_GS_232B_EMULATION
+            if (elevation < 0) {
+              strcat(return_string,"-0");
+            } else {
+              strcat(return_string,"+0");
+            }
+          #else
+            strcat(return_string,"EL=");
+          #endif //OPTION_GS_232B_EMULATION
+          dtostrf(int(elevation / HEADING_MULTIPLIER),0,0,tempstring);
+          if (int(elevation / HEADING_MULTIPLIER) < 10) {
+            strcat(return_string,("0"));
+          }
+          if (int(elevation / HEADING_MULTIPLIER) < 100) {
+            strcat(return_string,"0");
+          }
+          strcat(return_string,tempstring);
+        break;        
       
       #endif /* ifdef FEATURE_ELEVATION_CONTROL */
       
       case 'W':  // W - auto elevation rotation
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("yaesu_serial_command: W\n");
-        }
+          if (debug_mode) {
+            debug.print("yaesu_serial_command: W\n");
+          }
         #endif // DEBUG_PROCESS_YAESU
+
         #ifdef FEATURE_PARK
-        deactivate_park();
+          deactivate_park();
         #endif // FEATURE_PARK
         
         
@@ -14959,34 +15076,34 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
 
         if (yaesu_command_buffer_index > 8) {  // if there are more than 4 characters in the command buffer, we got a timed interval command
           #if defined(FEATURE_TIMED_BUFFER) && defined(FEATURE_ELEVATION_CONTROL) 
-          parsed_value = ((int(yaesu_command_buffer[1]) - 48) * 100) + ((int(yaesu_command_buffer[2]) - 48) * 10) + (int(yaesu_command_buffer[3]) - 48);
-          if ((parsed_value > 0) && (parsed_value < 1000)) {
-            timed_buffer_interval_value_seconds = parsed_value;
-            for (int x = 5; x < yaesu_command_buffer_index; x = x + 8) {
-              parsed_value = ((int(yaesu_command_buffer[x]) - 48) * 100) + ((int(yaesu_command_buffer[x + 1]) - 48) * 10) + (int(yaesu_command_buffer[x + 2]) - 48);
-              parsed_value2 = ((int(yaesu_command_buffer[x + 4]) - 48) * 100) + ((int(yaesu_command_buffer[x + 5]) - 48) * 10) + (int(yaesu_command_buffer[x + 6]) - 48);
-              if ((parsed_value > -1) && (parsed_value < 361) && (parsed_value2 > -1) && (parsed_value2 < 181)) {  // is it a valid azimuth?
-                timed_buffer_azimuths[timed_buffer_number_entries_loaded] = (parsed_value * HEADING_MULTIPLIER);
-                timed_buffer_elevations[timed_buffer_number_entries_loaded] = (parsed_value2 * HEADING_MULTIPLIER);
-                timed_buffer_number_entries_loaded++;
-                timed_buffer_status = LOADED_AZIMUTHS_ELEVATIONS;
-                if (timed_buffer_number_entries_loaded > TIMED_INTERVAL_ARRAY_SIZE) {   // is the array full?
-                  x = yaesu_command_buffer_index;  // array is full, go to the first azimuth and elevation
-      
+            parsed_value = ((int(yaesu_command_buffer[1]) - 48) * 100) + ((int(yaesu_command_buffer[2]) - 48) * 10) + (int(yaesu_command_buffer[3]) - 48);
+            if ((parsed_value > 0) && (parsed_value < 1000)) {
+              timed_buffer_interval_value_seconds = parsed_value;
+              for (int x = 5; x < yaesu_command_buffer_index; x = x + 8) {
+                parsed_value = ((int(yaesu_command_buffer[x]) - 48) * 100) + ((int(yaesu_command_buffer[x + 1]) - 48) * 10) + (int(yaesu_command_buffer[x + 2]) - 48);
+                parsed_value2 = ((int(yaesu_command_buffer[x + 4]) - 48) * 100) + ((int(yaesu_command_buffer[x + 5]) - 48) * 10) + (int(yaesu_command_buffer[x + 6]) - 48);
+                if ((parsed_value > -1) && (parsed_value < 361) && (parsed_value2 > -1) && (parsed_value2 < 181)) {  // is it a valid azimuth?
+                  timed_buffer_azimuths[timed_buffer_number_entries_loaded] = (parsed_value * HEADING_MULTIPLIER);
+                  timed_buffer_elevations[timed_buffer_number_entries_loaded] = (parsed_value2 * HEADING_MULTIPLIER);
+                  timed_buffer_number_entries_loaded++;
+                  timed_buffer_status = LOADED_AZIMUTHS_ELEVATIONS;
+                  if (timed_buffer_number_entries_loaded > TIMED_INTERVAL_ARRAY_SIZE) {   // is the array full?
+                    x = yaesu_command_buffer_index;  // array is full, go to the first azimuth and elevation
+        
+                  }
+                } else {   // we hit an invalid bearing
+                  timed_buffer_status = EMPTY;
+                  timed_buffer_number_entries_loaded = 0;
+                  strcpy(return_string,"?>");  // error
+                  return;
                 }
-              } else {   // we hit an invalid bearing
-                timed_buffer_status = EMPTY;
-                timed_buffer_number_entries_loaded = 0;
-                strcpy(return_string,"?>");  // error
-                return;
               }
             }
-          }
-          timed_buffer_entry_pointer = 1;             // go to the first bearings
-          parsed_value = timed_buffer_azimuths[0];
-          parsed_elevation = timed_buffer_elevations[0];
+            timed_buffer_entry_pointer = 1;             // go to the first bearings
+            parsed_value = timed_buffer_azimuths[0];
+            parsed_elevation = timed_buffer_elevations[0];
           #else /* ifdef FEATURE_TIMED_BUFFER FEATURE_ELEVATION_CONTROL*/
-          strcpy(return_string,"?>");
+            strcpy(return_string,"?>");
           #endif // FEATURE_TIMED_BUFFER FEATURE_ELEVATION_CONTROL
         } else {
           // this is a short form W command, just parse the azimuth and elevation and initiate rotation
@@ -15001,24 +15118,29 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
             submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 32);
           } else {
             #ifdef DEBUG_PROCESS_YAESU
-            if (debug_mode) {
-              debug.print("process_yaesu_command: W cmd az error");
-            }
+              if (debug_mode) {
+                debug.print("process_yaesu_command: W cmd az error");
+              }
             #endif // DEBUG_PROCESS_YAESU
             strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
           }
         
         #else
           if ((parsed_value >= 0) && (parsed_value <= ((azimuth_starting_point + azimuth_rotation_capability)* HEADING_MULTIPLIER)) && (parsed_elevation >= 0) && (parsed_elevation <= (ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER))) {
-       
-         //if ((parsed_value >= 0) && (parsed_value <= (360 * HEADING_MULTIPLIER)) && (parsed_elevation >= 0) && (parsed_elevation <= (180 * HEADING_MULTIPLIER))) {
-          submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 33);
-          submit_request(EL, REQUEST_ELEVATION, parsed_elevation, 34);
+          #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+            submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 33);
+            submit_request(EL, REQUEST_ELEVATION, parsed_elevation, 34);
+          #else
+            if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+              submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 33);
+              submit_request(EL, REQUEST_ELEVATION, parsed_elevation, 34);              
+            }
+          #endif
         } else {
           #ifdef DEBUG_PROCESS_YAESU
-          if (debug_mode) {
-            debug.print("process_yaesu_command: W cmd az/el error");
-          }
+            if (debug_mode) {
+              debug.print("process_yaesu_command: W cmd az/el error");
+            }
           #endif // DEBUG_PROCESS_YAESU
           strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
         } 
@@ -15028,54 +15150,83 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         break;
         
       #ifdef OPTION_GS_232B_EMULATION
-      case 'P':  // P - switch between 360 and 450 degree mode
+        case 'P':  // P - switch between 360 and 450 degree mode
+          #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+            if ((yaesu_command_buffer[1] == '3') && (yaesu_command_buffer_index > 2)) {  // P36 command
+              azimuth_rotation_capability = 360;
+              strcpy(return_string,"Mode 360 degree");
+              // write_settings_to_eeprom();
+            } else {
+              if ((yaesu_command_buffer[1] == '4') && (yaesu_command_buffer_index > 2)) { // P45 command
+                azimuth_rotation_capability = 450;
+                strcpy(return_string,"Mode 450 degree");
+                // write_settings_to_eeprom();
+              } else {
+                strcpy(return_string,"?>");
+              }
+            }
+          #else
+            if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+              if ((yaesu_command_buffer[1] == '3') && (yaesu_command_buffer_index > 2)) {  // P36 command
+                azimuth_rotation_capability = 360;
+                strcpy(return_string,"Mode 360 degree");
+                // write_settings_to_eeprom();
+              } else {
+                if ((yaesu_command_buffer[1] == '4') && (yaesu_command_buffer_index > 2)) { // P45 command
+                  azimuth_rotation_capability = 450;
+                  strcpy(return_string,"Mode 450 degree");
+                  // write_settings_to_eeprom();
+                } else {
+                  strcpy(return_string,"?>");
+                }
+              }
+            }
+          #endif  
 
-        if ((yaesu_command_buffer[1] == '3') && (yaesu_command_buffer_index > 2)) {  // P36 command
-          azimuth_rotation_capability = 360;
-          strcpy(return_string,"Mode 360 degree");
-          // write_settings_to_eeprom();
-        } else {
-          if ((yaesu_command_buffer[1] == '4') && (yaesu_command_buffer_index > 2)) { // P45 command
-            azimuth_rotation_capability = 450;
-            strcpy(return_string,"Mode 450 degree");
-            // write_settings_to_eeprom();
-          } else {
-            strcpy(return_string,"?>");
-          }
-        }
-   
-      
-      break;                 
-      case 'Z':                                           // Z - Starting point toggle
+        
+        break;                 
+        case 'Z':                                           // Z - Starting point toggle
+          #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
+            if (azimuth_starting_point == 180) {
+              azimuth_starting_point = 0;
+              strcpy(return_string,"N");
+            } else {
+              azimuth_starting_point = 180;
+              strcpy(return_string,"S");
+            }
+            strcat(return_string," Center");
+          #else
+            if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
+              if (azimuth_starting_point == 180) {
+                azimuth_starting_point = 0;
+                strcpy(return_string,"N");
+              } else {
+                azimuth_starting_point = 180;
+                strcpy(return_string,"S");
+              }
+              strcat(return_string," Center");
+            }
+          #endif
 
-        if (azimuth_starting_point == 180) {
-          azimuth_starting_point = 0;
-          strcpy(return_string,"N");
-        } else {
-          azimuth_starting_point = 180;
-          strcpy(return_string,"S");
-        }
-        strcat(return_string," Center");
-        // write_settings_to_eeprom();
-        break;
+          break;
         #endif
         
       default:
         strcpy(return_string,"?>");
         #ifdef DEBUG_PROCESS_YAESU
-        if (debug_mode) {
-          debug.print("process_yaesu_command: yaesu_command_buffer_index: ");
-          debug.print(yaesu_command_buffer_index);
-          for (int debug_x = 0; debug_x < yaesu_command_buffer_index; debug_x++) {
-            debug.print("process_yaesu_command: yaesu_command_buffer[");
-            debug.print(debug_x);
-            debug.print("]: ");
-            debug.print(yaesu_command_buffer[debug_x]);
-            debug.print(" ");
-            debug.write(yaesu_command_buffer[debug_x]);
-            debug.print("\n");;
+          if (debug_mode) {
+            debug.print("process_yaesu_command: yaesu_command_buffer_index: ");
+            debug.print(yaesu_command_buffer_index);
+            for (int debug_x = 0; debug_x < yaesu_command_buffer_index; debug_x++) {
+              debug.print("process_yaesu_command: yaesu_command_buffer[");
+              debug.print(debug_x);
+              debug.print("]: ");
+              debug.print(yaesu_command_buffer[debug_x]);
+              debug.print(" ");
+              debug.write(yaesu_command_buffer[debug_x]);
+              debug.print("\n");;
+            }
           }
-        }
         #endif // DEBUG_PROCESS_YAESU
     } /* switch */
 
