@@ -482,6 +482,10 @@
     2020.05.08.01
       Made improvement to rotator_k3ngdisplay.cpp to reduce LCD bus traffic from cursor positioning
 
+    2020.05.11.01
+      Handle ARDUINO_AVR_MICRO having Serial port as Serial_ class and Serial1 as HardwareSerial class
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -493,7 +497,7 @@
 
   */
 
-#define CODE_VERSION "2020.05.08.01"
+#define CODE_VERSION "2020.05.11.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -933,16 +937,31 @@ byte current_az_speed_voltage = 0;
   SERIAL_PORT_CLASS * control_port;
 #endif
 
-#if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-  SERIAL_PORT_CLASS * remote_unit_port;
+#if !defined(ARDUINO_AVR_MICRO)
+  #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
+    SERIAL_PORT_CLASS * remote_unit_port;
+  #endif
+#else
+  #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
+    SERIAL_PORT_CLASS_SECONDARY * remote_unit_port;
+  #endif
 #endif
 
-#if defined(FEATURE_GPS)
-  SERIAL_PORT_CLASS * gps_port;
-  #ifdef GPS_MIRROR_PORT
-    SERIAL_PORT_CLASS * (gps_mirror_port);
-  #endif //GPS_MIRROR_PORT
-#endif //defined(FEATURE_GPS)
+#if !defined(ARDUINO_AVR_MICRO)
+  #if defined(FEATURE_GPS)
+    SERIAL_PORT_CLASS * gps_port;
+    #ifdef GPS_MIRROR_PORT
+      SERIAL_PORT_CLASS * (gps_mirror_port);
+    #endif //GPS_MIRROR_PORT
+  #endif //defined(FEATURE_GPS)
+#else
+  #if defined(FEATURE_GPS)
+    SERIAL_PORT_CLASS_SECONDARY * gps_port;
+    #ifdef GPS_MIRROR_PORT
+      SERIAL_PORT_CLASS_SECONDARY * (gps_mirror_port);
+    #endif //GPS_MIRROR_PORT
+  #endif //defined(FEATURE_GPS)
+#endif
 
 
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
