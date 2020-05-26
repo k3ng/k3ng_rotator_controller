@@ -489,6 +489,9 @@
       Added OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP which is disabled by default.  By default the controller will ignore at boot up GS-232 commands that start rotation or change the configuration.
         Related setting (new): ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS 5000   (ignore commands the first 5 seconds after boot up)
 
+    2020.05.26.01
+      Hopefully fixed issues with Arduino Leonardo and Micro and serial port classes
+      Added note on Arduino Leonardo and Micro serial configuration in rotator_hardware.h
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -501,7 +504,7 @@
 
   */
 
-#define CODE_VERSION "2020.05.11.02"
+#define CODE_VERSION "2020.05.26.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>

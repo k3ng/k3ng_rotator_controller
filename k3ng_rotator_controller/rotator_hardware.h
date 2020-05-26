@@ -4,6 +4,9 @@
 
 */
 
+#if !defined(rotator_hardware_h)   // can't touch this
+#define rotator_hardware_h         // can't touch this
+
 // #define HARDWARE_M0UPU          // customize rotator_features_m0upu.h, rotators_pins_m0upu.h, rotator_settings_m0upu.h
 // #define HARDWARE_EA4TX_ARS_USB  // customize rotator_features_e4tx_ars_usb.h, rotators_pins_e4tx_ars_usb.h, rotator_settings_e4tx_ars_usb.h
 // #define HARDWARE_WB6KCN         // customize rotator_features_wb6kcn.h, rotators_pins_wb6kcn.h, rotator_settings_wb6kcn.h
@@ -17,7 +20,19 @@
 #endif
 
 
-// Serial port class definitions for various devices
+/* Serial port class definitions for various devices
+
+
+  For Arduino Leonardo, Micro, and Yún, PLEASE READ THIS ! :
+
+    If using Serial (USB Serial) for the control (main) port, set SERIAL_PORT_CLASS to Serial_
+    If using Serial1 (Board pins 0 and 1 Serial) for the control (main) port, set SERIAL_PORT_CLASS to HardwareSerial
+    If using Serial (USB Serial) for the gps or remote port, set SERIAL_PORT_CLASS_SECONDARY to Serial_
+    If using Serial1 (Board pins 0 and 1 Serial) for the gps or remote  port, set SERIAL_PORT_CLASS_SECONDARY to HardwareSerial
+
+  For more information on serial ports on various boards: https://www.arduino.cc/reference/en/language/functions/communication/serial/  
+
+*/
 
 #if defined(ARDUINO_MAPLE_MINI)
   #define SERIAL_PORT_CLASS USBSerial
@@ -31,3 +46,6 @@
 #else
   #define SERIAL_PORT_CLASS HardwareSerial
 #endif
+
+
+#endif //!defined(rotator_hardware_h) stop.  hammer time.
