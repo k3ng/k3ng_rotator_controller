@@ -944,7 +944,7 @@ byte current_az_speed_voltage = 0;
   SERIAL_PORT_CLASS * control_port;
 #endif
 
-#if !defined(ARDUINO_AVR_MICRO)
+#if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
     SERIAL_PORT_CLASS * remote_unit_port;
   #endif
@@ -954,7 +954,7 @@ byte current_az_speed_voltage = 0;
   #endif
 #endif
 
-#if !defined(ARDUINO_AVR_MICRO)
+#if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
   #if defined(FEATURE_GPS)
     SERIAL_PORT_CLASS * gps_port;
     #ifdef GPS_MIRROR_PORT
