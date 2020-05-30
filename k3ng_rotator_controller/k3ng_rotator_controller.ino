@@ -971,6 +971,13 @@ byte current_az_speed_voltage = 0;
 #endif
 
 
+#if defined(FEATURE_EL_POSITION_LCH)
+  HardwareSerial * lch_port; 
+  char lchbuffer[30];
+  int  lchbufferIndex = 0;
+  float lchreading = 0.0;
+#endif //defined(FEATURE_LCH)
+
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
   double latitude = DEFAULT_LATITUDE;
   double longitude = DEFAULT_LONGITUDE;
@@ -3228,7 +3235,20 @@ void check_serial(){
 
       }
   #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-
+  #ifdef FEATURE_EL_POSITION_LCH
+     if (lch_port->available()) {
+          char ch = lch_port->read();
+          if( ch == '\r')  
+          {
+              lchbuffer[ lchbufferIndex ] = 0; // terminate the string with a 0      
+              lchbufferIndex = 0;  // reset the index ready for another string;
+           
+               lchreading = atof (lchbuffer);
+           }
+   else
+     lchbuffer[ lchbufferIndex++ ] = ch; // add the character into the buffer
+      }
+     #endif // FEATURE_EL_POSITION_LCH
 
   #ifdef FEATURE_GPS
 
@@ -7541,7 +7561,15 @@ void read_elevation(byte force_read){
         elevation = 0;
       }
     #endif // FEATURE_EL_POSITION_POTENTIOMETER
+    #ifdef FEATURE_EL_POSITION_LCH
 
+     elevation = lchreading*10;
+     #ifdef FEATURE_ELEVATION_CORRECTION
+     elevation = (correct_elevation(elevation / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
+     #endif // FEATURE_ELEVATION_CORRECTION
+     elevation = elevation + (configuration.elevation_offset * HEADING_MULTIPLIER);
+    
+     #endif // FEATURE_EL_POSITION_LCH
 
     #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER
       static byte el_position_encoder_state = 0;
@@ -8980,6 +9008,18 @@ void initialize_serial(){
       gps_mirror_port->begin(GPS_MIRROR_PORT_BAUD_RATE);
     #endif //GPS_MIRROR_PORT
   #endif //FEATURE_GPS
+
+  #ifdef FEATURE_EL_POSITION_LCH
+    lch_port = LCH_PORT_MAPPED_TO;
+    lch_port->begin(LCH_PORT_BAUD_RATE);
+    //sets default settings (filters, etc) and sets autoupdate (device just pushes data without asking it)
+    lch_port->write("str0100\n"); //sets autopudate speed to 0.1sec
+    lch_port->write("setcasc\n"); //this activates auto push
+    //lch_port->write("setflt1\n"); //sets device filter to 0.125Hz
+    //lch_port->write("stpcasc\n");
+    //lch_port->write("setcasc\n");
+    lch_port->flush();
+  #endif //FEATURE_lch
 
 } /* initialize_serial */
 
@@ -11814,6 +11854,10 @@ void port_flush(){
 
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
     remote_unit_port->flush();
+  #endif
+
+   #if defined(FEATURE_EL_POSITION_LCH)
+  lch_port->flush();
   #endif
 
   #if defined(GPS_PORT_MAPPED_TO) && defined(FEATURE_GPS)
