@@ -13,13 +13,6 @@
 // #define HARDWARE_TEST         // customize rotator_features_test.h, rotators_pins_test.h, rotator_settings_test.h
 
 
-// do not modify anything below this line
-
-#if defined(HARDWARE_M0UPU) || defined(HARDWARE_EA4TX_ARS_USB) || defined(HARDWARE_WB6KCN) || defined(HARDWARE_TEST)
-  #define HARDWARE_CUSTOM
-#endif
-
-
 /* Serial port class definitions for various devices
 
 
@@ -45,6 +38,13 @@
   #define SERIAL_PORT_CLASS usb_serial_class
 #else
   #define SERIAL_PORT_CLASS HardwareSerial
+#endif
+
+
+// do not modify anything below this line
+
+#if defined(HARDWARE_M0UPU) || defined(HARDWARE_EA4TX_ARS_USB) || defined(HARDWARE_WB6KCN) || defined(HARDWARE_TEST)
+  #define HARDWARE_CUSTOM
 #endif
 
 

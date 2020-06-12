@@ -493,6 +493,9 @@
       Hopefully fixed issues with Arduino Leonardo and Micro and serial port classes
       Added note on Arduino Leonardo and Micro serial configuration in rotator_hardware.h
 
+    2020.06.12.01
+      \A Azimuth calibration command now also modifies azimuth_starting_point so that proper rotation decisions are made for large calibration values  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -504,7 +507,7 @@
 
   */
 
-#define CODE_VERSION "2020.05.26.01"
+#define CODE_VERSION "2020.06.12.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -686,15 +689,15 @@ byte reset_the_unit = 0;
   long raw_azimuth = 0;
   long target_azimuth = 0;
   long target_raw_azimuth = 0;
-  long azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
-  long azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
+  //long azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
+  //long azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
 #else
   int azimuth = 0;
   int raw_azimuth = 0;
   int target_azimuth = 0;
   int target_raw_azimuth = 0;
-  int azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
-  int azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
+  //int azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
+  //int azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
 #endif
 
 
@@ -2187,9 +2190,9 @@ void check_preset_encoders(){
         az_encoder_raw_degrees += (5 * HEADING_MULTIPLIER);
       } else { az_encoder_raw_degrees += (1 * HEADING_MULTIPLIER); };                                                                                      // Single deg increase unless encoder turned quickly then 10's step
       // if (az_encoder_raw_degrees >=(360*HEADING_MULTIPLIER)) {az_encoder_raw_degrees -= (360*HEADING_MULTIPLIER);};
-      if (az_encoder_raw_degrees > ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER)) {
+      if (az_encoder_raw_degrees > ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)) {
         az_encoder_raw_degrees =
-          ((azimuth_starting_point * HEADING_MULTIPLIER)
+          ((configuration.azimuth_starting_point * HEADING_MULTIPLIER)
            /* + ((azimuth_starting_point+azimuth_rotation_capability)*HEADING_MULTIPLIER) - az_encoder_raw_degrees*/);
       }
     }
@@ -2201,8 +2204,8 @@ void check_preset_encoders(){
         az_encoder_raw_degrees -= (5 * HEADING_MULTIPLIER);
       } else { az_encoder_raw_degrees -= (1 * HEADING_MULTIPLIER); };                                                                                       // Single deg decrease unless encoder turned quickly then 10's step
       // if (az_encoder_raw_degrees < 0) {az_encoder_raw_degrees = (360*HEADING_MULTIPLIER);};
-      if (az_encoder_raw_degrees < (azimuth_starting_point * HEADING_MULTIPLIER)) {
-        az_encoder_raw_degrees = (((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER)
+      if (az_encoder_raw_degrees < (configuration.azimuth_starting_point * HEADING_MULTIPLIER)) {
+        az_encoder_raw_degrees = (((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)
                                   /*- (az_encoder_raw_degrees-(azimuth_starting_point*HEADING_MULTIPLIER))*/);
       }
     }
@@ -5966,8 +5969,8 @@ void read_settings_from_eeprom(){
       }
     #endif // DEBUG_EEPROM
 
-    azimuth_starting_point = configuration.azimuth_starting_point;
-    azimuth_rotation_capability = configuration.azimuth_rotation_capability;
+    //azimuth_starting_point = configuration.azimuth_starting_point;
+    //azimuth_rotation_capability = configuration.azimuth_rotation_capability;
 
     #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER)
       az_incremental_encoder_position = configuration.last_az_incremental_encoder_position;
@@ -6319,8 +6322,8 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
       analog_az = analogReadEnhanced(rotator_analog_az);
-      raw_azimuth = map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, (azimuth_starting_point * HEADING_MULTIPLIER), ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER));
-      //raw_azimuth = map(analog_az* HEADING_MULTIPLIER, configuration.analog_az_full_ccw* HEADING_MULTIPLIER, configuration.analog_az_full_cw* HEADING_MULTIPLIER, (azimuth_starting_point * HEADING_MULTIPLIER), ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER));
+      raw_azimuth = map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, (configuration.azimuth_starting_point * HEADING_MULTIPLIER), ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER));
+      //raw_azimuth = map(analog_az* HEADING_MULTIPLIER, configuration.analog_az_full_ccw* HEADING_MULTIPLIER, configuration.analog_az_full_cw* HEADING_MULTIPLIER, (configuration.azimuth_starting_point * HEADING_MULTIPLIER), ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER));
 
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth / (float) HEADING_MULTIPLIER) * HEADING_MULTIPLIER);
@@ -6421,11 +6424,11 @@ void read_azimuth(byte force_read){
         }
 
         #ifdef OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
-          if (configuration.last_azimuth < azimuth_starting_point) {
-            configuration.last_azimuth = azimuth_starting_point;
+          if (configuration.last_azimuth < configuration.azimuth_starting_point) {
+            configuration.last_azimuth = configuration.azimuth_starting_point;
           }
-          if (configuration.last_azimuth > (azimuth_starting_point + azimuth_rotation_capability)) {
-            configuration.last_azimuth = (azimuth_starting_point + azimuth_rotation_capability);
+          if (configuration.last_azimuth > (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)) {
+            configuration.last_azimuth = (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability);
           }
         #else
           if (configuration.last_azimuth < 0) {
@@ -6480,11 +6483,11 @@ void read_azimuth(byte force_read){
           encoder_pjrc_previous_az_position = encoder_pjrc_current_az_position;
              
           #ifdef OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
-           if (configuration.last_azimuth < azimuth_starting_point) {
-             configuration.last_azimuth = azimuth_starting_point;
+           if (configuration.last_azimuth < configuration.azimuth_starting_point) {
+             configuration.last_azimuth = configuration.azimuth_starting_point;
            }
-          if (configuration.last_azimuth > (azimuth_starting_point + azimuth_rotation_capability)) {
-             configuration.last_azimuth = (azimuth_starting_point + azimuth_rotation_capability);
+          if (configuration.last_azimuth > (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)) {
+             configuration.last_azimuth = (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability);
            }
          #else
            if (configuration.last_azimuth < 0) {
@@ -6798,9 +6801,9 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
       #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
-        raw_azimuth = int((360.0-azimuth_hh12.heading()+azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/) * HEADING_MULTIPLIER);
+        raw_azimuth = int((360.0-azimuth_hh12.heading()+ configuration.azimuth_starting_point) * HEADING_MULTIPLIER);
       #else
-        raw_azimuth = int((azimuth_hh12.heading()+azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/) * HEADING_MULTIPLIER);
+        raw_azimuth = int((azimuth_hh12.heading()+ configuration.azimuth_starting_point) * HEADING_MULTIPLIER);
       #endif
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
@@ -6850,7 +6853,7 @@ void read_azimuth(byte force_read){
 */
 
     #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-      if (azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/ == 0) {
+      if (configuration.azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/ == 0) {
         raw_azimuth = (((((az_incremental_encoder_position) / (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0)) * HEADING_MULTIPLIER);
       } else {
         if (az_incremental_encoder_position > (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
@@ -7068,13 +7071,13 @@ void output_debug(){
         #endif // FEATURE_AZ_POSITION_POTENTIOMETER
 
         debug.print(F("  Start:"));
-        debug.print(azimuth_starting_point);
+        debug.print(configuration.azimuth_starting_point);
         debug.print(F("  Rotation_Capability:"));
-        debug.print(azimuth_rotation_capability,0);
+        debug.print(configuration.azimuth_rotation_capability,0);
         debug.print(F("  Raw_Az_Range:"));
-        debug.print(azimuth_starting_point);
+        debug.print(configuration.azimuth_starting_point);
         debug.print("-");
-        debug.print((azimuth_starting_point+azimuth_rotation_capability),0);
+        debug.print((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability),0);
         //debug.println("");
         //debug.print("\t");
 
@@ -7376,15 +7379,15 @@ void output_debug(){
           #endif //FEATURE_ELEVATION_CONTROL
         #endif //DEBUG_AUTOCORRECT
 
-        if ((raw_azimuth / LCD_HEADING_MULTIPLIER) < azimuth_starting_point){
+        if ((raw_azimuth / LCD_HEADING_MULTIPLIER) < configuration.azimuth_starting_point){
           debug.print(F("\tWARNING: raw azimuth is CCW of configured starting point of "));
-          debug.print(azimuth_starting_point);
+          debug.print(configuration.azimuth_starting_point);
           debug.println("!");
         }
 
-        if ((raw_azimuth / LCD_HEADING_MULTIPLIER) > (azimuth_starting_point+azimuth_rotation_capability)){
+        if ((raw_azimuth / LCD_HEADING_MULTIPLIER) > (configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)){
           debug.print(F("\tWARNING: raw azimuth is CW of configured ending point of "));
-          debug.print((azimuth_starting_point+azimuth_rotation_capability),0);
+          debug.print((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability),0);
           debug.println("!");
         }    
 
@@ -9958,18 +9961,18 @@ void service_request_queue(){
             debug.print(" work_target_raw_azimuth:");
             debug.print(work_target_raw_azimuth / HEADING_MULTIPLIER);
             debug.print(" azimuth_starting_point:");
-            debug.print(azimuth_starting_point);
+            debug.print(configuration.azimuth_starting_point);
             debug.print(" ");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
 
-            if (work_target_raw_azimuth < (azimuth_starting_point * HEADING_MULTIPLIER)) {
+            if (work_target_raw_azimuth < (configuration.azimuth_starting_point * HEADING_MULTIPLIER)) {
               work_target_raw_azimuth = work_target_raw_azimuth + (360 * HEADING_MULTIPLIER);
               target_raw_azimuth = work_target_raw_azimuth;
               #ifdef DEBUG_SERVICE_REQUEST_QUEUE
               debug.print("->B");
               #endif // DEBUG_SERVICE_REQUEST_QUEUE
             }
-            if ((work_target_raw_azimuth + (360 * HEADING_MULTIPLIER)) < ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER)) { // is there a second possible heading in overlap?
+            if ((work_target_raw_azimuth + (360 * HEADING_MULTIPLIER)) < ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER)) { // is there a second possible heading in overlap?
               if (abs(raw_azimuth - work_target_raw_azimuth) < abs((work_target_raw_azimuth + (360 * HEADING_MULTIPLIER)) - raw_azimuth)) { // is second possible heading closer?
                 #ifdef DEBUG_SERVICE_REQUEST_QUEUE
                 debug.print("->C");
@@ -10017,7 +10020,7 @@ void service_request_queue(){
           #ifdef DEBUG_SERVICE_REQUEST_QUEUE
               debug.print("->F");
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
-          if ((az_request_parm > (360 * HEADING_MULTIPLIER)) && (az_request_parm <= ((azimuth_starting_point + azimuth_rotation_capability) * HEADING_MULTIPLIER))) {
+          if ((az_request_parm > (360 * HEADING_MULTIPLIER)) && (az_request_parm <= ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability) * HEADING_MULTIPLIER))) {
             target_azimuth = az_request_parm - (360 * HEADING_MULTIPLIER);
             target_raw_azimuth = az_request_parm;
             if (az_request_parm > raw_azimuth) {
@@ -10538,11 +10541,11 @@ void az_position_pulse_interrupt_handler(){
   }
 
   #ifdef OPTION_AZ_POSITION_PULSE_HARD_LIMIT
-    if (az_position_pulse_input_azimuth < azimuth_starting_point) {
-      az_position_pulse_input_azimuth = azimuth_starting_point;
+    if (az_position_pulse_input_azimuth < configuration.azimuth_starting_point) {
+      az_position_pulse_input_azimuth = configuration.azimuth_starting_point;
     }
-    if (az_position_pulse_input_azimuth > (azimuth_starting_point + azimuth_rotation_capability)) {
-      az_position_pulse_input_azimuth = (azimuth_starting_point + azimuth_rotation_capability);
+    if (az_position_pulse_input_azimuth > (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)) {
+      az_position_pulse_input_azimuth = (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability);
     }
     #else
     if (az_position_pulse_input_azimuth < 0) {
@@ -12030,10 +12033,14 @@ byte calibrate_az_el(float new_az, float new_el){
 
 
   if ((new_az >= 0 ) && (new_az <= 360) && (new_el >= 0) && (new_el <= 90)) {
+    configuration.azimuth_starting_point = configuration.azimuth_starting_point - abs(configuration.azimuth_offset);
     configuration.azimuth_offset = 0;
-    configuration.elevation_offset = 0;
+    
     read_azimuth(1);
-    read_elevation(1);
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      read_elevation(1);
+      configuration.elevation_offset = 0;
+    #endif  
 
     #ifdef DEBUG_OFFSET
       debug.print("calibrate_az_el: az:");
@@ -12044,6 +12051,7 @@ byte calibrate_az_el(float new_az, float new_el){
 
 
     configuration.azimuth_offset = new_az - (float(raw_azimuth) / float(HEADING_MULTIPLIER));
+    configuration.azimuth_starting_point = configuration.azimuth_starting_point + abs(configuration.azimuth_offset);
     #if defined(FEATURE_ELEVATION_CONTROL)
       configuration.elevation_offset = new_el - (float(elevation) / float(HEADING_MULTIPLIER));
     #endif
@@ -12816,6 +12824,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         configuration.azimuth_offset = 0;
         read_azimuth(1);
         configuration.azimuth_offset = tempfloat - float(raw_azimuth / HEADING_MULTIPLIER);
+        configuration.azimuth_starting_point = configuration.azimuth_starting_point + abs(configuration.azimuth_offset);      
         configuration_dirty = 1;
         strcpy(return_string, "Azimuth calibrated to ");
         dtostrf(tempfloat, 0, 2, temp_string);
@@ -12845,7 +12854,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       }
       if ((new_azimuth_starting_point  >= 0) && (new_azimuth_starting_point  < 360)) {
         if (input_buffer_index > 2) {
-          azimuth_starting_point = configuration.azimuth_starting_point = new_azimuth_starting_point;
+          configuration.azimuth_starting_point = configuration.azimuth_starting_point = new_azimuth_starting_point;
           configuration_dirty = 1;
         }
         strcpy(return_string, "Azimuth starting point set to ");
@@ -12874,7 +12883,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       }
       if ((new_azimuth_rotation_capability >= 0) && (new_azimuth_rotation_capability <= 450)) {
         if (input_buffer_index > 2) {
-          azimuth_rotation_capability = configuration.azimuth_rotation_capability = new_azimuth_rotation_capability;
+          configuration.azimuth_rotation_capability = configuration.azimuth_rotation_capability = new_azimuth_rotation_capability;
           configuration_dirty = 1;
         }
         strcpy(return_string, "Azimuth rotation capability set to ");
@@ -13242,6 +13251,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           break;
         #endif // FEATURE_MOON_TRACKING
         case '0':
+          configuration.azimuth_starting_point = configuration.azimuth_starting_point + abs(configuration.azimuth_offset);
           configuration.azimuth_offset = 0;
           configuration.elevation_offset = 0;
           configuration_dirty = 1;
@@ -14859,7 +14869,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
               timed_buffer_interval_value_seconds = parsed_value;
               for (int x = 5; x < yaesu_command_buffer_index; x = x + 4) {
                 parsed_value = ((int(yaesu_command_buffer[x]) - 48) * 100) + ((int(yaesu_command_buffer[x + 1]) - 48) * 10) + (int(yaesu_command_buffer[x + 2]) - 48);
-                if ((parsed_value >= 0) && (parsed_value <= (azimuth_starting_point + azimuth_rotation_capability))) {  // is it a valid azimuth?
+                if ((parsed_value >= 0) && (parsed_value <= (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability))) {  // is it a valid azimuth?
                   timed_buffer_azimuths[timed_buffer_number_entries_loaded] = parsed_value * HEADING_MULTIPLIER;
                   timed_buffer_number_entries_loaded++;
                   timed_buffer_status = LOADED_AZIMUTHS;
@@ -14890,7 +14900,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
             #ifdef FEATURE_TIMED_BUFFER
               clear_timed_buffer();
             #endif // FEATURE_TIMED_BUFFER
-            if ((parsed_value >= 0) && (parsed_value <= (azimuth_starting_point + azimuth_rotation_capability))) {
+            if ((parsed_value >= 0) && (parsed_value <= (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability))) {
               #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
                 submit_request(AZ, REQUEST_AZIMUTH, (parsed_value * HEADING_MULTIPLIER), 28);
               #else
@@ -15116,7 +15126,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       
         #ifndef FEATURE_ELEVATION_CONTROL
 
-          if ((parsed_value >= 0) && (parsed_value <= ((azimuth_starting_point + azimuth_rotation_capability)* HEADING_MULTIPLIER))) {
+          if ((parsed_value >= 0) && (parsed_value <= ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)* HEADING_MULTIPLIER))) {
           //if ((parsed_value >= 0) && (parsed_value <= (360 * HEADING_MULTIPLIER))) {
             submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 32);
           } else {
@@ -15129,7 +15139,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
           }
         
         #else
-          if ((parsed_value >= 0) && (parsed_value <= ((azimuth_starting_point + azimuth_rotation_capability)* HEADING_MULTIPLIER)) && (parsed_elevation >= 0) && (parsed_elevation <= (ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER))) {
+          if ((parsed_value >= 0) && (parsed_value <= ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)* HEADING_MULTIPLIER)) && (parsed_elevation >= 0) && (parsed_elevation <= (ELEVATION_MAXIMUM_DEGREES * HEADING_MULTIPLIER))) {
           #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
             submit_request(AZ, REQUEST_AZIMUTH, parsed_value, 33);
             submit_request(EL, REQUEST_ELEVATION, parsed_elevation, 34);
@@ -15156,14 +15166,14 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         case 'P':  // P - switch between 360 and 450 degree mode
           #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
             if ((yaesu_command_buffer[1] == '3') && (yaesu_command_buffer_index > 2)) {  // P36 command
-              azimuth_rotation_capability = 360;
+              configuration.azimuth_rotation_capability = 360;
               strcpy(return_string,"Mode 360 degree");
-              // write_settings_to_eeprom();
+              configuration_dirty = 1;
             } else {
               if ((yaesu_command_buffer[1] == '4') && (yaesu_command_buffer_index > 2)) { // P45 command
-                azimuth_rotation_capability = 450;
+                configuration.azimuth_rotation_capability = 450;
                 strcpy(return_string,"Mode 450 degree");
-                // write_settings_to_eeprom();
+                configuration_dirty = 1;
               } else {
                 strcpy(return_string,"?>");
               }
@@ -15171,12 +15181,12 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
           #else
             if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
               if ((yaesu_command_buffer[1] == '3') && (yaesu_command_buffer_index > 2)) {  // P36 command
-                azimuth_rotation_capability = 360;
+                configuration.azimuth_rotation_capability = 360;
                 strcpy(return_string,"Mode 360 degree");
                 // write_settings_to_eeprom();
               } else {
                 if ((yaesu_command_buffer[1] == '4') && (yaesu_command_buffer_index > 2)) { // P45 command
-                  azimuth_rotation_capability = 450;
+                  configuration.azimuth_rotation_capability = 450;
                   strcpy(return_string,"Mode 450 degree");
                   // write_settings_to_eeprom();
                 } else {
@@ -15200,11 +15210,11 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
             strcat(return_string," Center");
           #else
             if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
-              if (azimuth_starting_point == 180) {
-                azimuth_starting_point = 0;
+              if (configuration.azimuth_starting_point == 180) {
+                configuration.azimuth_starting_point = 0;
                 strcpy(return_string,"N");
               } else {
-                azimuth_starting_point = 180;
+                configuration.azimuth_starting_point = 180;
                 strcpy(return_string,"S");
               }
               strcat(return_string," Center");
