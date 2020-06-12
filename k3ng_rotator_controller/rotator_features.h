@@ -119,8 +119,6 @@
 #define OPTION_EASYCOM_EL_QUERY_COMMAND // Adds non-standard Easycom command: EL with no parm returns current elevation
 // #define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 // #define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
-#define FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-// #define FEATURE_TWO_DECIMAL_PLACE_HEADINGS  // under development - not working yet!
 // #define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
 // #define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
 // #define FEATURE_AZ_ROTATION_STALL_DETECTION // Azimuth rotation stall detection - pin: az_rotation_stall_detected

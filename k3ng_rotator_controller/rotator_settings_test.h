@@ -173,24 +173,7 @@ You can tweak these, but read the online documentation!
 #define EEPROM_MAGIC_NUMBER 109
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
-
-#if defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-#define HEADING_MULTIPLIER 100L
-#define LCD_HEADING_MULTIPLIER 100.0
-#define LCD_DECIMAL_PLACES 2
-#endif //FEATURE_TWO_DECIMAL_PLACE_HEADINGS
-
-#if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS)
-#define HEADING_MULTIPLIER 10
-#define LCD_HEADING_MULTIPLIER 10.0
 #define LCD_DECIMAL_PLACES 1
-#endif //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-
-#if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-#define HEADING_MULTIPLIER 1
-#define LCD_HEADING_MULTIPLIER 1.0
-#define LCD_DECIMAL_PLACES 0
-#endif //!defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
 
 #define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
 #define EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
@@ -198,8 +181,8 @@ You can tweak these, but read the online documentation!
 #define AZ_POSITION_PULSE_DEG_PER_PULSE 0.5
 #define EL_POSITION_PULSE_DEG_PER_PULSE 0.5
 
-#define PARK_AZIMUTH 0.0 * HEADING_MULTIPLIER      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
-#define PARK_ELEVATION 0.0 * HEADING_MULTIPLIER    // replace the 0.0 with your park elevation
+#define PARK_AZIMUTH 0.0     // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
+#define PARK_ELEVATION 0.0    // replace the 0.0 with your park elevation
 #define NOT_PARKED_DETECT_TIME_MS 1000
 
 #define COMMAND_BUFFER_SIZE 50
