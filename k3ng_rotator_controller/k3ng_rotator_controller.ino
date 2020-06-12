@@ -496,6 +496,9 @@
     2020.06.12.01
       \A Azimuth calibration command now also modifies azimuth_starting_point so that proper rotation decisions are made for large calibration values  
 
+    2020.06.12.02
+      Typo fix on \X0 command
+
     2020.06.12.03
       azimuth, raw_azimuth, and elevation variables changed from int to float datatypes
       Eliminated HEADING_MULTIPLIER, LCD_HEADING_MULTIPLIER settings related to azimuth, raw_azimuth, and elevation variables being int datatypes
