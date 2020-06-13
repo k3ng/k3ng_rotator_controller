@@ -505,6 +505,9 @@
       Eliminated FEATURE_ONE_DECIMAL_PLACE_HEADINGS and FEATURE_TWO_DECIMAL_PLACE_HEADINGS
       LCD_DECIMAL_PLACES now is only setting need to change number of decimal places displayed
 
+    2020.06.13.01
+      More work on \A azimuth calibration command and proper modification of azimuth_starting_point and azimuth_offset.  I think I got it right now.
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -516,7 +519,7 @@
 
   */
 
-#define CODE_VERSION "2020.06.12.03"
+#define CODE_VERSION "2020.06.13.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -6249,7 +6252,14 @@ void check_timed_interval(){
   #endif
 } /* check_timed_interval */
 #endif // FEATURE_TIMED_BUFFER
+// --------------------------------------------------------------
+void apply_azimuth_offset(){
 
+  if (configuration.azimuth_offset < 0){
+    raw_azimuth = raw_azimuth + (2 * configuration.azimuth_offset);
+  }
+
+}
 
 // --------------------------------------------------------------
 
@@ -6292,12 +6302,12 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
       analog_az = analogReadEnhanced(rotator_analog_az);
-      raw_azimuth = map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, (configuration.azimuth_starting_point), ((configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)));
+      raw_azimuth = map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, configuration.azimuth_starting_point, (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability));
 
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         if (raw_azimuth < 0){raw_azimuth = 0;}
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
@@ -6342,7 +6352,7 @@ void read_azimuth(byte force_read){
             raw_azimuth = (correct_azimuth(raw_azimuth));
           #endif // FEATURE_AZIMUTH_CORRECTION
 
-          raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+          apply_azimuth_offset();
 
           if (AZIMUTH_SMOOTHING_FACTOR > 0) {
             if (raw_azimuth < 0){raw_azimuth = 0;}
@@ -6511,7 +6521,7 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_HMC5883L
 
@@ -6556,7 +6566,7 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
 
@@ -6602,7 +6612,7 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       azimuth = raw_azimuth;
     #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
 
@@ -6648,7 +6658,7 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       azimuth = raw_azimuth;
     #endif //FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883
 
@@ -6665,7 +6675,7 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         if (raw_azimuth < 0){raw_azimuth = 0;}
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
@@ -6720,9 +6730,9 @@ void read_azimuth(byte force_read){
       */
       raw_azimuth = heading ;  // pololu library returns float value of actual heading.
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         if (raw_azimuth < 0){raw_azimuth = 0;}
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
@@ -6757,9 +6767,9 @@ void read_azimuth(byte force_read){
         last_az_position_pulse_input_azimuth = az_position_pulse_input_azimuth;
         raw_azimuth = int(configuration.last_azimuth);
         #ifdef FEATURE_AZIMUTH_CORRECTION
-          raw_azimuth = (correct_azimuth(raw_azimuth));
+          raw_azimuth = correct_azimuth(raw_azimuth);
         #endif // FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+        apply_azimuth_offset();
         if (raw_azimuth >= 360) {
           azimuth = raw_azimuth - 360;
         } else {
@@ -6782,9 +6792,9 @@ void read_azimuth(byte force_read){
         }
       #endif // DEBUG_HH12
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       if (raw_azimuth < 0){raw_azimuth = raw_azimuth + 360;}
       if (raw_azimuth >= 360) {
         azimuth = raw_azimuth - 360;
@@ -6807,7 +6817,7 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
-      raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+      apply_azimuth_offset();
       if (raw_azimuth >= 360) {
         azimuth = raw_azimuth - 360;
       } else {
@@ -6829,7 +6839,7 @@ void read_azimuth(byte force_read){
     #ifdef FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = (correct_azimuth(raw_azimuth));
     #endif // FEATURE_AZIMUTH_CORRECTION
-    raw_azimuth = raw_azimuth + (configuration.azimuth_offset);
+    apply_azimuth_offset();
     azimuth = raw_azimuth;
   #endif //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER  
 
@@ -7321,6 +7331,7 @@ void output_debug(){
           #endif //FEATURE_ELEVATION_CONTROL
         #endif //DEBUG_AUTOCORRECT
 
+        /*
         if ((raw_azimuth ) < configuration.azimuth_starting_point){
           debug.print(F("\tWARNING: raw azimuth is CCW of configured starting point of "));
           debug.print(configuration.azimuth_starting_point);
@@ -7332,6 +7343,7 @@ void output_debug(){
           debug.print((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability),0);
           debug.println("!");
         }    
+        */
 
         #if !defined(TEENSYDUINO)
           void * HP = malloc(4);
