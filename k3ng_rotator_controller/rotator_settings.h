@@ -159,7 +159,7 @@ You can tweak these, but read the online documentation!
 #define EEPROM_MAGIC_NUMBER 110
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
-#define LCD_DECIMAL_PLACES 0
+#define DISPLAY_DECIMAL_PLACES 0
 
 #define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
 #define EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5

@@ -508,6 +508,14 @@
     2020.06.13.01
       More work on \A azimuth calibration command and proper modification of azimuth_starting_point and azimuth_offset.  I think I got it right now.
 
+    2020.06.13.02
+      FEATURE_EASYCOM_EMULATION: Deprecated OPTION_EASYCOM_AZ_QUERY_COMMAND and OPTION_EASYCOM_EL_QUERY_COMMAND.  AZ and EL commands without parameters are standard in Easycom 2 protocol, so no need to have as an OPTION
+      Changed some elevation variables I missed in 2020.06.12.03 from int to float
+      Updated submit_request() for float heading datatypes
+      Updated azimuth and elevation readings for float datatypes
+      LCD_DECIMAL_PLACES setting has been renamed DISPLAY_DECIMAL_PLACES as it also applies to the Nextion display unit and API
+      FEATURE_DCU_1_EMULATION: Rewrote to comply with published command specification.  AI1 and ; commands now implemented
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -519,7 +527,7 @@
 
   */
 
-#define CODE_VERSION "2020.06.13.01"
+#define CODE_VERSION "2020.06.13.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -718,7 +726,7 @@ byte az_slowstart_active = AZ_SLOWSTART_DEFAULT;
 byte az_slowdown_active = AZ_SLOWDOWN_DEFAULT;
 
 byte az_request = 0;
-int az_request_parm = 0;
+float az_request_parm = 0;
 byte az_request_queue_state = NONE;
 
 unsigned long az_slowstart_start_time = 0;
@@ -771,11 +779,11 @@ byte normal_az_speed_voltage = 0;
 byte current_az_speed_voltage = 0;
 
 #ifdef FEATURE_ELEVATION_CONTROL
-  int elevation = 0;
-  int target_elevation = 0;
+  float elevation = 0;
+  float target_elevation = 0;
 
   byte el_request = 0;
-  int el_request_parm = 0;
+  float el_request_parm = 0;
   byte el_request_queue_state = NONE;
   byte el_slowstart_active = EL_SLOWSTART_DEFAULT;
   byte el_slowdown_active = EL_SLOWDOWN_DEFAULT;
@@ -787,7 +795,7 @@ byte current_az_speed_voltage = 0;
   byte normal_el_speed_voltage = 0;
   byte current_el_speed_voltage = 0;
 
-  int display_elevation = 0;
+  //int display_elevation = 0;
   byte el_state = IDLE;
   int analog_el = 0;
 
@@ -2245,7 +2253,7 @@ void check_preset_encoders(){
 
     #ifdef DEBUG_PRESET_ENCODERS
     debug.print("check_preset_encoders: az target: ");
-    dtostrf((az_encoder_raw_degrees),0,1,tempchar);
+    dtostrf(az_encoder_raw_degrees,0,1,tempchar);
     debug.println(tempchar);
     #endif // DEBUG_PRESET_ENCODERS
 
@@ -3160,28 +3168,35 @@ void check_serial(){
     #endif //defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_REMOTE_UNIT_SLAVE)
 
     #if defined(FEATURE_DCU_1_EMULATION)  
-
-        if ((incoming_serial_byte != 10) && (incoming_serial_byte != 13) && (incoming_serial_byte != ';')) { // add it to the buffer if it's not a line feed or carriage return
+      if (incoming_serial_byte == ';'){  // either a ';' stop rotation command, or as a command terminator
+        if (control_port_buffer_index == 0){  // we received just a ; (stop rotation)
           control_port_buffer[control_port_buffer_index] = incoming_serial_byte;
           control_port_buffer_index++;
-          control_port->write(incoming_serial_byte);
         }
-        if (incoming_serial_byte == 13) {  // do we have a command termination?
-          if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
-            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
-            control_port->println(return_string);
-            clear_command_buffer();
-          } else {
-            clear_command_buffer();
-          }
-        }
-        if (incoming_serial_byte == ';'){   
-          control_port->write(incoming_serial_byte);
-          control_port->println();
-          process_dcu_1_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,return_string);
+        control_port->write(incoming_serial_byte);  // process it, whether it's a stop rotation command or a command terminator
+        process_dcu_1_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,DCU_1_SEMICOLON,return_string);
+        control_port->println(return_string);
+        clear_command_buffer();                  
+      }
+
+      if ((incoming_serial_byte != 10) && (incoming_serial_byte != 13) && (incoming_serial_byte != ';')) { // add it to the buffer if it's not a line feed or carriage return
+        control_port_buffer[control_port_buffer_index] = toupper(incoming_serial_byte);
+        control_port_buffer_index++;
+        control_port->write(incoming_serial_byte);
+      }
+
+      if (incoming_serial_byte == 13) {  // do we have a carriage return command termination?
+        if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {   // we have a backslash command
+          process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
           control_port->println(return_string);
-          clear_command_buffer();          
-        }  
+          clear_command_buffer();
+        } else {       // we have a DCU-1 command
+          process_dcu_1_command(control_port_buffer,control_port_buffer_index,CONTROL_PORT0,DCU_1_CARRIAGE_RETURN,return_string);
+          control_port->println(return_string);
+          clear_command_buffer();
+        }
+      }
+
     #endif //defined(FEATURE_DCU_1_EMULATION) 
 
   } // if (control_port->available())
@@ -3875,7 +3890,7 @@ void service_nextion_display(){
 
     // Azimuth
     if (((azimuth != last_azimuth) && ((millis() - last_az_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
-      dtostrf(azimuth , 1, LCD_DECIMAL_PLACES, workstring1);
+      dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
       //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
       tAzValue.setText(workstring1);
       last_azimuth = azimuth;
@@ -3885,7 +3900,7 @@ void service_nextion_display(){
     // Elevation
     #if defined(FEATURE_ELEVATION_CONTROL)
       if (((elevation != last_elevation) && ((millis() - last_el_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
-        dtostrf(elevation , 1, LCD_DECIMAL_PLACES, workstring1);
+        dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
         //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
         tElValue.setText(workstring1);
         last_elevation = elevation;
@@ -4028,10 +4043,10 @@ void service_nextion_display(){
           switch(configuration.azimuth_display_mode){
             case AZ_DISPLAY_MODE_NORMAL:
             case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-              dtostrf(target_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;
             case AZ_DISPLAY_MODE_RAW:
-              dtostrf(target_raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
           if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
@@ -4066,10 +4081,10 @@ void service_nextion_display(){
           switch(configuration.azimuth_display_mode){
             case AZ_DISPLAY_MODE_NORMAL:
             case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-              dtostrf(target_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;
             case AZ_DISPLAY_MODE_RAW:
-              dtostrf(target_raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
           if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
@@ -4100,7 +4115,7 @@ void service_nextion_display(){
             }
           }
           strcat(workstring1," ");
-          dtostrf(target_elevation , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(target_elevation, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,DISPLAY_DEGREES_STRING);
         } else {
@@ -4191,11 +4206,11 @@ void service_nextion_display(){
 //         }
 //       }
 //       strcat(workstring,MOON_STRING);
-//       dtostrf(moon_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+//       dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //       strcat(workstring,workstring2);
 //       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
 //       strcat(workstring," ");
-//       dtostrf(moon_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+//       dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //       strcat(workstring,workstring2);
 //       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
 //       if (moon_tracking_active){
@@ -4232,11 +4247,11 @@ void service_nextion_display(){
 //       }
 //     }
 //     strcat(workstring,SUN_STRING);
-//     dtostrf(sun_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+//     dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //     strcat(workstring,workstring2);
 //     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
 //     strcat(workstring," ");
-//     dtostrf(sun_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+//     dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //     strcat(workstring,workstring2);
 //     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
 //     if (sun_tracking_active){
@@ -4596,10 +4611,10 @@ void service_nextion_display(){
         switch(configuration.azimuth_display_mode){
           case AZ_DISPLAY_MODE_NORMAL:
           case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-            dtostrf(target_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+            dtostrf(target_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
             break;
           case AZ_DISPLAY_MODE_RAW:
-            dtostrf(target_raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+            dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
             break;              
         }
         if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
@@ -4632,10 +4647,10 @@ void service_nextion_display(){
           switch(configuration.azimuth_display_mode){
             case AZ_DISPLAY_MODE_NORMAL:
             case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-              dtostrf(target_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;
             case AZ_DISPLAY_MODE_RAW:
-              dtostrf(target_raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
           if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
@@ -4666,7 +4681,7 @@ void service_nextion_display(){
             }
           }
           strcat(workstring1," ");
-          dtostrf(target_elevation , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(target_elevation, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,DISPLAY_DEGREES_STRING);
         } else {
@@ -4803,7 +4818,7 @@ TODO:
   // Azimuth
   if (((azimuth != last_azimuth) || ((millis() - last_az_update) > NEXTION_FREQUENT_UPDATE_MS))){
     // zAz
-    dtostrf(azimuth , 1, LCD_DECIMAL_PLACES, workstring1);
+    dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
     //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
     strcpy(workstring2,"vAz.txt=\"");
     strcat(workstring2,workstring1);
@@ -4845,7 +4860,7 @@ TODO:
     // Elevation
     #if defined(FEATURE_ELEVATION_CONTROL)
       if ((elevation != last_elevation) || ((millis() - last_el_update) > NEXTION_FREQUENT_UPDATE_MS)){
-        dtostrf(elevation , 1, LCD_DECIMAL_PLACES, workstring1);
+        dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
         //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
         strcpy(workstring2,"vEl.txt=\"");
         strcat(workstring2,workstring1);
@@ -5059,10 +5074,10 @@ void update_lcd_display(){
       switch(configuration.azimuth_display_mode){
         case AZ_DISPLAY_MODE_NORMAL:
         case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-          dtostrf(azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring2);
           break;
         case AZ_DISPLAY_MODE_RAW:
-          dtostrf(raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(raw_azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring2);
           break;  
       }               
       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
@@ -5093,10 +5108,10 @@ void update_lcd_display(){
       switch(configuration.azimuth_display_mode){
         case AZ_DISPLAY_MODE_NORMAL:
         case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-          dtostrf(azimuth , 3, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(azimuth , 3, DISPLAY_DECIMAL_PLACES, workstring2);
           break;
         case AZ_DISPLAY_MODE_RAW:
-          dtostrf(raw_azimuth , 3, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(raw_azimuth , 3, DISPLAY_DECIMAL_PLACES, workstring2);
           break;  
       }  
       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
@@ -5116,7 +5131,7 @@ void update_lcd_display(){
           strcat(workstring,"+");
         }         
         strcat(workstring,workstring2);
-        if (LCD_DECIMAL_PLACES > 1){
+        if (DISPLAY_DECIMAL_PLACES > 1){
           if (LCD_COLUMNS > 14) {
             strcat(workstring,DISPLAY_DEGREES_STRING);
           }
@@ -5125,7 +5140,7 @@ void update_lcd_display(){
             strcat(workstring,DISPLAY_DEGREES_STRING);
           }
         }
-        if (LCD_DECIMAL_PLACES > 1){
+        if (DISPLAY_DECIMAL_PLACES > 1){
           if ((elevation >= 1000) && (azimuth >= 1000) && (LCD_COLUMNS < 18)) {
             strcat(workstring,SPACE_EL_STRING);
           } else {
@@ -5134,13 +5149,13 @@ void update_lcd_display(){
         } else {
           strcat(workstring,SPACE_EL_SPACE_STRING);
         }
-      dtostrf(elevation , 1, LCD_DECIMAL_PLACES, workstring2);
+      dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring2);
       #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
         if (elevation < 100){strcat(workstring," ");}
         if (elevation < 10){strcat(workstring," ");}    
       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE  
       strcat(workstring,workstring2);
-      if (LCD_DECIMAL_PLACES > 1){
+      if (DISPLAY_DECIMAL_PLACES > 1){
         if (LCD_COLUMNS > 14) {
           strcat(workstring,DISPLAY_DEGREES_STRING);
         }
@@ -5159,10 +5174,10 @@ void update_lcd_display(){
       switch(configuration.azimuth_display_mode){
         case AZ_DISPLAY_MODE_NORMAL:
         case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-          dtostrf(azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring2);
           break;
         case AZ_DISPLAY_MODE_RAW:
-          dtostrf(raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(raw_azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring2);
           break;  
       }  
     #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
@@ -5190,13 +5205,13 @@ void update_lcd_display(){
   // OPTION_DISPLAY_HEADING_EL_ONLY - show heading ***********************************************************************************
   #if defined(OPTION_DISPLAY_HEADING_EL_ONLY) && defined(FEATURE_ELEVATION_CONTROL)
       strcpy(workstring,ELEVATION_STRING);
-      dtostrf(elevation , 1, LCD_DECIMAL_PLACES, workstring2);
+      dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring2);
     #ifdef OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
       if (elevation < 100){strcat(workstring," ");}
       if (elevation < 10){strcat(workstring," ");}    
     #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE  
     strcat(workstring,workstring2);
-    if (LCD_DECIMAL_PLACES > 1){
+    if (DISPLAY_DECIMAL_PLACES > 1){
       if (LCD_COLUMNS > 14) {
         strcat(workstring,DISPLAY_DEGREES_STRING);
       }
@@ -5222,10 +5237,10 @@ void update_lcd_display(){
           switch(configuration.azimuth_display_mode){
             case AZ_DISPLAY_MODE_NORMAL:
             case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-              dtostrf(target_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;
             case AZ_DISPLAY_MODE_RAW:
-              dtostrf(target_raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
           if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
@@ -5296,7 +5311,7 @@ void update_lcd_display(){
             target = target - 360;
           }
           strcpy(workstring,TARGET_STRING);
-          dtostrf(target , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(target, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
@@ -5317,10 +5332,10 @@ void update_lcd_display(){
           switch(configuration.azimuth_display_mode){
             case AZ_DISPLAY_MODE_NORMAL:
             case AZ_DISPLAY_MODE_OVERLAP_PLUS:
-              dtostrf(target_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;
             case AZ_DISPLAY_MODE_RAW:
-              dtostrf(target_raw_azimuth , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
           if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
@@ -5348,7 +5363,7 @@ void update_lcd_display(){
             strcat(workstring,DOWN_STRING);
           }
           strcat(workstring," ");
-          dtostrf(target_elevation , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(target_elevation, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           row_override[LCD_STATUS_ROW] = 1;
@@ -5417,7 +5432,7 @@ void update_lcd_display(){
             target = target - 360;
           }
           strcpy(workstring,TARGET_STRING);
-          dtostrf(target , 1, LCD_DECIMAL_PLACES, workstring2);
+          dtostrf(target , 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
           strcat(workstring,DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
@@ -5438,7 +5453,7 @@ void update_lcd_display(){
           switch (preset_encoders_state) {
             case ENCODER_AZ_PENDING:
               strcpy(workstring,AZ_TARGET_STRING);
-              dtostrf(target , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
@@ -5446,7 +5461,7 @@ void update_lcd_display(){
               break;
             case ENCODER_EL_PENDING:
               strcpy(workstring,EL_TARGET_STRING);
-              dtostrf(el_encoder_degrees , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(el_encoder_degrees , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
@@ -5454,11 +5469,11 @@ void update_lcd_display(){
               break;
             case ENCODER_AZ_EL_PENDING:
               strcpy(workstring,TARGET_STRING);
-              dtostrf(target , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(target , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);
               strcat(workstring," ");
-              dtostrf(el_encoder_degrees , 1, LCD_DECIMAL_PLACES, workstring2);
+              dtostrf(el_encoder_degrees , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
               strcat(workstring,DISPLAY_DEGREES_STRING);              
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
@@ -5588,11 +5603,11 @@ void update_lcd_display(){
         }
       }
       strcat(workstring,MOON_STRING);
-      dtostrf(moon_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+      dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
       strcat(workstring," ");
-      dtostrf(moon_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+      dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
       if (moon_tracking_active){
@@ -5626,11 +5641,11 @@ void update_lcd_display(){
         }
       }
       strcat(workstring,SUN_STRING);
-      dtostrf(sun_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+      dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
       if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
       strcat(workstring," ");
-      dtostrf(sun_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+      dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
       if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
       if (sun_tracking_active){
@@ -5768,11 +5783,11 @@ void update_lcd_display(){
           strcpy(workstring,TRACKING_INACTIVE_CHAR);
         }
         strcat(workstring,MOON_STRING);
-        dtostrf(moon_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+        dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
         if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
         strcat(workstring," ");
-        dtostrf(moon_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+        dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
         if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
         if (moon_visible){
@@ -5800,11 +5815,11 @@ void update_lcd_display(){
           strcpy(workstring,TRACKING_INACTIVE_CHAR);
         }
         strcat(workstring,SUN_STRING);
-        dtostrf(sun_azimuth,0,LCD_DECIMAL_PLACES,workstring2);
+        dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
         if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
         strcat(workstring," ");
-        dtostrf(sun_elevation,0,LCD_DECIMAL_PLACES,workstring2);
+        dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
         if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
         if (sun_visible){
@@ -6260,6 +6275,14 @@ void apply_azimuth_offset(){
   }
 
 }
+// --------------------------------------------------------------
+
+
+float float_map(float x, float in_min, float in_max, float out_min, float out_max) {
+
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+
+}
 
 // --------------------------------------------------------------
 
@@ -6302,7 +6325,7 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_POTENTIOMETER
       analog_az = analogReadEnhanced(rotator_analog_az);
-      raw_azimuth = map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, configuration.azimuth_starting_point, (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability));
+      raw_azimuth = float_map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, configuration.azimuth_starting_point, (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability));
 
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
@@ -6989,20 +7012,20 @@ void output_debug(){
         }
 
         debug.print("  AZ:");
-        debug.print((azimuth ), LCD_DECIMAL_PLACES);
+        debug.print(azimuth, DISPLAY_DECIMAL_PLACES);
         debug.print("  AZ_raw:");
-        debug.print((raw_azimuth ), LCD_DECIMAL_PLACES);
+        debug.print((raw_azimuth ), DISPLAY_DECIMAL_PLACES);
         //debug.print(")");
 
 
         if (az_state != IDLE) {
           debug.print("  Target:");
-          debug.print((target_azimuth ), LCD_DECIMAL_PLACES);
+          debug.print(target_azimuth, DISPLAY_DECIMAL_PLACES);
        
 
           debug.print("  Target_raw: ");
 
-          debug.print((target_raw_azimuth ), LCD_DECIMAL_PLACES);
+          debug.print(target_raw_azimuth, DISPLAY_DECIMAL_PLACES);
           //debug.print(")");
 
           debug.print("  Secs_left:");
@@ -7083,11 +7106,11 @@ void output_debug(){
             case IN_PROGRESS_TO_TARGET: debug.print("IN_PROGRESS_TO_TARGET"); break;
           }
           debug.print("  EL:");
-          dtostrf(elevation , 0, LCD_DECIMAL_PLACES,tempstring);
+          dtostrf(elevation , 0, DISPLAY_DECIMAL_PLACES,tempstring);
           debug.print(tempstring);
           if (el_state != IDLE) {
             debug.print("  Target:");
-            dtostrf(target_elevation , 0, LCD_DECIMAL_PLACES,tempstring);
+            dtostrf(target_elevation, 0, DISPLAY_DECIMAL_PLACES,tempstring);
             debug.print(tempstring);
           }
 
@@ -7485,7 +7508,7 @@ void read_elevation(byte force_read){
 
     #ifdef FEATURE_EL_POSITION_POTENTIOMETER
       analog_el = analogReadEnhanced(rotator_analog_el);
-      elevation = (map(analog_el, configuration.analog_el_0_degrees, configuration.analog_el_max_elevation, 0, (ELEVATION_MAXIMUM_DEGREES)));
+      elevation = float_map(analog_el, configuration.analog_el_0_degrees, configuration.analog_el_max_elevation, 0, ELEVATION_MAXIMUM_DEGREES);
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = (correct_elevation(elevation));
       #endif // FEATURE_ELEVATION_CORRECTION
@@ -9162,7 +9185,7 @@ void initialize_peripherals(){
 
 
 // --------------------------------------------------------------
-void submit_request(byte axis, byte request, int parm, byte called_by){
+void submit_request(byte axis, byte request, float parm, byte called_by){
 
   #ifdef DEBUG_SUBMIT_REQUEST
     debug.print("submit_request: ");
@@ -12028,11 +12051,11 @@ char * az_el_calibrated_string(){
   read_azimuth(1);
   read_elevation(1);
   strcpy(return_string, "Heading calibrated.  Az: ");
-  dtostrf((azimuth ), 0, LCD_DECIMAL_PLACES, tempstring);
+  dtostrf(azimuth, 0, DISPLAY_DECIMAL_PLACES, tempstring);
   strcat(return_string, tempstring);
   #ifdef FEATURE_ELEVATION_CONTROL
   strcat(return_string, " El: ");
-  dtostrf((elevation ), 0, LCD_DECIMAL_PLACES, tempstring);
+  dtostrf((elevation ), 0, DISPLAY_DECIMAL_PLACES, tempstring);
   strcat(return_string, tempstring);
   #endif //FEATURE_ELEVATION_CONTROL
   return return_string;
@@ -13905,10 +13928,20 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
    * SE           Stop elevation moving
    *
    * VE           Request Version
-   * AZ           Azimuth     number - 1 decimal place (activated with OPTION_EASYCOM_AZ_QUERY_COMMAND)
-   * EL           Elevation   number - 1 decimal place (activated with OPTION_EASYCOM_EL_QUERY_COMMAND)
+   * AZ           Query azimuth
+   * AZx.x        Rotate to Azimuth
+   * AZxx.x       Rotate to Azimuth
+   * AZxxx.x      Rotate to Azimuth
+   * EL           Request Elevation
+   * ELx.x        Rotate to Elevation
+   * ELxx.x       Rotate to Elevation
+   * ELxxx.x      Rotate to Elevation
    *
    *
+   * Commands are executed upon space, carriage return, or line feed
+   * 
+   * Reference: https://www.qsl.net/dh1ngp/onlinehelpft100/Rotator_control_with_Easycomm.htm
+   * 
    */
 
 
@@ -13935,7 +13968,6 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
     case 'A':  // AZ
       if (easycom_command_buffer[1] == 'Z') {  // format is AZx.x or AZxx.x or AZxxx.x (why didn't they make it fixed length?)
         switch (easycom_command_buffer_index) {
-          #ifdef OPTION_EASYCOM_AZ_QUERY_COMMAND
           case 2:
             //strcpy(return_string,"AZ");
             strcpy(return_string,"+");
@@ -13943,7 +13975,6 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
             strcat(return_string,tempstring);
             return;
             break;
-          #endif // OPTION_EASYCOM_AZ_QUERY_COMMAND
           case 5: // format AZx.x
             heading = (easycom_command_buffer[2] - 48) + ((easycom_command_buffer[4] - 48) / 10.);
             break;
@@ -13968,7 +13999,6 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
     case 'E':  // EL
       if (easycom_command_buffer[1] == 'L') {
         switch (easycom_command_buffer_index) {
-          #ifdef OPTION_EASYCOM_EL_QUERY_COMMAND
           case 2:
             //strcpy(return_string,"EL");
             if (elevation >= 0){
@@ -13978,7 +14008,6 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
             strcat(return_string,tempstring);            
             return;
             break;
-          #endif // OPTION_EASYCOM_EL_QUERY_COMMAND
           case 5: // format ELx.x
             heading = (easycom_command_buffer[2] - 48) + ((easycom_command_buffer[4] - 48) / 10.);
             break;
@@ -14051,40 +14080,76 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
 //-----------------------------------------------------------------------
 
 #ifdef FEATURE_DCU_1_EMULATION
-void process_dcu_1_command(byte * dcu_1_command_buffer, int dcu_1_command_buffer_index, byte source_port, char * return_string){
+void process_dcu_1_command(byte * dcu_1_command_buffer, int dcu_1_command_buffer_index, byte source_port, byte command_termination, char * return_string){
 
 
 
   /* DCU-1 protocol implementation
 
 
-    AP1### = set azimuth target,  ### = 0 to 359
+    AP1###;  = set azimuth target,  ### = 0 to 359
+    AP1###\r = rotate to azimuth target,  ### = 0 to 359
 
-    AM1 = execute rotation
+    AM1; or AM1\r = execute rotation
+
+    ; (alone) = stop rotation
+
+    AI1; or AI1\r = report azimuth
 
    */
 
 
   strcpy(return_string,"?");
-  static int dcu_1_azimuth_target_set = 0;
+  static int dcu_1_azimuth_target_set = -1;
   int temp_heading = 0;
+  char tempstring[5];
 
-  
+  // ; command - stop rotation
+  if (dcu_1_command_buffer[0] == ';'){
+    strcpy(return_string,"OK");
+    submit_request(AZ, REQUEST_STOP, 0, DBG_PROCESS_DCU_1);
+    return;  
+  }
 
+  // AP1 command - set rotation target (if terminated with semicolon), or initiate immediate rotation (if terminated with carriage return)
   if (dcu_1_command_buffer[0] == 'A'){
     if ((dcu_1_command_buffer[1] == 'P') && (dcu_1_command_buffer[2] == '1') && (dcu_1_command_buffer_index == 6)){
       temp_heading = ((dcu_1_command_buffer[3] - 48) * 100) + ((dcu_1_command_buffer[4] - 48) * 10) + (dcu_1_command_buffer[5] - 48);
       if ((temp_heading > -1) && (temp_heading < 360)){
-        dcu_1_azimuth_target_set = temp_heading;
         strcpy(return_string,"OK");
-        return;
+        if (command_termination == DCU_1_SEMICOLON){
+          dcu_1_azimuth_target_set = temp_heading;
+          return;
+        } else {
+          submit_request(AZ, REQUEST_AZIMUTH, temp_heading, DBG_PROCESS_DCU_1);
+          return;
+        }
       }
     }
-    if ((dcu_1_command_buffer[1] == 'M') && (dcu_1_command_buffer[2] == '1')  && (dcu_1_command_buffer_index == 3)){
-      submit_request(AZ, REQUEST_AZIMUTH, (dcu_1_azimuth_target_set), 233);
+
+    // AM1 command - initiate rotation
+    if ((dcu_1_command_buffer[1] == 'M') && (dcu_1_command_buffer[2] == '1')  && (dcu_1_command_buffer_index == 3) && (dcu_1_azimuth_target_set > -1)){
+      submit_request(AZ, REQUEST_AZIMUTH, dcu_1_azimuth_target_set, DBG_PROCESS_DCU_1);
+      dcu_1_azimuth_target_set = -1;
       strcpy(return_string,"OK");
       return;
     }    
+
+    // AI1 command - report azimuth
+    if ((dcu_1_command_buffer[1] == 'I') && (dcu_1_command_buffer[2] == '1')){
+      submit_request(AZ, REQUEST_AZIMUTH, dcu_1_azimuth_target_set, DBG_PROCESS_DCU_1);
+      strcpy(return_string,";");
+      dtostrf(int(azimuth),0,0,tempstring);
+      if (int(azimuth) < 10) {
+        strcat(return_string,"0");
+      }
+      if (int(azimuth) < 100) {
+        strcat(return_string,"0");
+      }
+      strcat(return_string,tempstring);      
+      return;
+    }    
+
   }
 
 
