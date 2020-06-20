@@ -178,9 +178,6 @@ You can tweak these, but read the online documentation!
 #define AZ_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for azimuth
 #define EL_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for elevation
 
-#define ROTATE_PIN_INACTIVE_VALUE LOW
-#define ROTATE_PIN_ACTIVE_VALUE HIGH
-
 #define AZIMUTH_SMOOTHING_FACTOR 0      // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR 0    // value = 0 to 99.9
 
@@ -342,3 +339,12 @@ You can tweak these, but read the online documentation!
 
 #define ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS 5000 // if OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP is enabled, ignore configuration and rotational command for this many mS after boot up
 
+/* Deprecated in version 2020.06.20.01
+#define ROTATE_PIN_INACTIVE_VALUE LOW
+#define ROTATE_PIN_ACTIVE_VALUE HIGH */
+
+// Added in version 2020.06.20.01
+#define ROTATE_PIN_AZ_INACTIVE_VALUE LOW
+#define ROTATE_PIN_AZ_ACTIVE_VALUE HIGH
+#define ROTATE_PIN_EL_INACTIVE_VALUE LOW
+#define ROTATE_PIN_EL_ACTIVE_VALUE HIGH

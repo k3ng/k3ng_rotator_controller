@@ -516,6 +516,14 @@
       LCD_DECIMAL_PLACES setting has been renamed DISPLAY_DECIMAL_PLACES as it also applies to the Nextion display unit and API
       FEATURE_DCU_1_EMULATION: Rewrote to comply with published command specification.  AI1 and ; commands now implemented
 
+    2020.06.14.01
+      azimuth_rotation_capability variable changed to long datatype to support values up to 2,147,483,647
+
+    2020.06.20.01
+      Refactoring of read_azimuth()
+      In settings files deprecated ROTATE_PIN_INACTIVE_VALUE and ROTATE_PIN_ACTIVE_VALUE; replaced with ROTATE_PIN_AZ_INACTIVE_VALUE, ROTATE_PIN_AZ_ACTIVE_VALUE, ROTATE_PIN_EL_INACTIVE_VALUE, ROTATE_PIN_EL_ACTIVE_VALUE
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -527,7 +535,7 @@
 
   */
 
-#define CODE_VERSION "2020.06.13.02"
+#define CODE_VERSION "2020.06.20.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -755,7 +763,7 @@ struct config_t {
   byte az_stepper_motor_last_direction;
   byte el_stepper_motor_last_direction;
   int azimuth_starting_point;
-  int azimuth_rotation_capability;
+  long azimuth_rotation_capability;
   byte brake_az_disabled;
   float clock_timezone_offset;
   byte autopark_active;
@@ -6286,6 +6294,40 @@ float float_map(float x, float in_min, float in_max, float out_min, float out_ma
 
 // --------------------------------------------------------------
 
+
+void convert_raw_azimuth_to_real_azimuth(){
+
+  float temp_azimuth = raw_azimuth;
+
+  // if (raw_azimuth >= 360) {
+  //   azimuth = raw_azimuth - 360;
+  //   if (azimuth >= 360) {
+  //     azimuth = azimuth - 360;
+  //   }
+  // } else {
+  //   if (raw_azimuth < 0) {
+  //     azimuth = raw_azimuth + 360;
+  //   } else {
+  //     azimuth = raw_azimuth;
+  //   }
+  // }
+
+  if (raw_azimuth >= 360){
+    azimuth = raw_azimuth - (int(raw_azimuth / 360) * 360);
+  } else {
+    if (raw_azimuth < 0){
+      azimuth = raw_azimuth + 360;
+    } else {
+      azimuth = raw_azimuth;
+    }
+  }
+
+
+
+}
+
+// --------------------------------------------------------------
+
 void read_azimuth(byte force_read){
 
 
@@ -6330,23 +6372,17 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
+
       apply_azimuth_offset();
+
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         if (raw_azimuth < 0){raw_azimuth = 0;}
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
-      if (raw_azimuth >= 360) {
-        azimuth = raw_azimuth - 360;
-        if (azimuth >= 360) {
-          azimuth = azimuth - 360;
-        }
-      } else {
-        if (raw_azimuth < 0) {
-          azimuth = raw_azimuth + 360;
-        } else {
-          azimuth = raw_azimuth;
-        }
-      }
+ 
+      convert_raw_azimuth_to_real_azimuth();
+
+
     #endif // FEATURE_AZ_POSITION_POTENTIOMETER
 
     #ifdef FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
@@ -6381,18 +6417,9 @@ void read_azimuth(byte force_read){
             if (raw_azimuth < 0){raw_azimuth = 0;}
             raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
           }
-          if (raw_azimuth >= 360) {
-            azimuth = raw_azimuth - 360;
-            if (azimuth >= 360) {
-              azimuth = azimuth - 360;
-            }
-          } else {
-            if (raw_azimuth < 0) {
-              azimuth = raw_azimuth + 360;
-            } else {
-              azimuth = raw_azimuth;
-            }
-          }
+
+          convert_raw_azimuth_to_real_azimuth();
+
           remote_unit_command_results_available = 0;
         } else {
           // is it time to request the azimuth?
@@ -6449,71 +6476,61 @@ void read_azimuth(byte force_read){
           raw_azimuth = (correct_azimuth(raw_azimuth));
         #endif // FEATURE_AZIMUTH_CORRECTION
 
-        if (raw_azimuth >= 360) {
-          azimuth = raw_azimuth - 360;
-        } else {
-          azimuth = raw_azimuth;
-        }
-        configuration_dirty = 1;
+        convert_raw_azimuth_to_real_azimuth();
+
+        configuration_dirty = 1;  // TODO: a better way to handle configuration writes; these are very frequent
       }
     #endif // FEATURE_AZ_POSITION_ROTARY_ENCODER
 
 
     #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
-       encoder_pjrc_current_az_position = encoder_pjrc_az.read();
-        if ( (encoder_pjrc_current_az_position != encoder_pjrc_previous_az_position) ) 
-        {
-          configuration.last_azimuth = configuration.last_azimuth + ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position) * AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE); 
+      encoder_pjrc_current_az_position = encoder_pjrc_az.read();
+      if ( (encoder_pjrc_current_az_position != encoder_pjrc_previous_az_position) ) 
+      {
+        configuration.last_azimuth = configuration.last_azimuth + ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position) * AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE); 
+          
+        #ifdef DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
+          if ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position ) < 0){
+            debug.print("read_azimuth: AZ_POSITION_ROTARY_PJRC_ENCODER: CCW - ");
+          } else{
+            debug.print("read_azimuth: AZ_POSITION_ROTARY_PJRC_ENCODER: CW - ");
+          } 
+          debug.print("Encoder Count: ");
+          debug.print(encoder_pjrc_current_az_position);
+          debug.print(" - configuration.last_azimuth : ");
+          debug.print(configuration.last_azimuth );
+          debug.print(" - raw_azimuth : ");
+          debug.println(raw_azimuth);
+        #endif // DEBUG_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
+
+        encoder_pjrc_previous_az_position = encoder_pjrc_current_az_position;
             
-          #ifdef DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
-           if ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position ) < 0) 
-            {
-             debug.print("read_azimuth: AZ_POSITION_ROTARY_PJRC_ENCODER: CCW - ");
-            }
-             else
-            {
-             debug.print("read_azimuth: AZ_POSITION_ROTARY_PJRC_ENCODER: CW - ");
-            } 
-             debug.print("Encoder Count: ");
-             debug.print(encoder_pjrc_current_az_position);
-             debug.print(" - configuration.last_azimuth : ");
-             debug.print(configuration.last_azimuth );
-             debug.print(" - raw_azimuth : ");
-             debug.println(raw_azimuth);
-          #endif // DEBUG_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
+        #ifdef OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
+          if (configuration.last_azimuth < configuration.azimuth_starting_point){
+            configuration.last_azimuth = configuration.azimuth_starting_point;
+          }
+        if (configuration.last_azimuth > (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)){
+          configuration.last_azimuth = (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability);
+        }
+        #else
+          if (configuration.last_azimuth < 0){
+            configuration.last_azimuth += 360;
+          }
+          if (configuration.last_azimuth >= 360){
+            configuration.last_azimuth -= 360;
+          }
+        #endif // OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
 
-          encoder_pjrc_previous_az_position = encoder_pjrc_current_az_position;
-             
-          #ifdef OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
-           if (configuration.last_azimuth < configuration.azimuth_starting_point) {
-             configuration.last_azimuth = configuration.azimuth_starting_point;
-           }
-          if (configuration.last_azimuth > (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability)) {
-             configuration.last_azimuth = (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability);
-           }
-         #else
-           if (configuration.last_azimuth < 0) {
-             configuration.last_azimuth += 360;
-           }
-           if (configuration.last_azimuth >= 360) {
-             configuration.last_azimuth -= 360;
-           }
-         #endif // OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
+        //debug.print(" Calculating raw_azimuth : ");
+        raw_azimuth = int(configuration.last_azimuth);
 
-         //debug.print(" Calculating raw_azimuth : ");
-         raw_azimuth = int(configuration.last_azimuth);
+        #ifdef FEATURE_AZIMUTH_CORRECTION
+          raw_azimuth = correct_azimuth(raw_azimuth);
+        #endif // FEATURE_AZIMUTH_CORRECTION
 
+        convert_raw_azimuth_to_real_azimuth();
 
-         #ifdef FEATURE_AZIMUTH_CORRECTION
-           raw_azimuth = (correct_azimuth(raw_azimuth));
-         #endif // FEATURE_AZIMUTH_CORRECTION
-
-         if (raw_azimuth >= 360) {
-           azimuth = raw_azimuth - 360;
-         } else {
-           azimuth = raw_azimuth;
-         }
-         configuration_dirty = 1;
+        configuration_dirty = 1;
                   
         }     
     #endif  //FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
@@ -6793,11 +6810,7 @@ void read_azimuth(byte force_read){
           raw_azimuth = correct_azimuth(raw_azimuth);
         #endif // FEATURE_AZIMUTH_CORRECTION
         apply_azimuth_offset();
-        if (raw_azimuth >= 360) {
-          azimuth = raw_azimuth - 360;
-        } else {
-          azimuth = raw_azimuth;
-        }
+        convert_raw_azimuth_to_real_azimuth();
       }
     #endif // FEATURE_AZ_POSITION_PULSE_INPUT
 
@@ -6818,12 +6831,7 @@ void read_azimuth(byte force_read){
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
       apply_azimuth_offset();
-      if (raw_azimuth < 0){raw_azimuth = raw_azimuth + 360;}
-      if (raw_azimuth >= 360) {
-        azimuth = raw_azimuth - 360;
-      } else {
-        azimuth = raw_azimuth;
-      }
+      convert_raw_azimuth_to_real_azimuth();
     #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI
 
 
@@ -6841,11 +6849,7 @@ void read_azimuth(byte force_read){
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
       apply_azimuth_offset();
-      if (raw_azimuth >= 360) {
-        azimuth = raw_azimuth - 360;
-      } else {
-        azimuth = raw_azimuth;
-      }
+      convert_raw_azimuth_to_real_azimuth();
       if (raw_azimuth != incremental_encoder_previous_raw_azimuth) {
         configuration.last_az_incremental_encoder_position = az_incremental_encoder_position;
         configuration_dirty = 1;
@@ -8103,19 +8107,19 @@ void rotator(byte rotation_action, byte rotation_type) {
           #endif //FEATURE_STEPPER_MOTOR                 
         }
         if (rotate_cw) {
-          digitalWriteEnhanced(rotate_cw, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_ACTIVE_VALUE);
           #if defined(pin_led_cw)
             digitalWriteEnhanced(pin_led_cw, PIN_LED_ACTIVE_STATE);
           #endif
         }
         if (rotate_ccw) {
-          digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_AZ_INACTIVE_VALUE);
           #if defined(pin_led_ccw)
             digitalWriteEnhanced(pin_led_ccw, PIN_LED_INACTIVE_STATE);
           #endif          
         }
         if (rotate_cw_ccw){
-          digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
         }
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
@@ -8137,13 +8141,13 @@ void rotator(byte rotation_action, byte rotation_type) {
           analogWriteEnhanced(rotate_cw_ccw_pwm, 0);
         }
         if (rotate_cw) {
-          digitalWriteEnhanced(rotate_cw, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
           #if defined(pin_led_cw)
             digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
           #endif          
         }
         if (rotate_cw_ccw){
-          digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_INACTIVE_VALUE);
         }        
         if (rotate_cw_freq) {
           noTone(rotate_cw_freq);
@@ -8215,19 +8219,19 @@ void rotator(byte rotation_action, byte rotation_type) {
           #endif //FEATURE_STEPPER_MOTOR 
         }
         if (rotate_cw) {
-          digitalWriteEnhanced(rotate_cw, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
           #if defined(pin_led_cw)
             digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
           #endif          
         }
         if (rotate_ccw) {
-          digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
           #if defined(pin_led_ccw)
             digitalWriteEnhanced(pin_led_ccw, PIN_LED_ACTIVE_STATE);
           #endif          
         }
         if (rotate_cw_ccw){
-          digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
         }      
         /* 
         #ifdef FEATURE_STEPPER_MOTOR
@@ -8263,7 +8267,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           analogWriteEnhanced(rotate_ccw_pwm, 0); digitalWriteEnhanced(rotate_ccw_pwm, LOW);
         }
         if (rotate_ccw) {
-          digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_ccw, ROTATE_PIN_AZ_INACTIVE_VALUE);
           #if defined(pin_led_ccw)
             digitalWriteEnhanced(pin_led_ccw, PIN_LED_INACTIVE_STATE);
           #endif          
@@ -8335,19 +8339,19 @@ void rotator(byte rotation_action, byte rotation_type) {
           }
         }
         if (rotate_up) {
-          digitalWriteEnhanced(rotate_up, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_up, ROTATE_PIN_EL_ACTIVE_VALUE);
           #if defined(pin_led_up)
             digitalWriteEnhanced(pin_led_up, PIN_LED_ACTIVE_STATE);
           #endif          
         }
         if (rotate_down) {
-          digitalWriteEnhanced(rotate_down, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_down, ROTATE_PIN_EL_INACTIVE_VALUE);
           #if defined(pin_led_down)
             digitalWriteEnhanced(pin_led_down, PIN_LED_INACTIVE_STATE);
           #endif           
         }
         if (rotate_up_or_down) {
-          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_EL_ACTIVE_VALUE);
         } 
         /*
         #ifdef FEATURE_STEPPER_MOTOR
@@ -8373,7 +8377,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
       #endif // DEBUG_ROTATOR
         if (rotate_up) {
-          digitalWriteEnhanced(rotate_up, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_up, ROTATE_PIN_EL_INACTIVE_VALUE);
           #if defined(pin_led_up)
             digitalWriteEnhanced(pin_led_up, PIN_LED_INACTIVE_STATE);
           #endif            
@@ -8388,7 +8392,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           noTone(rotate_up_freq);
         }
         if (rotate_up_or_down) {
-          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_EL_INACTIVE_VALUE);
         }   
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
@@ -8458,19 +8462,19 @@ void rotator(byte rotation_action, byte rotation_type) {
           #endif //FEATURE_STEPPER_MOTOR             
         }
         if (rotate_up) {
-          digitalWriteEnhanced(rotate_up, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_up, ROTATE_PIN_EL_INACTIVE_VALUE);
           #if defined(pin_led_up)
             digitalWriteEnhanced(pin_led_up, PIN_LED_INACTIVE_STATE);
           #endif            
         }
         if (rotate_down) {
-          digitalWriteEnhanced(rotate_down, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_down, ROTATE_PIN_EL_ACTIVE_VALUE);
           #if defined(pin_led_down)
             digitalWriteEnhanced(pin_led_down, PIN_LED_ACTIVE_STATE);
           #endif            
         }
         if (rotate_up_or_down) {
-          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_ACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_EL_ACTIVE_VALUE);
         }      
         /*   
         #ifdef FEATURE_STEPPER_MOTOR
@@ -8496,7 +8500,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
           #endif // DEBUG_ROTATOR
         if (rotate_down) {
-          digitalWriteEnhanced(rotate_down, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_down, ROTATE_PIN_EL_INACTIVE_VALUE);
           #if defined(pin_led_down)
             digitalWriteEnhanced(pin_led_down, PIN_LED_INACTIVE_STATE);
           #endif           
@@ -8511,7 +8515,7 @@ void rotator(byte rotation_action, byte rotation_type) {
           noTone(rotate_down_freq);
         }
         if (rotate_up_or_down) {
-          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_INACTIVE_VALUE);
+          digitalWriteEnhanced(rotate_up_or_down, ROTATE_PIN_EL_INACTIVE_VALUE);
         }        
         #ifdef FEATURE_STEPPER_MOTOR
         if (el_stepper_motor_pulse) {
@@ -12711,6 +12715,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   strcpy(return_string,"");
   static unsigned long serial_led_time = 0;
   float tempfloat = 0;
+  byte hit_decimal = 0;
 
   #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
     float heading = 0;
@@ -12744,7 +12749,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   #endif
 
   float new_azimuth_starting_point;
-  float new_azimuth_rotation_capability;
+  //float new_azimuth_rotation_capability;
 
   byte brake_az_disabled;
 
@@ -12837,33 +12842,55 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       }
       break;
 
-    case 'J':        // \Jx[x][x] - set az rotation capability
-      new_azimuth_rotation_capability = 9999;
-      switch (input_buffer_index) {
-        case 2:
-          new_azimuth_rotation_capability = configuration.azimuth_rotation_capability;
-          break;
-        case 3:
-          new_azimuth_rotation_capability = (input_buffer[2] - 48);
-          break;
-        case 4:
-          new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
-          break;
-        case 5:
-          new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
-          break;
-      }
-      if ((new_azimuth_rotation_capability >= 0) && (new_azimuth_rotation_capability <= 450)) {
-        if (input_buffer_index > 2) {
-          configuration.azimuth_rotation_capability = configuration.azimuth_rotation_capability = new_azimuth_rotation_capability;
-          configuration_dirty = 1;
+    case 'J':        // \Jx[x][x][x][x] - set az rotation capability
+
+      tempfloat = 0;
+      for (int x = 2;x < input_buffer_index;x++){
+        if(input_buffer[x] == '.'){
+          hit_decimal = 10;
+        } else {
+          if (hit_decimal > 0){
+            tempfloat = tempfloat + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+            hit_decimal = hit_decimal * 10;
+          } else {
+            tempfloat = (tempfloat * 10) + (input_buffer[x] - 48);
+          }
         }
-        strcpy(return_string, "Azimuth rotation capability set to ");
-        dtostrf(new_azimuth_rotation_capability, 0, 0, temp_string);
-        strcat(return_string, temp_string);
-      } else {
-        strcpy(return_string, "Error.  Format: \\Jx[x][x]");
-      }
+      }   
+      configuration.azimuth_rotation_capability = tempfloat;
+      configuration_dirty = 1;
+      strcpy(return_string, "Azimuth rotation capability set to ");
+      dtostrf(configuration.azimuth_rotation_capability, 0, 0, temp_string);
+      strcat(return_string, temp_string);
+
+
+      // new_azimuth_rotation_capability = 9999;
+      // switch (input_buffer_index) {
+      //   case 2:
+      //     new_azimuth_rotation_capability = configuration.azimuth_rotation_capability;
+      //     break;
+      //   case 3:
+      //     new_azimuth_rotation_capability = (input_buffer[2] - 48);
+      //     break;
+      //   case 4:
+      //     new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+      //     break;
+      //   case 5:
+      //     new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+      //     break;
+      // }
+      // if ((new_azimuth_rotation_capability >= 0) && (new_azimuth_rotation_capability <= 450)) {
+      //   if (input_buffer_index > 2) {
+      //     configuration.azimuth_rotation_capability = configuration.azimuth_rotation_capability = new_azimuth_rotation_capability;
+      //     configuration_dirty = 1;
+      //   }
+      //   strcpy(return_string, "Azimuth rotation capability set to ");
+      //   dtostrf(new_azimuth_rotation_capability, 0, 0, temp_string);
+      //   strcat(return_string, temp_string);
+      // } else {
+      //   strcpy(return_string, "Error.  Format: \\Jx[x][x]");
+      // }
+
       break;
 
     case 'K':          // \Kx   - Force disable the az brake even if a pin is defined (x: 0 = enable, 1 = disable)
@@ -13227,6 +13254,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           configuration.azimuth_offset = 0;
           configuration.elevation_offset = 0;
           configuration_dirty = 1;
+          strcpy(return_string, "Cleared calibration offsets");
           break;
         default: strcpy(return_string, "?>"); break;
 
