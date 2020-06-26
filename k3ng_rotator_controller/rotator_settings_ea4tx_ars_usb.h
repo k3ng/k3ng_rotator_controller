@@ -105,16 +105,6 @@ You can tweak these, but read the online documentation!
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
-#define CONTROL_PORT_BAUD_RATE 9600
-#define REMOTE_UNIT_PORT_BAUD_RATE 9600
-#define GPS_PORT_BAUD_RATE 9600
-#define GPS_MIRROR_PORT_BAUD_RATE 9600
-#define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
-//#define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port
-#define GPS_PORT_MAPPED_TO &Serial2  // change this line to map the GPS port to a different serial port
-//#define GPS_MIRROR_PORT &Serial1 //3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
-#define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
-
 #define LCD_COLUMNS 20 //16
 #define LCD_ROWS 4 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
@@ -338,3 +328,17 @@ You can tweak these, but read the online documentation!
 #define ROTATE_PIN_AZ_ACTIVE_VALUE HIGH
 #define ROTATE_PIN_EL_INACTIVE_VALUE LOW
 #define ROTATE_PIN_EL_ACTIVE_VALUE HIGH
+
+// Changed in 2020.06.26.02
+// Serial Port Settings
+#define CONTROL_PORT_MAPPED_TO &Serial     // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
+#define CONTROL_PORT_BAUD_RATE 9600
+//#define REMOTE_PORT Serial3                 // used to control remote unit
+#define REMOTE_UNIT_PORT_BAUD_RATE 9600 
+#define GPS_PORT Serial2
+#define GPS_PORT_BAUD_RATE 9600
+// #define GPS_MIRROR_PORT Serial1          // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
+// #define GPS_MIRROR_PORT_BAUD_RATE 9600
+#define nexSerial Serial3
+#define NEXTION_SERIAL_BAUD 115200
+#define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")

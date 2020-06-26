@@ -18,27 +18,25 @@
 
   For Arduino Leonardo, Micro, and Yún, PLEASE READ THIS ! :
 
-    If using Serial (USB Serial) for the control (main) port, set SERIAL_PORT_CLASS to Serial_
-    If using Serial1 (Board pins 0 and 1 Serial) for the control (main) port, set SERIAL_PORT_CLASS to HardwareSerial
-    If using Serial (USB Serial) for the gps or remote port, set SERIAL_PORT_CLASS_SECONDARY to Serial_
-    If using Serial1 (Board pins 0 and 1 Serial) for the gps or remote  port, set SERIAL_PORT_CLASS_SECONDARY to HardwareSerial
+    If using Serial (USB Serial) for the control (main) port, set CONTROL_PORT_SERIAL_PORT_CLASS to Serial_
+    If using Serial1 (Board pins 0 and 1 Serial) for the control (main) port, set CONTROL_PORT_SERIAL_PORT_CLASS to HardwareSerial
 
   For more information on serial ports on various boards: https://www.arduino.cc/reference/en/language/functions/communication/serial/  
 
 */
 
 #if defined(ARDUINO_MAPLE_MINI)
-  #define SERIAL_PORT_CLASS USBSerial
+  #define CONTROL_PORT_SERIAL_PORT_CLASS USBSerial
 #elif defined(ARDUINO_AVR_MICRO) || defined(ARDUINO_AVR_LEONARDO) || defined(ARDUINO_AVR_YUN)
-  #define SERIAL_PORT_CLASS Serial_                             // <- Arduino Leonardo, Micro, and Yún - Configure this
-  #define SERIAL_PORT_CLASS_SECONDARY HardwareSerial            // <- Arduino Leonardo, Micro, and Yún - Configure this
+  #define CONTROL_PORT_SERIAL_PORT_CLASS Serial_                             // <- Arduino Leonardo, Micro, and Yún - Configure this
 #elif defined(ARDUINO_AVR_PROMICRO)  || defined(ARDUINO_AVR_ESPLORA) || defined(ARDUINO_AVR_LILYPAD_USB) || defined(ARDUINO_AVR_ROBOT_CONTROL) || defined(ARDUINO_AVR_ROBOT_MOTOR) || defined(ARDUINO_AVR_LEONARDO_ETH)
-  #define SERIAL_PORT_CLASS Serial_
+  #define CONTROL_PORT_SERIAL_PORT_CLASS Serial_
 #elif defined(TEENSYDUINO)
-  #define SERIAL_PORT_CLASS usb_serial_class
+  #define CONTROL_PORT_SERIAL_PORT_CLASS usb_serial_class
 #else
-  #define SERIAL_PORT_CLASS HardwareSerial
+  #define CONTROL_PORT_SERIAL_PORT_CLASS HardwareSerial
 #endif
+
 
 
 // do not modify anything below this line

@@ -526,6 +526,11 @@
     2020.06.26.01
       Removed errant HEADING_MULTIPLIER from PARK settings in settings files (Thanks, Adam VK4GHZ )
 
+    2020.06.26.02
+      In rotator_hardware.h, got rid of serial port class definitions for the GPS, GPS mirror, and remote serial ports, and have one define CONTROL_PORT_SERIAL_PORT_CLASS for the control port (usually the Serial port)
+      Arduino Leonardo, Micro, and Yún users will need to change CONTROL_PORT_SERIAL_PORT_CLASS in rotator_hardware.h if not using the Serial port as the control port
+      Changed and reorganize serial port mappins in rotator_settings*.h files
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -538,7 +543,7 @@
 
   */
 
-#define CODE_VERSION "2020.06.26.01"
+#define CODE_VERSION "2020.06.26.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -948,34 +953,34 @@ byte current_az_speed_voltage = 0;
 #endif
 
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(FEATURE_CLOCK) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-  SERIAL_PORT_CLASS * control_port;
+  CONTROL_PORT_SERIAL_PORT_CLASS * control_port;
 #endif
 
-#if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
-  #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-    SERIAL_PORT_CLASS * remote_unit_port;
-  #endif
-#else
-  #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-    SERIAL_PORT_CLASS_SECONDARY * remote_unit_port;
-  #endif
-#endif
+// #if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
+//   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
+//     REMOTE_PORT_SERIAL_PORT_CLASS * remote_unit_port;
+//   #endif
+// #else
+//   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
+//     REMOTE_PORT_SERIAL_PORT_CLASS * remote_unit_port;
+//   #endif
+// #endif
 
-#if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
-  #if defined(FEATURE_GPS)
-    SERIAL_PORT_CLASS * gps_port;
-    #ifdef GPS_MIRROR_PORT
-      SERIAL_PORT_CLASS * (gps_mirror_port);
-    #endif //GPS_MIRROR_PORT
-  #endif //defined(FEATURE_GPS)
-#else
-  #if defined(FEATURE_GPS)
-    SERIAL_PORT_CLASS_SECONDARY * gps_port;
-    #ifdef GPS_MIRROR_PORT
-      SERIAL_PORT_CLASS_SECONDARY * (gps_mirror_port);
-    #endif //GPS_MIRROR_PORT
-  #endif //defined(FEATURE_GPS)
-#endif
+// #if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
+//   #if defined(FEATURE_GPS)
+//     GPS_PORT_SERIAL_PORT_CLASS * gps_port;
+//     #ifdef GPS_MIRROR_PORT
+//       GPS_MIRROR_PORT_SERIAL_PORT_CLASS * gps_mirror_port;
+//     #endif //GPS_MIRROR_PORT
+//   #endif //defined(FEATURE_GPS)
+// #else
+//   #if defined(FEATURE_GPS)
+//     GPS_PORT_SERIAL_PORT_CLASS * gps_port;
+//     #ifdef GPS_MIRROR_PORT
+//       GPS_MIRROR_PORT_SERIAL_PORT_CLASS * gps_mirror_port;
+//     #endif //GPS_MIRROR_PORT
+//   #endif //defined(FEATURE_GPS)
+// #endif
 
 
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
@@ -2694,7 +2699,7 @@ void service_remote_unit_serial_buffer(){
           switch (control_port_buffer[2] - 48) {
             case 0: control_port->write(control_port_buffer[x]); break;
             #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-            case 1: remote_unit_port->write(control_port_buffer[x]); break;
+            case 1: REMOTE_PORT.write(control_port_buffer[x]); break;
             #endif
           }
         }
@@ -2768,7 +2773,7 @@ void service_remote_unit_serial_buffer(){
           switch (control_port_buffer[2]) {
             case '0': control_port->write(control_port_buffer[3]); command_good = 1; break;
             #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-            case '1': remote_unit_port->write(control_port_buffer[3]); command_good = 1; break;
+            case '1': REMOTE_PORT.write(control_port_buffer[3]); command_good = 1; break;
             #endif
           }
         }
@@ -3216,8 +3221,8 @@ void check_serial(){
 
   // remote unit port servicing
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-      if (remote_unit_port->available()) {
-        incoming_serial_byte = remote_unit_port->read();
+      if (REMOTE_PORT.available()) {
+        incoming_serial_byte = REMOTE_PORT.read();
 
         #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
             // if (serial_read_event_flag[1]) {
@@ -3253,10 +3258,10 @@ void check_serial(){
     } else {
 
       #if defined(OPTION_DONT_READ_GPS_PORT_AS_OFTEN)
-        if (gps_port->available()) {
-          gps_port_read = gps_port->read();
+        if (GPS_PORT.available()) {
+          gps_port_read = GPS_PORT.read();
           #ifdef GPS_MIRROR_PORT
-            gps_mirror_port->write(gps_port_read);
+            GPS_MIRROR_PORT.write(gps_port_read);
           #endif //GPS_MIRROR_PORT
           #if defined(DEBUG_GPS_SERIAL)
             debug.write(gps_port_read);
@@ -3365,10 +3370,10 @@ void check_serial(){
           #endif  //  OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING         
         }
       #else //OPTION_DONT_READ_GPS_PORT_AS_OFTEN
-        while ((gps_port->available()) /*&& (!gps_data_available)*/) {
-          gps_port_read = gps_port->read();
+        while ((GPS_PORT.available()) /*&& (!gps_data_available)*/) {
+          gps_port_read = GPS_PORT.read();
           #ifdef GPS_MIRROR_PORT
-            gps_mirror_port->write(gps_port_read);
+            GPS_MIRROR_PORT.write(gps_port_read);
           #endif //GPS_MIRROR_PORT
           #if defined(DEBUG_GPS_SERIAL)
             debug.write(gps_port_read);
@@ -3407,8 +3412,8 @@ void check_serial(){
   #endif // FEATURE_GPS
 
   #if defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS)
-    if (gps_mirror_port->available()) {
-      gps_port->write(gps_mirror_port->read());
+    if (GPS_MIRROR_PORT.available()) {
+      GPS_PORT.write(GPS_MIRROR_PORT.read());
     }
   #endif //defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS)
 
@@ -8955,16 +8960,16 @@ void initialize_serial(){
   #endif // FEATURE_REMOTE_UNIT_SLAVE
 
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-    remote_unit_port = REMOTE_PORT_MAPPED_TO;
-    remote_unit_port->begin(REMOTE_UNIT_PORT_BAUD_RATE);
+    //remote_unit_port = REMOTE_PORT_MAPPED_TO;
+    REMOTE_PORT.begin(REMOTE_UNIT_PORT_BAUD_RATE);
   #endif
 
   #ifdef FEATURE_GPS
-    gps_port = GPS_PORT_MAPPED_TO;
-    gps_port->begin(GPS_PORT_BAUD_RATE);
+    //gps_port = GPS_PORT_MAPPED_TO;
+    GPS_PORT.begin(GPS_PORT_BAUD_RATE);
     #ifdef GPS_MIRROR_PORT
-      gps_mirror_port = GPS_MIRROR_PORT;
-      gps_mirror_port->begin(GPS_MIRROR_PORT_BAUD_RATE);
+      //gps_mirror_port = GPS_MIRROR_PORT;
+      GPS_MIRROR_PORT.begin(GPS_MIRROR_PORT_BAUD_RATE);
     #endif //GPS_MIRROR_PORT
   #endif //FEATURE_GPS
 
@@ -10641,7 +10646,7 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
     switch (remote_command_to_send) {
       case REMOTE_UNIT_CL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-          remote_unit_port->println("CL");
+          REMOTE_PORT.println("CL");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
           ethernet_slave_link_send("CL");
@@ -10655,7 +10660,7 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_AZ_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-          remote_unit_port->println("AZ");
+          REMOTE_PORT.println("AZ");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
           ethernet_slave_link_send("AZ");
@@ -10668,7 +10673,7 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_EL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-          remote_unit_port->println("EL");
+          REMOTE_PORT.println("EL");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
           ethernet_slave_link_send("EL");
@@ -10683,34 +10688,34 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
       case REMOTE_UNIT_AW_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
           take_care_of_pending_remote_command();
-          remote_unit_port->print("AW");
+          REMOTE_PORT.print("AW");
           #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
             if (remote_port_tx_sniff) {control_port->print("AW");}
           #endif          
           parm1 = parm1 - 100;   // pin number
           if (parm1 < 10) {
-            remote_unit_port->print("0");
+            REMOTE_PORT.print("0");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("0");}
             #endif
           }
-          remote_unit_port->print(parm1);
+          REMOTE_PORT.print(parm1);
           #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
             if (remote_port_tx_sniff) {control_port->print(parm1);}
           #endif          
           if (parm2 < 10) {
-            remote_unit_port->print("0");
+            REMOTE_PORT.print("0");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("0");}
             #endif            
           }
           if (parm2 < 100) {
-            remote_unit_port->print("0");
+            REMOTE_PORT.print("0");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("0");}
             #endif            
           }
-          remote_unit_port->println(parm2);
+          REMOTE_PORT.println(parm2);
           #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
             if (remote_port_tx_sniff) {control_port->println(parm2);}
           #endif                
@@ -10735,29 +10740,29 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
       case REMOTE_UNIT_DHL_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
           take_care_of_pending_remote_command();
-          remote_unit_port->print("D");
+          REMOTE_PORT.print("D");
           #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
             if (remote_port_tx_sniff) {control_port->print("D");}
           #endif              
           if (parm2 == HIGH) {
-            remote_unit_port->print("H");
+            REMOTE_PORT.print("H");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("H");}
             #endif                
           } else {
-            remote_unit_port->print("L");
+            REMOTE_PORT.print("L");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("L");}
             #endif                
           }
           parm1 = parm1 - 100;
           if (parm1 < 10) {
-            remote_unit_port->print("0");
+            REMOTE_PORT.print("0");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("0");}
             #endif                
           }
-          remote_unit_port->println(parm1);
+          REMOTE_PORT.println(parm1);
           #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
             if (remote_port_tx_sniff) {control_port->println(parm1);}
           #endif              
@@ -10782,28 +10787,28 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
       case REMOTE_UNIT_DOI_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
           take_care_of_pending_remote_command();
-          remote_unit_port->print("D");
+          REMOTE_PORT.print("D");
           #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
             if (remote_port_tx_sniff) {control_port->print("D");}
           #endif                
           if (parm2 == OUTPUT) {
-            remote_unit_port->print("O");
+            REMOTE_PORT.print("O");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("O");}
             #endif                  
           } else {
-            remote_unit_port->print("I");}
+            REMOTE_PORT.print("I");}
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("I");}
             #endif                  
           parm1 = parm1 - 100;
           if (parm1 < 10) {
-            remote_unit_port->print("0");
+            REMOTE_PORT.print("0");
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->print("0");}
             #endif                  
           }
-          remote_unit_port->println(parm1);
+          REMOTE_PORT.println(parm1);
             #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
               if (remote_port_tx_sniff) {control_port->println(parm1);}
             #endif                
@@ -10827,7 +10832,7 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_GS_COMMAND:
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-          remote_unit_port->println("GS");
+          REMOTE_PORT.println("GS");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
           ethernet_slave_link_send("GS");
@@ -10840,7 +10845,7 @@ byte submit_remote_command(byte remote_command_to_send, byte parm1, int parm2){
 
       case REMOTE_UNIT_RC_COMMAND:    
         #ifdef FEATURE_MASTER_WITH_SERIAL_SLAVE
-          remote_unit_port->println("RC");
+          REMOTE_PORT.println("RC");
         #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
         #ifdef FEATURE_MASTER_WITH_ETHERNET_SLAVE
           ethernet_slave_link_send("RC");
@@ -11800,11 +11805,11 @@ void port_flush(){
   #endif //CONTROL_PORT_MAPPED_TO
 
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-    remote_unit_port->flush();
+    REMOTE_PORT.flush();
   #endif
 
   #if defined(GPS_PORT_MAPPED_TO) && defined(FEATURE_GPS)
-    gps_port->flush();
+    GPS_PORT.flush();
   #endif //defined(GPS_PORT_MAPPED_TO) && defined(FEATURE_GPS)
   
 
@@ -13166,7 +13171,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       #endif    
       for (int x = 2; x < input_buffer_index; x++) {
         #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-        remote_unit_port->write(input_buffer[x]);
+        REMOTE_PORT.write(input_buffer[x]);
         #endif
         #if defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
         ethernetslavelinkclient0.write(input_buffer[x]);
@@ -13176,7 +13181,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
       }
       #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-      remote_unit_port->write(13);
+      REMOTE_PORT.write(13);
       #endif
       #if defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
       ethernetslavelinkclient0.write(13);
@@ -14272,7 +14277,7 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
         switch (slave_command_buffer[2] - 48) {
           case 0: control_port->write(slave_command_buffer[x]); break;
           #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-          case 1: remote_unit_port->write(slave_command_buffer[x]); break;
+          case 1: REMOTE_PORT.write(slave_command_buffer[x]); break;
           #endif
         }
       }
@@ -14384,7 +14389,7 @@ void process_remote_slave_command(byte * slave_command_buffer, int slave_command
         switch (slave_command_buffer[2]) {
           case '0': control_port->write(slave_command_buffer[3]); command_good = 1; break;
           #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-          case '1': remote_unit_port->write(slave_command_buffer[3]); command_good = 1; break;
+          case '1': REMOTE_PORT.write(slave_command_buffer[3]); command_good = 1; break;
           #endif
         }
       }
