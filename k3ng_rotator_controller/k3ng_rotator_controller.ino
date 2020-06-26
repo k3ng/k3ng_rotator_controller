@@ -523,6 +523,9 @@
       Refactoring of read_azimuth()
       In settings files deprecated ROTATE_PIN_INACTIVE_VALUE and ROTATE_PIN_ACTIVE_VALUE; replaced with ROTATE_PIN_AZ_INACTIVE_VALUE, ROTATE_PIN_AZ_ACTIVE_VALUE, ROTATE_PIN_EL_INACTIVE_VALUE, ROTATE_PIN_EL_ACTIVE_VALUE
 
+    2020.06.26.01
+      Removed errant HEADING_MULTIPLIER from PARK settings in settings files (Thanks, Adam VK4GHZ )
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -535,7 +538,7 @@
 
   */
 
-#define CODE_VERSION "2020.06.20.01"
+#define CODE_VERSION "2020.06.26.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
