@@ -531,6 +531,12 @@
       Arduino Leonardo, Micro, and Yún users will need to change CONTROL_PORT_SERIAL_PORT_CLASS in rotator_hardware.h if not using the Serial port as the control port
       Changed and reorganize serial port mappins in rotator_settings*.h files
 
+    2020.07.01.01
+      Fixed \I and \J commands when used with no argument so they return current values of azimuth starting point and azimuth rotation capability
+      Added CONFIG_DIRTY and CONFIG_NOT_DIRTY flags to periodic debug logging
+      Made resetting of Nextion display upon Arduino boot up more reliable
+      Bug OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO and Nextion display (Thanks, Adam VK4GHZ ) 
+      Fixed bug with FEATURE_SUN_TRACKING and FEATURE_MOON_TRACKING and Nextion display API variable gMSS (Thanks, Adam VK4GHZ ) 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -543,7 +549,7 @@
 
   */
 
-#define CODE_VERSION "2020.06.26.02"
+#define CODE_VERSION "2020.07.01.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3907,7 +3913,7 @@ void service_nextion_display(){
     // Azimuth
     if (((azimuth != last_azimuth) && ((millis() - last_az_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
       dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-      //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
+      strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
       tAzValue.setText(workstring1);
       last_azimuth = azimuth;
       last_az_update = millis();
@@ -3917,7 +3923,7 @@ void service_nextion_display(){
     #if defined(FEATURE_ELEVATION_CONTROL)
       if (((elevation != last_elevation) && ((millis() - last_el_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
         dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-        //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
+        strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/);
         tElValue.setText(workstring1);
         last_elevation = elevation;
         last_el_update = millis();
@@ -4835,7 +4841,7 @@ TODO:
   if (((azimuth != last_azimuth) || ((millis() - last_az_update) > NEXTION_FREQUENT_UPDATE_MS))){
     // zAz
     dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-    //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
+    strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
     strcpy(workstring2,"vAz.txt=\"");
     strcat(workstring2,workstring1);
     strcat(workstring2,"\"");
@@ -4877,7 +4883,7 @@ TODO:
     #if defined(FEATURE_ELEVATION_CONTROL)
       if ((elevation != last_elevation) || ((millis() - last_el_update) > NEXTION_FREQUENT_UPDATE_MS)){
         dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-        //strcat(workstring1,"\xF8"/*DISPLAY_DEGREES_STRING*/);
+        strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/);
         strcpy(workstring2,"vEl.txt=\"");
         strcat(workstring2,workstring1);
         strcat(workstring2,"\"");
@@ -4903,12 +4909,12 @@ TODO:
         strcpy(workstring1,"vClk.txt=\"");
         #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
           if (local_clock_hours < 10) {
-            strcpy(workstring1, "0");
+            strcat(workstring1, "0");
             dtostrf(local_clock_hours, 0, 0, workstring2);
             strcat(workstring1,workstring2); 
           } else { 
             dtostrf(local_clock_hours, 0, 0, workstring2);
-            strcpy(workstring1,workstring2);
+            strcat(workstring1,workstring2);
           }    
         #else    
           dtostrf(local_clock_hours, 0, 0, workstring2);
@@ -4998,6 +5004,7 @@ TODO:
       if ((millis() - last_moon_and_sun_update) > (NEXTION_LESS_FREQUENT_UPDATE_MS+525)){
 
         #ifdef FEATURE_MOON_TRACKING
+          update_moon_position();
           strcpy(workstring1,"vMAS.txt=\"");
           dtostrf(moon_azimuth,0,2,workstring2);
           strcpy(workstring1,workstring2);
@@ -5019,7 +5026,7 @@ TODO:
         #endif // FEATURE_MOON_TRACKING
 
         #ifdef FEATURE_SUN_TRACKING
-
+          update_sun_position();
           strcpy(workstring1,"vSAS.txt=\"");
           dtostrf(sun_azimuth,0,2,workstring2);
           strcpy(workstring1,workstring2);
@@ -7366,6 +7373,12 @@ void output_debug(){
           #endif //FEATURE_ELEVATION_CONTROL
         #endif //DEBUG_AUTOCORRECT
 
+        debug.print("\tCONFIG_");
+        if (!configuration_dirty){
+          debug.print("NOT_");
+        }
+        debug.println("DIRTY");
+
         /*
         if ((raw_azimuth ) < configuration.azimuth_starting_point){
           debug.print(F("\tWARNING: raw azimuth is CCW of configured starting point of "));
@@ -9030,11 +9043,9 @@ void initialize_peripherals(){
   #endif
 
   #ifdef FEATURE_NEXTION_DISPLAY
-
     nexSerial.begin(NEXTION_SERIAL_BAUD);
-    delay(250);
+    sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
     sendNextionCommand("rest");      // reset the Nextion unit
-
   #endif //FEATURE_NEXTION_DISPLAY
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L
@@ -12822,32 +12833,32 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
    #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
 
     case 'I':        // \Ix[x][x] - set az starting point
-      new_azimuth_starting_point = 9999;
-      switch (input_buffer_index) {
-        case 2:
-          new_azimuth_starting_point = configuration.azimuth_starting_point;
-          break;
-        case 3:
-          new_azimuth_starting_point = (input_buffer[2] - 48);
-          break;
-        case 4:
-          new_azimuth_starting_point = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
-          break;
-        case 5:
-          new_azimuth_starting_point = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
-          break;
-      }
-      if ((new_azimuth_starting_point  >= 0) && (new_azimuth_starting_point  < 360)) {
-        if (input_buffer_index > 2) {
-          configuration.azimuth_starting_point = configuration.azimuth_starting_point = new_azimuth_starting_point;
-          configuration_dirty = 1;
+
+
+      tempfloat = 0;
+      for (int x = 2;x < input_buffer_index;x++){
+        if(input_buffer[x] == '.'){
+          hit_decimal = 10;
+        } else {
+          if (hit_decimal > 0){
+            tempfloat = tempfloat + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+            hit_decimal = hit_decimal * 10;
+          } else {
+            tempfloat = (tempfloat * 10) + (input_buffer[x] - 48);
+          }
         }
-        strcpy(return_string, "Azimuth starting point set to ");
-        dtostrf(new_azimuth_starting_point, 0, 0, temp_string);
-        strcat(return_string, temp_string);
+      }   
+
+      strcpy(return_string, "Azimuth starting point "); 
+      if ((tempfloat > 0) || (input_buffer_index > 2)){
+        configuration.azimuth_starting_point = tempfloat;
+        configuration_dirty = 1;
+        strcat(return_string, "set to ");
       } else {
-        strcpy(return_string, "Error.  Format: \\Ix[x][x]");
+        strcat(return_string, "is ");
       }
+      dtostrf(configuration.azimuth_starting_point, 0, 0, temp_string);
+      strcat(return_string, temp_string);      
       break;
 
     case 'J':        // \Jx[x][x][x][x] - set az rotation capability
@@ -12865,39 +12876,16 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           }
         }
       }   
-      configuration.azimuth_rotation_capability = tempfloat;
-      configuration_dirty = 1;
-      strcpy(return_string, "Azimuth rotation capability set to ");
+      strcpy(return_string, "Azimuth rotation capability "); 
+      if (tempfloat > 0){
+        configuration.azimuth_rotation_capability = tempfloat;
+        configuration_dirty = 1;
+        strcat(return_string, "set to ");
+      } else {
+        strcat(return_string, "is ");
+      }
       dtostrf(configuration.azimuth_rotation_capability, 0, 0, temp_string);
       strcat(return_string, temp_string);
-
-
-      // new_azimuth_rotation_capability = 9999;
-      // switch (input_buffer_index) {
-      //   case 2:
-      //     new_azimuth_rotation_capability = configuration.azimuth_rotation_capability;
-      //     break;
-      //   case 3:
-      //     new_azimuth_rotation_capability = (input_buffer[2] - 48);
-      //     break;
-      //   case 4:
-      //     new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
-      //     break;
-      //   case 5:
-      //     new_azimuth_rotation_capability = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
-      //     break;
-      // }
-      // if ((new_azimuth_rotation_capability >= 0) && (new_azimuth_rotation_capability <= 450)) {
-      //   if (input_buffer_index > 2) {
-      //     configuration.azimuth_rotation_capability = configuration.azimuth_rotation_capability = new_azimuth_rotation_capability;
-      //     configuration_dirty = 1;
-      //   }
-      //   strcpy(return_string, "Azimuth rotation capability set to ");
-      //   dtostrf(new_azimuth_rotation_capability, 0, 0, temp_string);
-      //   strcat(return_string, temp_string);
-      // } else {
-      //   strcpy(return_string, "Error.  Format: \\Jx[x][x]");
-      // }
 
       break;
 
