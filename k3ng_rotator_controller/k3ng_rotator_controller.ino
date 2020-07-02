@@ -538,6 +538,9 @@
       Bug OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO and Nextion display (Thanks, Adam VK4GHZ ) 
       Fixed bug with FEATURE_SUN_TRACKING and FEATURE_MOON_TRACKING and Nextion display API variable gMSS (Thanks, Adam VK4GHZ ) 
 
+    2020.07.01.02
+      Added FEATURE_ADC_RESOLUTION12 contributed by Adam VK4GHZ 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -549,7 +552,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.01.01"
+#define CODE_VERSION "2020.07.01.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -11754,6 +11757,11 @@ int digitalReadEnhanced(uint8_t pin){
 // --------------------------------------------------------------
 
 int analogReadEnhanced(uint8_t pin){
+
+
+  #ifdef FEATURE_ADC_RESOLUTION12
+    analogReadResolution(12);
+  #endif
 
   #ifdef OPTION_EXTERNAL_ANALOG_REFERENCE
     analogReference(EXTERNAL);

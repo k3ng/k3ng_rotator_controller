@@ -37,6 +37,7 @@
 // #define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
 // #define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
 
+//#define FEATURE_ADC_RESOLUTION12   // 12 bit ADC resolution for Teensy 3.x, Arduino Due Zero MKR families 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
