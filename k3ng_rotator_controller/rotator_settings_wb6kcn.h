@@ -106,16 +106,6 @@ You can tweak these, but read the online documentation!
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
-#define CONTROL_PORT_BAUD_RATE 9600
-#define REMOTE_UNIT_PORT_BAUD_RATE 9600
-#define GPS_PORT_BAUD_RATE 9600
-#define GPS_MIRROR_PORT_BAUD_RATE 9600
-#define CONTROL_PORT_MAPPED_TO &Serial  // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
-#define REMOTE_PORT_MAPPED_TO &Serial1  // change this line to map the remote_unit port to a different serial port
-#define GPS_PORT_MAPPED_TO &Serial2  // change this line to map the GPS port to a different serial port
-//#define GPS_MIRROR_PORT &Serial3 // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
-#define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
-
 #define LCD_COLUMNS 20 //16
 #define LCD_ROWS 4 //2
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
@@ -153,27 +143,10 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 109
+#define EEPROM_MAGIC_NUMBER 110
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
-
-#if defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-#define HEADING_MULTIPLIER 100L
-#define LCD_HEADING_MULTIPLIER 100.0
-#define LCD_DECIMAL_PLACES 2
-#endif //FEATURE_TWO_DECIMAL_PLACE_HEADINGS
-
-#if defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS)
-#define HEADING_MULTIPLIER 10
-#define LCD_HEADING_MULTIPLIER 10.0
-#define LCD_DECIMAL_PLACES 1
-#endif //FEATURE_ONE_DECIMAL_PLACE_HEADINGS
-
-#if !defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
-#define HEADING_MULTIPLIER 1
-#define LCD_HEADING_MULTIPLIER 1.0
-#define LCD_DECIMAL_PLACES 0
-#endif //!defined(FEATURE_ONE_DECIMAL_PLACE_HEADINGS) && !defined(FEATURE_TWO_DECIMAL_PLACE_HEADINGS)
+#define DISPLAY_DECIMAL_PLACES 1
 
 #define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
 #define EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
@@ -181,8 +154,8 @@ You can tweak these, but read the online documentation!
 #define AZ_POSITION_PULSE_DEG_PER_PULSE 0.5
 #define EL_POSITION_PULSE_DEG_PER_PULSE 0.5
 
-#define PARK_AZIMUTH 360.0 * HEADING_MULTIPLIER      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
-#define PARK_ELEVATION 0.0 * HEADING_MULTIPLIER    // replace the 0.0 with your park elevation
+#define PARK_AZIMUTH 360.0      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
+#define PARK_ELEVATION 0.0    // replace the 0.0 with your park elevation
 #define NOT_PARKED_DETECT_TIME_MS 1000
 
 #define COMMAND_BUFFER_SIZE 50
@@ -191,9 +164,6 @@ You can tweak these, but read the online documentation!
 #define REMOTE_UNIT_COMMAND_TIMEOUT_MS 2000
 #define AZ_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for azimuth
 #define EL_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for elevation
-
-#define ROTATE_PIN_INACTIVE_VALUE LOW
-#define ROTATE_PIN_ACTIVE_VALUE HIGH
 
 #define AZIMUTH_SMOOTHING_FACTOR 0      // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR 0    // value = 0 to 99.9
@@ -347,5 +317,29 @@ You can tweak these, but read the online documentation!
 //#define SET_I2C_BUS_SPEED 800000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz
 
 #define ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS 5000 // if OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP is enabled, ignore configuration and rotational command for this many mS after boot up
+
+/* Deprecated in version 2020.06.20.01
+#define ROTATE_PIN_INACTIVE_VALUE LOW
+#define ROTATE_PIN_ACTIVE_VALUE HIGH */
+
+// Added in version 2020.06.20.01
+#define ROTATE_PIN_AZ_INACTIVE_VALUE LOW
+#define ROTATE_PIN_AZ_ACTIVE_VALUE HIGH
+#define ROTATE_PIN_EL_INACTIVE_VALUE LOW
+#define ROTATE_PIN_EL_ACTIVE_VALUE HIGH
+
+// Changed in 2020.06.26.02
+// Serial Port Settings
+#define CONTROL_PORT_MAPPED_TO &Serial     // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
+#define CONTROL_PORT_BAUD_RATE 9600
+//#define REMOTE_PORT Serial3                 // used to control remote unit
+#define REMOTE_UNIT_PORT_BAUD_RATE 9600 
+#define GPS_PORT Serial2
+#define GPS_PORT_BAUD_RATE 9600
+// #define GPS_MIRROR_PORT Serial1          // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
+// #define GPS_MIRROR_PORT_BAUD_RATE 9600
+#define nexSerial Serial3
+#define NEXTION_SERIAL_BAUD 115200
+#define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
 
   
