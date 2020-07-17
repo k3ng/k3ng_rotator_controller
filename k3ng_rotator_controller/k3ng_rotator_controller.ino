@@ -544,6 +544,10 @@
     2020.07.17.01
       Merged Pull Request 71 - Update rotator_dependencies.h, fixing issue: device was unresponsive when using LSM303D sensor with FEATURE_AZ_POSITION_POLOLU_LSM303 ( https://github.com/k3ng/k3ng_rotator_controller/pull/71/ ) (Thanks, 7x2uv)  
 
+    2020.07.17.02
+      DISPLAY_DEGREES_STRING is now broken out into LCD_DISPLAY_DEGREES_STRING and NEXTION_DISPLAY_DEGREES_STRING in settings files
+      Yaesu Help (H command) updated to include missing commands (Thanks, Adam VK4GHZ ) 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -555,7 +559,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.17.01"
+#define CODE_VERSION "2020.07.17.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3919,7 +3923,7 @@ void service_nextion_display(){
     // Azimuth
     if (((azimuth != last_azimuth) && ((millis() - last_az_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
       dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-      strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
+      strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING); // haven't figured out how the hell to get degrees symbol to display
       tAzValue.setText(workstring1);
       last_azimuth = azimuth;
       last_az_update = millis();
@@ -3929,7 +3933,7 @@ void service_nextion_display(){
     #if defined(FEATURE_ELEVATION_CONTROL)
       if (((elevation != last_elevation) && ((millis() - last_el_update) > NEXTION_DISPLAY_UPDATE_MS)) || (last_nextion_current_screen != nextion_current_screen)){
         dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-        strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/);
+        strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
         tElValue.setText(workstring1);
         last_elevation = elevation;
         last_el_update = millis();
@@ -4081,7 +4085,7 @@ void service_nextion_display(){
             strcat(workstring1,"+");
           }           
           strcat(workstring1,workstring2);
-          strcat(workstring1,DISPLAY_DEGREES_STRING);
+          strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
         } else {
           if (current_az_state() == ROTATING_CW) {
             strcpy(workstring1,CW_STRING);
@@ -4119,7 +4123,7 @@ void service_nextion_display(){
             strcat(workstring1,"+");
           }    
           strcat(workstring1,workstring2);
-          strcat(workstring1,DISPLAY_DEGREES_STRING);
+          strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
         } else {
           if (current_az_state() == ROTATING_CW) {
             strcpy(workstring1,CW_STRING);
@@ -4145,7 +4149,7 @@ void service_nextion_display(){
           strcat(workstring1," ");
           dtostrf(target_elevation, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring1,workstring2);
-          strcat(workstring1,DISPLAY_DEGREES_STRING);
+          strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
         } else {
           if (current_el_state() == ROTATING_UP) {
             strcat(workstring1,UP_STRING);
@@ -4236,11 +4240,11 @@ void service_nextion_display(){
 //       strcat(workstring,MOON_STRING);
 //       dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //       strcat(workstring,workstring2);
-//       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
 //       strcat(workstring," ");
 //       dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //       strcat(workstring,workstring2);
-//       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
 //       if (moon_tracking_active){
 //         if (moon_visible){
 //           strcat(workstring,TRACKING_ACTIVE_CHAR);
@@ -4277,11 +4281,11 @@ void service_nextion_display(){
 //     strcat(workstring,SUN_STRING);
 //     dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //     strcat(workstring,workstring2);
-//     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
 //     strcat(workstring," ");
 //     dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
 //     strcat(workstring,workstring2);
-//     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+//     if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
 //     if (sun_tracking_active){
 //       if (sun_visible){
 //         strcat(workstring,TRACKING_ACTIVE_CHAR);
@@ -4649,7 +4653,7 @@ void service_nextion_display(){
           strcat(workstring1,"+");
         }           
         strcat(workstring1,workstring2);
-        strcat(workstring1,DISPLAY_DEGREES_STRING);
+        strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
       } else {
         if (current_az_state() == ROTATING_CW) {
           strcpy(workstring1,CW_STRING);
@@ -4685,7 +4689,7 @@ void service_nextion_display(){
             strcat(workstring1,"+");
           }    
           strcat(workstring1,workstring2);
-          strcat(workstring1,DISPLAY_DEGREES_STRING);
+          strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
         } else {
           if (current_az_state() == ROTATING_CW) {
             strcpy(workstring1,CW_STRING);
@@ -4711,7 +4715,7 @@ void service_nextion_display(){
           strcat(workstring1," ");
           dtostrf(target_elevation, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring1,workstring2);
-          strcat(workstring1,DISPLAY_DEGREES_STRING);
+          strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
         } else {
           if (current_el_state() == ROTATING_UP) {
             strcat(workstring1,UP_STRING);
@@ -4847,7 +4851,7 @@ TODO:
   if (((azimuth != last_azimuth) || ((millis() - last_az_update) > NEXTION_FREQUENT_UPDATE_MS))){
     // zAz
     dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-    strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/); // haven't figured out how the hell to get degrees symbol to display
+    strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING); // haven't figured out how the hell to get degrees symbol to display
     strcpy(workstring2,"vAz.txt=\"");
     strcat(workstring2,workstring1);
     strcat(workstring2,"\"");
@@ -4889,7 +4893,7 @@ TODO:
     #if defined(FEATURE_ELEVATION_CONTROL)
       if ((elevation != last_elevation) || ((millis() - last_el_update) > NEXTION_FREQUENT_UPDATE_MS)){
         dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-        strcat(workstring1,"\xB0"/*DISPLAY_DEGREES_STRING*/);
+        strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
         strcpy(workstring2,"vEl.txt=\"");
         strcat(workstring2,workstring1);
         strcat(workstring2,"\"");
@@ -5126,7 +5130,7 @@ void update_lcd_display(){
         strcat(workstring,"+");
       } 
       strcat(workstring,workstring2);
-      strcat(workstring,DISPLAY_DEGREES_STRING);
+      strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);
     #else                                                       // --------------------az & el---------------------------------
       if ((azimuth >= 1000) && (elevation >= 1000) && (LCD_COLUMNS < 18)) {
@@ -5162,11 +5166,11 @@ void update_lcd_display(){
         strcat(workstring,workstring2);
         if (DISPLAY_DECIMAL_PLACES > 1){
           if (LCD_COLUMNS > 14) {
-            strcat(workstring,DISPLAY_DEGREES_STRING);
+            strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
           }
         } else {
           if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {
-            strcat(workstring,DISPLAY_DEGREES_STRING);
+            strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
           }
         }
         if (DISPLAY_DECIMAL_PLACES > 1){
@@ -5186,11 +5190,11 @@ void update_lcd_display(){
       strcat(workstring,workstring2);
       if (DISPLAY_DECIMAL_PLACES > 1){
         if (LCD_COLUMNS > 14) {
-          strcat(workstring,DISPLAY_DEGREES_STRING);
+          strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
         }
       } else {
         if ((LCD_COLUMNS > 18) || ((azimuth < 100) && (elevation < 100))) {
-          strcat(workstring,DISPLAY_DEGREES_STRING);
+          strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
         }
       }
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);    
@@ -5226,7 +5230,7 @@ void update_lcd_display(){
       strcat(workstring,"+");
     }        
     strcat(workstring,workstring2);
-    strcat(workstring,DISPLAY_DEGREES_STRING);
+    strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_AZ_ONLY_HEADING_ROW-1,LCD_AZ_ONLY_HEADING_FIELD_SIZE);
   #endif //defined(OPTION_DISPLAY_HEADING_AZ_ONLY)        
 
@@ -5242,11 +5246,11 @@ void update_lcd_display(){
     strcat(workstring,workstring2);
     if (DISPLAY_DECIMAL_PLACES > 1){
       if (LCD_COLUMNS > 14) {
-        strcat(workstring,DISPLAY_DEGREES_STRING);
+        strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
       }
     } else {
       if ((LCD_COLUMNS > 18) || (elevation < 100)) {
-        strcat(workstring,DISPLAY_DEGREES_STRING);
+        strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
       }
     }
     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_EL_ONLY_HEADING_ROW-1,LCD_EL_ONLY_HEADING_FIELD_SIZE);    
@@ -5276,7 +5280,7 @@ void update_lcd_display(){
             strcat(workstring,"+");
           }           
           strcat(workstring,workstring2);
-          strcat(workstring,DISPLAY_DEGREES_STRING);
+          strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
         } else {
           if (current_az_state() == ROTATING_CW) {
             strcpy(workstring,CW_STRING);
@@ -5342,7 +5346,7 @@ void update_lcd_display(){
           strcpy(workstring,TARGET_STRING);
           dtostrf(target, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
-          strcat(workstring,DISPLAY_DEGREES_STRING);
+          strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
           row_override[LCD_STATUS_ROW] = 1;
         }
@@ -5371,7 +5375,7 @@ void update_lcd_display(){
             strcat(workstring,"+");
           }    
           strcat(workstring,workstring2);
-          strcat(workstring,DISPLAY_DEGREES_STRING);
+          strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
           row_override[LCD_STATUS_ROW] = 1;
         } else {
           if (current_az_state() == ROTATING_CW) {
@@ -5394,7 +5398,7 @@ void update_lcd_display(){
           strcat(workstring," ");
           dtostrf(target_elevation, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
-          strcat(workstring,DISPLAY_DEGREES_STRING);
+          strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
           row_override[LCD_STATUS_ROW] = 1;
         } else {
           if (current_el_state() == ROTATING_UP) {
@@ -5463,7 +5467,7 @@ void update_lcd_display(){
           strcpy(workstring,TARGET_STRING);
           dtostrf(target , 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring,workstring2);
-          strcat(workstring,DISPLAY_DEGREES_STRING);
+          strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
           k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
           row_override[LCD_STATUS_ROW] = 1;
         }
@@ -5484,7 +5488,7 @@ void update_lcd_display(){
               strcpy(workstring,AZ_TARGET_STRING);
               dtostrf(target , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
-              strcat(workstring,DISPLAY_DEGREES_STRING);
+              strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
               row_override[LCD_STATUS_ROW] = 1;
               break;
@@ -5492,7 +5496,7 @@ void update_lcd_display(){
               strcpy(workstring,EL_TARGET_STRING);
               dtostrf(el_encoder_degrees , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
-              strcat(workstring,DISPLAY_DEGREES_STRING);
+              strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
               row_override[LCD_STATUS_ROW] = 1;
               break;
@@ -5500,11 +5504,11 @@ void update_lcd_display(){
               strcpy(workstring,TARGET_STRING);
               dtostrf(target , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
-              strcat(workstring,DISPLAY_DEGREES_STRING);
+              strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
               strcat(workstring," ");
               dtostrf(el_encoder_degrees , 1, DISPLAY_DECIMAL_PLACES, workstring2);
               strcat(workstring,workstring2);
-              strcat(workstring,DISPLAY_DEGREES_STRING);              
+              strcat(workstring,LCD_DISPLAY_DEGREES_STRING);              
               k3ngdisplay.print_center_fixed_field_size(workstring,LCD_STATUS_ROW-1,LCD_STATUS_FIELD_SIZE);
               row_override[LCD_STATUS_ROW] = 1;
               break;
@@ -5634,11 +5638,11 @@ void update_lcd_display(){
       strcat(workstring,MOON_STRING);
       dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
-      if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+      if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
       strcat(workstring," ");
       dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
-      if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+      if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
       if (moon_tracking_active){
         if (moon_visible){
           strcat(workstring,TRACKING_ACTIVE_CHAR);
@@ -5672,11 +5676,11 @@ void update_lcd_display(){
       strcat(workstring,SUN_STRING);
       dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
-      if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+      if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
       strcat(workstring," ");
       dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
-      if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+      if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
       if (sun_tracking_active){
         if (sun_visible){
           strcat(workstring,TRACKING_ACTIVE_CHAR);
@@ -5814,11 +5818,11 @@ void update_lcd_display(){
         strcat(workstring,MOON_STRING);
         dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
-        if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+        if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         strcat(workstring," ");
         dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
-        if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+        if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         if (moon_visible){
           strcat(workstring,TRACKING_ACTIVE_CHAR);
         } else {
@@ -5846,11 +5850,11 @@ void update_lcd_display(){
         strcat(workstring,SUN_STRING);
         dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
-        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         strcat(workstring," ");
         dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
-        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,DISPLAY_DEGREES_STRING);}
+        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         if (sun_visible){
           strcat(workstring,TRACKING_ACTIVE_CHAR);
         } else {
@@ -7454,6 +7458,9 @@ void print_help(byte port){
     print_to_port("L Rotate Azimuth Counter Clockwise\n",port);
     print_to_port("A Stop\n",port);
     print_to_port("C Report Azimuth in Degrees\n",port);
+    #ifdef FEATURE_ELEVATION_CONTROL
+      print_to_port("C2 Report Azimuth and Elevation in Degrees\n",port);
+    #endif // FEATURE_ELEVATION_CONTROL
     print_to_port("M### Rotate to ### degrees\n",port);
     print_to_port("MTTT XXX XXX XXX ... Timed Interval Direction Setting  (TTT = Step value in seconds, XXX = Azimuth in degrees)\n",port);
     print_to_port("T Start Timed Interval Tracking\n",port);
@@ -7474,6 +7481,11 @@ void print_help(byte port){
       print_to_port("O2 Elevation Offset Calibration (0 degrees)\n",port);
       print_to_port("F2 Elevation Full Scale Calibration (180 degrees (or maximum))\n",port);
     #endif // FEATURE_ELEVATION_CONTROL
+    #ifdef OPTION_GS_232B_EMULATION
+      print_to_port("P36 Switch to 360 degree mode\n",port);
+      print_to_port("P45 Switch to 450 degree mode\n",port);
+    #endif // OPTION_GS_232B_EMULATION
+    print_to_port("Z Toggle north / south centered mode\n",port);
   #endif // defined(OPTION_SERIAL_HELP_TEXT) && defined(FEATURE_YAESU_EMULATION)
 
 
