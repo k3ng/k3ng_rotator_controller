@@ -541,6 +541,9 @@
     2020.07.01.02
       Added FEATURE_ADC_RESOLUTION12 contributed by Adam VK4GHZ 
 
+    2020.07.17.01
+      Merged Pull Request 71 - Update rotator_dependencies.h, fixing issue: device was unresponsive when using LSM303D sensor with FEATURE_AZ_POSITION_POLOLU_LSM303 ( https://github.com/k3ng/k3ng_rotator_controller/pull/71/ ) (Thanks, 7x2uv)  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -552,7 +555,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.01.02"
+#define CODE_VERSION "2020.07.17.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
