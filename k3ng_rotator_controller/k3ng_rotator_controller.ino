@@ -546,7 +546,19 @@
 
     2020.07.17.02
       DISPLAY_DEGREES_STRING is now broken out into LCD_DISPLAY_DEGREES_STRING and NEXTION_DISPLAY_DEGREES_STRING in settings files
-      Yaesu Help (H command) updated to include missing commands (Thanks, Adam VK4GHZ ) 
+      Yaesu Help (H command) updated to include missing commands (Thanks, Adam VK4GHZ) 
+
+    2020.07.18.01
+      Added extended backslash commands
+        \?CGxxxx[xx]        - convert grid to coordinates
+        \?RG                - read grid square  
+        \?CCxxxxx yyyyy     - convert coordinates to grid xxxxx = latitude, yyyyy = longitude
+        \?BCxxxxx yyyyy     - calculate bearing to coordinate target xxxxx = latitude, yyyyy = longitude
+        \?BGxxxx[xx]        - calculate bearing to grid target
+        \?GCxxxxx yyyyy     - go to coordinate target xxxxx = latitude, yyyyy = longitude (rotate azimuth)
+        \?GTxxxx[xx]        - go to grid target (rotate azimuth) 
+      Added function maidenhead_to_coordinates(grid,latitude_degrees, longitude_degrees) from Adam VK4GHZ code contribution
+      Added function calculate_target_bearing(source_latitude, source_longitude, target_latitude, target_longitude) from Adam VK4GHZ code contribution
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -559,7 +571,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.17.02"
+#define CODE_VERSION "2020.07.18.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -768,8 +780,6 @@ byte az_slow_down_step = 0;
 unsigned long az_timed_slow_down_start_time = 0;
 byte backslash_command = 0;
 
-//char return_string[100];
-
 struct config_t {
   byte magic_number;
   int analog_az_full_ccw;
@@ -972,38 +982,10 @@ byte current_az_speed_voltage = 0;
   CONTROL_PORT_SERIAL_PORT_CLASS * control_port;
 #endif
 
-// #if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
-//   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-//     REMOTE_PORT_SERIAL_PORT_CLASS * remote_unit_port;
-//   #endif
-// #else
-//   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
-//     REMOTE_PORT_SERIAL_PORT_CLASS * remote_unit_port;
-//   #endif
-// #endif
-
-// #if !defined(ARDUINO_AVR_MICRO) && !defined(ARDUINO_AVR_LEONARDO) && !defined(ARDUINO_AVR_YUN)
-//   #if defined(FEATURE_GPS)
-//     GPS_PORT_SERIAL_PORT_CLASS * gps_port;
-//     #ifdef GPS_MIRROR_PORT
-//       GPS_MIRROR_PORT_SERIAL_PORT_CLASS * gps_mirror_port;
-//     #endif //GPS_MIRROR_PORT
-//   #endif //defined(FEATURE_GPS)
-// #else
-//   #if defined(FEATURE_GPS)
-//     GPS_PORT_SERIAL_PORT_CLASS * gps_port;
-//     #ifdef GPS_MIRROR_PORT
-//       GPS_MIRROR_PORT_SERIAL_PORT_CLASS * gps_mirror_port;
-//     #endif //GPS_MIRROR_PORT
-//   #endif //defined(FEATURE_GPS)
-// #endif
-
-
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
   double latitude = DEFAULT_LATITUDE;
   double longitude = DEFAULT_LONGITUDE;
 #endif
-
 
 #ifdef FEATURE_MOON_TRACKING
   byte moon_tracking_active = 0;
@@ -1241,6 +1223,8 @@ void setup() {
   initialize_rotary_encoders();
 
   initialize_interrupts();
+
+
 
 
 } /* setup */
@@ -6966,7 +6950,7 @@ void output_debug(){
           debug.print(clock_status_string());
         #endif // defined(FEATURE_GPS) || defined(FEATURE_RTC) || (defined(FEATURE_CLOCK) && defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE))
 
-        #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+        #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_GPS)
           debug.print("\t");
           dtostrf(latitude,0,4,tempstring);
           debug.print(tempstring);
@@ -11885,7 +11869,7 @@ void service_power_switch(){
 //------------------------------------------------------
 char *coordinates_to_maidenhead(float latitude_degrees,float longitude_degrees){
 
-  static char temp_string[8] = "";  // I had to declare this static in Arduino 1.6, otherwise this won't work (it worked before)
+  static char temp_string[8] = "";
 
   latitude_degrees += 90.0;
   longitude_degrees += 180.0;
@@ -11901,6 +11885,78 @@ char *coordinates_to_maidenhead(float latitude_degrees,float longitude_degrees){
   return temp_string;
 
 }
+
+//------------------------------------------------------
+void maidenhead_to_coordinates(char* grid, float* latitude_degrees,float* longitude_degrees){
+
+  /*  Base code contributed by Adam Maurer VK4GHZ 14-JUL-2020
+
+      Input: grid, four or six characters (i.e. FN20, FN20EV, fn20, fn20ev, Fn20eV)
+      Output: latitude_degrees, longitude_degrees
+
+  */
+
+  float alpha1 = 0;
+  float alpha2 = 0;
+  byte alpha3 = 0;
+  byte alpha4 = 0;
+  float alpha5 = 0;
+  float alpha6 = 0;
+
+  const int x_step = 20; // Number of Horizontal degrees EW across a major field
+  const int y_step = 10; // Number of Vertical degrees NS across a major field
+
+  // Uppercase everything
+  for (int x = 0;x < 6;x++){
+    grid[x] = toupper(grid[x]);
+  }
+
+  // Do we have a subsquare?  If not, fudge it in the middle of the square
+  if (!((grid[4] > 64) && (grid[4] < 89) && (grid[5] > 64) && (grid[5] < 89))){
+    grid[4] = 77;
+    grid[5] = 77;
+  }
+
+  // Convert Alphas to numeric values to calculate with
+  // A=65... R=82... X=88
+
+  alpha1 = (grid[0]-65) * x_step;
+  alpha2 = (grid[1]-65) * y_step;
+  alpha3 = (grid[2]-48) * (x_step/10);
+  alpha4 = (grid[3]-48) * (y_step/10);
+
+  // Each Field is subdivided into 24 x 24 sub squares
+  alpha5 = ((grid[4]-65) * (x_step/240.0)) + (x_step/480.0); 
+  alpha6 = ((grid[5]-65) * (y_step/240.0)) + (y_step/480.0);
+
+  *longitude_degrees = alpha1 + alpha3 + alpha5 - 180.0;
+
+  *latitude_degrees = (alpha2 + alpha4 + alpha6) - 90.0;
+
+}
+
+//------------------------------------------------------
+float calculate_target_bearing(float source_latitude,float source_longitude,float target_latitude,float target_longitude){
+
+
+  //  Base code contributed by Adam Maurer VK4GHZ 14-JUL-2020
+
+  float teta1 = radians(source_latitude);
+  float teta2 = radians(target_latitude);
+  float delta1 = radians(target_latitude-source_latitude);
+  float delta2 = radians(target_longitude-source_longitude);
+
+  
+  float y = sin(delta2) * cos(teta2);
+  float x = cos(teta1) * sin(teta2) - sin(teta1) * cos(teta2) * cos(delta2);
+  float targetBearing = atan2(y,x);
+  targetBearing = degrees(targetBearing);// radians to degrees
+  targetBearing = (((int)targetBearing + 360) % 360 ); 
+
+  return targetBearing;
+
+}
+
 //------------------------------------------------------
 
 #ifdef FEATURE_ANALOG_OUTPUT_PINS
@@ -11924,6 +11980,7 @@ void service_analog_output_pins(){
 
 }
 #endif //FEATURE_ANALOG_OUTPUT_PINS
+
 
 
 
@@ -13599,6 +13656,10 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             dtostrf(abs(longitude),0,4,temp_string);
             strcat(return_string,temp_string); 
           }
+          if ((input_buffer[2] == 'R') && (input_buffer[3] == 'G')) {  // \?RG - Read grid square
+            strcpy(return_string,"\\!OKRG");
+            strcat(return_string,coordinates_to_maidenhead(latitude,longitude));
+          }
         #endif //FEATURE_GPS
         #ifdef FEATURE_CLOCK
           if ((input_buffer[2] == 'G') && (input_buffer[3] == 'S')) { // \?GS - query GPS sync
@@ -13875,6 +13936,284 @@ Not implemented yet:
       #endif // #FEATURE_ELEVATION_CONTROL  
     } 
 
+
+    // \?CGxxxx or \?CGxxxxxx  - Convert grid to coordinates
+    if (((input_buffer_index == 8) || (input_buffer_index == 10)) && ((input_buffer[2] == 'C') && (input_buffer[3] == 'G'))){    
+      strcpy(return_string,"\\!OKCG");
+      temp_string[0] = input_buffer[4];
+      temp_string[1] = input_buffer[5];
+      temp_string[2] = input_buffer[6];
+      temp_string[3] = input_buffer[7];
+      if (input_buffer_index == 10){  // grab the subsquare if it was provided
+        temp_string[4] = input_buffer[8];
+        temp_string[5] = input_buffer[9];        
+      } else {
+        temp_string[4] = 0;
+      }
+      float temp_latitude = 0;
+      float temp_longitude = 0;
+
+      maidenhead_to_coordinates(temp_string,&temp_latitude,&temp_longitude);
+
+      if (temp_latitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+      dtostrf(abs(temp_latitude),0,6,temp_string);
+      strcat(return_string,temp_string);         
+      strcat(return_string," ");
+      if (temp_longitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
+      if (temp_longitude < 100){strcat(return_string,"0");}
+      dtostrf(abs(temp_longitude),0,6,temp_string);
+      strcat(return_string,temp_string); 
+
+
+    }       
+
+//zzzzzz
+
+
+    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+      // \?GCxxxx xxxx  - go to coordinate target (rotate azimuth)
+      if ((input_buffer[2] == 'G') && (input_buffer[3] == 'C')){ 
+
+        float temp_latitude = 0;
+        float temp_longitude = 0;
+        byte hit_space = 0;
+        byte latitude_negative = 0;
+        byte longitude_negative = 0;
+
+        for (int x = 4;x < input_buffer_index;x++){
+          if(input_buffer[x] == ' '){
+            hit_space = 1;
+            hit_decimal = 0;
+          } else {
+            if (hit_space){
+              // parsing longitude
+              if(input_buffer[x] == '.'){   
+                hit_decimal = 10;  
+              } else {
+                if(input_buffer[x] == '-'){
+                  longitude_negative = 1;
+                } else {
+                  if (hit_decimal > 0){
+                    temp_longitude = temp_longitude + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+                    hit_decimal = hit_decimal * 10;
+                  } else {
+                    temp_longitude = (temp_longitude * 10) + (input_buffer[x] - 48);
+                  }
+                }
+              }
+            } else {
+              // parsing latitude
+              if(input_buffer[x] == '.'){   
+                hit_decimal = 10;  
+              } else {
+                if(input_buffer[x] == '-'){
+                  latitude_negative = 1;
+                } else {
+                  if (hit_decimal > 0){
+                    temp_latitude = temp_latitude + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+                    hit_decimal = hit_decimal * 10;
+                  } else {
+                    temp_latitude = (temp_latitude * 10) + (input_buffer[x] - 48);
+                  }
+                }
+              }
+            }
+          }
+        }  
+        if ((temp_latitude >= 0) && (temp_latitude <= 90) && (temp_longitude >= 0) && (temp_longitude <= 180)){
+          if (latitude_negative){temp_latitude = temp_latitude * -1.0;}
+          if (longitude_negative){temp_longitude = temp_longitude * -1.0;}
+          strcpy(return_string,"\\!OKCC");
+          float temp_bearing = calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude);
+          dtostrf(temp_bearing,0,DISPLAY_DECIMAL_PLACES,temp_string);
+          strcat(return_string,temp_string);
+          submit_request(AZ, REQUEST_AZIMUTH, temp_bearing, DBG_BACKSLASH_GC_CMD);
+        }
+      } 
+    #endif 
+
+
+    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+      // \?GTxxxx or \?GTxxxxxx  - Go to (rotate azimuth) to grid target
+      if (((input_buffer_index == 8) || (input_buffer_index == 10)) && ((input_buffer[2] == 'G') && (input_buffer[3] == 'T'))){    
+        temp_string[0] = input_buffer[4];
+        temp_string[1] = input_buffer[5];
+        temp_string[2] = input_buffer[6];
+        temp_string[3] = input_buffer[7];
+        if (input_buffer_index == 10){  // grab the subsquare if it was provided
+          temp_string[4] = input_buffer[8];
+          temp_string[5] = input_buffer[9];        
+        } else {
+          temp_string[4] = 0;
+        }
+        float temp_latitude = 0;
+        float temp_longitude = 0;
+
+        maidenhead_to_coordinates(temp_string,&temp_latitude,&temp_longitude);
+
+        if ((temp_latitude >= -90) && (temp_latitude <= 90) && (temp_longitude >= -180) && (temp_longitude <= 180)){
+          strcpy(return_string,"\\!OKGT");
+          float temp_bearing = calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude);
+          dtostrf(temp_bearing,0,DISPLAY_DECIMAL_PLACES,temp_string);
+          strcat(return_string,temp_string);
+          submit_request(AZ, REQUEST_AZIMUTH, temp_bearing, DBG_BACKSLASH_GT_CMD);
+        }
+      }  
+    #endif 
+
+  
+    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+      // \?BGxxxx or \?BGxxxxxx  - Calculate bearing to target grid
+      if (((input_buffer_index == 8) || (input_buffer_index == 10)) && ((input_buffer[2] == 'B') && (input_buffer[3] == 'G'))){    
+        temp_string[0] = input_buffer[4];
+        temp_string[1] = input_buffer[5];
+        temp_string[2] = input_buffer[6];
+        temp_string[3] = input_buffer[7];
+        if (input_buffer_index == 10){  // grab the subsquare if it was provided
+          temp_string[4] = input_buffer[8];
+          temp_string[5] = input_buffer[9];        
+        } else {
+          temp_string[4] = 0;
+        }
+        float temp_latitude = 0;
+        float temp_longitude = 0;
+
+        maidenhead_to_coordinates(temp_string,&temp_latitude,&temp_longitude);
+
+        if ((temp_latitude >= -90) && (temp_latitude <= 90) && (temp_longitude >= -180) && (temp_longitude <= 180)){
+          strcpy(return_string,"\\!OKBG");
+          dtostrf(calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude),0,DISPLAY_DECIMAL_PLACES,temp_string);
+          strcat(return_string,temp_string);
+        }
+      }  
+    #endif 
+
+    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+      // \?BCxxxx xxxx  - Calculate bearing to target coordinates
+      if ((input_buffer[2] == 'B') && (input_buffer[3] == 'C')){ 
+
+        float temp_latitude = 0;
+        float temp_longitude = 0;
+        byte hit_space = 0;
+        byte latitude_negative = 0;
+        byte longitude_negative = 0;
+
+        for (int x = 4;x < input_buffer_index;x++){
+          if(input_buffer[x] == ' '){
+            hit_space = 1;
+            hit_decimal = 0;
+          } else {
+            if (hit_space){
+              // parsing longitude
+              if(input_buffer[x] == '.'){   
+                hit_decimal = 10;  
+              } else {
+                if(input_buffer[x] == '-'){
+                  longitude_negative = 1;
+                } else {
+                  if (hit_decimal > 0){
+                    temp_longitude = temp_longitude + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+                    hit_decimal = hit_decimal * 10;
+                  } else {
+                    temp_longitude = (temp_longitude * 10) + (input_buffer[x] - 48);
+                  }
+                }
+              }
+            } else {
+              // parsing latitude
+              if(input_buffer[x] == '.'){   
+                hit_decimal = 10;  
+              } else {
+                if(input_buffer[x] == '-'){
+                  latitude_negative = 1;
+                } else {
+                  if (hit_decimal > 0){
+                    temp_latitude = temp_latitude + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+                    hit_decimal = hit_decimal * 10;
+                  } else {
+                    temp_latitude = (temp_latitude * 10) + (input_buffer[x] - 48);
+                  }
+                }
+              }
+            }
+          }
+        }  
+        if ((temp_latitude >= 0) && (temp_latitude <= 90) && (temp_longitude >= 0) && (temp_longitude <= 180)){
+          if (latitude_negative){temp_latitude = temp_latitude * -1.0;}
+          if (longitude_negative){temp_longitude = temp_longitude * -1.0;}
+          strcpy(return_string,"\\!OKBC");
+          dtostrf(calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude),0,DISPLAY_DECIMAL_PLACES,temp_string);
+          strcat(return_string,temp_string);
+        }
+      } 
+    #endif 
+
+
+
+    // \?CCxxxx xxxx  - Convert coordinates to grid
+    if ((input_buffer[2] == 'C') && (input_buffer[3] == 'C')){ 
+
+      float temp_latitude = 0;
+      float temp_longitude = 0;
+      byte hit_space = 0;
+      byte latitude_negative = 0;
+      byte longitude_negative = 0;
+
+      for (int x = 4;x < input_buffer_index;x++){
+        if(input_buffer[x] == ' '){
+          hit_space = 1;
+          hit_decimal = 0;
+        } else {
+
+          if (hit_space){
+            // parsing longitude
+            if(input_buffer[x] == '.'){   
+              hit_decimal = 10;  
+            } else {
+              if(input_buffer[x] == '-'){
+                longitude_negative = 1;
+              } else {
+                if (hit_decimal > 0){
+                  temp_longitude = temp_longitude + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+                  hit_decimal = hit_decimal * 10;
+                } else {
+                  temp_longitude = (temp_longitude * 10) + (input_buffer[x] - 48);
+                }
+              }
+            }
+
+          } else {
+
+            // parsing latitude
+            if(input_buffer[x] == '.'){   
+              hit_decimal = 10;  
+            } else {
+              if(input_buffer[x] == '-'){
+                latitude_negative = 1;
+              } else {
+                if (hit_decimal > 0){
+                  temp_latitude = temp_latitude + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+                  hit_decimal = hit_decimal * 10;
+                } else {
+                  temp_latitude = (temp_latitude * 10) + (input_buffer[x] - 48);
+                }
+              }
+            }
+          }
+        }
+
+
+      }   
+    
+      if ((temp_latitude >= 0) && (temp_latitude <= 90) && (temp_longitude >= 0) && (temp_longitude <= 180)){
+        if (latitude_negative){temp_latitude = temp_latitude * -1.0;}
+        if (longitude_negative){temp_longitude = temp_longitude * -1.0;}
+        strcpy(return_string,"\\!OKCC");
+        strcat(return_string,coordinates_to_maidenhead(temp_latitude,temp_longitude));
+      }
+
+    }               
+    
 
 
     if (input_buffer_index == 9) {
