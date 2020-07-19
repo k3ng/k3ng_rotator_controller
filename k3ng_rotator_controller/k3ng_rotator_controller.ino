@@ -579,6 +579,9 @@
       Added DEBUG_PROCESSES
       Removed several instances where update_time() was being called unnecessarily.  update_time() was consuming about 21% CPU time, now down to about 12%    
       
+    2020.07.19.02  
+      FEATURE_NEXTION_DISPLAY
+        Changed updating of gMSS API variable to reflect moon and sun visibility without tracking activated
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -591,7 +594,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.19.01"
+#define CODE_VERSION "2020.07.19.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1913,6 +1916,10 @@ void service_blink_led(){
 // --------------------------------------------------------------
 void check_for_reset_flag(){
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_MISC_ADMIN);
+  #endif    
+
   static unsigned long detected_reset_flag_time = 0;
 
   if (reset_the_unit){
@@ -1938,6 +1945,10 @@ void check_for_reset_flag(){
       }
     }
   }
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_MISC_ADMIN);
+  #endif    
 
 }
 
@@ -2524,6 +2535,9 @@ void check_el_manual_rotate_limit() {
 // --------------------------------------------------------------
 void check_brake_release() {
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_MISC_ADMIN);
+  #endif    
 
   static byte in_az_brake_release_delay = 0;
   static unsigned long az_brake_delay_start_time = 0;
@@ -2562,6 +2576,10 @@ void check_brake_release() {
 
   if ((el_state != IDLE) && (brake_el_engaged)) {in_el_brake_release_delay = 0;}  
   #endif // FEATURE_ELEVATION_CONTROL
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_MISC_ADMIN);
+  #endif      
 
 } /* check_brake_release */
 
@@ -2608,6 +2626,11 @@ void brake_release(byte az_or_el, byte operation){
 // --------------------------------------------------------------
 void check_overlap(){
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_MISC_ADMIN);
+  #endif    
+
+
   static byte overlap_led_status = 0;
   static unsigned long last_check_time;
   #ifdef OPTION_BLINK_OVERLAP_LED
@@ -2653,6 +2676,10 @@ void check_overlap(){
     last_overlap_led_transition = millis();
   }
   #endif //OPTION_BLINK_OVERLAP_LED
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_MISC_ADMIN);
+  #endif    
 
 } /* check_overlap */
 
@@ -3479,6 +3506,11 @@ void check_serial(){
 // --------------------------------------------------------------
 void check_buttons(){
 
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_CHECK_BUTTONS);
+  #endif  
+
   #ifdef FEATURE_ADAFRUIT_BUTTONS
     int buttons = 0;
     // buttons = lcd.readButtons();
@@ -3817,6 +3849,10 @@ void check_buttons(){
     }
   }
   #endif // FEATURE_SUN_TRACKING
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_CHECK_BUTTONS);
+  #endif    
 
 } /* check_buttons */
 // --------------------------------------------------------------
@@ -6983,6 +7019,11 @@ void output_debug(){
 
   #ifdef DEBUG_DUMP
 
+    #ifdef DEBUG_PROCESSES
+      service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_DEBUG);
+    #endif
+
+
     char tempstring[32];
 
     #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
@@ -7496,6 +7537,10 @@ void output_debug(){
 
       }
     #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+
+    #ifdef DEBUG_PROCESSES
+      service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_DEBUG);
+    #endif    
     
   #endif //DEBUG_DUMP
 
@@ -11646,6 +11691,10 @@ void service_park(){
 #ifdef FEATURE_LIMIT_SENSE
 void check_limit_sense(){
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_MISC_ADMIN);
+  #endif    
+
   static byte az_limit_tripped = 0;
 
   #ifdef FEATURE_ELEVATION_CONTROL
@@ -11682,9 +11731,13 @@ void check_limit_sense(){
   }
       #endif // FEATURE_ELEVATION_CONTROL
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_MISC_ADMIN);
+  #endif    
 
 } /* check_limit_sense */
-    #endif // FEATURE_LIMIT_SENSE
+#endif // FEATURE_LIMIT_SENSE
+
 // --------------------------------------------------------------
 #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 void az_position_incremental_encoder_interrupt_handler(){
@@ -16073,6 +16126,7 @@ void service_moon_tracking(){
   #endif // DEBUG_LOOP
 
   static unsigned long last_check = 0;
+  static unsigned long last_update_moon_position = 0;
   static byte moon_tracking_activated_by_activate_line = 0;
 
   static byte moon_tracking_pin_state = 0;
@@ -16103,10 +16157,28 @@ void service_moon_tracking(){
     }
   }
 
-  if ((moon_tracking_active) && ((millis() - last_check) > MOON_TRACKING_CHECK_INTERVAL)) {
-
-    //update_time();
+  if ((millis() - last_update_moon_position) > MOON_UPDATE_POSITION_INTERVAL_MS){
     update_moon_position();
+    last_update_moon_position = millis();
+  }
+
+  if ((moon_azimuth >= MOON_AOS_AZIMUTH_MIN) && (moon_azimuth <= MOON_AOS_AZIMUTH_MAX) && (moon_elevation >= MOON_AOS_ELEVATION_MIN) && (moon_elevation <= MOON_AOS_ELEVATION_MAX)) {
+      if (!moon_visible) {
+        moon_visible = 1;
+        #ifdef DEBUG_MOON_TRACKING
+          debug.println("service_moon_tracking: moon AOS");
+        #endif // DEBUG_MOON_TRACKING
+      }
+    } else {
+      if (moon_visible) {
+        moon_visible = 0;
+        #ifdef DEBUG_MOON_TRACKING
+          debug.println("service_moon_tracking: moon loss of AOS");
+        #endif // DEBUG_MOON_TRACKING
+      } 
+    }  
+
+  if ((moon_tracking_active) && ((millis() - last_check) > MOON_TRACKING_CHECK_INTERVAL)) {
 
     #ifdef DEBUG_MOON_TRACKING
     debug.print(F("service_moon_tracking: AZ: "));
@@ -16119,26 +16191,11 @@ void service_moon_tracking(){
     debug.println(longitude);
     #endif // DEBUG_MOON_TRACKING
 
-    if ((moon_azimuth >= MOON_AOS_AZIMUTH_MIN) && (moon_azimuth <= MOON_AOS_AZIMUTH_MAX) && (moon_elevation >= MOON_AOS_ELEVATION_MIN) && (moon_elevation <= MOON_AOS_ELEVATION_MAX)) {
-      submit_request(AZ, REQUEST_AZIMUTH, moon_azimuth, 11);
-      submit_request(EL, REQUEST_ELEVATION, moon_elevation, 12);
-      if (!moon_visible) {
-        moon_visible = 1;
-        #ifdef DEBUG_MOON_TRACKING
-        debug.println("service_moon_tracking: moon AOS");
-        #endif // DEBUG_MOON_TRACKING
-      }
-    } else {
-      if (moon_visible) {
-        moon_visible = 0;
-          #ifdef DEBUG_MOON_TRACKING
-        debug.println("service_moon_tracking: moon loss of AOS");
-          #endif // DEBUG_MOON_TRACKING
-      } else {
-            #ifdef DEBUG_MOON_TRACKING
-        debug.println("service_moon_tracking: moon out of AOS limits");
-            #endif // DEBUG_MOON_TRACKING
-      }
+
+
+    if (moon_visible) {
+      submit_request(AZ, REQUEST_AZIMUTH, moon_azimuth, DBG_SERVICE_MOON_TRACKING);
+      submit_request(EL, REQUEST_ELEVATION, moon_elevation, DBG_SERVICE_MOON_TRACKING);
     }
 
     last_check = millis();
@@ -16160,6 +16217,7 @@ void service_sun_tracking(){
   #endif // DEBUG_LOOP
 
   static unsigned long last_check = 0;
+  static unsigned long last_update_sun_position = 0;
   static byte sun_tracking_pin_state = 0;
   static byte sun_tracking_activated_by_activate_line = 0;
 
@@ -16189,49 +16247,47 @@ void service_sun_tracking(){
     }
   }
 
+  if ((millis() - last_update_sun_position) > SUN_UPDATE_POSITION_INTERVAL_MS){
+    update_sun_position();
+    last_update_sun_position = millis();
+  }
+
+  if ((sun_azimuth >= SUN_AOS_AZIMUTH_MIN) && (sun_azimuth <= SUN_AOS_AZIMUTH_MAX) && (sun_elevation >= SUN_AOS_ELEVATION_MIN) && (sun_elevation <= SUN_AOS_ELEVATION_MAX)) {
+    if (!sun_visible) {
+      sun_visible = 1;
+      #ifdef DEBUG_SUN_TRACKING
+        debug.println("service_sun_tracking: sun AOS");
+      #endif // DEBUG_SUN_TRACKING
+    }
+  } else {
+    if (sun_visible) {
+      sun_visible = 0;
+      #ifdef DEBUG_SUN_TRACKING
+        debug.println("service_sun_tracking: sun loss of AOS");
+      #endif // DEBUG_SUN_TRACKING
+    }
+  }  
+
   if ((sun_tracking_active) && ((millis() - last_check) > SUN_TRACKING_CHECK_INTERVAL)) {
 
-    //update_time();
-    update_sun_position();
-
-
     #ifdef DEBUG_SUN_TRACKING
-    debug.print(F("service_sun_tracking: AZ: "));
-    debug.print(sun_azimuth);
-    debug.print(" EL: ");
-    debug.print(sun_elevation);
-    debug.print(" lat: ");
-    debug.print(latitude);
-    debug.print(" long: ");
-    debug.println(longitude);
+      debug.print(F("service_sun_tracking: AZ: "));
+      debug.print(sun_azimuth);
+      debug.print(" EL: ");
+      debug.print(sun_elevation);
+      debug.print(" lat: ");
+      debug.print(latitude);
+      debug.print(" long: ");
+      debug.println(longitude);
     #endif // DEBUG_SUN_TRACKING
 
-    if ((sun_azimuth >= SUN_AOS_AZIMUTH_MIN) && (sun_azimuth <= SUN_AOS_AZIMUTH_MAX) && (sun_elevation >= SUN_AOS_ELEVATION_MIN) && (sun_elevation <= SUN_AOS_ELEVATION_MAX)) {
-      submit_request(AZ, REQUEST_AZIMUTH, sun_azimuth, 13);
-      submit_request(EL, REQUEST_ELEVATION, sun_elevation, 14);
-      if (!sun_visible) {
-        sun_visible = 1;
-        #ifdef DEBUG_SUN_TRACKING
-        debug.println("service_sun_tracking: sun AOS");
-        #endif // DEBUG_SUN_TRACKING
-      }
-    } else {
-      if (sun_visible) {
-        sun_visible = 0;
-          #ifdef DEBUG_SUN_TRACKING
-        debug.println("service_sun_tracking: sun loss of AOS");
-          #endif // DEBUG_SUN_TRACKING
-      } else {
-            #ifdef DEBUG_SUN_TRACKING
-        debug.println("service_sun_tracking: sun out of AOS limits");
-            #endif // DEBUG_SUN_TRACKING
-      }
+    if (sun_visible) {
+      submit_request(AZ, REQUEST_AZIMUTH, sun_azimuth, DBG_SERVICE_SUN_TRACKING);
+      submit_request(EL, REQUEST_ELEVATION, sun_elevation, DBG_SERVICE_SUN_TRACKING);
     }
 
     last_check = millis();
   }
-
-
 
 
 } /* service_sun_tracking */
@@ -16486,16 +16542,9 @@ void service_process_debug(byte action,byte process_id){
 
     static unsigned long last_process_start_time[PROCESS_TABLE_SIZE];
     static unsigned long process_cumulative_time[PROCESS_TABLE_SIZE];
-    static byte initialized_stuff = 0;
     static unsigned long last_output = 0;
 
-    // if (initialized_stuff == 0){
-    //   for (int x = 0;x < PROCESS_TABLE_SIZE;x++){
-    //     last_process_start_time[x] = 0;
-    //     process_cumulative_time[x] = 0;
-    //   }
-    //   initialized_stuff = 1;
-    // } 
+    last_process_start_time[PROCESS_DEBUG] = micros();
 
     switch(action){
       case DEBUG_PROCESSES_SERVICE:
@@ -16523,6 +16572,9 @@ void service_process_debug(byte action,byte process_id){
                 case PROCESS_UPDATE_TIME: control_port->print("update_time\t\t"); break;
                 case PROCESS_SERVICE_GPS: control_port->print("service_gps\t\t"); break;
                 case PROCESS_CHECK_FOR_DIRTY_CONFIGURATION: control_port->print("check_for_dirty_configuration"); break;
+                case PROCESS_CHECK_BUTTONS: control_port->print("check_buttons\t\t"); break;
+                case PROCESS_MISC_ADMIN: control_port->print("misc_admin\t\t"); break;
+                case PROCESS_DEBUG: control_port->print("debug\t\t\t"); break;
               }
               control_port->print("\t");
               control_port->print(((float)process_cumulative_time[x]/(float)micros())*100.0,0);
@@ -16549,6 +16601,8 @@ void service_process_debug(byte action,byte process_id){
 
 
     }
+
+    process_cumulative_time[PROCESS_DEBUG] = process_cumulative_time[PROCESS_DEBUG] + (micros() - last_process_start_time[PROCESS_DEBUG]);
 
   #endif //DEBUG_PROCESSES
 

@@ -340,3 +340,7 @@ You can tweak these, but read the online documentation!
 #define nexSerial Serial3
 #define NEXTION_SERIAL_BAUD 115200
 #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
+
+// Added in 2020.07.19.02
+#define SUN_UPDATE_POSITION_INTERVAL_MS 5000
+#define MOON_UPDATE_POSITION_INTERVAL_MS 5000
