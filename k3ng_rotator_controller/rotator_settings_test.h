@@ -160,7 +160,7 @@ You can tweak these, but read the online documentation!
 #define EEPROM_MAGIC_NUMBER 110
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
-#define DISPLAY_DECIMAL_PLACES 1
+#define DISPLAY_DECIMAL_PLACES 0
 
 #define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
 #define EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
@@ -179,8 +179,8 @@ You can tweak these, but read the online documentation!
 #define AZ_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for azimuth
 #define EL_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for elevation
 
-#define AZIMUTH_SMOOTHING_FACTOR 0      // value = 0 to 99.9
-#define ELEVATION_SMOOTHING_FACTOR 0    // value = 0 to 99.9
+#define AZIMUTH_SMOOTHING_FACTOR 90.0      // value = 0 to 99.9
+#define ELEVATION_SMOOTHING_FACTOR 90.0    // value = 0 to 99.9
 
 #define AZIMUTH_MEASUREMENT_FREQUENCY_MS 100        // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
 #define ELEVATION_MEASUREMENT_FREQUENCY_MS 100      // this does not apply if using FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT

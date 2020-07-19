@@ -47,14 +47,23 @@
    (If you contributed something and I forgot to put your name and call in here, *please* email me!)
   
  ***************************************************************************************************************
- *
- *  This program is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
- *
- *                            http://creativecommons.org/licenses/by-nc-sa/3.0/
- *
- *                        http://creativecommons.org/licenses/by-nc-sa/3.0/legalcode
- *
- *
+
+ 
+    Copyright (C) 2020  Anthony Good, K3NG
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
  ***************************************************************************************************************
   
   
@@ -559,6 +568,13 @@
         \?GTxxxx[xx]        - go to grid target (rotate azimuth) 
       Added function maidenhead_to_coordinates(grid,latitude_degrees, longitude_degrees) from Adam VK4GHZ code contribution
       Added function calculate_target_bearing(source_latitude, source_longitude, target_latitude, target_longitude) from Adam VK4GHZ code contribution
+   
+    2020.07.18.02
+      FEATURE_NEXTION_DISPLAY
+        Fixed updating of vMAS, vMES, vSAS, and vSES API variables
+        Fixed degree symbol in vSS1 API variable
+        Add variable gDP (Integer) - Number of decimal places used in various heading variables (set by DISPLAY_DECIMAL_PLACES)
+      
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -571,7 +587,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.18.01"
+#define CODE_VERSION "2020.07.18.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4673,7 +4689,7 @@ void service_nextion_display(){
             strcat(workstring1,"+");
           }    
           strcat(workstring1,workstring2);
-          strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
+          strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
         } else {
           if (current_az_state() == ROTATING_CW) {
             strcpy(workstring1,CW_STRING);
@@ -4699,7 +4715,7 @@ void service_nextion_display(){
           strcat(workstring1," ");
           dtostrf(target_elevation, 1, DISPLAY_DECIMAL_PLACES, workstring2);
           strcat(workstring1,workstring2);
-          strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
+          strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
         } else {
           if (current_el_state() == ROTATING_UP) {
             strcat(workstring1,UP_STRING);
@@ -4790,6 +4806,12 @@ TODO:
     strcat(workstring1,CODE_VERSION);
     strcat(workstring1,"\"");
     sendNextionCommand(workstring1);
+
+    // gDP - Display decimal places
+    dtostrf(DISPLAY_DECIMAL_PLACES, 1, 0, workstring1);
+    strcpy(workstring2,"gDP=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2);     
 
     // System Capabilities
     #if defined(FEATURE_YAESU_EMULATION)
@@ -4995,20 +5017,20 @@ TODO:
       static unsigned long last_moon_and_sun_update = 0;
       temp = 0;
 
-      if ((millis() - last_moon_and_sun_update) > (NEXTION_LESS_FREQUENT_UPDATE_MS+525)){
+      if ((millis() - last_moon_and_sun_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
 
         #ifdef FEATURE_MOON_TRACKING
           update_moon_position();
           strcpy(workstring1,"vMAS.txt=\"");
-          dtostrf(moon_azimuth,0,2,workstring2);
-          strcpy(workstring1,workstring2);
-          strcpy(workstring1,"\"");
+          dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
  
           strcpy(workstring1,"vMES.txt=\"");
-          dtostrf(moon_elevation,0,2,workstring2);
-          strcpy(workstring1,workstring2);
-          strcpy(workstring1,"\"");
+          dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
 
           if (moon_tracking_active) {
@@ -5022,15 +5044,15 @@ TODO:
         #ifdef FEATURE_SUN_TRACKING
           update_sun_position();
           strcpy(workstring1,"vSAS.txt=\"");
-          dtostrf(sun_azimuth,0,2,workstring2);
-          strcpy(workstring1,workstring2);
-          strcpy(workstring1,"\"");
+          dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
            
           strcpy(workstring1,"vSES.txt=\"");
-          dtostrf(sun_elevation,0,2,workstring2);
-          strcpy(workstring1,workstring2);
-          strcpy(workstring1,"\"");
+          dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
 
           if (sun_tracking_active) {
