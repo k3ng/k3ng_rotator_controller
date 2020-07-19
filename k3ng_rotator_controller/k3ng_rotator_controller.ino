@@ -574,6 +574,10 @@
         Fixed updating of vMAS, vMES, vSAS, and vSES API variables
         Fixed degree symbol in vSS1 API variable
         Add variable gDP (Integer) - Number of decimal places used in various heading variables (set by DISPLAY_DECIMAL_PLACES)
+
+    2020.07.19.01
+      Added DEBUG_PROCESSES
+      Removed several instances where update_time() was being called unnecessarily.  update_time() was consuming about 21% CPU time, now down to about 12%    
       
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -587,7 +591,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.18.02"
+#define CODE_VERSION "2020.07.19.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1250,9 +1254,15 @@ void setup() {
 void loop() {
 
   #ifdef DEBUG_LOOP
-    debug.print("loop()\n");
-    Serial.flush();
+    control_port->println("loop()");
+    control_port->flush();
   #endif // DEBUG_LOOP
+
+  #ifdef FEATURE_CLOCK
+    update_time();
+  #endif
+
+  service_process_debug(DEBUG_PROCESSES_SERVICE,0);
 
   check_serial();
   read_headings();
@@ -1456,6 +1466,12 @@ void loop() {
 #if defined(pin_status_led)
   void service_status_led(){
 
+
+  #ifdef DEBUG_LOOP
+    control_port->println("service_status_led()");
+    control_port->flush();
+  #endif // DEBUG_LOOP    
+
     static byte led_is_on = 0;
     static unsigned long last_led_transition = 0;
 
@@ -1543,6 +1559,12 @@ void loop() {
 
 #if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
   void service_a2_encoders(){
+
+
+    #ifdef DEBUG_LOOP
+      control_port->println("service_a2_encoders()");
+      control_port->flush();
+    #endif // DEBUG_LOOP      
  
     static unsigned long last_sei_bus_command_submit_time = 0;
     static byte submitted_sei_bus_command = 0;
@@ -1840,14 +1862,23 @@ void loop() {
 void read_headings(){
 
   #ifdef DEBUG_LOOP
-    debug.print("read_headings()\n");
+    control_port->println("read_headings()");
   #endif // DEBUG_LOOP
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_READ_HEADINGS);
+  #endif
+
 
   read_azimuth(0);
 
   #ifdef FEATURE_ELEVATION_CONTROL
     read_elevation(0);
   #endif
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_READ_HEADINGS);
+  #endif  
 
 }
 
@@ -2041,8 +2072,8 @@ void initialize_rotary_encoders(){
 
 
   #ifdef DEBUG_LOOP
-    debug.print("initialize_rotary_encoders()\n");
-    Serial.flush();
+    control_port->println("initialize_rotary_encoders()");
+    control_port->flush();
   #endif // DEBUG_LOOP
 
   #ifdef FEATURE_AZ_PRESET_ENCODER
@@ -2994,9 +3025,13 @@ void service_remote_unit_serial_buffer(){
 void check_serial(){
 
   #ifdef DEBUG_LOOP
-    debug.print("check_serial\n");
-    Serial.flush();
+    control_port->println("check_serial");
+    control_port->flush();
   #endif // DEBUG_LOOP    
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_CHECK_SERIAL);
+  #endif  
 
   static unsigned long serial_led_time = 0;
   float tempfloat = 0;
@@ -3434,6 +3469,10 @@ void check_serial(){
   #endif //defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS)
 
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_CHECK_SERIAL);
+  #endif  
+
 } /* check_serial */
 
 
@@ -3857,7 +3896,10 @@ char * azimuth_direction(int azimuth_in){
 #if defined(FEATURE_NEXTION_DISPLAY_OLD)
 void service_nextion_display(){
 
-
+  #ifdef DEBUG_LOOP
+    control_port->println("service_nextion_display_old()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
 
   char workstring1[32] = "";
   char workstring2[32] = "";
@@ -4386,6 +4428,15 @@ void sendNextionCommand(const char* send_command){
 // --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
 void service_nextion_display(){
+
+  #ifdef DEBUG_LOOP
+    control_port->println("service_nextion_display()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_SERVICE_NEXTION);
+  #endif    
 
   #define NEXTION_VERY_FREQUENT_UPDATE_MS 250
   #define NEXTION_FREQUENT_UPDATE_MS 500
@@ -4919,7 +4970,7 @@ TODO:
 
 // Clock
     #if defined(FEATURE_CLOCK)
-      update_time();
+      //update_time();
       if (local_clock_seconds != last_clock_seconds){
         last_clock_seconds = clock_seconds;
         strcpy(workstring1,"vClk.txt=\"");
@@ -5072,6 +5123,10 @@ TODO:
       }
     #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)  
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_SERVICE_NEXTION);
+  #endif        
+
 }
 #endif //FEATURE_NEXTION_DISPLAY
 
@@ -5081,7 +5136,16 @@ TODO:
 #if defined(FEATURE_LCD_DISPLAY)
 void update_lcd_display(){
 
-    
+  #ifdef DEBUG_LOOP
+    control_port->println("update_lcd_display()");
+    control_port->flush();
+  #endif // DEBUG_LOOP   
+
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_UPDATE_LCD_DISPLAY);
+  #endif    
+
   byte force_display_update_now = 0;
   char workstring[32] = "";
   char workstring2[32] = "";
@@ -5532,7 +5596,7 @@ void update_lcd_display(){
     static int last_clock_seconds = 0;
 
     if (!row_override[LCD_HHMMSS_CLOCK_ROW]){
-      update_time();
+      //update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock_hours < 10) {
           strcpy(workstring, "0");
@@ -5575,7 +5639,7 @@ void update_lcd_display(){
   // OPTION_DISPLAY_HHMM_CLOCK **************************************************************************************************
   #if defined(OPTION_DISPLAY_HHMM_CLOCK) && defined(FEATURE_CLOCK)
     if (!row_override[LCD_HHMM_CLOCK_ROW]){
-      update_time();
+      //update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock_hours < 10) {
           strcpy(workstring, "0");
@@ -5720,7 +5784,7 @@ void update_lcd_display(){
       last_hhmm_clock_maidenhead_switch_time = millis();
     }
     if (displaying_clock){
-      update_time();
+      //update_time();
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock_hours < 10) {
@@ -5762,7 +5826,7 @@ void update_lcd_display(){
     static int last_clock_seconds_clock_and_maidenhead = 0;
 
     if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
-      update_time();
+      //update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock_hours < 10) {
           strcpy(workstring, "0");
@@ -5880,7 +5944,7 @@ void update_lcd_display(){
     static byte big_clock_last_clock_seconds = 0;
   
     if (!row_override[LCD_BIG_CLOCK_ROW]){    
-      update_time();
+      //update_time();
       k3ngdisplay.print_center_entire_row(timezone_modified_clock_string(),LCD_BIG_CLOCK_ROW-1,0);
       if (big_clock_last_clock_seconds != clock_seconds) {
         force_display_update_now = 1;
@@ -5912,6 +5976,10 @@ void update_lcd_display(){
 
 
   }
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_UPDATE_LCD_DISPLAY);
+  #endif      
 
 }  
 #endif // defined(FEATURE_LCD_DISPLAY) 
@@ -6059,8 +6127,8 @@ void read_settings_from_eeprom(){
 void initialize_eeprom_with_defaults(){
 
   #ifdef DEBUG_LOOP
-    debug.print("initialize_eeprom_with_defaults()\n");
-    Serial.flush();
+    control_port->println("initialize_eeprom_with_defaults()");
+    control_port->flush();
   #endif // DEBUG_LOOP
 
   #ifdef DEBUG_EEPROM
@@ -6941,7 +7009,7 @@ void output_debug(){
         debug.print("\t\t");
 
         #ifdef FEATURE_CLOCK
-          update_time();
+          //update_time();
           if (configuration.clock_timezone_offset != 0){
             sprintf(tempstring, "%s", timezone_modified_clock_string());
             debug.print(tempstring);
@@ -7890,6 +7958,11 @@ void read_elevation(byte force_read){
 void update_el_variable_outputs(byte speed_voltage){
 
 
+  #ifdef DEBUG_LOOP
+    control_port->println("update_el_variable_outputs()");
+    control_port->flush();
+  #endif // DEBUG_LOOP   
+
   #ifdef DEBUG_VARIABLE_OUTPUTS
   debug.print("update_el_variable_outputs: speed_voltage: ");
   debug.print(speed_voltage);
@@ -7972,6 +8045,11 @@ void update_el_variable_outputs(byte speed_voltage){
 
 // --------------------------------------------------------------
 void update_az_variable_outputs(byte speed_voltage){
+
+  #ifdef DEBUG_LOOP
+    control_port->println("update_az_variable_outputs()");
+    control_port->flush();
+  #endif // DEBUG_LOOP   
 
 
   #ifdef DEBUG_VARIABLE_OUTPUTS  
@@ -8585,8 +8663,8 @@ void rotator(byte rotation_action, byte rotation_type) {
 void initialize_interrupts(){
 
   #ifdef DEBUG_LOOP
-    debug.print("initialize_interrupts()\n");
-    Serial.flush();
+    control_port->println("initialize_interrupts()");
+    control_port->flush();
   #endif // DEBUG_LOOP
 
   #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
@@ -8615,8 +8693,8 @@ void initialize_interrupts(){
 void initialize_pins(){
 
   #ifdef DEBUG_LOOP
-    debug.print("initialize_pins()\n");
-    Serial.flush();
+    control_port->println("initialize_pins()");
+    control_port->flush();
   #endif // DEBUG_LOOP
 
   #ifdef reset_pin
@@ -8989,6 +9067,13 @@ void initialize_serial(){
     #if defined(OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING)
       control_port->print OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING;
     #endif
+
+    #ifdef DEBUG_LOOP
+      control_port->println("control_port up");
+      control_port->flush();
+    #endif // DEBUG_LOOP
+
+
   #endif
 
   #ifdef FEATURE_REMOTE_UNIT_SLAVE
@@ -9010,6 +9095,11 @@ void initialize_serial(){
     #endif //GPS_MIRROR_PORT
   #endif //FEATURE_GPS
 
+  #ifdef DEBUG_LOOP
+    control_port->println("initialize_serial() complete");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
 } /* initialize_serial */
 
 
@@ -9021,8 +9111,8 @@ void initialize_display(){
 
   #if defined(FEATURE_LCD_DISPLAY)
     #ifdef DEBUG_LOOP
-      debug.print("initialize_display()\n");
-      Serial.flush();
+      control_port->println("initialize_display()");
+      control_port->flush();
     #endif // DEBUG_LOOP
 
     k3ngdisplay.initialize();
@@ -9041,8 +9131,8 @@ void initialize_display(){
 
 
     #ifdef DEBUG_LOOP
-      debug.print("exiting initialize_display()\n");
-      Serial.flush();
+      control_port->println("exiting initialize_display()");
+      control_port->flush();
     #endif // DEBUG_LOOP
 
 
@@ -9058,8 +9148,8 @@ void initialize_display(){
 void initialize_peripherals(){
 
   #ifdef DEBUG_LOOP
-    debug.print("initialize_peripherals()\n");
-    Serial.flush();
+    control_port->println("initialize_peripherals()");
+    control_port->flush();
   #endif // DEBUG_LOOP
 
   #ifdef FEATURE_WIRE_SUPPORT
@@ -9289,6 +9379,14 @@ void submit_request(byte axis, byte request, float parm, byte called_by){
 // --------------------------------------------------------------
 void service_rotation(){
 
+  #ifdef DEBUG_LOOP
+    control_port->println("service_rotation()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_SERVICE_ROTATION);
+  #endif      
 
 
   #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) || defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER)
@@ -9453,7 +9551,7 @@ void service_rotation(){
         #endif
 
       }
-    }
+    } 
 
   }  // ((az_state == TIMED_SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CCW))
 
@@ -9877,6 +9975,11 @@ void service_rotation(){
     service_rotation_lock = 0;
   #endif
 
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_SERVICE_ROTATION);
+  #endif        
+
 } /* service_rotation */
 // --------------------------------------------------------------
 void stop_all_tracking(){
@@ -9894,7 +9997,10 @@ void stop_all_tracking(){
 // --------------------------------------------------------------
 void service_request_queue(){
 
-// xxxx
+  #ifdef DEBUG_LOOP
+    control_port->println("service_request_queue()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
 
   int work_target_raw_azimuth = 0;
   byte direction_to_go = 0;
@@ -10496,12 +10602,20 @@ void service_request_queue(){
 // --------------------------------------------------------------
 void check_for_dirty_configuration(){
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_CHECK_FOR_DIRTY_CONFIGURATION);
+  #endif     
+
   static unsigned long last_config_write_time = 0;
 
   if ((configuration_dirty) && ((millis() - last_config_write_time) > ((unsigned long)EEPROM_WRITE_DIRTY_CONFIG_TIME * 1000))) {
     write_settings_to_eeprom();
     last_config_write_time = millis();
   }
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_CHECK_FOR_DIRTY_CONFIGURATION);
+  #endif     
 
 }
 
@@ -11412,6 +11526,12 @@ void initiate_park(){
 #ifdef FEATURE_PARK
 void service_park(){
 
+
+  #ifdef DEBUG_LOOP
+    control_port->println("service_park()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
   static byte last_park_status = NOT_PARKED;
 
   static unsigned long time_first_detect_not_parked = 0;
@@ -12082,7 +12202,16 @@ byte get_analog_pin(byte pin_number){
 
 void update_sun_position(){
 
-  update_time();
+  #ifdef DEBUG_LOOP
+    control_port->println("update_sun_position()");
+    control_port->flush();
+  #endif // DEBUG_LOOP   
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_UPDATE_SUN_POSITION);
+  #endif      
+
+  //update_time();
   c_time.iYear = clock_years;
   c_time.iMonth = clock_months;
   c_time.iDay = clock_days;
@@ -12103,6 +12232,11 @@ void update_sun_position(){
   sun_elevation = 90. - c_sposn.dZenithAngle;
   sun_azimuth = c_sposn.dAzimuth;
 
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_UPDATE_SUN_POSITION);
+  #endif        
+
 } /* update_sun_position */
 #endif // FEATURE_SUN_TRACKING
 
@@ -12112,11 +12246,25 @@ void update_sun_position(){
 
 void update_moon_position(){
 
-  update_time();
+  #ifdef DEBUG_LOOP
+    control_port->println("update_moon_position()");
+    control_port->flush();
+  #endif // DEBUG_LOOP     
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_UPDATE_MOON_POSITION);
+  #endif      
+
+  //update_time();
 
   double RA, Dec, topRA, topDec, LST, HA, dist;
-  update_time();
+  //update_time();
   moon2(clock_years, clock_months, clock_days, (clock_hours + (clock_minutes / 60.0) + (clock_seconds / 3600.0)), longitude, latitude, &RA, &Dec, &topRA, &topDec, &LST, &HA, &moon_azimuth, &moon_elevation, &dist);
+
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_UPDATE_MOON_POSITION);
+  #endif      
 
 
 }
@@ -12289,6 +12437,17 @@ char * zulu_clock_string(){
 
 #ifdef FEATURE_CLOCK
 void update_time(){
+
+  #ifdef DEBUG_LOOP
+    control_port->println("update_time()");
+    control_port->flush();
+  #endif // DEBUG_LOOP   
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_UPDATE_TIME);
+  #endif      
+
+
   unsigned long runtime = millis() - millis_at_last_calibration;
 
   // calculate UTC
@@ -12458,64 +12617,9 @@ void update_time(){
   }  //(local_time < 0)
 
 
-
-// old method - breaks with negative timezones (UTC-x)
-
-  // unsigned long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
-
-  // local_clock_years = clock_year_set;
-  // local_clock_months = clock_month_set;
-  // local_clock_days = local_time / 86400L;
-  // local_time -= local_clock_days * 86400L;
-  // local_clock_days += clock_day_set;
-  // local_clock_hours = local_time / 3600L;
-
-  // switch (local_clock_months) {
-
-  //   case 1:
-  //   case 3:
-  //   case 5:
-  //   case 7:
-  //   case 8:
-  //   case 10:
-  //   case 12:
-  //     if (local_clock_days > 31) {
-  //       local_clock_days = 1; local_clock_months++;
-  //     }
-  //     break;
-
-  //   case 2:
-  //     if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
-  //       if (local_clock_days > 29) {
-  //         local_clock_days = 1; local_clock_months++;
-  //       }
-  //     } else {
-  //       if (local_clock_days > 28) {
-  //         local_clock_days = 1; local_clock_months++;
-  //       }
-  //     }
-  //     break;
-
-  //   case 4:
-  //   case 6:
-  //   case 9:
-  //   case 11:
-  //     if (local_clock_days > 30) {
-  //       local_clock_days = 1; local_clock_months++;
-  //     }
-  //     break;
-  // } /* switch */
-
-  // if (local_clock_months > 12) {
-  //   local_clock_months = 1; local_clock_years++;
-  // }
-
-  // local_time -= local_clock_hours * 3600L;
-  // local_clock_minutes  = local_time / 60L;
-  // local_time -= local_clock_minutes * 60L;
-  // local_clock_seconds = local_time;  
-
-
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_UPDATE_TIME);
+  #endif   
 
 } /* update_time */
 #endif // FEATURE_CLOCK
@@ -12525,6 +12629,15 @@ void update_time(){
 
 #ifdef FEATURE_GPS
 void service_gps(){
+
+  #ifdef DEBUG_LOOP
+    control_port->println("service_gps()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_SERVICE_GPS);
+  #endif  
 
   long gps_lat, gps_lon;
   unsigned long fix_age;
@@ -12656,6 +12769,10 @@ void service_gps(){
   }
 
 
+  #ifdef DEBUG_PROCESSES
+    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_SERVICE_GPS);
+  #endif  
+
 } /* service_gps */
 #endif // FEATURE_GPS
 
@@ -12724,6 +12841,11 @@ char * clock_status_string(){
 // --------------------------------------------------------------
 #ifdef FEATURE_RTC
 void service_rtc(){
+
+  #ifdef DEBUG_LOOP
+    control_port->println("service_rtc()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
 
   static unsigned long last_rtc_sync_time = 0;
 
@@ -13110,13 +13232,13 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         #endif // defined(FEATURE_RTC_PCF8583)
 
         #if (!defined(FEATURE_RTC_DS1307) && !defined(FEATURE_RTC_PCF8583))
-        strcpy(return_string, "Clock set to ");
-        update_time();
-        strcat(return_string, timezone_modified_clock_string());
+          strcpy(return_string, "Clock set to ");
+          update_time();
+          strcat(return_string, timezone_modified_clock_string());
         #else
-        strcpy(return_string, "Internal clock and RTC set to ");
-        update_time();
-        strcat(return_string, timezone_modified_clock_string());
+          strcpy(return_string, "Internal clock and RTC set to ");
+          update_time();
+          strcat(return_string, timezone_modified_clock_string());
         #endif
       } else {
         strcpy(return_string, "Error. Usage: \\OYYYYMMDDHHmm");
@@ -15674,6 +15796,11 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
 void service_ethernet(){
 
 
+  #ifdef DEBUG_LOOP
+    control_port->println("service_ethernet()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
   byte incoming_byte = 0;
   static unsigned long last_incoming_byte_receive_time = 0;
   char return_string[100] = ""; 
@@ -15940,6 +16067,11 @@ byte ethernet_slave_link_send(char * string_to_send){
 #ifdef FEATURE_MOON_TRACKING
 void service_moon_tracking(){
 
+  #ifdef DEBUG_LOOP
+    control_port->println("service_moon_tracking()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
   static unsigned long last_check = 0;
   static byte moon_tracking_activated_by_activate_line = 0;
 
@@ -15973,7 +16105,7 @@ void service_moon_tracking(){
 
   if ((moon_tracking_active) && ((millis() - last_check) > MOON_TRACKING_CHECK_INTERVAL)) {
 
-    update_time();
+    //update_time();
     update_moon_position();
 
     #ifdef DEBUG_MOON_TRACKING
@@ -16022,6 +16154,11 @@ void service_moon_tracking(){
 #ifdef FEATURE_SUN_TRACKING
 void service_sun_tracking(){
 
+  #ifdef DEBUG_LOOP
+    control_port->println("service_sun_tarcking()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
   static unsigned long last_check = 0;
   static byte sun_tracking_pin_state = 0;
   static byte sun_tracking_activated_by_activate_line = 0;
@@ -16054,7 +16191,7 @@ void service_sun_tracking(){
 
   if ((sun_tracking_active) && ((millis() - last_check) > SUN_TRACKING_CHECK_INTERVAL)) {
 
-    update_time();
+    //update_time();
     update_sun_position();
 
 
@@ -16140,6 +16277,12 @@ void check_sun_pushbutton_calibration(){
 
 #if defined(FEATURE_STEPPER_MOTOR)
 void service_stepper_motor_pulse_pins(){
+
+
+  #ifdef DEBUG_LOOP
+    control_port->println("service_stepper_motor_pulse_pins()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
 
   service_stepper_motor_pulse_pins_count++;
 
@@ -16277,6 +16420,11 @@ void test_display(){
 #if defined(FEATURE_AUTOPARK)
 void service_autopark(){
 
+  #ifdef DEBUG_LOOP
+    control_port->println("service_autopark()");
+    control_port->flush();
+  #endif // DEBUG_LOOP
+
 
   byte autopark_inhibited = 0;
 
@@ -16328,6 +16476,83 @@ void service_autopark(){
 
 }
 #endif //FEATURE_AUTOPARK
+//------------------------------------------------------
 
+void service_process_debug(byte action,byte process_id){
+
+  #if defined(DEBUG_PROCESSES)
+
+    
+
+    static unsigned long last_process_start_time[PROCESS_TABLE_SIZE];
+    static unsigned long process_cumulative_time[PROCESS_TABLE_SIZE];
+    static byte initialized_stuff = 0;
+    static unsigned long last_output = 0;
+
+    // if (initialized_stuff == 0){
+    //   for (int x = 0;x < PROCESS_TABLE_SIZE;x++){
+    //     last_process_start_time[x] = 0;
+    //     process_cumulative_time[x] = 0;
+    //   }
+    //   initialized_stuff = 1;
+    // } 
+
+    switch(action){
+      case DEBUG_PROCESSES_SERVICE:
+
+        // PROCESS_LOOP (0) is a special case
+
+        process_cumulative_time[PROCESS_LOOP] = process_cumulative_time[PROCESS_LOOP] + (micros() - last_process_start_time[PROCESS_LOOP]);
+        last_process_start_time[PROCESS_LOOP] = micros();
+
+        if (((millis() - last_output) > 3000) && (debug_mode)){
+          debug.println("\r\npid\tprocess\t\t\t\t%\tmicros");
+          for (int x = 0;x < PROCESS_TABLE_SIZE;x++){
+            if (process_cumulative_time[x] > 0){
+              control_port->print(x);
+              control_port->print("\t");
+              switch(x){
+                case PROCESS_LOOP: control_port->print("loop()\t\t\t"); break;
+                case PROCESS_READ_HEADINGS: control_port->print("read_headings\t\t"); break;
+                case PROCESS_CHECK_SERIAL: control_port->print("check_serial\t\t"); break;
+                case PROCESS_SERVICE_NEXTION: control_port->print("service_nextion\t\t"); break;
+                case PROCESS_UPDATE_LCD_DISPLAY: control_port->print("update_lcd_display\t"); break;
+                case PROCESS_SERVICE_ROTATION: control_port->print("service_rotation\t"); break;
+                case PROCESS_UPDATE_SUN_POSITION: control_port->print("update_sun_position\t"); break;
+                case PROCESS_UPDATE_MOON_POSITION: control_port->print("update_moon_position\t"); break;
+                case PROCESS_UPDATE_TIME: control_port->print("update_time\t\t"); break;
+                case PROCESS_SERVICE_GPS: control_port->print("service_gps\t\t"); break;
+                case PROCESS_CHECK_FOR_DIRTY_CONFIGURATION: control_port->print("check_for_dirty_configuration"); break;
+              }
+              control_port->print("\t");
+              control_port->print(((float)process_cumulative_time[x]/(float)micros())*100.0,0);
+              control_port->print("%");                
+              control_port->print("\t");
+              control_port->println(process_cumulative_time[x]);
+            }
+            
+          }
+          control_port->println("\r\n");
+          last_output = millis();
+        }
+
+        break;
+
+      case DEBUG_PROCESSES_PROCESS_ENTER:
+        last_process_start_time[process_id] = micros();
+        break;
+
+
+      case DEBUG_PROCESSES_PROCESS_EXIT:
+        process_cumulative_time[process_id] = process_cumulative_time[process_id] + (micros() - last_process_start_time[process_id]);
+        break;    
+
+
+    }
+
+  #endif //DEBUG_PROCESSES
+
+
+}
 
 // that's all, folks !
