@@ -582,6 +582,11 @@
     2020.07.19.02  
       FEATURE_NEXTION_DISPLAY
         Changed updating of gMSS API variable to reflect moon and sun visibility without tracking activated
+   
+    2020.07.21.01
+      FEATURE_NEXTION_DISPLAY
+        Added NOT_PROVISIONED state to gCS Clock Status API variable
+        Added gX and gY API variables for heading Cartesian coordinates, for future use to drive combined azimuth and elevation gauges 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -594,7 +599,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.19.02"
+#define CODE_VERSION "2020.07.21.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1247,7 +1252,7 @@ void setup() {
 
   initialize_interrupts();
 
-
+  run_this_once();
 
 
 } /* setup */
@@ -4488,6 +4493,10 @@ void service_nextion_display(){
   char *buffer;
   uint16_t len;
 
+  double x;
+  double y;
+  static unsigned long last_cartesian_update = 0;
+
   #if defined(FEATURE_ELEVATION_CONTROL)
     static int last_elevation = 0;
     static unsigned long last_el_update = 0;
@@ -4629,6 +4638,8 @@ void service_nextion_display(){
       strcpy(workstring2,"gCS=");
       strcat(workstring2,workstring1);
       sendNextionCommand(workstring2); 
+    #else
+      sendNextionCommand("gCS=255");    // NOT_PROVISIONED
     #endif
 
     // gVS - Various States
@@ -4940,6 +4951,51 @@ TODO:
     last_various_things_update = millis();
   }
 
+
+    //gX and gY - Cartesian coordinates of heading
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      if ((azimuth != last_azimuth) || (elevation != last_elevation) || ((millis() - last_cartesian_update) > NEXTION_FREQUENT_UPDATE_MS)){
+        convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,azimuth,elevation,&x,&y);
+        strcpy(workstring1,"gX=");
+        dtostrf(int(x), 1, 0, workstring2);
+        strcat(workstring1,workstring2);
+        sendNextionCommand(workstring1);
+
+        #if defined(DEBUG_NEXTION_DISPLAY)
+          debug.print("service_nextion_display: ");
+          debug.println(workstring1);
+        #endif
+
+        strcpy(workstring1,"gY=");
+        dtostrf(int(y), 1, 0, workstring2);
+        strcat(workstring1,workstring2);
+        sendNextionCommand(workstring1);
+        last_cartesian_update = millis();
+ 
+        #if defined(DEBUG_NEXTION_DISPLAY)
+          debug.print("service_nextion_display: ");
+          debug.println(workstring1);
+        #endif
+
+      }
+    #else
+      if ((azimuth != last_azimuth) || ((millis() - last_cartesian_update) > NEXTION_FREQUENT_UPDATE_MS)){
+        convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,azimuth,0,&x,&y);
+        strcpy(workstring1,"gX=");
+        dtostrf(int(x), 1, 0, workstring2);
+        strcat(workstring1,workstring2);
+        sendNextionCommand(workstring1);
+        strcpy(workstring1,"gY=");
+        dtostrf(int(y), 1, 0, workstring2);
+        strcat(workstring1,workstring2);
+        sendNextionCommand(workstring1);
+        last_cartesian_update = millis();
+      }
+    #endif
+
+
+
+
   // Azimuth
   if (((azimuth != last_azimuth) || ((millis() - last_az_update) > NEXTION_FREQUENT_UPDATE_MS))){
     // zAz
@@ -5002,6 +5058,8 @@ TODO:
         last_el_update = millis();
       }
     #endif
+
+
 
 
 // Clock
@@ -16606,6 +16664,102 @@ void service_process_debug(byte action,byte process_id){
 
   #endif //DEBUG_PROCESSES
 
+
+}
+
+//------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,double elevation_in,double* x,double* y){
+
+  double theta = 0;  // angle
+  double r = 0;      // radius
+
+  double actual_az = azimuth_in;
+
+
+
+  r = abs(90 - elevation_in);
+
+  // if elevation is greater than 90 degrees, we need to flip the azimuth over, because we're actually pointing backwards
+  if (elevation_in > 90){
+    actual_az = actual_az + 180.0;
+    if (actual_az >= 360){
+      actual_az = actual_az + 360.0;
+    }
+  }
+
+  //since our azimuth spins the opposite direction of typical polar, we have to convert it
+  if ((actual_az >= 0) && (actual_az <= 90)){
+    theta = 90 - actual_az;
+  } else {
+    theta = 450 - actual_az;
+  }
+
+  //convert theta to radians
+  theta = PI * (theta / 180.0);
+
+  switch(coordinate_conversion){
+    case COORDINATE_PLANE_NORMAL:
+      *x = r * cos(theta);
+      *y = r * sin(theta);
+      break;
+    case COORDINATE_PLANE_UPPER_LEFT_ORIGIN:
+      *x = (r * cos(theta)) + 90;
+      *y = abs((r * sin(theta)) - 90);
+      break;
+  }
+  // control_port->print(azimuth_in,0);
+  // control_port->print("\t");
+  // control_port->print(elevation_in,0);
+  // control_port->print("\t");
+  // control_port->print(theta,4);
+  // control_port->print("\t");
+  // control_port->print(r,0);
+  // control_port->print("\t");    
+  // control_port->print(*x);
+  // control_port->print("\t");
+  // control_port->println(*y);
+
+}
+
+#endif //FEATURE_NEXTION_DISPLAY
+
+//------------------------------------------------------
+
+void run_this_once(){
+
+  // double x = 0;
+  // double y = 0;
+  // int el = 0;
+
+  // control_port->println("\r\naz\tel\tx\ty");
+  // for (int az = 0;az < 360;az = az + 5){
+  //   el = 0;
+  //   convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,az,el,&x,&y);
+
+  // control_port->print(az);
+  // control_port->print("\t");
+  // control_port->print(el);
+  // control_port->print("\t");    
+  // control_port->print(x);
+  // control_port->print("\t");
+  // control_port->println(y);
+
+
+  //   el = 45;
+  //   convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,az,el,&x,&y);
+
+  // control_port->print(az);
+  // control_port->print("\t");
+  // control_port->print(el);
+  // control_port->print("\t");    
+  // control_port->print(x);
+  // control_port->print("\t");
+  // control_port->println(y);
+
+
+  //}
+  
 
 }
 

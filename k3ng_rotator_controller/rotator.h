@@ -136,6 +136,7 @@
 #define RTC_SYNC 2
 #define SLAVE_SYNC 3
 #define SLAVE_SYNC_GPS 4
+#define NOT_PROVISIONED 255
 
 #define CONTROL_PORT0 1
 #define ETHERNET_PORT0 2
@@ -236,6 +237,8 @@
 
 #define PROCESS_TABLE_SIZE 14
 
+#define COORDINATE_PLANE_NORMAL 0
+#define COORDINATE_PLANE_UPPER_LEFT_ORIGIN 1
 
 /* ------end of macros ------- */
 
