@@ -5,9 +5,9 @@
 
 
 // Declaration of some constants 
-#define pi    3.14159265358979323846
-#define twopi (2*pi)
-#define rad   (pi/180)
+#define PI_SUNPOS    3.14159265358979323846
+#define TWOPI_SUNPOS (2*PI_SUNPOS)
+#define RAD_SUNPOS   (PI_SUNPOS/180)
 #define dEarthMeanRadius     6371.01	// In km
 #define dAstronomicalUnit    149597890	// In km
 

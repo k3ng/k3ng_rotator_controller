@@ -588,6 +588,10 @@
         Added NOT_PROVISIONED state to gCS Clock Status API variable
         Added gX and gY API variables for heading Cartesian coordinates, for future use to drive combined azimuth and elevation gauges 
 
+    2020.07.22.01
+      Developing FEATURE_SATELLITE_TRACKING.  Yea.  
+      FEATURE_NEXTION_DISPLAY: call service_nextion_display() right after rebooting display at start up
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -599,7 +603,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.21.01"
+#define CODE_VERSION "2020.07.22.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -880,7 +884,6 @@ byte current_az_speed_voltage = 0;
   //byte push_lcd_update = 0;
   byte perform_screen_redraw = 0;
 #endif // FEATURE_LCD_DISPLAY
-
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT
   #ifdef OPTION_ENCODER_HALF_STEP_MODE      // Use the half-step state table (emits a code at 00 and 11)
@@ -1180,6 +1183,12 @@ DebugClass debug;
   PCF8583 rtc(0xA0);
 #endif //FEATURE_RTC_PCF8583
 
+#if defined(FEATURE_SATELLITE_TRACKING)
+  #include <Plan13.h>
+  #include <MathHelpers.h>
+  Plan13 satellite_tracker;
+#endif
+
 #ifdef HARDWARE_EA4TX_ARS_USB
   #undef LCD_COLUMNS
   #undef LCD_ROWS
@@ -1228,6 +1237,26 @@ DebugClass debug;
 #ifdef FEATURE_AUTOPARK
   unsigned long last_activity_time_autopark = 0;
 #endif  
+
+#if defined(FEATURE_SATELLITE_TRACKING)
+  struct kep{
+    char satellite[16];
+    double YE;
+    double TE;
+    double IN; 
+    double RA;
+    double EC;
+    double WP;
+    double MA;
+    double MM; 
+    double M2;
+    double RV;
+    double ALON;
+  };
+
+  kep current_satellite;
+
+#endif
 
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
@@ -9263,6 +9292,8 @@ void initialize_peripherals(){
     nexSerial.begin(NEXTION_SERIAL_BAUD);
     sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
     sendNextionCommand("rest");      // reset the Nextion unit
+    delay(200);
+    service_nextion_display();
   #endif //FEATURE_NEXTION_DISPLAY
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L
@@ -14222,9 +14253,6 @@ Not implemented yet:
 
     }       
 
-//zzzzzz
-
-
     #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
       // \?GCxxxx xxxx  - go to coordinate target (rotate azimuth)
       if ((input_buffer[2] == 'G') && (input_buffer[3] == 'C')){ 
@@ -16725,41 +16753,302 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #endif //FEATURE_NEXTION_DISPLAY
 
 //------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+void dump_kep(kep * kep_to_dump){
+//zzzzzz
+  control_port->print("YE:");
+  control_port->println(kep_to_dump->YE,0);
+  control_port->print("TE:");
+  control_port->println(kep_to_dump->TE,8);
+  control_port->print("IN:");
+  control_port->println(kep_to_dump->IN,4);
+  control_port->print("RA:");
+  control_port->println(kep_to_dump->RA,4); 
+  control_port->print("EC:");
+  control_port->println(sci(kep_to_dump->EC,4));  // sci function from MathHelpers.h
+  control_port->print("WP:");
+  control_port->println(kep_to_dump->WP,4);    
+  control_port->print("MA:");
+  control_port->println(kep_to_dump->MA,4);
+  control_port->print("MM:");
+  control_port->println(kep_to_dump->MM,9); 
+  control_port->print("M2:");
+  control_port->println(kep_to_dump->M2,8);
+  control_port->print("RV:");
+  control_port->println(kep_to_dump->RV,0);
+  control_port->print("ALON:");
+  control_port->println(kep_to_dump->ALON,1);       
+
+}
+#endif
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+byte parse_tle(char* line1,char* line2,kep * target_kep_struct){
+
+    // 1 28375U 04025K   09232.55636497 -.00000001  00000-0  12469-4 0  4653
+    // 2 28375 098.0531 238.4104 0083652 290.6047 068.6188 14.40649734270229
+
+    // 1 AAAAAU 00  0  0 BBBBB.BBBBBBBB  .CCCCCCCC  00000-0  00000-0 0  DDDZ
+    // 2 AAAAA EEE.EEEE FFF.FFFF GGGGGGG HHH.HHHH III.IIII JJ.JJJJJJJJKKKKKZ
+
+    // KEY: A-CATALOGNUM B-EPOCHTIME C-DECAY D-ELSETNUM E-INCLINATION F-RAAN
+    // G-ECCENTRICITY H-ARGPERIGEE I-MNANOM J-MNMOTION K-ORBITNUM Z-CHECKSUM
+
+    //             YE        TE          IN       RA          EC          WP        MA         MM           M2        RV    ALON
+    //setElements(2009, 232.55636497, 98.0531, 238.4104, 83652*1.0e-7, 290.6047, 68.6188, 14.406497342, -0.00000001, 27022, 180.0);
+
+
+  char temp_char1[16];
+  char temp_char2[16];
+
+  //strcpy(target_kep_struct->satellite,"AO-7");
+  //zzzzzz
+
+  // EPOCHTIME -> YE & TE
+  strcpy(temp_char1,parse_char_string(line1,4,' ',1));
+  
+  // YE
+  temp_char2[0] = temp_char1[0];
+  temp_char2[1] = temp_char1[1];
+  temp_char2[2] = 0;
+  target_kep_struct->YE = char_to_float(temp_char2) + 2000;
+
+  // TE
+  for (int x = 0;x < 12;x++){  // only get last 12 chars
+    temp_char2[x] = temp_char1[x+2];  
+  }
+  temp_char2[12] = 0;
+  target_kep_struct->TE = char_to_float(temp_char2);
+
+  // DECAY -> M2
+  strcpy(temp_char1,parse_char_string(line1,5,' ',1));
+  target_kep_struct->M2 = char_to_float(temp_char1);
+
+  // INCLINATION -> IN
+  strcpy(temp_char1,parse_char_string(line2,3,' ',1));
+  target_kep_struct->IN = char_to_float(temp_char1);
+
+  // RAAN -> RA
+  strcpy(temp_char1,parse_char_string(line2,4,' ',1));
+  target_kep_struct->RA = char_to_float(temp_char1);
+
+  // ECCENTRICITY -> EC
+  strcpy(temp_char1,parse_char_string(line2,5,' ',1));
+  target_kep_struct->EC = char_to_float(temp_char1) * 1.0e-7;
+
+  // ARGPERIGEE -> WP
+  strcpy(temp_char1,parse_char_string(line2,6,' ',1));
+  target_kep_struct->WP = char_to_float(temp_char1);
+
+  // MNANOM -> MA
+  strcpy(temp_char1,parse_char_string(line2,7,' ',1));
+  target_kep_struct->MA = char_to_float(temp_char1);
+
+  // MNMOTION -> MM
+  strcpy(temp_char1,parse_char_string(line2,8,' ',1));
+  for (int x = 0;x < 11;x++){  // only get first 11 chars
+    temp_char2[x] = temp_char1[x];
+  }
+  temp_char2[11] = 0;  
+  target_kep_struct->MM = char_to_float(temp_char2);
+
+  // ORBITNUM -> RV
+  for (int x = 11;x < 16;x++){  // get chars 11 to 15 (starts with 0)
+    temp_char2[x-11] = temp_char1[x];
+  }
+  temp_char2[5] = 0;  
+  target_kep_struct->RV = char_to_float(temp_char2);
+
+  target_kep_struct->ALON = 180.0;
+
+
+
+}
+
+#endif
+
+//------------------------------------------------------
+
+float char_to_float(char * input_buffer){
+
+  float temp_float = 0;
+  byte finished = 0;
+  float hit_decimal = 0;
+  byte make_negative = 0;
+  int x = 0;
+
+
+  while (!finished){
+    if (input_buffer[x] == '.'){   
+      hit_decimal = 10;  
+    } else {
+      if ((input_buffer[x] == ' ') || (input_buffer[x] == 0) || (input_buffer[x] == '\r') || (input_buffer[x] == '\n')){
+        finished = 1;
+      } else {
+        if(input_buffer[x] == '-'){
+          make_negative = 1;
+        } else {
+          if (hit_decimal > 0){
+            temp_float = temp_float + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+            hit_decimal = hit_decimal * 10;
+          } else {
+            temp_float = (temp_float * 10) + (input_buffer[x] - 48);
+          }
+        }
+      }
+    }
+    x++;
+    if (x > 254){finished = 1;}
+  }
+
+
+  if (make_negative){temp_float = temp_float * -1.0;}
+
+  return temp_float;
+
+}
+
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  char* parse_char_string(char* char_string,byte token_number,char delimiter,byte ignore_consecutive_delimiters){
+
+    #define PARSE_TEMP_STRING_SIZE 32
+
+    byte current_token = 1;
+    byte current_position = 0;
+    byte temp_char_current_position = 0;
+    byte last_character_was_delimiter = 0;
+    byte hit_non_whitespace = 0;
+    byte finished = 0;
+    static char temp_char[PARSE_TEMP_STRING_SIZE];
+
+    while (!finished){
+      if (char_string[current_position] == delimiter){
+        if (current_token == token_number){
+          if ((hit_non_whitespace) || (!ignore_consecutive_delimiters)){
+            finished = 1;
+          }
+        } else {
+          if (ignore_consecutive_delimiters){
+            if (!last_character_was_delimiter){
+              current_token++;
+              hit_non_whitespace = 0;
+            }
+          } else {
+            current_token++;
+            hit_non_whitespace = 0;          
+          }
+        }
+        last_character_was_delimiter = 1;
+      } else {
+        if ((char_string[current_position] == '\r') || (char_string[current_position] == '\n') || (char_string[current_position] == 0)){
+          finished = 1;
+        } else {
+          if (current_token == token_number){
+            temp_char[temp_char_current_position] = char_string[current_position]; 
+            temp_char_current_position++;
+            if (temp_char_current_position == 20){
+              finished = 1;
+            }
+          }
+          last_character_was_delimiter = 0;
+          hit_non_whitespace = 1;
+        }
+      }
+      current_position++;
+      if (current_position == 255){
+        finished = 1;
+      }
+    }  // while (!finished){
+
+    if (temp_char_current_position < PARSE_TEMP_STRING_SIZE){
+      temp_char[temp_char_current_position] = 0;
+    }
+
+    return temp_char;
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+
+
+
+
+//------------------------------------------------------
 
 void run_this_once(){
 
-  // double x = 0;
-  // double y = 0;
-  // int el = 0;
 
-  // control_port->println("\r\naz\tel\tx\ty");
-  // for (int az = 0;az < 360;az = az + 5){
-  //   el = 0;
-  //   convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,az,el,&x,&y);
-
-  // control_port->print(az);
-  // control_port->print("\t");
-  // control_port->print(el);
-  // control_port->print("\t");    
-  // control_port->print(x);
-  // control_port->print("\t");
-  // control_port->println(y);
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    parse_tle("1 28375U 04025K   09232.55636497 -.00000001  00000-0  12469-4 0  4653","2 28375 098.0531 238.4104 0083652 290.6047 068.6188 14.40649734270229",&current_satellite);
+    control_port->println("\r\n");
+    dump_kep(&current_satellite);
+  #endif
 
 
-  //   el = 45;
-  //   convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,az,el,&x,&y);
 
-  // control_port->print(az);
-  // control_port->print("\t");
-  // control_port->print(el);
-  // control_port->print("\t");    
-  // control_port->print(x);
-  // control_port->print("\t");
-  // control_port->println(y);
+  // control_port->println();
+  // control_port->println(parse_char_string("   test1 test2 test3",1,' ',1));
+  // control_port->println(parse_char_string("test1   test2 test3",2,' ',1));
+  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",3,',',0));
+  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",4,',',0));
+  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",5,',',0));
+  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",10,',',0));
 
 
-  //}
-  
+  #if defined(FEATURE_SATELLITE_TRACKING) && defined(DEBUG_TEST_PLAN13_LIBRARY)
+
+
+    // void setElements(double YE_in, double TE_in, double IN_in, double 
+    //          RA_in, double EC_in, double WP_in, double MA_in, double MM_in, 
+    //          double M2_in, double RV_in, double ALON_in );
+
+    // 8/20/2009 Keplarian Elements used to produce setElements data below
+    // 1 28375U 04025K   09232.55636497 -.00000001  00000-0  12469-4 0  4653
+    // 2 28375 098.0531 238.4104 0083652 290.6047 068.6188 14.40649734270229
+
+    // 1 AAAAAU 00  0  0 BBBBB.BBBBBBBB  .CCCCCCCC  00000-0  00000-0 0  DDDZ
+    // 2 AAAAA EEE.EEEE FFF.FFFF GGGGGGG HHH.HHHH III.IIII JJ.JJJJJJJJKKKKKZ
+    // KEY: A-CATALOGNUM B-EPOCHTIME C-DECAY D-ELSETNUM E-INCLINATION F-RAAN
+    // G-ECCENTRICITY H-ARGPERIGEE I-MNANOM J-MNMOTION K-ORBITNUM Z-CHECKSUM
+
+    satellite_tracker.setFrequency(435300000, 145920000); //AO-51  frequency
+    satellite_tracker.setLocation(-64.375, 45.8958, 32); // Sackville, NB
+    satellite_tracker.setTime(2009, 10, 1, 19, 5, 0);     //Oct 1, 2009 19:05:00 UTC
+    satellite_tracker.setElements(2009, 232.55636497, 98.0531, 238.4104, 83652*1.0e-7, 290.6047, 68.6188, 14.406497342, -0.00000001, 27022, 180.0); //fairly recent keps for AO-51 //readElements();
+    satellite_tracker.initSat();
+    satellite_tracker.satvec();
+    satellite_tracker.rangevec();
+    control_port->println("\r\nPlan13 Satellite Tracking Test");
+    control_port->println("Correct data: AZ:57.07 EL:4.05 RX:435301728 TX:145919440");
+    control_port->print("Result:       ");
+    satellite_tracker.printdata();
+    control_port->println();
+    
+
+
+
+  #endif //defined(FEATURE_SATELLITE_TRACKING) && defined(DEBUG_TEST_PLAN13_LIBRARY)
+
+
+
+  #if defined(DEBUG_TEST_POLAR_TO_CARTESIAN)
+    double x = 0;
+    double y = 0;
+    int el = 0;
+    control_port->println("\r\naz\tel\tx\ty");
+    for (int az = 0;az < 360;az = az + 5){
+      el = 0;
+      convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,az,el,&x,&y);
+      control_port->print(az);
+      control_port->print("\t");
+      control_port->print(el);
+      control_port->print("\t");    
+      control_port->print(x);
+      control_port->print("\t");
+      control_port->println(y);
+    }
+  #endif //DEBUG_TEST_POLAR_TO_CARTESIAN
+
 
 }
 

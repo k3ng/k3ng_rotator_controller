@@ -28,6 +28,8 @@
 #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
+#define FEATURE_SATELLITE_TRACKING  // In development
+
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
 // #define LANGUAGE_CZECH

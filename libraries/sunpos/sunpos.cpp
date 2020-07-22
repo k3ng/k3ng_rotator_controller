@@ -95,7 +95,7 @@ void sunpos(cTime udtTime,cLocation udtLocation, cSunCoordinates *udtSunCoordina
     dY = cos( dEclipticObliquity ) * dSin_EclipticLongitude;
     dX = cos( dEclipticLongitude );
     dRightAscension = atan2( dY,dX );
-    if( dRightAscension < 0.0 ) dRightAscension = dRightAscension + twopi;
+    if( dRightAscension < 0.0 ) dRightAscension = dRightAscension + TWOPI_SUNPOS;
     dDeclination = asin( sin( dEclipticObliquity )*dSin_EclipticLongitude );
   }
 
@@ -113,9 +113,9 @@ void sunpos(cTime udtTime,cLocation udtLocation, cSunCoordinates *udtSunCoordina
       0.0657098283*dElapsedJulianDays 
       + dDecimalHours;
     dLocalMeanSiderealTime = (dGreenwichMeanSiderealTime*15 
-      + udtLocation.dLongitude)*rad;
+      + udtLocation.dLongitude)*RAD_SUNPOS;
     dHourAngle = dLocalMeanSiderealTime - dRightAscension;
-    dLatitudeInRadians = udtLocation.dLatitude*rad;
+    dLatitudeInRadians = udtLocation.dLatitude*RAD_SUNPOS;
     dCos_Latitude = cos( dLatitudeInRadians );
     dSin_Latitude = sin( dLatitudeInRadians );
     dCos_HourAngle= cos( dHourAngle );
@@ -125,13 +125,13 @@ void sunpos(cTime udtTime,cLocation udtLocation, cSunCoordinates *udtSunCoordina
     dX = tan( dDeclination )*dCos_Latitude - dSin_Latitude*dCos_HourAngle;
     udtSunCoordinates->dAzimuth = atan2( dY, dX );
     if ( udtSunCoordinates->dAzimuth < 0.0 ) 
-      udtSunCoordinates->dAzimuth = udtSunCoordinates->dAzimuth + twopi;
-    udtSunCoordinates->dAzimuth = udtSunCoordinates->dAzimuth/rad;
+      udtSunCoordinates->dAzimuth = udtSunCoordinates->dAzimuth + TWOPI_SUNPOS;
+    udtSunCoordinates->dAzimuth = udtSunCoordinates->dAzimuth/RAD_SUNPOS;
     // Parallax Correction
     dParallax=(dEarthMeanRadius/dAstronomicalUnit)
       *sin(udtSunCoordinates->dZenithAngle);
     udtSunCoordinates->dZenithAngle=(udtSunCoordinates->dZenithAngle 
-      + dParallax)/rad;
+      + dParallax)/RAD_SUNPOS;
   }
 }
 

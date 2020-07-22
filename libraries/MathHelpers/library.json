@@ -1,0 +1,24 @@
+{
+  "name": "MathHelpers",
+  "keywords": "Math, scientific, exponential, notation, clock, weeks, days, hours, minutes, hex, bin",
+  "description": "Library with representation function for Arduino.",
+  "authors":
+  [
+    {
+      "name": "Rob Tillaart",
+      "email": "Rob.Tillaart@gmail.com",
+      "maintainer": true
+    }
+  ],
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/RobTillaart/Arduino.git"
+  },
+  "version":"0.1.1",
+  "frameworks": "arduino",
+  "platforms": "*",
+  "export": {
+    "include": "libraries/MathHelpers"
+  }
+}
