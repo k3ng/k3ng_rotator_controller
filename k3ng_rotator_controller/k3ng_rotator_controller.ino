@@ -69,8 +69,17 @@
   
   
   
-                            All copyrights are the property of their respective owners
+  All copyrights are the property of their respective owners
   
+
+  Satellite tracking algorithm originally created by James Miller, G3RUH
+  https://www.amsat.org/amsat/articles/g3ruh/111.html
+
+  Later ported to the Arduino by VE9QRP http://ve9qrp.blogspot.com
+  in the QRPtracker Project https://sites.google.com/site/qrptracker/,
+  code found at https://github.com/BackupGGCode/qrptracker.
+
+  The satellite tracking in this code is based on both works.
  
  
  Full documentation is currently located here: https://github.com/k3ng/k3ng_rotator_controller/wiki
@@ -592,6 +601,10 @@
       Developing FEATURE_SATELLITE_TRACKING.  Yea.  
       FEATURE_NEXTION_DISPLAY: call service_nextion_display() right after rebooting display at start up
 
+    2020.07.23.01
+      Lots more work on FEATURE_SATELLITE_TRACKING.  It's only outputting AO-7 in debug logs right now.
+      Pushing to Github in case I get hit by a bus before I finish this.
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -603,13 +616,12 @@
 
   */
 
-#define CODE_VERSION "2020.07.22.01"
+#define CODE_VERSION "2020.07.23.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 #include <math.h>
 #include <avr/wdt.h>
-
 
 #include "rotator_hardware.h"
 
@@ -1013,9 +1025,10 @@ byte current_az_speed_voltage = 0;
   CONTROL_PORT_SERIAL_PORT_CLASS * control_port;
 #endif
 
-#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) || defined(FEATURE_SATELLITE_TRACKING)
   double latitude = DEFAULT_LATITUDE;
   double longitude = DEFAULT_LONGITUDE;
+  double altitude_m = DEFAULT_ALTITUDE_M;
 #endif
 
 #ifdef FEATURE_MOON_TRACKING
@@ -1183,12 +1196,6 @@ DebugClass debug;
   PCF8583 rtc(0xA0);
 #endif //FEATURE_RTC_PCF8583
 
-#if defined(FEATURE_SATELLITE_TRACKING)
-  #include <Plan13.h>
-  #include <MathHelpers.h>
-  Plan13 satellite_tracker;
-#endif
-
 #ifdef HARDWARE_EA4TX_ARS_USB
   #undef LCD_COLUMNS
   #undef LCD_ROWS
@@ -1238,25 +1245,74 @@ DebugClass debug;
   unsigned long last_activity_time_autopark = 0;
 #endif  
 
+
 #if defined(FEATURE_SATELLITE_TRACKING)
+
+  const double YM = 365.25;                                            // Days in a year
+  const double YT = 365.2421970;                                       // Tropical year, days
+  const double WW = 2.0 * M_PI / 365.2421970;                          // Earth's rotation rate, rads/whole day
+  const double WE = 2.0 * M_PI + (2.0 * M_PI / 365.2421970);           // Earth's rotation rate, rads/day
+  const double W0 = (2.0 * M_PI + (2.0 * M_PI / 365.2421970)) / 86400; // Earth's rotation rate, rads/sec
+  const double GM = 3.986E5;                                           // Earth's gravitational constant km^3/s^2
+  const double J2 = 1.08263E-3;                                        // 2nd Zonal coeff, Earth's gravity Field
+
+  // Sideral and solar data. Valid to year 2030
+  // 2014 GHAA, Year YG, Jan 0.0 
+  const double YG = 2014;
+  const double G0 = 99.5828;
+  // MA Sun and rate, deg, deg/day
+  const double MAS0 = 356.4105;
+  const double MASD = 0.98560028;
+  const double Sun_inclination = 23.4375;
+
+  // // 2010 GHAA, Year YG, Jan 0.0 Valid to year 2015 
+  // const double YG = 2010;
+  // const double G0 = 99.5578;
+  // // MA Sun and rate, deg, deg/day
+  // const double MAS0 = 356.4485;
+  // const double MASD = 0.98560028;
+  // const double Sun_inclination 23.4380;
+
+  // WGS-84 Earth Ellipsoid 
+  const double RE = 6378.137;
+  const double FL = 1.0 / 298.257224;
+
+  // IAU-76 Earth Ellipsoid
+  //const double RE = 6378.140;
+  //const double FL = 1.0 / 298.257;
+
+  double current_satellite_elevation;
+  double current_satellite_azimuth;      
+  double current_satellite_longitude;
+  double current_satellite_latitude;
+  unsigned long current_satellite_rx_freq;
+  unsigned long current_satellite_tx_freq;
+
+//zzzzzz
+
   struct kep{
-    char satellite[16];
-    double YE;
-    double TE;
-    double IN; 
-    double RA;
-    double EC;
-    double WP;
-    double MA;
-    double MM; 
-    double M2;
-    double RV;
-    double ALON;
+      char satellite[16];
+      long satellite_number;
+      double YE;
+      double TE;
+      double IN; 
+      double RA;
+      double EC;
+      double WP;
+      double MA;
+      double MM; 
+      double M2;
+      double RV;
+      double ALON;
+      double ALAT;
+      unsigned long rxFrequency;  
+      unsigned long txFrequency; 
   };
 
-  kep current_satellite;
+  kep current_satellite;  
 
-#endif
+#endif //FEATURE_SATELLITE_TRACKING
+
 
 
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
@@ -1480,6 +1536,10 @@ void loop() {
   
   #if defined(pin_status_led)
     service_status_led();
+  #endif
+
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    service_satellite_tracking();
   #endif
 
   check_for_reset_flag();
@@ -7567,6 +7627,7 @@ void output_debug(){
         #endif //FEATURE_GPS
 
 
+
         #ifdef FEATURE_AUTOCORRECT
           debug.print("\tAutocorrect: AZ:");
           switch(autocorrect_state_az){
@@ -7585,25 +7646,28 @@ void output_debug(){
           #endif //FEATURE_ELEVATION_CONTROL
         #endif //DEBUG_AUTOCORRECT
 
+        #if defined(FEATURE_SATELLITE_TRACKING)
+          debug.print("\tSat ");
+          debug.print(current_satellite.satellite);
+          debug.print(" AZ:");
+          debug.print(current_satellite_azimuth);
+          debug.print(" EL:");
+          debug.print(current_satellite_elevation);
+          debug.print(" Lat:");
+          debug.print(current_satellite_latitude);
+          debug.print(" Lon:");
+          debug.println(current_satellite_longitude);
+        #endif
+
         debug.print("\tCONFIG_");
         if (!configuration_dirty){
           debug.print("NOT_");
         }
         debug.println("DIRTY");
 
-        /*
-        if ((raw_azimuth ) < configuration.azimuth_starting_point){
-          debug.print(F("\tWARNING: raw azimuth is CCW of configured starting point of "));
-          debug.print(configuration.azimuth_starting_point);
-          debug.println("!");
-        }
 
-        if ((raw_azimuth ) > (configuration.azimuth_starting_point+configuration.azimuth_rotation_capability)){
-          debug.print(F("\tWARNING: raw azimuth is CW of configured ending point of "));
-          debug.print((configuration.azimuth_starting_point+configuration.azimuth_rotation_capability),0);
-          debug.println("!");
-        }    
-        */
+
+
 
         #if !defined(TEENSYDUINO)
           void * HP = malloc(4);
@@ -7623,7 +7687,9 @@ void output_debug(){
         last_debug_output_time = millis(); 
 
       }
-    #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+    #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
+
+
 
     #ifdef DEBUG_PROCESSES
       service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_DEBUG);
@@ -12874,15 +12940,17 @@ void service_gps(){
         if (SYNC_COORDINATES_WITH_GPS) {
           latitude = float(gps_lat) / 1000000.0;
           longitude = float(gps_lon) / 1000000.0;
+          altitude_m = float(gps.altitude()) / 100.0;
           #ifdef DEBUG_GPS
             debug.print("service_gps: coord sync:");
             debug.print(latitude,2);
             debug.print(" ");
             debug.print(longitude,2);
-            debug.println("");
+            debug.print(" ");
+            debug.print(altitude,2);
+            debug.println("m");
           #endif // DEBUG_GPS
         }
-      //#endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
       last_sync = millis();
     }
@@ -16755,7 +16823,9 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
 void dump_kep(kep * kep_to_dump){
-//zzzzzz
+
+  control_port->print("Sat:");
+  control_port->println(kep_to_dump->satellite);
   control_port->print("YE:");
   control_port->println(kep_to_dump->YE,0);
   control_port->print("TE:");
@@ -16765,13 +16835,13 @@ void dump_kep(kep * kep_to_dump){
   control_port->print("RA:");
   control_port->println(kep_to_dump->RA,4); 
   control_port->print("EC:");
-  control_port->println(sci(kep_to_dump->EC,4));  // sci function from MathHelpers.h
+  control_port->println(kep_to_dump->EC,8);
   control_port->print("WP:");
   control_port->println(kep_to_dump->WP,4);    
   control_port->print("MA:");
   control_port->println(kep_to_dump->MA,4);
   control_port->print("MM:");
-  control_port->println(kep_to_dump->MM,9); 
+  control_port->println(kep_to_dump->MM,8); 
   control_port->print("M2:");
   control_port->println(kep_to_dump->M2,8);
   control_port->print("RV:");
@@ -16781,9 +16851,52 @@ void dump_kep(kep * kep_to_dump){
 
 }
 #endif
+
+//------------------------------------------------------
+float char_to_float(char * input_buffer){
+
+  float temp_float = 0;
+  byte finished = 0;
+  float hit_decimal = 0;
+  byte make_negative = 0;
+  int x = 0;
+
+
+  while (!finished){
+    if (input_buffer[x] == '.'){   
+      hit_decimal = 10;  
+    } else {
+      if ((input_buffer[x] == ' ') || (input_buffer[x] == 0) || (input_buffer[x] == '\r') || (input_buffer[x] == '\n')){
+        finished = 1;
+      } else {
+        if(input_buffer[x] == '-'){
+          make_negative = 1;
+        } else {
+          if (hit_decimal > 0){
+            temp_float = temp_float + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+            hit_decimal = hit_decimal * 10;
+          } else {
+            temp_float = (temp_float * 10) + (input_buffer[x] - 48);
+          }
+        }
+      }
+    }
+    x++;
+    if (x > 254){finished = 1;}
+  }
+
+
+  if (make_negative){temp_float = temp_float * -1.0;}
+
+  return temp_float;
+
+}
+
+
+
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-byte parse_tle(char* line1,char* line2,kep * target_kep_struct){
+byte parse_tle(char* line1,char* line2,kep * target_kep_struct,char * satellite_name_in){
 
     // 1 28375U 04025K   09232.55636497 -.00000001  00000-0  12469-4 0  4653
     // 2 28375 098.0531 238.4104 0083652 290.6047 068.6188 14.40649734270229
@@ -16795,14 +16908,13 @@ byte parse_tle(char* line1,char* line2,kep * target_kep_struct){
     // G-ECCENTRICITY H-ARGPERIGEE I-MNANOM J-MNMOTION K-ORBITNUM Z-CHECKSUM
 
     //             YE        TE          IN       RA          EC          WP        MA         MM           M2        RV    ALON
-    //setElements(2009, 232.55636497, 98.0531, 238.4104, 83652*1.0e-7, 290.6047, 68.6188, 14.406497342, -0.00000001, 27022, 180.0);
+    //setElements(2009, 232.55636497, 98.0531, 238.4104, 83652*1.0e-7, 290.6047, 68.6188, 14.40649734, -0.00000001, 27022, 180.0);
 
 
   char temp_char1[16];
   char temp_char2[16];
 
-  //strcpy(target_kep_struct->satellite,"AO-7");
-  //zzzzzz
+  strcpy(target_kep_struct->satellite,satellite_name_in);
 
   // EPOCHTIME -> YE & TE
   strcpy(temp_char1,parse_char_string(line1,4,' ',1));
@@ -16846,7 +16958,7 @@ byte parse_tle(char* line1,char* line2,kep * target_kep_struct){
 
   // MNMOTION -> MM
   strcpy(temp_char1,parse_char_string(line2,8,' ',1));
-  for (int x = 0;x < 11;x++){  // only get first 11 chars
+  for (int x = 0;x < 11;x++){  // only get first 11 chars (Arduino double & float only has about 6 decimal places of accuracy)
     temp_char2[x] = temp_char1[x];
   }
   temp_char2[11] = 0;  
@@ -16867,46 +16979,6 @@ byte parse_tle(char* line1,char* line2,kep * target_kep_struct){
 
 #endif
 
-//------------------------------------------------------
-
-float char_to_float(char * input_buffer){
-
-  float temp_float = 0;
-  byte finished = 0;
-  float hit_decimal = 0;
-  byte make_negative = 0;
-  int x = 0;
-
-
-  while (!finished){
-    if (input_buffer[x] == '.'){   
-      hit_decimal = 10;  
-    } else {
-      if ((input_buffer[x] == ' ') || (input_buffer[x] == 0) || (input_buffer[x] == '\r') || (input_buffer[x] == '\n')){
-        finished = 1;
-      } else {
-        if(input_buffer[x] == '-'){
-          make_negative = 1;
-        } else {
-          if (hit_decimal > 0){
-            temp_float = temp_float + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
-            hit_decimal = hit_decimal * 10;
-          } else {
-            temp_float = (temp_float * 10) + (input_buffer[x] - 48);
-          }
-        }
-      }
-    }
-    x++;
-    if (x > 254){finished = 1;}
-  }
-
-
-  if (make_negative){temp_float = temp_float * -1.0;}
-
-  return temp_float;
-
-}
 
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
@@ -16971,64 +17043,544 @@ float char_to_float(char * input_buffer){
 #endif //FEATURE_SATELLITE_TRACKING
 
 
-
-
 //------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
 
-void run_this_once(){
+  void service_satellite_tracking(){
 
+    #define SATELLITE_TRACKING_SERVICE_INTERVAL_MS 5000
 
-  #if defined(FEATURE_SATELLITE_TRACKING)
-    parse_tle("1 28375U 04025K   09232.55636497 -.00000001  00000-0  12469-4 0  4653","2 28375 098.0531 238.4104 0083652 290.6047 068.6188 14.40649734270229",&current_satellite);
-    control_port->println("\r\n");
-    dump_kep(&current_satellite);
-  #endif
+    static unsigned long last_sat_update = 0;
 
+    if ((millis() - last_sat_update) > SATELLITE_TRACKING_SERVICE_INTERVAL_MS){
 
-
-  // control_port->println();
-  // control_port->println(parse_char_string("   test1 test2 test3",1,' ',1));
-  // control_port->println(parse_char_string("test1   test2 test3",2,' ',1));
-  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",3,',',0));
-  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",4,',',0));
-  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",5,',',0));
-  // control_port->println(parse_char_string(",,,test1,test2,,,,,test3",10,',',0));
-
-
-  #if defined(FEATURE_SATELLITE_TRACKING) && defined(DEBUG_TEST_PLAN13_LIBRARY)
-
-
-    // void setElements(double YE_in, double TE_in, double IN_in, double 
-    //          RA_in, double EC_in, double WP_in, double MA_in, double MM_in, 
-    //          double M2_in, double RV_in, double ALON_in );
-
-    // 8/20/2009 Keplarian Elements used to produce setElements data below
-    // 1 28375U 04025K   09232.55636497 -.00000001  00000-0  12469-4 0  4653
-    // 2 28375 098.0531 238.4104 0083652 290.6047 068.6188 14.40649734270229
+    // AO-07 July 16, 2020
+    //1 07530U 74089B   20198.38798810 -.00000037  00000-0  51953-4 0  9995
+    //2 07530 101.8012 167.9693 0011953 310.2360 204.6161 12.53644215089612
 
     // 1 AAAAAU 00  0  0 BBBBB.BBBBBBBB  .CCCCCCCC  00000-0  00000-0 0  DDDZ
     // 2 AAAAA EEE.EEEE FFF.FFFF GGGGGGG HHH.HHHH III.IIII JJ.JJJJJJJJKKKKKZ
     // KEY: A-CATALOGNUM B-EPOCHTIME C-DECAY D-ELSETNUM E-INCLINATION F-RAAN
     // G-ECCENTRICITY H-ARGPERIGEE I-MNANOM J-MNMOTION K-ORBITNUM Z-CHECKSUM
 
-    satellite_tracker.setFrequency(435300000, 145920000); //AO-51  frequency
-    satellite_tracker.setLocation(-64.375, 45.8958, 32); // Sackville, NB
-    satellite_tracker.setTime(2009, 10, 1, 19, 5, 0);     //Oct 1, 2009 19:05:00 UTC
-    satellite_tracker.setElements(2009, 232.55636497, 98.0531, 238.4104, 83652*1.0e-7, 290.6047, 68.6188, 14.406497342, -0.00000001, 27022, 180.0); //fairly recent keps for AO-51 //readElements();
-    satellite_tracker.initSat();
-    satellite_tracker.satvec();
-    satellite_tracker.rangevec();
-    control_port->println("\r\nPlan13 Satellite Tracking Test");
-    control_port->println("Correct data: AZ:57.07 EL:4.05 RX:435301728 TX:145919440");
-    control_port->print("Result:       ");
-    satellite_tracker.printdata();
-    control_port->println();
-    
+    // char tle_line_1[70];
+    // char tle_line_2[70];
+
+    // strcpy(tle_line_1,"1 07530U 74089B   20198.38798810 -.00000037  00000-0  51953-4 0  9995");
+    // strcpy(tle_line_2,"2 07530 101.8012 167.9693 0011953 310.2360 204.6161 12.53644215089612");
+
+
+    // parse_tle(tle_line_1,tle_line_2,&current_satellite,"AO-07");
+
+    strcpy(current_satellite.satellite,"AO-7");
+    current_satellite.YE = 2020;
+    current_satellite.TE = 198.38798810;
+    current_satellite.IN = 101.8012;
+    current_satellite.RA = 167.9693;
+    current_satellite.EC = 11953*1.0e-7;
+    current_satellite.WP = 310.2360;
+    current_satellite.MA = 204.6161;
+    current_satellite.MM = 12.53644215;
+    current_satellite.M2 = -0.00000037;
+    current_satellite.RV = 8961;
+    current_satellite.ALON = 180.0;
+    current_satellite.ALAT = 0;
+    current_satellite.rxFrequency = 0;
+    current_satellite.txFrequency = 0;
+
+ 
+//zzzzzz
 
 
 
-  #endif //defined(FEATURE_SATELLITE_TRACKING) && defined(DEBUG_TEST_PLAN13_LIBRARY)
+    //printElements();    
+    satellite_calculate(&current_satellite_azimuth,&current_satellite_elevation,&current_satellite_latitude,&current_satellite_longitude,
+                        clock_years,clock_months,clock_days,clock_hours,clock_minutes,clock_seconds,
+                        latitude, longitude, altitude_m,
+                        &current_satellite_rx_freq, &current_satellite_tx_freq,
+                        &current_satellite);
 
+ 
+
+    // Serial.println();
+    // printdata();
+    // Serial.println();
+
+    last_sat_update = millis();
+    }
+  }
+
+#endif //FEATURE_SATELLITE_TRACKING    
+
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  double rad(double deg){
+
+    return (M_PI / 180.0 * deg);
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  double deg(double rad){
+
+    return (rad * 180.0 / M_PI);
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+//------------------------------------------------------
+
+#if defined(FEATURE_SATELLITE_TRACKING)
+  int sgn(double v) {
+
+    if (v < 0) return -1;
+    if (v > 0) return 1;
+    return 0;
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+double FNatn(double y, double x){
+
+
+  float a;
+
+  if (x != 0){
+    a = atan(y / x);
+  } else {
+    //a = M_PI / 2.0 * sin(y);
+    a = M_PI / 2.0 * (float)sgn(y);
+  }
+  if (x < 0){
+    a = a + M_PI;
+  }
+  if (a < 0){
+    a = a + 2.0 * M_PI;
+  }
+
+  return (a);
+}
+#endif //FEATURE_SATELLITE_TRACKING
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+double FNday(int year, int month, int day){
+
+// Convert date to day number
+ //*
+// * Function returns a general day number from year, month, and day.
+// * Value is (JulianDay - 1721409.5) or (AmsatDay + 722100)
+// *
+
+
+
+  double JulianDate;
+
+  #if defined(DEBUG_SATELLITE_TRACKING)
+    Serial.print("## FNDay:  ");
+    Serial.print("Year: ");
+    Serial.print(year);
+    Serial.print(" Month: ");
+    Serial.print(month);
+    Serial.print(" Day: ");
+    Serial.print(day);
+  #endif
+
+  if (month <= 2){
+    year -= 1;
+    month += 12;
+  }
+  
+  JulianDate = (long)(year * YM) + (int)((month + 1) * 30.6) + (day - 428);
+
+  #if defined(DEBUG_SATELLITE_TRACKING)
+    Serial.print(" JD: ");
+    Serial.println(JulianDate);
+  #endif
+
+  return (JulianDate);
+}
+#endif //FEATURE_SATELLITE_TRACKING
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+void satellite_calculate(double* satellite_az,double* satellite_el,double* satellite_lat,double* satellite_long,
+                         double year_, double month_, double day_, double hour_, double minutes_, double seconds_,
+                         double observer_lon, double observer_lat, double observer_height,
+                         unsigned long* rxOutLong, unsigned long* txOutLong, 
+                         kep* kep_in){
+
+  #if defined(DEBUG_SATELLITE_TRACKING)
+    Serial.println("satellite_calculate: start");
+  #endif
+
+//zzzzzz
+
+  double YE = kep_in->YE;
+  double TE = kep_in->TE;
+  double IN = kep_in->IN;
+  double RA = kep_in->RA;
+  double EC = kep_in->EC;
+  double WP = kep_in->WP;
+  double MA = kep_in->MA;
+  double MM = kep_in->MM;
+  double M2 = kep_in->M2;
+  double RV = kep_in->RV;
+  double ALAT = kep_in->ALAT;
+  double ALON = kep_in->ALON;
+  unsigned long rxFrequencyLong = kep_in->rxFrequency;
+  unsigned long txFrequencyLong = kep_in->txFrequency;
+  double C, S, DNOM;
+  float dopplerFactor;
+
+  double DN = FNday(year_, month_, day_);
+  double TN = ((float)hour_ + ((float)minutes_ + ((float)seconds_/60.0)) /60.0)/24.0;
+  DN = (long)DN;
+
+  // Observer's location
+  double LA = rad(observer_lat);
+  double LO = rad(observer_lon);
+  double HT = ((float) observer_height)/1000.0; // this needs to be in km
+  double CL = cos(LA);
+  double SL = sin(LA);
+  double CO = cos(LO);
+  double SO = sin(LO);
+
+  double RP = RE * (1.0 - FL);
+  double XX = RE * RE;
+  double ZZ = RP * RP;
+
+  double D = sqrt( XX * CL * CL + ZZ * SL * SL );
+
+  double Rx = XX / D + HT;
+  double Rz = ZZ / D + HT;
+
+  // Observer's unit vectors Up EAST and NORTH in geocentric coordinates
+  double Ux = CL * CO;
+  double Ex = -SO;
+  double Nx = -SL * CO;
+
+  double Uy = CL * SO;
+  double Ey = CO;
+  double Ny = -SL * SO;
+
+  double Uz = SL;
+  double Ez = 0;
+  double Nz = CL;
+
+  // Observer's XYZ coordinates at earth's surface
+  double Ox = Rx * Ux;
+  double Oy = Rx * Uy;
+  double Oz = Rz * Uz;
+
+  // Convert angles to radians, etc.
+  RA = rad(RA);
+  IN = rad(IN);
+  WP = rad(WP);
+  MA = rad(MA);
+  MM = MM * 2.0 * M_PI;
+  M2 = M2 * 2.0 * M_PI;
+
+  // Observer's velocity, geocentric coordinates
+  double VOx = -Oy * W0;
+  double VOy = Ox * W0;
+
+  // Convert satellite epoch to day number and fraction of a day
+  double DE = FNday(YE, 1, 0) + (int)TE;
+  
+  TE = TE - (int)TE;
+
+  #if defined(DEBUG_SATELLITE_TRACKING)
+    Serial.print("DE: ");
+    Serial.println(DE);
+    Serial.print("TE: ");
+    Serial.println(TE);
+  #endif
+
+  // Average Precession rates 
+
+  double N0 = MM / 86400.0;                     // Mean motion rads/s               
+  double Azero = pow(GM / N0 / N0, 1.0 / 3.0);  // Semi major axis km                
+  double b0 = Azero * sqrt(1.0 - EC * EC);      // Semi minor axis km                
+  double SI = sin(IN);
+  double CI = cos(IN);
+  double PC = RE * Azero / (b0 * b0);
+  PC = 1.5 * J2 * PC * PC * MM;              // Precession const, rad/day         
+  double QD = -PC * CI;                      // Node Precession rate, rad/day     
+  double WD = PC *(5.0 * CI*CI - 1.0) / 2.0; // Perigee Precession rate, rad/day  
+  double DC = -2.0 * M2 / MM / 3.0;          // Drag coeff                        
+
+  // Sun's inclination 
+  //INS = rad(Sun_inclination);
+  //CNS = cos(INS);
+  //SNS = sin(INS);
+  // Sun's equation of center terms
+  // EQC1 = 0.03341;  // unused ?
+  // EQC2 = 0.00035;  // unused ?
+
+  // Bring Sun data to satellite epoch
+  double TEG = (DE - FNday(YG, 1, 0)) + TE;  // Elapsed Time: Epoch - YG          
+  double GHAE = rad(G0) + TEG * WE;          // GHA Aries, epoch                  
+  //MRSE = rad(G0) + (TEG * WW) + M_PI; // Mean RA Sun at Sat Epoch          
+  //MASE = rad(MAS0 + MASD * TEG);      // Mean MA Sun                       Unused?
+
+  // Antenna unit vector in orbit plane coordinates
+  CO = cos(rad(ALON));
+  SO = sin(rad(ALON));
+  CL = cos(rad(ALAT));
+  SL = sin(rad(ALAT));
+  double ax = -CL * CO;
+  double ay = -CL * SO;
+  double az = -SL;
+
+  // Calculate satellite position at DN, TN
+  double T = (DN - DE) + (TN - TE);         // Elapsed T since epoch             
+
+  #if defined(DEBUG_SATELLITE_TRACKING)
+    Serial.print("T: ");
+    Serial.println(T);
+  #endif
+
+  double DT = DC * T / 2.0;                  // Linear drag terms                 
+  double KD = 1.0 + 4.0 * DT;
+  double KDP = 1.0 - 7.0 * DT;
+  double M = MA + MM * T * (1.0 - 3.0 * DT); // Mean anomaly at YR,/ TN           
+  int DR = (int)(M / (2.0 * M_PI));          // Strip out whole no of revs        
+  M = M - DR * 2.0 * M_PI;                   // M now in range 0 - 2PI            
+  long RN = RV + DR + 1;                     // Current orbit number              
+
+  // Solve M = EA - EC * sin(EA) for EA given M, by Newton's method        
+  double EA = M;                             //Initial solution                  
+  do{
+     C = cos(EA);
+     S = sin(EA);
+     DNOM = 1.0 - EC * C;
+     D = (EA - EC * S - M) / DNOM;   // Change EA to better resolution    
+     EA = EA - D;                    // by this amount until converged    
+  }
+  while (fabs(D) > 1.0E-5);
+
+  // Distances 
+  double A = Azero * KD;
+  double B = b0 * KD;
+  double RS = A * DNOM;
+
+  // Calculate satellite position and velocity in plane of ellipse
+  double Sx = A * (C - EC);
+  double Vx = -A * S / DNOM * N0;
+  double Sy = B * S;
+  double Vy = B * C / DNOM * N0;
+
+  double AP = WP + WD * T * KDP;
+  double CWw = cos(AP);
+  double SW = sin(AP);
+  double RAAN = RA + QD * T * KDP;
+  double CQ = cos(RAAN);
+  double SQ = sin(RAAN);
+
+  // Plane -> celestial coordinate transformation, [C] = [RAAN]*[IN]*[AP] 
+  double CXx = CWw * CQ - SW * CI * SQ;
+  double CXy = -SW * CQ - CWw * CI * SQ;
+  double CXz = SI * SQ;
+  double CYx = CWw * SQ + SW * CI * CQ;
+  double CYy = -SW * SQ + CWw * CI * CQ;
+  double CYz = -SI * CQ;
+  double CZx = SW * SI;
+  double CZy = CWw * SI;
+  double CZz = CI;
+
+  // Compute satellite's position vector, ANTenna axis unit vector    
+  //   and velocity  in celestial coordinates. (Note: Sz = 0, Vz = 0) 
+  double SATx = Sx * CXx + Sy * CXy;
+  double ANTx = ax * CXx + ay * CXy + az * CXz;
+  double VELx = Vx * CXx + Vy * CXy;
+  double SATy = Sx * CYx + Sy * CYy;
+  double ANTy = ax * CYx + ay * CYy + az * CYz;
+  double VELy = Vx * CYx + Vy * CYy;
+  double SATz = Sx * CZx + Sy * CZy;
+  double ANTz = ax * CZx + ay * CZy + az * CZz;
+  double VELz = Vx * CZx + Vy * CZy;
+
+  // Also express SAT, ANT, and VEL in geocentric coordinates 
+  double GHAA = GHAE + WE * T;       // GHA Aries at elaprsed time T 
+  C = cos(-GHAA);
+  S = sin(-GHAA);
+  Sx = SATx * C - SATy * S;
+  double Ax = ANTx * C - ANTy * S;
+  Vx = VELx * C - VELy * S;
+  Sy = SATx * S + SATy * C;
+  double Ay = ANTx * S + ANTy * C;
+  Vy = VELx * S + VELy * C;
+  double Sz = SATz;
+  double Az = ANTz;
+  double Vz = VELz;
+
+  // Compute and manipulate range/velocity/antenna vectors
+ 
+  // Range vector = sat vector - observer vector
+  Rx = Sx - Ox;
+  double Ry = Sy - Oy;
+  Rz = Sz - Oz;
+
+  double R = sqrt(Rx * Rx + Ry * Ry + Rz * Rz);    // Range Magnitute 
+
+  // Normalize range vector
+  Rx = Rx / R;
+  Ry = Ry / R;
+  Rz = Rz / R;
+  double U = Rx * Ux + Ry * Uy + Rz * Uz;
+  double E = Rx * Ex + Ry * Ey;
+  double N = Rx * Nx + Ry * Ny + Rz * Nz;
+
+  *satellite_az = deg(FNatn(E, N));
+  *satellite_el = deg(asin(U));
+
+  // Solve antenna vector along unit range vector, -r.a = cos(SQ)
+  // SQ = deg(acos(-(Ax * Rx + Ay * Ry + Az * Rz)));
+  // Calculate sub-satellite Lat/Lon 
+  *satellite_long = deg(FNatn(Sy, Sx)); // Lon, + East  
+  if (*satellite_long > 180){*satellite_long = *satellite_long - 360.0;}  // kludge to fix bug Goody 2020-07-23
+  *satellite_lat = deg(asin(Sz/RS));   // Lat, + North 
+
+  // Resolve Sat-Obs velocity vector along unit range vector. (VOz = 0) 
+  double RR = (Vx - VOx) * Rx + (Vy - VOy) * Ry + Vz * Rz; // Range rate, km/sec 
+  //FR = rxFrequency * (1 - RR / 299792);
+
+  dopplerFactor = RR / 299792.0;
+  int rxDoppler = getDoppler(rxFrequencyLong,dopplerFactor);
+  int txDoppler = getDoppler(txFrequencyLong,dopplerFactor);
+  *rxOutLong = rxFrequencyLong - rxDoppler;
+  *txOutLong = txFrequencyLong + txDoppler;
+
+
+  #if defined(DEBUG_SATELLITE_TRACKING)
+    Serial.println("satellite_calculate: end");
+  #endif
+}
+
+#endif //FEATURE_SATELLITE_TRACKING
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+int getDoppler(unsigned long freq,float dopplerFactor_) {
+
+  freq = (freq + 50000L) / 100000L;
+  long factor = dopplerFactor_ * 1E11;
+  int digit;
+  float tally = 0;
+  for (int x = 4; x > -1; x--) {
+    digit = freq/pow(10,x);
+    long bare = digit * pow(10,x);
+    freq = freq - bare;
+    float inBetween =  factor * (float(bare) / 1E6);
+    tally += inBetween;
+  }
+
+  return int( tally + .5); //round
+
+}
+#endif //FEATURE_SATELLITE_TRACKING
+//------------------------------------------------------
+// #if defined(FEATURE_SATELLITE_TRACKING)
+// int getDoppler64(unsigned long freq,float dopplerFactor_){
+
+// 	long factor = dopplerFactor_ * 1E11;
+// 	uint64_t doppler_sixfour = freq * dopplerFactor_;
+// 	return (int) doppler_sixfour/1E11;
+// }
+// #endif //FEATURE_SATELLITE_TRACKING
+//------------------------------------------------------
+
+
+//  void footprintOctagon(float *points, float current_satellite_latitudein, float current_satellite_longitudein, float REin, float RSin) {
+//	// static float points[16];
+// 	Serial.print("current_satellite_latitude: ");
+// 	Serial.print(current_satellite_latitudein);
+// 	Serial.print(", current_satellite_longitude: ");
+// 	Serial.print(current_satellite_longitudein);
+// 	Serial.print(", RE: ");
+// 	Serial.print(REin);
+// 	Serial.print(", RS: ");
+// 	Serial.println(RSin);
+// 	float srad = acos(REin/RSin); // Beta in Davidoff diag. 13.2, this is in rad
+// 	Serial.print("srad: ");
+// 	Serial.println(srad);
+// 	float cla= cos(rad(current_satellite_latitudein));
+// 	float sla = sin(rad(current_satellite_latitudein));
+// 	float clo = cos(rad(current_satellite_longitudein));
+// 	float slo = sin(rad(current_satellite_longitudein));
+// 	float sra = sin(srad);
+// 	float cra = cos(srad);
+// 	for (int i = 0; i < 16; i = i +2) {
+// 		float a = 2 * M_PI * i / 16;
+// 		Serial.print("\ta: ");
+// 		Serial.println(a);
+// 		float X = cra;
+// 		Serial.print("\t first X: ");
+// 		Serial.println(X);
+// 		Serial.print("\t first Y: ");
+// 		float Y = sra*sin(a);
+// 		Serial.println(Y);
+// 		float Z = sra*cos(a);
+// 		Serial.print("\t first Z: ");
+// 		Serial.println(Z);
+// 		float x = X*cla - Z*sla;
+// 		float y = Y;
+// 		float z = X*sla + Z*cla;
+// 		X = x*clo - y*slo;
+// 		Serial.print("\tX: ");
+// 		Serial.println(X);
+// 		Y = x*slo + y*clo;
+// 		Serial.print("\tY: ");
+// 		Serial.println(Y);
+// 		Z = z; 
+// 		Serial.print("\tZ: ");
+// 		Serial.println(Z);
+// 		points[i] = deg(FNatn(Y,X));
+// 		Serial.print("\t Long: ");
+// 		Serial.print(points[i]);
+// 		points[i+1] = deg(asin(Z));
+// 		Serial.print("\t Lat: ");
+// 		Serial.println(points[i+1]);
+// 	}
+// }
+
+//------------------------------------------------------
+
+#if defined(FEATURE_SATELLITE_TRACKING)
+void printElements(kep* kep_in){
+	
+	Serial.print("YE:");
+  Serial.println(kep_in->YE,0);
+  Serial.print("TE:");
+  Serial.println(kep_in->TE,8);
+  Serial.print("IN:");
+  Serial.println(kep_in->IN,4);
+  Serial.print("RA:");
+  Serial.println(kep_in->RA,4);
+  Serial.print("EC:");
+  Serial.println(kep_in->EC,6);
+  Serial.print("WP:");
+  Serial.println(kep_in->WP,4);
+  Serial.print("MA:");
+  Serial.println(kep_in->MA,4);
+  Serial.print("MM:");
+  Serial.println(kep_in->MM,8);
+  Serial.print("M2:");
+  Serial.println(kep_in->M2,8);
+  Serial.print("RV:");
+  Serial.println(kep_in->RV);
+  Serial.print("ALON:");
+  Serial.println(kep_in->ALON,1);    
+  Serial.print("ALON:");
+  Serial.println(kep_in->ALON,1);
+
+
+}
+#endif //FEATURE_SATELLITE_TRACKING
+
+
+
+//------------------------------------------------------
+
+void run_this_once(){
 
 
   #if defined(DEBUG_TEST_POLAR_TO_CARTESIAN)
@@ -17051,5 +17603,6 @@ void run_this_once(){
 
 
 }
+
 
 // that's all, folks !

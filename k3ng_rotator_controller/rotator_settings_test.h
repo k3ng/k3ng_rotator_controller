@@ -363,6 +363,9 @@ You can tweak these, but read the online documentation!
 #define SUN_UPDATE_POSITION_INTERVAL_MS 5000
 #define MOON_UPDATE_POSITION_INTERVAL_MS 5000
 
+// Added in 2020.07.22.02
+#define DEFAULT_ALTITUDE_M 500
+
 
 
 									// ######## ########  ######  ######## 
