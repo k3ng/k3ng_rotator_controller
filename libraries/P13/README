@@ -1,0 +1,108 @@
+                   _   		The Arduino n' Gameduino
+ __ _ _ _  __ _ __| |_ 			Satellite Tracker
+/ _` | ' \/ _` (_-<  _|
+\__,_|_||_\__, /__/\__|		Written by Mark VandeWettering, K6HX, 2011
+          |___/        		brainwagon@gmail.com
+
+
+Angst is an application that I wrote for the Arduino and Gameduino. It
+is being distributed under the so-called "2-class BSD License", which I
+think grants potential users the greatest possible freedom to integrate
+this code into their own projects. I would, however, consider it a great
+courtesy if you could email me and tell me about your project and how
+this code was used, just for my own continued personal gratification.
+
+Angst includes P13, a port of the Plan 13 algorithm, originally written
+by James Miller, G3RUH and documented here:
+
+	http://www.amsat.org/amsat/articles/g3ruh/111.html
+
+Other implementations exist, even for embedded platforms, such as
+the qrpTracker library of Bruce Robertson, VE9QRP and G6LVB's PIC
+implementation that is part of his embedded satellite tracker. My own
+code was ported from a quick and dirty Python implementation of my own,
+and retains a bit of the object orientation that I imposed in that code.
+
+While the P13 library is reasonably independent and can be used in
+other applications, the remainder of the code is fairly specific to the
+particular hardware I had on hand:
+
+1. The Gameduino
+
+        James Bowman developed the Gameduino as an Arduino shield to
+        generate sound and graphics which might have been typical of
+        8 bit computers of the 1980s. It consists of a Xilinx FPGA,
+        programmed with a version of his J1 Forth processor, and
+        generates video and sound. It is programmed from the Arduino
+        using a simple set of commands sent over the I2C bus.
+
+	You can find more information here:
+
+		http://excamera.com/sphinx/gameduino/
+
+2. A DS1307 RTC
+
+        Sparkfun has a Dallas Semiconductor DS1307 chip mounted on a
+        handly little breakout board.  I used this chip to keep track
+        of time.  It's not particularly great: it drifts by a couple
+        of minutes a week in my prototype: a better and more accurate
+        timepiece would enhance the usability of this prototype.  I've
+        considered using a GPS to keep track of time, that extension is
+        left as an exercise for the motivated reader.
+
+3. An AT24C1024 Serial EEPROM
+	
+        The ATMEGA328 used in the Arduino contains a mere 512 bytes of
+        EEPROM.  This is enough space to store a few satellites, but I
+        wanted to have greater capacitity.  So, I got some 128K byte
+        EEPROMS for about $4 from digikey.  Each one of these can store
+        the data for about 750 satellites.  My prototype just uses one,
+        but it's possible to chain up to four of them together.
+
+4. A Rotary Encoder
+
+	The entire interface is driven from a single rotary encoder w/
+	a built in switch, similar to this one:
+
+		http://www.sparkfun.com/products/9117	
+
+	The code turns on the necessary internal pullup resistors to 
+	allow it to be directly wired to the Arduino input pins.
+
+	Currently the encoder is read in the polling main event loop.
+	This means that quick motion of the encoder is not adequately
+	tracked: consider this another exercise for the motivated 
+	reader.
+
+
+I hope you enjoy the code, and find it useful and/or informative!
+
+Copyright 2011, Mark VandeWettering. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   1. Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer 
+      in the documentation and/or other materials provided with the 
+      distribution.
+
+THIS SOFTWARE IS PROVIDED BY MARK VANDEWETTERING ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation
+are those of the authors and should not be interpreted as representing
+official policies, either expressed or implied, of Mark VandeWettering

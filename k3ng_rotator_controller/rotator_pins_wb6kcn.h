@@ -214,3 +214,8 @@
 #endif      
 
 //#define pin_status_led 0   // Status LED - blinks when there is rotation in progress
+
+// Added 2020.07.24.01
+#define satellite_tracking_active_pin 0
+#define satellite_tracking_activate_line 0
+#define satellite_tracking_button 0        // use with a normally open momentary switch to ground
