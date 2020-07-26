@@ -9,7 +9,7 @@
 // #define FEATURE_ELEVATION_CONTROL      // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION      // Easycom protocol emulation on control port
-// #define FEATURE_DCU_1_EMULATION        // DCU-1 protocol emulation on control port  
+// #define FEATURE_DCU_1_EMULATION        // DCU-1 protocol emulation on control port (only supports azimuth only systems)
 
 // #define FEATURE_MOON_TRACKING
 // #define FEATURE_SUN_TRACKING
@@ -22,7 +22,7 @@
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
-//#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -148,6 +148,7 @@
 // #define OPTION_DISPLAY_DIRECTION_STATUS                         // LCD N, W, E, S, NW, etc. direction indicator
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY               // LCD
 // #define OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY          // LCD
+// #define OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING           // LCD
 // #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY                // LCD
 #define OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL  // LCD
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ

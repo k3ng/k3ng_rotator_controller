@@ -633,6 +633,23 @@
             gSC         Integer, Bit Mapped   System Capabilities
                                                     Bit Values
                                                        SATELLITE 1024
+      2020.07.26.01
+        FEATURE_SATELLITE_TRACKING
+          \% command - print upcoming passes for current satellite
+          \~ command now shows upcoming pass AOS and LOS  
+          \^1 activate satellite tracking command now pre-rotates to satellite next AOS az and el
+        Added OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING - LCD display one line that alternates current satellite az/el, AOS date/time, and AOS az/le  
+        Settings TRACKING_ACTIVE_CHAR and TRACKING_INACTIVE_CHAR deprecated
+        New settings
+          OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING_TIME_MS 5000
+          LCD_DISPLAY_SATELLITE_VISIBLE_NOT_TRACKED_CHAR "~"
+          LCD_DISPLAY_SATELLITE_VISIBLE_TRACKED_CHAR "*"
+          LCD_DISPLAY_SATELLITE_NOT_VISIBLE_TRACKED_CHAR "."
+          LCD_DISPLAY_MOON_TRACKING_ACTIVE_CHAR "*"
+          LCD_DISPLAY_MOON_TRACKING_INACTIVE_CHAR "-"
+          LCD_DISPLAY_SUN_TRACKING_ACTIVE_CHAR "*"
+          LCD_DISPLAY_SUN_TRACKING_INACTIVE_CHAR "-"
+        Added nasabare.txt bare TLE file to Github in tle/ directory
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -645,7 +662,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.25.03"
+#define CODE_VERSION "2020.07.26.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1288,6 +1305,22 @@ DebugClass debug;
   unsigned int tle_file_eeprom_memory_area_end;
   byte satellite_tracking_active = 0;
   byte satellite_visible = 0;
+
+  int current_satellite_next_aos_year = 0;
+  int current_satellite_next_aos_month = 0;
+  int current_satellite_next_aos_day = 0;
+  int current_satellite_next_aos_hour = 0;
+  int current_satellite_next_aos_minute = 0;
+  float current_satellite_next_aos_az = 0;
+  float current_satellite_next_aos_el = 0;
+
+  int current_satellite_next_los_year = 0;
+  int current_satellite_next_los_month = 0;
+  int current_satellite_next_los_day = 0;
+  int current_satellite_next_los_hour = 0;
+  int current_satellite_next_los_minute = 0;
+  float current_satellite_next_los_az = 0;
+  float current_satellite_next_los_el = 0;
 
   Satellite sat;
   Observer obs("my_location", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M);
@@ -3898,21 +3931,21 @@ void check_buttons(){
           #ifdef DEBUG_BUTTONS
           debug.println("check_buttons: moon tracking on");
           #endif // DEBUG_BUTTONS
-          moon_tracking_active = 1;
+          change_tracking(ACTIVATE_MOON_TRACKING);
           #if defined(FEATURE_LCD_DISPLAY)
             perform_screen_redraw = 1;
           #endif          
           #ifdef FEATURE_SUN_TRACKING
-            sun_tracking_active = 0;
+            change_tracking(DEACTIVATE_SUN_TRACKING);
           #endif // FEATURE_SUN_TRACKING    
           #ifdef FEATURE_SATELLITE_TRACKING
-            satellite_tracking_active = 0;
+            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
           #endif // FEATURE_SATELLITE_TRACKING                    
         } else {
           #ifdef DEBUG_BUTTONS
            debug.println("check_buttons: moon tracking off");
           #endif // DEBUG_BUTTONS
-          moon_tracking_active = 0;
+          change_tracking(DEACTIVATE_MOON_TRACKING);
           submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_MOON);
           #ifdef FEATURE_ELEVATION_CONTROL
             submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_MOON);
@@ -3941,21 +3974,21 @@ void check_buttons(){
           #ifdef DEBUG_BUTTONS
             debug.println("check_buttons: sun tracking on");
           #endif // DEBUG_BUTTONS
-          sun_tracking_active = 1;
+          change_tracking(ACTIVATE_SUN_TRACKING);
           #if defined(FEATURE_LCD_DISPLAY)
             perform_screen_redraw = 1;
           #endif          
           #ifdef FEATURE_MOON_TRACKING
-            moon_tracking_active = 0;
+            change_tracking(DEACTIVATE_MOON_TRACKING);
           #endif // FEATURE_MOON_TRACKING   
           #ifdef FEATURE_SATELLITE_TRACKING
-            satellite_tracking_active = 0;
+            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
           #endif // FEATURE_SATELLITE_TRACKING                  
         } else {
           #ifdef DEBUG_BUTTONS
             debug.print("check_buttons: sun tracking off");
           #endif // DEBUG_BUTTONS
-          sun_tracking_active = 0;
+          change_tracking(DEACTIVATE_SUN_TRACKING);
           submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SUN);
           #ifdef FEATURE_ELEVATION_CONTROL
             submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SUN);
@@ -3984,21 +4017,21 @@ void check_buttons(){
             #ifdef DEBUG_BUTTONS
               debug.println("check_buttons: sun tracking on");
             #endif // DEBUG_BUTTONS
-            satellite_tracking_active = 1;
+            change_tracking(ACTIVATE_SATELLITE_TRACKING);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
             #endif          
             #ifdef FEATURE_MOON_TRACKING
-              moon_tracking_active = 0;
+              change_tracking(DEACTIVATE_MOON_TRACKING);
             #endif // FEATURE_MOON_TRACKING    
             #ifdef FEATURE_SUN_TRACKING
-              sun_tracking_active = 0;
+              change_tracking(DEACTIVATE_SUN_TRACKING);
             #endif // FEATURE_SUN_TRACKING                    
           } else {
             #ifdef DEBUG_BUTTONS
               debug.print("check_buttons: sun tracking off");
             #endif // DEBUG_BUTTONS
-            satellite_tracking_active = 0;
+            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
             submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SATELLITE);
             #ifdef FEATURE_ELEVATION_CONTROL
               submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SATELLITE);
@@ -5490,9 +5523,9 @@ void update_lcd_display(){
       strcpy(workstring,"");
       if (moon_tracking_active){
         if (moon_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_MOON_TRACKING_ACTIVE_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_MOON_TRACKING_INACTIVE_CHAR);
         }
       }
       strcat(workstring,MOON_STRING);
@@ -5505,9 +5538,9 @@ void update_lcd_display(){
       if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
       if (moon_tracking_active){
         if (moon_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_MOON_TRACKING_ACTIVE_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_MOON_TRACKING_INACTIVE_CHAR);
         }
       }
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_TRACKING_ROW-1,LCD_COLUMNS); 
@@ -5528,9 +5561,9 @@ void update_lcd_display(){
       strcpy(workstring,"");
       if (sun_tracking_active){
         if (sun_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SUN_TRACKING_ACTIVE_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SUN_TRACKING_INACTIVE_CHAR);
         }
       }
       strcat(workstring,SUN_STRING);
@@ -5543,9 +5576,9 @@ void update_lcd_display(){
       if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
       if (sun_tracking_active){
         if (sun_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SUN_TRACKING_ACTIVE_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SUN_TRACKING_INACTIVE_CHAR);
         }
       }
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SUN_TRACKING_ROW-1,LCD_COLUMNS);
@@ -5564,12 +5597,21 @@ void update_lcd_display(){
       strcpy(workstring,"");
       if (satellite_tracking_active){
         if (satellite_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_TRACKED_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SATELLITE_NOT_VISIBLE_TRACKED_CHAR);
         }
+      } else {
+          if (satellite_visible){
+            strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_NOT_TRACKED_CHAR);
+          }             
       }
-      strcat(workstring,sat.name);
+      if ((DISPLAY_DECIMAL_PLACES < 1) && (LCD_COLUMNS>16)){
+        strncpy(workstring2,sat.name,8);
+      } else {
+        strncpy(workstring2,sat.name,6);
+      }
+      strcat(workstring,workstring2);
       strcat(workstring," ");
       dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
       strcat(workstring,workstring2);
@@ -5580,10 +5622,14 @@ void update_lcd_display(){
       if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
       if (satellite_tracking_active){
         if (satellite_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_TRACKED_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SATELLITE_NOT_VISIBLE_TRACKED_CHAR);
         }
+      } else {
+        if (satellite_visible){
+          strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_NOT_TRACKED_CHAR);
+        }             
       }
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SATELLITE_TRACKING_ROW-1,LCD_COLUMNS); 
     } else {
@@ -5591,7 +5637,162 @@ void update_lcd_display(){
         debug.println(F("update_lcd_display: OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY row override"));
       #endif
     }
-  #endif //defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
+  #endif //defined(OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY) && defined(FEATURE_SATELLITE_TRACKING)
+
+
+  // OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING *************************************************************
+  #if defined(OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING) && defined(FEATURE_SATELLITE_TRACKING)
+
+    static unsigned long last_alernating_change_time = 0;
+    static byte current_display_state_sat = 2;
+
+    if (!row_override[LCD_SATELLITE_TRACKING_ROW]){
+      if ((millis() - last_alernating_change_time) >= OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING_TIME_MS) {
+        current_display_state_sat++;
+        if (current_display_state_sat == 3){
+          current_display_state_sat = 0;
+        }
+        last_alernating_change_time = millis();
+      }
+      if (current_display_state_sat == 0){  // show current satellite az and el
+        strcpy(workstring,"");
+        if (satellite_tracking_active){
+          if (satellite_visible){
+            strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_TRACKED_CHAR);
+          } else {
+            strcat(workstring,LCD_DISPLAY_SATELLITE_NOT_VISIBLE_TRACKED_CHAR);
+          }
+        } else {
+          if (satellite_visible){
+            strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_NOT_TRACKED_CHAR);
+          }          
+        }
+        if ((DISPLAY_DECIMAL_PLACES < 1) && (LCD_COLUMNS>16)){
+          strncpy(workstring2,sat.name,8);
+        } else {
+          strncpy(workstring2,sat.name,6);
+        }
+        strcat(workstring,workstring2);
+        strcat(workstring," ");
+        dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
+        strcat(workstring,workstring2);
+        if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        strcat(workstring," ");
+        dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
+        strcat(workstring,workstring2);
+        if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        if (satellite_tracking_active){
+          if (satellite_visible){
+            strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_TRACKED_CHAR);
+          } else {
+            strcat(workstring,LCD_DISPLAY_SATELLITE_NOT_VISIBLE_TRACKED_CHAR);
+          }
+        } else {
+          if (satellite_visible){
+            strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_NOT_TRACKED_CHAR);
+          }             
+        }
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SATELLITE_TRACKING_ROW-1,LCD_COLUMNS); 
+      } // if (current_display_state_sat == 0)
+
+
+      if (current_display_state_sat == 1){  // show next AOS date and time
+        if (!satellite_visible){
+          strcpy(workstring,"AOS ");
+          if (LCD_COLUMNS > 16){
+            dtostrf(current_satellite_next_aos_year,0,0,workstring2);
+            strcat(workstring,workstring2);
+            strcat(workstring,"-");
+          }
+          if (current_satellite_next_aos_month < 10){
+            strcat(workstring,"0");
+          }
+          dtostrf(current_satellite_next_aos_month,0,0,workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,"-");
+          if (current_satellite_next_aos_day < 10){
+            strcat(workstring,"0");
+          }        
+          dtostrf(current_satellite_next_aos_day,0,0,workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring," ");
+          if (current_satellite_next_aos_hour < 10){
+            strcat(workstring,"0");
+          }        
+          dtostrf(current_satellite_next_aos_hour,0,0,workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,":"); 
+          if (current_satellite_next_aos_minute < 10){
+            strcat(workstring,"0");
+          }               
+          dtostrf(current_satellite_next_aos_minute,0,0,workstring2);
+          strcat(workstring,workstring2);
+        } else {
+          strcpy(workstring,"LOS ");
+          if (LCD_COLUMNS > 16){
+            dtostrf(current_satellite_next_los_year,0,0,workstring2);
+            strcat(workstring,workstring2);
+            strcat(workstring,"-");
+          }
+          if (current_satellite_next_los_month < 10){
+            strcat(workstring,"0");
+          }
+          dtostrf(current_satellite_next_los_month,0,0,workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,"-");
+          if (current_satellite_next_los_day < 10){
+            strcat(workstring,"0");
+          }        
+          dtostrf(current_satellite_next_los_day,0,0,workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring," ");
+          if (current_satellite_next_aos_hour < 10){
+            strcat(workstring,"0");
+          }        
+          dtostrf(current_satellite_next_los_hour,0,0,workstring2);
+          strcat(workstring,workstring2);
+          strcat(workstring,":"); 
+          if (current_satellite_next_los_minute < 10){
+            strcat(workstring,"0");
+          }               
+          dtostrf(current_satellite_next_los_minute,0,0,workstring2);
+          strcat(workstring,workstring2);
+        }
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SATELLITE_TRACKING_ROW-1,LCD_COLUMNS); 
+      } // if (current_display_state_sat == 1)
+
+
+      if (current_display_state_sat == 2){   // show next AOS/LOS az and el
+        if (!satellite_visible){
+          strcpy(workstring,"AOS Az ");
+          dtostrf(current_satellite_next_aos_az,DISPLAY_DECIMAL_PLACES,0,workstring2);
+          strcat(workstring,workstring2);
+          if ((LCD_COLUMNS>16) && ((current_satellite_next_aos_az < 100) || (abs(current_satellite_next_aos_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+          strcat(workstring," El ");
+          dtostrf(current_satellite_next_aos_el,DISPLAY_DECIMAL_PLACES,0,workstring2);
+          strcat(workstring,workstring2);    
+          if ((LCD_COLUMNS>16) && ((current_satellite_next_aos_az < 100) || (abs(current_satellite_next_aos_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        } else {
+          strcpy(workstring,"LOS Az ");
+          dtostrf(current_satellite_next_los_az,DISPLAY_DECIMAL_PLACES,0,workstring2);
+          strcat(workstring,workstring2);
+          if ((LCD_COLUMNS>16) && ((current_satellite_next_los_az < 100) || (abs(current_satellite_next_los_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+          strcat(workstring," El ");
+          dtostrf(current_satellite_next_los_el,DISPLAY_DECIMAL_PLACES,0,workstring2);
+          strcat(workstring,workstring2);    
+          if ((LCD_COLUMNS>16) && ((current_satellite_next_los_az < 100) || (abs(current_satellite_next_los_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        }
+        
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SATELLITE_TRACKING_ROW-1,LCD_COLUMNS); 
+      } // if (current_display_state_sat == 1)
+
+    } else {
+      #if defined(DEBUG_DISPLAY)
+        debug.println(F("update_lcd_display: OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING row override"));
+      #endif
+    }
+
+  #endif //defined(OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING) && defined(FEATURE_SATELLITE_TRACKING)
 
 
 // OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD ****************************************************
@@ -5708,9 +5909,9 @@ void update_lcd_display(){
           last_moon_tracking_check_time = millis();
         }
         if (moon_visible){
-          strcpy(workstring,TRACKING_ACTIVE_CHAR);
+          strcpy(workstring,LCD_DISPLAY_MOON_TRACKING_ACTIVE_CHAR);
         } else {
-          strcpy(workstring,TRACKING_INACTIVE_CHAR);
+          strcpy(workstring,LCD_DISPLAY_MOON_TRACKING_INACTIVE_CHAR);
         }
         strcat(workstring,MOON_STRING);
         dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
@@ -5721,9 +5922,9 @@ void update_lcd_display(){
         strcat(workstring,workstring2);
         if ((LCD_COLUMNS>16) && ((moon_azimuth < 100) || (abs(moon_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         if (moon_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_MOON_TRACKING_ACTIVE_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_MOON_TRACKING_INACTIVE_CHAR);
         }
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS); 
       }
@@ -5740,9 +5941,9 @@ void update_lcd_display(){
           last_sun_tracking_check_time = millis();
         }
         if (sun_visible){
-          strcpy(workstring,TRACKING_ACTIVE_CHAR);
+          strcpy(workstring,LCD_DISPLAY_SUN_TRACKING_ACTIVE_CHAR);
         } else {
-          strcpy(workstring,TRACKING_INACTIVE_CHAR);
+          strcpy(workstring,LCD_DISPLAY_SUN_TRACKING_INACTIVE_CHAR);
         }
         strcat(workstring,SUN_STRING);
         dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
@@ -5753,9 +5954,9 @@ void update_lcd_display(){
         strcat(workstring,workstring2);
         if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         if (sun_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SUN_TRACKING_ACTIVE_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SUN_TRACKING_INACTIVE_CHAR);
         }
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS);
       }
@@ -5767,66 +5968,28 @@ void update_lcd_display(){
     #ifdef FEATURE_SATELLITE_TRACKING
       if ((!row_override[LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW]) && (satellite_tracking_active)){
         if (satellite_visible){
-          strcpy(workstring,TRACKING_ACTIVE_CHAR);
+          strcpy(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_TRACKED_CHAR);
         } else {
-          strcpy(workstring,TRACKING_INACTIVE_CHAR);
+          strcpy(workstring,LCD_DISPLAY_SATELLITE_NOT_VISIBLE_TRACKED_CHAR);
         }
         strcat(workstring,sat.name);
         strcat(workstring," ");
         dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
-        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         strcat(workstring," ");
         dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
         strcat(workstring,workstring2);
-        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         if (satellite_visible){
-          strcat(workstring,TRACKING_ACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SATELLITE_VISIBLE_TRACKED_CHAR);
         } else {
-          strcat(workstring,TRACKING_INACTIVE_CHAR);
+          strcat(workstring,LCD_DISPLAY_SATELLITE_NOT_VISIBLE_TRACKED_CHAR);
         }
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS);
       }
 
     #endif //FEATURE_SATELLITE_TRACKING
-
-
-  // if (!row_override[LCD_SATELLITE_TRACKING_ROW]){
-
-  //     strcpy(workstring,"");
-  //     if (satellite_tracking_active){
-  //       if (satellite_visible){
-  //         strcat(workstring,TRACKING_ACTIVE_CHAR);
-  //       } else {
-  //         strcat(workstring,TRACKING_INACTIVE_CHAR);
-  //       }
-  //     }
-  //     strcat(workstring,sat.name);
-  //     strcat(workstring," ");
-  //     dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
-  //     strcat(workstring,workstring2);
-  //     if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
-  //     strcat(workstring," ");
-  //     dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
-  //     strcat(workstring,workstring2);
-  //     if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
-  //     if (satellite_tracking_active){
-  //       if (satellite_visible){
-  //         strcat(workstring,TRACKING_ACTIVE_CHAR);
-  //       } else {
-  //         strcat(workstring,TRACKING_INACTIVE_CHAR);
-  //       }
-  //     }
-  //     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SATELLITE_TRACKING_ROW-1,LCD_COLUMNS); 
-  //   } else {
-  //     #if defined(DEBUG_DISPLAY)
-  //       debug.println(F("update_lcd_display: OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY row override"));
-  //     #endif
-  //   }
-  // #endif //defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
-
-
-
   #endif //OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL
 
 
@@ -6137,7 +6300,7 @@ void write_settings_to_eeprom(){
     static unsigned int eeprom_write_location = 0;
 
     #ifdef DEBUG_SATELLITE_TLE_EEPROM
-      control_port->print("\r\nwrite_char_to_tle_file_area_eeprom: ");
+      control_port->print(F("\r\nwrite_char_to_tle_file_area_eeprom: "));
       if (initialize_to_start){
         control_port->println("initialize_to_start");
       } else {
@@ -7586,7 +7749,51 @@ void output_debug(){
           if (!satellite_tracking_active) {
             debug.print("IN");
           }
-          debug.println("ACTIVE ");
+          debug.print("ACTIVE  Next AOS:");
+         
+          debug.print(current_satellite_next_aos_year);
+          debug.print("-");
+          if (current_satellite_next_aos_month < 10){debug.print("0");}
+          debug.print(current_satellite_next_aos_month);
+          debug.print("-");    
+          if (current_satellite_next_aos_day < 10){debug.print("0");}
+          debug.print(current_satellite_next_aos_day);
+          debug.print(" ");
+          if (current_satellite_next_aos_hour < 10){debug.print("0");}
+          debug.print(current_satellite_next_aos_hour);
+          debug.print(":");
+          if (current_satellite_next_aos_minute < 10){debug.print("0");}
+          debug.print(current_satellite_next_aos_minute);
+          debug.print(" ");
+          if (current_satellite_next_aos_az < 10){debug.print(" ");}
+          if (current_satellite_next_aos_az < 100){debug.print(" ");}
+          debug.print(current_satellite_next_aos_az);
+          debug.print(" ");
+          if (current_satellite_next_aos_el > 0){debug.print(" ");}
+          debug.print(current_satellite_next_aos_el);
+          debug.print("  LOS:");
+          debug.print(current_satellite_next_los_year);
+          debug.print("-");
+          if (current_satellite_next_los_month < 10){debug.print("0");}
+          debug.print(current_satellite_next_los_month);
+          debug.print("-");    
+          if (current_satellite_next_los_day < 10){debug.print("0");}
+          debug.print(current_satellite_next_los_day);
+          debug.print(" ");
+          if (current_satellite_next_los_hour < 10){debug.print("0");}
+          debug.print(current_satellite_next_los_hour);
+          debug.print(":");
+          if (current_satellite_next_los_minute < 10){debug.print("0");}
+          debug.print(current_satellite_next_los_minute);
+          debug.print(" ");
+          if (current_satellite_next_los_az < 10){debug.print(" ");}
+          if (current_satellite_next_los_az < 100){debug.print(" ");}
+          debug.print(current_satellite_next_los_az);
+          debug.print(" ");
+          if (current_satellite_next_los_el > 0){debug.print(" ");}
+          debug.println(current_satellite_next_los_el);
+
+
         #endif
 
         debug.print("\tCONFIG_");
@@ -10111,18 +10318,7 @@ void service_rotation(){
   #endif        
 
 } /* service_rotation */
-// --------------------------------------------------------------
-void stop_all_tracking(){
 
-
-  #ifdef FEATURE_MOON_TRACKING
-  moon_tracking_active = 0;
-  #endif // FEATURE_MOON_TRACKING
-  #ifdef FEATURE_SUN_TRACKING
-  sun_tracking_active = 0;
-  #endif // FEATURE_SUN_TRACKING
-
-}
 
 // --------------------------------------------------------------
 void service_request_queue(){
@@ -10152,7 +10348,7 @@ void service_request_queue(){
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         debug.print("REQUEST_STOP");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -10407,7 +10603,7 @@ void service_request_queue(){
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         debug.print("REQUEST_CW");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -10439,7 +10635,7 @@ void service_request_queue(){
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         debug.print("REQUEST_CCW");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -10469,7 +10665,7 @@ void service_request_queue(){
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
         debug.print("REQUEST_KILL");
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -10593,7 +10789,7 @@ void service_request_queue(){
           debug.print(F("REQUEST_UP\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -10626,7 +10822,7 @@ void service_request_queue(){
           debug.print(F("REQUEST_DOWN\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -10659,7 +10855,7 @@ void service_request_queue(){
           debug.print(F("REQUEST_STOP\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -10703,7 +10899,7 @@ void service_request_queue(){
           debug.print(F("REQUEST_KILL\n"));
         }
         #endif // DEBUG_SERVICE_REQUEST_QUEUE
-        stop_all_tracking();
+        change_tracking(DEACTIVATE_ALL);
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
@@ -11629,7 +11825,7 @@ void initiate_park(){
 
   byte park_initiated = 0;
 
-  stop_all_tracking();
+  change_tracking(DEACTIVATE_ALL);
 
   if (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE)) {
     submit_request(AZ, REQUEST_AZIMUTH_RAW, PARK_AZIMUTH, 7);
@@ -13494,18 +13690,18 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     case 'M':
       switch (input_buffer[2]) {
         case '0':
-          moon_tracking_active = 0;
+          change_tracking(DEACTIVATE_MOON_TRACKING);
           submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_MOON_CLI_CMD);
           submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_MOON_CLI_CMD);
           strcpy(return_string, "Moon tracking deactivated.");
           break;
         case '1':
-          moon_tracking_active = 1;
+          change_tracking(ACTIVATE_MOON_TRACKING);
           #ifdef FEATURE_SUN_TRACKING
-            sun_tracking_active = 0;
+            change_tracking(DEACTIVATE_SUN_TRACKING);
           #endif // FEATURE_SUN_TRACKING
           #ifdef FEATURE_SATELLITE_TRACKING
-            satellite_tracking_active = 0;
+            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
           #endif // FEATURE_SATELLITE_TRACKING             
           strcpy(return_string, "Moon tracking activated.");
           break;
@@ -13576,19 +13772,19 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     case 'U':     // activate / deactivate sun tracking
       switch (input_buffer[2]) {
         case '0':
-          sun_tracking_active = 0;
+          change_tracking(DEACTIVATE_SUN_TRACKING);
           submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
           submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
           strcpy(return_string, "Sun tracking deactivated.");
           break;
         case '1':
-          sun_tracking_active = 1;
+          change_tracking(ACTIVATE_SUN_TRACKING);
           strcpy(return_string, "Sun tracking activated.");
           #ifdef FEATURE_MOON_TRACKING
-            moon_tracking_active = 0;
+            change_tracking(DEACTIVATE_MOON_TRACKING);
           #endif // FEATURE_MOON_TRACKING
           #ifdef FEATURE_SATELLITE_TRACKING
-            satellite_tracking_active = 0;
+            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
           #endif // FEATURE_SATELLITE_TRACKING          
           break;
         default: strcpy(return_string, "Error."); break;
@@ -13799,9 +13995,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     #if defined(FEATURE_SATELLITE_TRACKING)
       case '~':
-        control_port->print("Satellite:");
-        control_port->print(sat.name);
-        control_port->print(" Location:");
+        control_port->print(F("Satellite:"));
+        control_port->println(sat.name);
+        control_port->print(F("Location:"));
         control_port->print(obs.name);
         control_port->print(" (");
         control_port->print(obs.LA);
@@ -13809,41 +14005,88 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         control_port->print(obs.LO);
         control_port->print(",");
         control_port->print(obs.HT);
-        control_port->print(") AZ:");
+        control_port->println(")");
+        control_port->print("AZ:");
         control_port->print(current_satellite_azimuth);
         control_port->print(" EL:");
         control_port->print(current_satellite_elevation);   
-        control_port->print(" Lat:");
+        control_port->print(F(" Lat:"));
         control_port->print(current_satellite_latitude);
-        control_port->print(" Long:");
+        control_port->print(F(" Long:"));
         control_port->print(current_satellite_longitude);   
         if (satellite_visible) {
-          control_port->print("  AOS");
+          control_port->print(F("  AOS"));
         } else {
-          control_port->print("  LOS");
+          control_port->print(F("  LOS"));
         }
-        control_port->print("  TRACKING_");
+        control_port->print(F("  TRACKING_"));
         if (!satellite_tracking_active) {
-          control_port->print("IN");
+          control_port->print(F("IN"));
         }
-        control_port->println("ACTIVE ");
+        control_port->println(F("ACTIVE"));
+        control_port->print(F("Next AOS:"));
+        control_port->print(current_satellite_next_aos_year);
+        control_port->print("-");
+        if (current_satellite_next_aos_month < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_month);
+        control_port->print("-");    
+        if (current_satellite_next_aos_day < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_day);
+        control_port->print(" ");
+        if (current_satellite_next_aos_hour < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_hour);
+        control_port->print(":");
+        if (current_satellite_next_aos_minute < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_minute);
+        control_port->print(" ");
+        if (current_satellite_next_aos_az < 10){control_port->print(" ");}
+        if (current_satellite_next_aos_az < 100){control_port->print(" ");}
+        control_port->print(current_satellite_next_aos_az);
+        control_port->print(" ");
+        if (current_satellite_next_aos_el > 0){control_port->print(" ");}
+        control_port->print(current_satellite_next_aos_el);
+        control_port->print("  LOS:");
+        control_port->print(current_satellite_next_los_year);
+        control_port->print("-");
+        if (current_satellite_next_los_month < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_month);
+        control_port->print("-");    
+        if (current_satellite_next_los_day < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_day);
+        control_port->print(" ");
+        if (current_satellite_next_los_hour < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_hour);
+        control_port->print(":");
+        if (current_satellite_next_los_minute < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_minute);
+        control_port->print(" ");
+        if (current_satellite_next_los_az < 10){control_port->print(" ");}
+        if (current_satellite_next_los_az < 100){control_port->print(" ");}
+        control_port->print(current_satellite_next_los_az);
+        control_port->print(" ");
+        if (current_satellite_next_los_el > 0){control_port->print(" ");}
+        control_port->println(current_satellite_next_los_el);
         break;
 
         case '^':
           switch (input_buffer[2]) {
             case '0':
-              satellite_tracking_active = 0;
+              change_tracking(DEACTIVATE_SATELLITE_TRACKING);
               submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
               submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
               strcpy(return_string, "Satellite tracking deactivated.");
               break;
             case '1':
-              satellite_tracking_active = 1;
+              change_tracking(ACTIVATE_SATELLITE_TRACKING);
+              if (!satellite_visible){
+                submit_request(AZ, REQUEST_AZIMUTH, current_satellite_next_aos_az, DBG_SERVICE_SATELLITE_CLI_CMD_PREROTATE);
+                submit_request(EL, REQUEST_ELEVATION, current_satellite_next_aos_el, DBG_SERVICE_SATELLITE_CLI_CMD_PREROTATE);
+              }
               #ifdef FEATURE_SUN_TRACKING
-                sun_tracking_active = 0;
+                change_tracking(DEACTIVATE_SUN_TRACKING);
               #endif // FEATURE_SUN_TRACKING
               #ifdef FEATURE_MOON_TRACKING
-                moon_tracking_active = 0;
+                change_tracking(DEACTIVATE_MOON_TRACKING);
               #endif // FEATURE_SUN_TRACKING            
               strcpy(return_string, "Satellite tracking activated.");
               break;
@@ -13911,16 +14154,34 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             control_port->println("File was truncated."); 
           } 
           break;          
-//zzzzzz
+
         case '$':
           for (x = 2;x < input_buffer_index;x++){
             satellite_to_find[x-2] = input_buffer[x];
             satellite_to_find[x-1] = 0; 
           }      
-          control_port->print("Searching for ");
+          control_port->print(F("Searching for "));
           control_port->println(satellite_to_find);
           pull_satellite_tle_and_activate(satellite_to_find,1);
           break;  
+//zzzzzz
+        case '%':
+          if (input_buffer_index == 3){
+            x = (input_buffer[2] - 48);
+          } else {
+            if (input_buffer_index == 4){
+              x = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+            } else {
+              if (input_buffer_index == 5){
+                x = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);              
+              } else {
+                x = 1;
+              }
+            }
+          }
+          calculate_satellite_upcoming_aos_and_los(x,2,1);
+          break;
+
 
       #endif //FEATURE_SATELLITE_TRACKING
 
@@ -16336,6 +16597,86 @@ byte ethernet_slave_link_send(char * string_to_send){
 }
 #endif //FEATURE_MASTER_WITH_ETHERNET_SLAVE
 
+//-------------------------------------------------------
+
+void change_tracking(byte action){
+
+  #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
+  switch(action){
+
+
+    case DEACTIVATE_ALL:
+      #if defined(FEATURE_MOON_TRACKING)
+        moon_tracking_active = 0;
+      #endif
+      #if defined(FEATURE_SUN_TRACKING) 
+        sun_tracking_active = 0;
+      #endif
+      #if defined(FEATURE_SATELLITE_TRACKING)
+        satellite_tracking_active = 0;
+      #endif
+      break;
+
+    case DEACTIVATE_MOON_TRACKING:
+      #if defined(FEATURE_MOON_TRACKING)
+        moon_tracking_active = 0;
+      #endif    
+      break;   
+
+    case DEACTIVATE_SUN_TRACKING:
+      #if defined(FEATURE_SUN_TRACKING) 
+        sun_tracking_active = 0;
+      #endif    
+      break;    
+
+    case DEACTIVATE_SATELLITE_TRACKING:
+      #if defined(FEATURE_SATELLITE_TRACKING)
+        satellite_tracking_active = 0;
+      #endif    
+      break;    
+
+    case ACTIVATE_MOON_TRACKING:
+      #if defined(FEATURE_MOON_TRACKING)
+        moon_tracking_active = 1;
+      #endif
+      #if defined(FEATURE_SUN_TRACKING) 
+        sun_tracking_active = 0;
+      #endif
+      #if defined(FEATURE_SATELLITE_TRACKING)
+        satellite_tracking_active = 0;
+      #endif    
+      break;    
+
+    case ACTIVATE_SUN_TRACKING:
+      #if defined(FEATURE_MOON_TRACKING)
+        moon_tracking_active = 0;
+      #endif
+      #if defined(FEATURE_SUN_TRACKING) 
+        change_tracking(ACTIVATE_SUN_TRACKING);
+      #endif
+      #if defined(FEATURE_SATELLITE_TRACKING)
+        satellite_tracking_active = 0;
+      #endif    
+      break;  
+
+    case ACTIVATE_SATELLITE_TRACKING:
+      #if defined(FEATURE_MOON_TRACKING)
+        moon_tracking_active = 0;
+      #endif
+      #if defined(FEATURE_SUN_TRACKING) 
+        sun_tracking_active = 0;
+      #endif
+      #if defined(FEATURE_SATELLITE_TRACKING)
+        satellite_tracking_active = 1;
+      #endif    
+      break;    
+
+  }
+
+  #endif //defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
+}
+
+
 
 //-------------------------------------------------------
 
@@ -16367,11 +16708,11 @@ void service_moon_tracking(){
 
   if (moon_tracking_activate_line) {
     if ((!moon_tracking_active) && (!digitalReadEnhanced(moon_tracking_activate_line))) {
-      moon_tracking_active = 1;
+      change_tracking(ACTIVATE_MOON_TRACKING);
       moon_tracking_activated_by_activate_line = 1;
     }
     if ((moon_tracking_active) && (digitalReadEnhanced(moon_tracking_activate_line)) && (moon_tracking_activated_by_activate_line)) {
-      moon_tracking_active = 0;
+      change_tracking(DEACTIVATE_MOON_TRACKING);
       moon_tracking_activated_by_activate_line = 0;
       submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_MOON_TRACKING);
       #ifdef FEATURE_ELEVATION_CONTROL
@@ -16457,11 +16798,11 @@ void service_sun_tracking(){
 
   if (sun_tracking_activate_line) {
     if ((!sun_tracking_active) && (!digitalReadEnhanced(sun_tracking_activate_line))) {
-      sun_tracking_active = 1;
+      change_tracking(ACTIVATE_SUN_TRACKING);
       sun_tracking_activated_by_activate_line = 1;
     }
     if ((sun_tracking_active) && (digitalReadEnhanced(sun_tracking_activate_line)) && (sun_tracking_activated_by_activate_line)) {
-      sun_tracking_active = 0;
+      change_tracking(DEACTIVATE_SUN_TRACKING);
       sun_tracking_activated_by_activate_line = 0;
       submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SUN_TRACKING);
       #ifdef FEATURE_ELEVATION_CONTROL
@@ -16902,7 +17243,10 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
                      "2 07530 101.8018 175.0260 0011861 296.2265 184.6086 12.53644244090508");
     } else {
       sat.tle(name,tle_line1,tle_line2);
-    }                 
+    }      
+
+    current_satellite_next_aos_year = 0;  // flag that next AOS and LOS needs to be populated
+
   }
 
 #endif //FEATURE_SATELLITE_TRACKING
@@ -16928,11 +17272,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     if (satellite_tracking_activate_line) {
       if ((!satellite_tracking_active) && (!digitalReadEnhanced(satellite_tracking_activate_line))) {
-        satellite_tracking_active = 1;
+        change_tracking(ACTIVATE_SATELLITE_TRACKING);
         satellite_tracking_activated_by_activate_line = 1;
       }
       if ((satellite_tracking_active) && (digitalReadEnhanced(satellite_tracking_activate_line)) && (satellite_tracking_activated_by_activate_line)) {
-        satellite_tracking_active = 0;
+        change_tracking(DEACTIVATE_SATELLITE_TRACKING);
         satellite_tracking_activated_by_activate_line = 0;
         submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_TRACKING);
         #ifdef FEATURE_ELEVATION_CONTROL
@@ -16951,12 +17295,18 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       sat.predict(sat_datetime);
       sat.LL(current_satellite_latitude,current_satellite_longitude);
       sat.altaz(obs, current_satellite_elevation, current_satellite_azimuth);
+
+      if (current_satellite_next_aos_year == 0){  // 0 is a flag that this needs to be populated
+        calculate_satellite_upcoming_aos_and_los(1,0,0);
+      }
+
       last_update_satellite_position = millis();
     }
 
     if ((current_satellite_azimuth >= SATELLITE_AOS_AZIMUTH_MIN) && (current_satellite_azimuth <= SATELLITE_AOS_AZIMUTH_MAX) && (current_satellite_elevation >= SATELLITE_AOS_ELEVATION_MIN) && (current_satellite_elevation <= SATELLITE_AOS_ELEVATION_MAX)) {
       if (!satellite_visible) {
         satellite_visible = 1;
+        current_satellite_next_aos_year = 0;  // flag to populate next AOS and LOS
         #ifdef DEBUG_SATELLITE_TRACKING
           debug.println("service_satellite_tracking: sat AOS");
         #endif // DEBUG_SATELLITE_TRACKING
@@ -16996,8 +17346,260 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
   }
 
 #endif //FEATURE_SATELLITE_TRACKING    
-//------------------------------------------------------
 
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void add_time(int &calc_years,int &calc_months,int &calc_days,int &calc_hours,int &calc_minutes,int increment_minutes,byte progress_dots){
+
+
+      calc_minutes = calc_minutes + increment_minutes;
+      if (calc_minutes > 59){
+        if (progress_dots){control_port->print(".");}
+        calc_minutes = 0;
+        calc_hours++;
+        if (calc_hours > 23){
+          calc_hours = 0;
+          calc_days++;
+          switch(calc_months){
+            case 1:  // 31 day months
+            case 3:
+            case 5:
+            case 7:
+            case 8:
+            case 10:
+            case 12:
+              if (calc_days > 31){
+                calc_months++;
+                calc_days = 1;   
+              }
+              break;
+            case 4: // 30 day months
+            case 6:
+            case 9:
+            case 11:
+              if (calc_days > 30){
+                calc_months++;
+                calc_days = 1;   
+              }
+              break;
+            case 2:
+              if ((calc_years / 4.0) == 0.0) {  // do we have a leap year?
+                if (calc_days > 29){
+                  calc_days = 1;
+                  calc_months++;
+                }
+              } else {  // not a leap year, 28 days
+               if (calc_days > 28){
+                  calc_days = 1;
+                  calc_months++;
+                }
+              }
+              break;            
+          }
+          if (calc_months > 12){
+            calc_months = 1;
+            calc_years++;
+          }
+
+        }
+      }
+
+
+
+  }
+
+#endif //FEATURE_SATELLITE_TRACKING 
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void calculate_satellite_upcoming_aos_and_los(byte number_of_passes,byte format,byte print_header){
+
+
+    // format
+    //  0 = just populate next AOS and LOS global variables
+    //  1 = line report (good for one satellite)
+    //  2 = tabular (better for multiple satellites)
+
+//zzzzzz
+    double calc_satellite_latitude;
+    double calc_satellite_longitude;
+    double calc_satellite_azimuth;
+    double calc_satellite_elevation;
+
+    int calc_years = clock_years;
+    int calc_months = clock_months;
+    int calc_days = clock_days;
+    int calc_hours = clock_hours;
+    int calc_minutes = clock_minutes;
+
+    byte AOS = 0;
+    byte LOS = 0;
+
+    byte hit_first_event = 1;
+
+    byte progress_dots = 0;
+
+    byte got_first_aos = 0;
+
+
+    if (format == 1){
+      if (print_header){
+        control_port->println(sat.name);
+        control_port->println(F("\r\n       Date     Time    Az     El"));
+        control_port->println(F("----------------------------------"));
+      }
+      progress_dots = 1;
+    }
+
+    if (format == 2){
+      if (print_header){                    
+        control_port->println(F("\r\n                 AOS                                LOS"));
+        control_port->println(F(" Sat       Date     UTC    az     el       Date     UTC    az     el"));
+        control_port->println(F("---------------------------------------------------------------------"));
+                               //AO-07   2020-07-26 12:16 353.66  3.09   2020-07-26 12:27 288.33  0.98
+                                     
+      }
+    }
+
+
+    while(number_of_passes > 0){
+      add_time(calc_years,calc_months,calc_days,calc_hours,calc_minutes,1,progress_dots);
+      sat_datetime.settime(calc_years, calc_months, calc_days, calc_hours, calc_minutes, 0);
+      sat.predict(sat_datetime);
+      sat.LL(calc_satellite_latitude,calc_satellite_longitude);
+      sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+
+      if (calc_satellite_elevation > SATELLITE_AOS_ELEVATION_MIN){
+        if (!AOS){
+            if ((format == 0) && (got_first_aos == 0)){
+              if (hit_first_event){  // we're currently in AOS/visible
+                if (got_first_aos == 5){  // we got the next LOS
+                  current_satellite_next_aos_year = calc_years;
+                  current_satellite_next_aos_month = calc_months;
+                  current_satellite_next_aos_day = calc_days;
+                  current_satellite_next_aos_hour = calc_hours;
+                  current_satellite_next_aos_minute = calc_minutes;
+                  current_satellite_next_aos_az = calc_satellite_azimuth;
+                  current_satellite_next_aos_el = calc_satellite_elevation;   
+                  got_first_aos = 6; // we're done; we got the LOS first, AOS second             
+                } else {
+                  got_first_aos = 4; // got the next LOS first, then the next AOS
+                }
+              } else { // we're not in AOS/visible; get AOS first, LOS second
+                current_satellite_next_aos_year = calc_years;
+                current_satellite_next_aos_month = calc_months;
+                current_satellite_next_aos_day = calc_days;
+                current_satellite_next_aos_hour = calc_hours;
+                current_satellite_next_aos_minute = calc_minutes;
+                current_satellite_next_aos_az = calc_satellite_azimuth;
+                current_satellite_next_aos_el = calc_satellite_elevation;
+                got_first_aos = 1; // get LOS next and we're done
+              }
+            }        
+
+          if (format == 1){
+            control_port->print(F("\rAOS: "));
+          }
+          if (format == 2){
+            control_port->print(sat.name);
+            control_port->print("\t");
+          }
+          if (hit_first_event){
+            hit_first_event = 0;
+            if (format == 1){control_port->println(F("now"));}
+            if (format == 2){control_port->print(F("*****        now        *****"));}
+          } else {
+            if ((format == 1) || (format == 2)){
+              control_port->print(calc_years);
+              control_port->print("-");
+              if (calc_months < 10){control_port->print("0");}
+              control_port->print(calc_months);
+              control_port->print("-");    
+              if (calc_days < 10){control_port->print("0");}
+              control_port->print(calc_days);
+              control_port->print(" ");
+              if (calc_hours < 10){control_port->print("0");}
+              control_port->print(calc_hours);
+              control_port->print(":");
+              if (calc_minutes < 10){control_port->print("0");}
+              control_port->print(calc_minutes);
+              control_port->print(" ");
+              if (calc_satellite_azimuth < 10){control_port->print(" ");}
+              if (calc_satellite_azimuth < 100){control_port->print(" ");}
+              control_port->print(calc_satellite_azimuth);
+              control_port->print(" ");
+              if (calc_satellite_elevation > 0){control_port->print(" ");}
+              
+            }
+            if (format == 1){
+              control_port->println(calc_satellite_elevation);
+            }
+            if (format == 2){
+              control_port->print(calc_satellite_elevation);
+            }            
+          }
+          AOS = 1;
+          LOS = 0;
+        }
+      } else {
+        if (!LOS){
+          if ((got_first_aos == 1) || (got_first_aos == 4)){
+            current_satellite_next_los_year = calc_years;
+            current_satellite_next_los_month = calc_months;
+            current_satellite_next_los_day = calc_days;
+            current_satellite_next_los_hour = calc_hours;
+            current_satellite_next_los_minute = calc_minutes;
+            current_satellite_next_los_az = calc_satellite_azimuth;
+            current_satellite_next_los_el = calc_satellite_elevation;
+            if (got_first_aos == 1){
+              got_first_aos = 2; // we're done; got AOS then LOS;
+            } else {
+              got_first_aos = 5; // got LOS first, will get AOS second next
+            }
+          }
+          if (hit_first_event){
+            hit_first_event = 0;  // if the first thing we calculated was an LOS, ignore it; we want the first AOS
+          } else {
+            if (format == 1){
+              control_port->print(F("\rLOS: "));
+            }
+            if (format == 2){
+              control_port->print("\t");
+            }
+            if ((format == 1) || (format == 2)){
+              control_port->print(calc_years);
+              control_port->print("-");
+              if (calc_months < 10){control_port->print("0");}
+              control_port->print(calc_months);
+              control_port->print("-");    
+              if (calc_days < 10){control_port->print("0");}
+              control_port->print(calc_days);
+              control_port->print(" ");
+              if (calc_hours < 10){control_port->print("0");}
+              control_port->print(calc_hours);
+              control_port->print(":");
+              if (calc_minutes < 10){control_port->print("0");}
+              control_port->print(calc_minutes);
+              control_port->print(" ");
+              if (calc_satellite_azimuth < 10){control_port->print(" ");}
+              if (calc_satellite_azimuth < 100){control_port->print(" ");}            
+              control_port->print(calc_satellite_azimuth);
+              control_port->print(" ");
+              if (calc_satellite_elevation > 0){control_port->print(" ");}
+              control_port->println(calc_satellite_elevation);
+            }
+            if (format == 1){control_port->println();}
+            number_of_passes--;
+          }
+          LOS = 1;
+          AOS = 0;
+        }        
+      } // while(number_of_passes > 0){
+    }
+
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING    
+//------------------------------------------------------
 
 void initialize_satellite_tracking(){
 
