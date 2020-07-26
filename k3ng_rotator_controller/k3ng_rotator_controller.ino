@@ -615,6 +615,25 @@
       2020.07.25.02
         FEATURE_NEXTION_DISPLAY: Added vConResult string API variable which returns the results of backslash commands from the Nextion display
 
+      2020.07.25.03
+        FEATURE_NEXTION_DISPLAY
+          New API variables:
+            gGF          Integer               GPS fix age in mS
+            vSAT         String[16]            Current Satellite Name
+            vTAS         String[6]             Satellite Azimuth String
+            vTES         String[6]             Satellite Elevation String 
+            vTLA         String[7]             Satellite Latitude String
+            vTLO         String[7]             Satellite Longitude String
+          gMSS has been expanded to include satellite functionality:
+            gMSS         Integer, Bit Mapped   Moon, Sun, and Satellite Status
+                                                    Bit Values                                  
+                                                       satellite_tracking_active 16
+                                                       satellite_visible 32
+          gSC now has a bit mapping for FEATURE_SATELLITE_TRACKING:
+            gSC         Integer, Bit Mapped   System Capabilities
+                                                    Bit Values
+                                                       SATELLITE 1024
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -626,7 +645,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.25.02"
+#define CODE_VERSION "2020.07.25.03"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4779,7 +4798,13 @@ TODO:
           strcat(workstring1,workstring2);
           strcat(workstring1,"m");
           strcat(workstring1,"\"");
-          sendNextionCommand(workstring1);  
+          sendNextionCommand(workstring1); 
+          
+          strcpy(workstring1,"gGF=");
+          dtostrf(gps_fix_age_temp,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);
+
         } else {
           sendNextionCommand("vCrd.txt=\"\"");
         }
@@ -4787,12 +4812,12 @@ TODO:
       }
     #endif
 
-    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
 
-      static unsigned long last_moon_and_sun_update = 0;
+      static unsigned long last_moon_and_sun_and_sat_update = 0;
       temp = 0;
 
-      if ((millis() - last_moon_and_sun_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
+      if ((millis() - last_moon_and_sun_and_sat_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
 
         #ifdef FEATURE_MOON_TRACKING
           update_moon_position();
@@ -4838,14 +4863,55 @@ TODO:
           }
         #endif // FEATURE_SUN_TRACKING
 
+        #ifdef FEATURE_SATELLITE_TRACKING
+
+          strcpy(workstring1,"vSAT.txt=\"");
+          strcat(workstring1,sat.name);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);    
+
+          strcpy(workstring1,"vTAS.txt=\"");
+          dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1); 
+           
+          strcpy(workstring1,"vTES.txt=\"");
+          dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);       
+
+          strcpy(workstring1,"vTLA.txt=\"");
+          dtostrf(current_satellite_latitude,0,2,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1); 
+           
+          strcpy(workstring1,"vTLO.txt=\"");
+          dtostrf(current_satellite_longitude,0,2,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);             
+
+          if (satellite_tracking_active) {
+            temp = temp | 16;
+          }
+          if (satellite_visible) {
+            temp = temp | 32;
+          }
+
+
+        #endif // FEATURE_SATELLITE_TRACKING
+
         strcpy(workstring1,"gMSS=");
         dtostrf(temp, 1, 0, workstring2);
         strcat(workstring1,workstring2);
         sendNextionCommand(workstring1);
-
-        last_moon_and_sun_update = millis();
+//zzzzzz
+        last_moon_and_sun_and_sat_update = millis();
       }
-    #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)  
+    #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
 
   #ifdef DEBUG_PROCESSES
     service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_SERVICE_NEXTION);
@@ -6162,7 +6228,7 @@ void write_settings_to_eeprom(){
     // control_port->print("pull_satellite_tle_and_activate: searching:");
     // control_port->print(satellite_to_find);
     // control_port->print("$");
-//zzzzzz
+
     get_line_from_tle_file_eeprom(NULL,1);
 
     while(!stop_looping){
@@ -13062,7 +13128,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   #endif
 
   #if defined(FEATURE_SATELLITE_TRACKING)
-    unsigned long int tle_upload_start_time;
+    unsigned long tle_upload_start_time;
     byte got_return = 0;
     byte tle_char_read = 0;  
     byte end_of_eeprom_was_hit = 0;
@@ -13073,7 +13139,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     char satellite_to_find[17];
     byte get_line_result = 0;
     byte x = 0;
-    //zzzzzz
   #endif
 
   float new_azimuth_starting_point;
@@ -16943,7 +17008,6 @@ void initialize_satellite_tracking(){
     if (strcmp(configuration.current_satellite,"-") == 0){
       load_satellite_tle(NULL,NULL,NULL,1);  // if there is no current satellite in the configuration, load a hardcode TLE
     } else {
-      //zzzzzz
       satellite_tle_pull_result = pull_satellite_tle_and_activate(configuration.current_satellite,0);
       if (satellite_tle_pull_result == 0){
         load_satellite_tle(NULL,NULL,NULL,1);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
