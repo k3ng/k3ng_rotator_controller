@@ -19,7 +19,9 @@
 //#define FEATURE_ETHERNET
 #define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
 //#define FEATURE_AUTOCORRECT 
-// #define FEATURE_TEST_DISPLAY_AT_STARTUP  
+//#define FEATURE_TEST_DISPLAY_AT_STARTUP  
+
+//#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 //#define LANGUAGE_SPANISH
@@ -127,10 +129,11 @@
 //#define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 //#define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 //#define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-//#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
-//#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator in row 1 center
-//#define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
-//#define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+// #define OPTION_DISPLAY_DIRECTION_STATUS                         // LCD N, W, E, S, NW, etc. direction indicator
+// #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY               // LCD
+// #define OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY          // LCD
+// #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY                // LCD
+// #define OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL  // LCD
 //#define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)

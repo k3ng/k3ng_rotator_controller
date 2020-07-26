@@ -600,6 +600,18 @@
       \^ command to activate and deactive satellite tracking
       \~ command to view satellite tracking status  
 
+    2020.07.25.01
+      More work on FEATURE_SATELLITE_TRACKING
+        Added LCD support
+        Command \!           - erase satellite TLE file area in eeprom
+        Command \@           - print satellite TLE file area from eeprom
+        Command \octothorpe  - load satellite Keplarian elements file into eeprom (copy and paste bare TLE)
+        Command \$xxxxxxx    - change current satellite (xxxxxx = satellite name in stored TLE file)
+        Added OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY to LCD functionality
+        OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL changed to OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL
+        Setting LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW changed to LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW
+        Under construction documentation https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -611,7 +623,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.24.01"
+#define CODE_VERSION "2020.07.25.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -842,6 +854,7 @@ struct config_t {
   byte autopark_active;
   unsigned int autopark_time_minutes;
   byte azimuth_display_mode;
+  char current_satellite[17];
 } configuration;
 
 
@@ -1244,54 +1257,15 @@ DebugClass debug;
 #if defined(FEATURE_SATELLITE_TRACKING)
 
   #include <P13.h>
-
-/*
-  const double YM = 365.25;                                            // Days in a year
-  const double YT = 365.2421970;                                       // Tropical year, days
-  const double WW = 2.0 * M_PI / 365.2421970;                          // Earth's rotation rate, rads/whole day
-  const double WE = 2.0 * M_PI + (2.0 * M_PI / 365.2421970);           // Earth's rotation rate, rads/day
-  const double W0 = (2.0 * M_PI + (2.0 * M_PI / 365.2421970)) / 86400; // Earth's rotation rate, rads/sec
-  const double GM = 3.986E5;                                           // Earth's gravitational constant km^3/s^2
-  const double J2 = 1.08263E-3;                                        // 2nd Zonal coeff, Earth's gravity Field
-
-  // Sideral and solar data. Valid to year 2030
-  // 2014 GHAA, Year YG, Jan 0.0 
-  const double YG = 2014;
-  const double G0 = 99.5828;
-  // MA Sun and rate, deg, deg/day
-  const double MAS0 = 356.4105;
-  const double MASD = 0.98560028;
-  const double Sun_inclination = 23.4375;
-
-  // // 2010 GHAA, Year YG, Jan 0.0 Valid to year 2015 
-  // const double YG = 2010;
-  // const double G0 = 99.5578;
-  // // MA Sun and rate, deg, deg/day
-  // const double MAS0 = 356.4485;
-  // const double MASD = 0.98560028;
-  // const double Sun_inclination 23.4380;
-
-  // WGS-84 Earth Ellipsoid 
-  const double RE = 6378.137;
-  const double FL = 1.0 / 298.257224;
-
-  // IAU-76 Earth Ellipsoid
-  //const double RE = 6378.140;
-  //const double FL = 1.0 / 298.257;
-
-  unsigned long current_satellite_rx_freq;
-  unsigned long current_satellite_tx_freq;
-
-*/
+  #define tle_file_eeprom_memory_area_start (sizeof(configuration)+5)
 
   double current_satellite_elevation;
   double current_satellite_azimuth;      
   double current_satellite_longitude;
   double current_satellite_latitude;
+  unsigned int tle_file_eeprom_memory_area_end;
   byte satellite_tracking_active = 0;
   byte satellite_visible = 0;
-
-//zzzzzz
 
   Satellite sat;
   Observer obs("my_location", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M);
@@ -1323,6 +1297,8 @@ void setup() {
   initialize_rotary_encoders();
 
   initialize_interrupts();
+
+  initialize_satellite_tracking();
 
   run_this_once();
 
@@ -3144,6 +3120,7 @@ void check_serial(){
   static unsigned long serial_led_time = 0;
   float tempfloat = 0;
   char return_string[100] = ""; 
+  static byte received_backslash = 0;
 
   #if defined(FEATURE_GPS)
     static byte gps_port_read = 0;
@@ -3233,6 +3210,14 @@ void check_serial(){
           }
         }
 
+        if (incoming_serial_byte == '\\'){
+          received_backslash = 1;
+        }     
+
+        if (received_backslash){
+          control_port->write(incoming_serial_byte);
+        }        
+
         // if it is an Easycom command and we have a space, line feed, or carriage return, process it
         if (((incoming_serial_byte == 10) || (incoming_serial_byte == 13) || (incoming_serial_byte == 32)) && (control_port_buffer[0] != '\\') && (control_port_buffer[0] != '/')){
           #if defined(OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK) && defined(FEATURE_ELEVATION_CONTROL)
@@ -3299,6 +3284,8 @@ void check_serial(){
         } else {
           // if it is a backslash command, process it if we have a carriage return
           if ((incoming_serial_byte == 13) && ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/'))){
+            received_backslash = 0;
+            control_port->println();
             process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
@@ -3316,10 +3303,21 @@ void check_serial(){
         if ((incoming_serial_byte != 10) && (incoming_serial_byte != 13)) { // add it to the buffer if it's not a line feed or carriage return
           control_port_buffer[control_port_buffer_index] = incoming_serial_byte;
           control_port_buffer_index++;
+      
+        }
+
+        if (incoming_serial_byte == '\\'){
+          received_backslash = 1;
+        }     
+
+        if (received_backslash){
+          control_port->write(incoming_serial_byte);
         }
 
         if (incoming_serial_byte == 13) {  // do we have a carriage return?
           if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
+            received_backslash = 0;
+            control_port->println();
             process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
@@ -3360,8 +3358,18 @@ void check_serial(){
         control_port->write(incoming_serial_byte);
       }
 
+      if (incoming_serial_byte == '\\'){
+        received_backslash = 1;
+      }     
+
+      if (received_backslash){
+        control_port->write(incoming_serial_byte);
+      }
+
       if (incoming_serial_byte == 13) {  // do we have a carriage return command termination?
         if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {   // we have a backslash command
+          received_backslash = 0;
+          control_port->println();
           process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
           control_port->println(return_string);
           clear_command_buffer();
@@ -5069,6 +5077,11 @@ TODO:
     #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
     #endif    
+    #if defined(FEATURE_SATELLITE_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
+    #endif    
+
+
     strcpy(workstring1,"gSC=");
     dtostrf(temp, 1, 0, workstring2);
     strcat(workstring1,workstring2);
@@ -5986,6 +5999,43 @@ void update_lcd_display(){
   }
   #endif //defined(OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY) && defined(FEATURE_SUN_TRACKING)
 
+  // OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY *************************************************************
+  #if defined(OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY) && defined(FEATURE_SATELLITE_TRACKING)
+
+    if (!row_override[LCD_SATELLITE_TRACKING_ROW]){
+
+      strcpy(workstring,"");
+      if (satellite_tracking_active){
+        if (satellite_visible){
+          strcat(workstring,TRACKING_ACTIVE_CHAR);
+        } else {
+          strcat(workstring,TRACKING_INACTIVE_CHAR);
+        }
+      }
+      strcat(workstring,sat.name);
+      strcat(workstring," ");
+      dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
+      strcat(workstring,workstring2);
+      if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+      strcat(workstring," ");
+      dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
+      strcat(workstring,workstring2);
+      if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+      if (satellite_tracking_active){
+        if (satellite_visible){
+          strcat(workstring,TRACKING_ACTIVE_CHAR);
+        } else {
+          strcat(workstring,TRACKING_INACTIVE_CHAR);
+        }
+      }
+      k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SATELLITE_TRACKING_ROW-1,LCD_COLUMNS); 
+    } else {
+      #if defined(DEBUG_DISPLAY)
+        debug.println(F("update_lcd_display: OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY row override"));
+      #endif
+    }
+  #endif //defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
+
 
 // OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD ****************************************************
   #if defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
@@ -6087,15 +6137,15 @@ void update_lcd_display(){
 
 
 
-  // OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL *******************************************************
-  #ifdef OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+  // OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL *******************************************************
+  #ifdef OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL
 
     //  moon tracking ----
     #ifdef FEATURE_MOON_TRACKING
 
       // static unsigned long last_moon_tracking_check_time = 0;
 
-      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW])  && (moon_tracking_active)) {
+      if ((!row_override[LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW])  && (moon_tracking_active)) {
         if (((millis()-last_moon_tracking_check_time) > LCD_MOON_TRACKING_UPDATE_INTERVAL)) {  
           update_moon_position();
           last_moon_tracking_check_time = millis();
@@ -6118,7 +6168,7 @@ void update_lcd_display(){
         } else {
           strcat(workstring,TRACKING_INACTIVE_CHAR);
         }
-        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS); 
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS); 
       }
     #endif //FEATURE_MOON_TRACKING
 
@@ -6127,7 +6177,7 @@ void update_lcd_display(){
     #ifdef FEATURE_SUN_TRACKING
       // static unsigned long last_sun_tracking_check_time = 0;
 
-      if ((!row_override[LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW]) && (sun_tracking_active)){
+      if ((!row_override[LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW]) && (sun_tracking_active)){
         if ((millis()-last_sun_tracking_check_time) > LCD_SUN_TRACKING_UPDATE_INTERVAL) {  
           update_sun_position();
           last_sun_tracking_check_time = millis();
@@ -6150,12 +6200,77 @@ void update_lcd_display(){
         } else {
           strcat(workstring,TRACKING_INACTIVE_CHAR);
         }
-        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS);
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS);
       }
 
     #endif //FEATURE_SUN_TRACKING
 
-  #endif //OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+
+    //  satellite tracking ----
+    #ifdef FEATURE_SATELLITE_TRACKING
+      if ((!row_override[LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW]) && (satellite_tracking_active)){
+        if (satellite_visible){
+          strcpy(workstring,TRACKING_ACTIVE_CHAR);
+        } else {
+          strcpy(workstring,TRACKING_INACTIVE_CHAR);
+        }
+        strcat(workstring,sat.name);
+        strcat(workstring," ");
+        dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
+        strcat(workstring,workstring2);
+        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        strcat(workstring," ");
+        dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
+        strcat(workstring,workstring2);
+        if ((LCD_COLUMNS>16) && ((sun_azimuth < 100) || (abs(sun_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+        if (satellite_visible){
+          strcat(workstring,TRACKING_ACTIVE_CHAR);
+        } else {
+          strcat(workstring,TRACKING_INACTIVE_CHAR);
+        }
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW-1,LCD_COLUMNS);
+      }
+
+    #endif //FEATURE_SATELLITE_TRACKING
+
+
+  // if (!row_override[LCD_SATELLITE_TRACKING_ROW]){
+
+  //     strcpy(workstring,"");
+  //     if (satellite_tracking_active){
+  //       if (satellite_visible){
+  //         strcat(workstring,TRACKING_ACTIVE_CHAR);
+  //       } else {
+  //         strcat(workstring,TRACKING_INACTIVE_CHAR);
+  //       }
+  //     }
+  //     strcat(workstring,sat.name);
+  //     strcat(workstring," ");
+  //     dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
+  //     strcat(workstring,workstring2);
+  //     if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+  //     strcat(workstring," ");
+  //     dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
+  //     strcat(workstring,workstring2);
+  //     if ((LCD_COLUMNS>16) && ((current_satellite_azimuth < 100) || (abs(current_satellite_elevation)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+  //     if (satellite_tracking_active){
+  //       if (satellite_visible){
+  //         strcat(workstring,TRACKING_ACTIVE_CHAR);
+  //       } else {
+  //         strcat(workstring,TRACKING_INACTIVE_CHAR);
+  //       }
+  //     }
+  //     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_SATELLITE_TRACKING_ROW-1,LCD_COLUMNS); 
+  //   } else {
+  //     #if defined(DEBUG_DISPLAY)
+  //       debug.println(F("update_lcd_display: OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY row override"));
+  //     #endif
+  //   }
+  // #endif //defined(OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY) && defined(FEATURE_MOON_TRACKING)
+
+
+
+  #endif //OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL
 
 
   // OPTION_DISPLAY_BIG_CLOCK **********************************************************
@@ -6241,6 +6356,19 @@ void read_settings_from_eeprom(){
   byte * p = (byte *)(void *)&configuration;
   unsigned int i;
   int ee = 0;
+
+
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    #if (!defined(ARDUINO_SAM_DUE) || (defined(ARDUINO_SAM_DUE) && defined(FEATURE_EEPROM_E24C1024))) && !defined(HARDWARE_GENERIC_STM32F103C)
+      tle_file_eeprom_memory_area_end = EEPROM.length();
+    #else
+      #if defined(HARDWARE_GENERIC_STM32F103C)
+        tle_file_eeprom_memory_area_end = 254;
+      #else
+        tle_file_eeprom_memory_area_end = 1024; // not sure if this is a valid assumption
+      #endif  
+    #endif
+  #endif //FEATURE_SATELLITE_TRACKING
 
   for (i = 0; i < sizeof(configuration); i++) {
     *p++ = EEPROM.read(ee++);
@@ -6342,6 +6470,11 @@ void read_settings_from_eeprom(){
     #endif // DEBUG_EEPROM
     initialize_eeprom_with_defaults();
   }
+
+
+
+
+
 } /* read_settings_from_eeprom */
 // --------------------------------------------------------------
 void initialize_eeprom_with_defaults(){
@@ -6371,6 +6504,7 @@ void initialize_eeprom_with_defaults(){
   configuration.autopark_active = 0;
   configuration.autopark_time_minutes = 0;
   configuration.azimuth_display_mode = AZ_DISPLAY_MODE_NORMAL;
+  strcpy(configuration.current_satellite,"-");
 
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
@@ -6386,6 +6520,10 @@ void initialize_eeprom_with_defaults(){
   #endif //FEATURE_STEPPER_MOTOR
 
   write_settings_to_eeprom();
+
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    initialize_tle_file_area_eeprom(0);
+  #endif 
 
 } /* initialize_eeprom_with_defaults */
 
@@ -6410,6 +6548,194 @@ void write_settings_to_eeprom(){
 
 }
 
+// --------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void initialize_tle_file_area_eeprom(byte verbose){
+
+    // this essentially erases anything in the tle file area by writing FF to all locations
+
+    #ifdef DEBUG_SATELLITE_TRACKING
+      debug.println("initialize_tle_file_area_eeprom: init file file area");
+    #endif // DEBUG_SATELLITE_TRACKING
+
+
+    // Don't need to "erase" all the locations, just the first one
+
+    EEPROM.write(tle_file_eeprom_memory_area_start,0xFF);
+
+    if (verbose){
+      control_port->print(tle_file_eeprom_memory_area_end-tle_file_eeprom_memory_area_start);
+      control_port->println(" bytes free");
+    }
+
+  
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+// --------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  byte write_char_to_tle_file_area_eeprom(byte char_to_write,byte initialize_to_start){
+
+    // returns 1 if write was successful, 0 if we hit the end of the eeprom space
+
+    static unsigned int eeprom_write_location = 0;
+
+    #ifdef DEBUG_SATELLITE_TLE_EEPROM
+      control_port->print("\r\nwrite_char_to_tle_file_area_eeprom: ");
+      if (initialize_to_start){
+        control_port->println("initialize_to_start");
+      } else {
+        control_port->println(char_to_write);
+      }
+    #endif // DEBUG_SATELLITE_TLE_EEPROM
+
+    if (initialize_to_start){
+      eeprom_write_location = 0;
+    } else {
+      if ((tle_file_eeprom_memory_area_start + eeprom_write_location) < tle_file_eeprom_memory_area_end){
+        EEPROM.write((tle_file_eeprom_memory_area_start + eeprom_write_location),char_to_write);
+        eeprom_write_location++;
+        return 1;
+      }
+    }
+  
+    return 0;
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+// --------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  byte get_line_from_tle_file_eeprom(char* tle_line_out,byte initialize_to_start_of_file){
+
+    // returns
+    // 0 = successful read
+    // 1 = file is empty
+    // 2 = hit end of file
+    // 3 = hit end of eeprom
+    // 4 = initialzed
+
+    static unsigned int eeprom_location = tle_file_eeprom_memory_area_start;
+    char eeprom_read[2];
+    char tle_line[SATELLITE_TLE_CHAR_SIZE];
+    byte hit_return = 0;
+
+    if (EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF){
+      return 1;
+    }  
+    if (initialize_to_start_of_file){
+      eeprom_location = tle_file_eeprom_memory_area_start;
+      return 4;
+    }
+
+    strcpy(tle_line,"");
+    eeprom_read[1] = 0;
+
+    while ((eeprom_location < tle_file_eeprom_memory_area_end) && (!hit_return)){
+      eeprom_read[0] = EEPROM.read(eeprom_location);
+      if (eeprom_read[0] == '\r'){
+        hit_return = 1;
+      } else {
+        if (eeprom_read[0] == 0xFF){  // hit the end of the file
+          return 2;
+        }
+        if ((eeprom_read[0] != '\n')){
+          strcat(tle_line,eeprom_read);
+        }
+      }  
+      eeprom_location++;
+    }
+
+    if (eeprom_location == tle_file_eeprom_memory_area_end){
+      return 3;
+    }
+
+    strcpy(tle_line_out,tle_line);
+    return 0;
+    
+  
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+// --------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  byte pull_satellite_tle_and_activate(char* satellite_to_find,byte verbose){
+
+    // returns
+    // 1 = found it
+    // 0 = didn't find it
+ 
+    byte get_line_result;
+    byte stop_looping = 0;
+    char tle_line1[SATELLITE_TLE_CHAR_SIZE];
+    char tle_line2[SATELLITE_TLE_CHAR_SIZE];
+    byte found_it = 0;
+
+    // control_port->print("pull_satellite_tle_and_activate: searching:");
+    // control_port->print(satellite_to_find);
+    // control_port->print("$");
+//zzzzzz
+    get_line_from_tle_file_eeprom(NULL,1);
+
+    while(!stop_looping){
+      
+      get_line_result = get_line_from_tle_file_eeprom(tle_line1,0);
+      if (get_line_result == 0){
+          //control_port->println(tle_line1);
+          if (strcmp(tle_line1,satellite_to_find) == 0){
+            if (verbose){
+              control_port->println("Found it! :-)");
+            }
+            get_line_from_tle_file_eeprom(tle_line1,0);
+            if (verbose){
+              control_port->println(tle_line1);
+            }
+            get_line_from_tle_file_eeprom(tle_line2,0);
+            if (verbose){
+              control_port->println(tle_line2);  
+            }
+            stop_looping = 1;        
+            found_it = 1; 
+          }
+      } else {
+        stop_looping = 1;
+      }    
+    } 
+
+    if (found_it){
+      load_satellite_tle(satellite_to_find,tle_line1,tle_line2,0);  
+      strcpy(configuration.current_satellite,sat.name);
+      configuration_dirty = 1; 
+      return 1;  
+    } else {
+      control_port->println("Not found :-(");
+    }
+         
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+// --------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void print_tle_file_area_eeprom(){
+
+    unsigned int eeprom_location;
+    byte eeprom_read;
+
+    if (EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF){
+      control_port->println("<empty>");
+    } else {
+      for (eeprom_location = tle_file_eeprom_memory_area_start; eeprom_location < tle_file_eeprom_memory_area_end; eeprom_location++) {
+        eeprom_read = EEPROM.read(eeprom_location);
+        if (eeprom_read != 0xFF){
+          control_port->write(eeprom_read);
+          if (eeprom_read == '\r'){
+            control_port->print('\n');
+          }
+        } else {
+          eeprom_location = tle_file_eeprom_memory_area_end;
+        }
+      }
+    }
+  
+  }
+#endif //FEATURE_SATELLITE_TRACKING
 // --------------------------------------------------------------
 
 void az_check_operation_timeout(){
@@ -13119,7 +13445,7 @@ void service_rtc(){
 
 
     #ifdef FEATURE_RTC_DS1307
-      if (rtc.isrunning()) {
+      if (rtc.isrunning()){
         DateTime now = rtc.now();
         #ifdef DEBUG_RTC
           debug.print("service_rtc: syncing: ");
@@ -13207,9 +13533,6 @@ void service_rtc(){
 #endif // FEATURE_RTC
 
 // --------------------------------------------------------------
-
-
-
 byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte source_port, char * return_string){
 
   strcpy(return_string,"");
@@ -13221,10 +13544,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     float heading = 0;
   #endif 
 
-  //#if !defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) && !defined(FEATURE_AZ_POSITION_PULSE_INPUT)
-    long place_multiplier = 0;
-    byte decimalplace = 0;
-  //#endif
+
+  long place_multiplier = 0;
+  byte decimalplace = 0;
 
   #ifdef FEATURE_CLOCK
     int temp_year = 0;
@@ -13248,8 +13570,22 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     int new_elevation = 9999;
   #endif
 
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    unsigned long int tle_upload_start_time;
+    byte got_return = 0;
+    byte tle_char_read = 0;  
+    byte end_of_eeprom_was_hit = 0;
+    byte write_char_to_tle_file_area_result = 0;
+    byte tle_serial_buffer[2001];
+    unsigned int tle_serial_buffer_in_pointer = 0;
+    unsigned int tle_serial_buffer_out_pointer = 0;
+    char satellite_to_find[17];
+    byte get_line_result = 0;
+    byte x = 0;
+    //zzzzzz
+  #endif
+
   float new_azimuth_starting_point;
-  //float new_azimuth_rotation_capability;
 
   byte brake_az_disabled;
 
@@ -13314,8 +13650,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
    #endif // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
 
     case 'I':        // \Ix[x][x] - set az starting point
-
-
       tempfloat = 0;
       for (int x = 2;x < input_buffer_index;x++){
         if(input_buffer[x] == '.'){
@@ -13343,7 +13677,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       break;
 
     case 'J':        // \Jx[x][x][x][x] - set az rotation capability
-
       tempfloat = 0;
       for (int x = 2;x < input_buffer_index;x++){
         if(input_buffer[x] == '.'){
@@ -13451,9 +13784,8 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     case 'C':         // show clock
       update_time();
       sprintf(return_string, "%s", timezone_modified_clock_string());
-
-
       break;
+
     case 'O':         // set clock UTC time
       temp_year = ((input_buffer[2] - 48) * 1000) + ((input_buffer[3] - 48) * 100) + ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
       temp_month = ((input_buffer[6] - 48) * 10) + (input_buffer[7] - 48);
@@ -13910,63 +14242,131 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     break;
 
     #if defined(FEATURE_SATELLITE_TRACKING)
-    case '~':
-      control_port->print("Satellite:");
-      control_port->print(sat.name);
-      control_port->print(" Location:");
-      control_port->print(obs.name);
-      control_port->print(" (");
-      control_port->print(obs.LA);
-      control_port->print(",");
-      control_port->print(obs.LO);
-      control_port->print(",");
-      control_port->print(obs.HT);
-      control_port->print(") AZ:");
-      control_port->print(current_satellite_azimuth);
-      control_port->print(" EL:");
-      control_port->print(current_satellite_elevation);   
-      control_port->print(" Lat:");
-      control_port->print(current_satellite_latitude);
-      control_port->print(" Long:");
-      control_port->print(current_satellite_longitude);   
-      if (satellite_visible) {
-        control_port->print("  AOS");
-      } else {
-        control_port->print("  LOS");
-      }
-      control_port->print("  TRACKING_");
-      if (!satellite_tracking_active) {
-        control_port->print("IN");
-      }
-      control_port->println("ACTIVE ");
-
-//zzzzzz
-      break;
-
-      case '^':
-        switch (input_buffer[2]) {
-          case '0':
-            satellite_tracking_active = 0;
-            submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
-            submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
-            strcpy(return_string, "Satellite tracking deactivated.");
-            break;
-          case '1':
-            satellite_tracking_active = 1;
-            #ifdef FEATURE_SUN_TRACKING
-              sun_tracking_active = 0;
-            #endif // FEATURE_SUN_TRACKING
-            #ifdef FEATURE_MOON_TRACKING
-              moon_tracking_active = 0;
-            #endif // FEATURE_SUN_TRACKING            
-            strcpy(return_string, "Satellite tracking activated.");
-            break;
-          default: strcpy(return_string, "Error."); break;
+      case '~':
+        control_port->print("Satellite:");
+        control_port->print(sat.name);
+        control_port->print(" Location:");
+        control_port->print(obs.name);
+        control_port->print(" (");
+        control_port->print(obs.LA);
+        control_port->print(",");
+        control_port->print(obs.LO);
+        control_port->print(",");
+        control_port->print(obs.HT);
+        control_port->print(") AZ:");
+        control_port->print(current_satellite_azimuth);
+        control_port->print(" EL:");
+        control_port->print(current_satellite_elevation);   
+        control_port->print(" Lat:");
+        control_port->print(current_satellite_latitude);
+        control_port->print(" Long:");
+        control_port->print(current_satellite_longitude);   
+        if (satellite_visible) {
+          control_port->print("  AOS");
+        } else {
+          control_port->print("  LOS");
         }
+        control_port->print("  TRACKING_");
+        if (!satellite_tracking_active) {
+          control_port->print("IN");
+        }
+        control_port->println("ACTIVE ");
         break;
 
+        case '^':
+          switch (input_buffer[2]) {
+            case '0':
+              satellite_tracking_active = 0;
+              submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
+              submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
+              strcpy(return_string, "Satellite tracking deactivated.");
+              break;
+            case '1':
+              satellite_tracking_active = 1;
+              #ifdef FEATURE_SUN_TRACKING
+                sun_tracking_active = 0;
+              #endif // FEATURE_SUN_TRACKING
+              #ifdef FEATURE_MOON_TRACKING
+                moon_tracking_active = 0;
+              #endif // FEATURE_SUN_TRACKING            
+              strcpy(return_string, "Satellite tracking activated.");
+              break;
+            default: strcpy(return_string, "Error."); break;
+          }
+          break;
 
-   #endif 
+        case '!':
+          control_port->println("Erased the TLE file area.");
+          initialize_tle_file_area_eeprom(1);
+          break;
+
+        case '@':
+          control_port->println("TLE file:");
+          print_tle_file_area_eeprom();
+          break;
+
+        case '#':
+          control_port->println("Paste bare TLE file text now; double return to end.");
+          write_char_to_tle_file_area_eeprom(0,1); // initialize   
+          tle_upload_start_time = millis();
+          // this code below is nuts.  it's a circular buffer for incoming serial data and writing to eeprom
+          while (((millis() - tle_upload_start_time) < 10000) && ((got_return < 2) || (tle_serial_buffer_in_pointer != tle_serial_buffer_out_pointer))){
+            // incoming serial data
+            while ((control_port->available()) && ((tle_serial_buffer_in_pointer+1) != tle_serial_buffer_out_pointer) &&
+              (!((tle_serial_buffer_in_pointer == 2000) && (tle_serial_buffer_out_pointer == 0)))){    
+              tle_char_read = toupper(control_port->read());        
+              tle_serial_buffer[tle_serial_buffer_in_pointer] = tle_char_read;
+              if (tle_serial_buffer_in_pointer < 2000){
+                tle_serial_buffer_in_pointer++;
+              } else {
+                tle_serial_buffer_in_pointer = 0; // buffer roll over
+              }
+              control_port->write(tle_char_read);
+              if (tle_char_read == '\r'){
+                control_port->print("\n");
+                got_return++;
+              } else {
+                got_return = 0;
+              }
+              tle_upload_start_time = millis();              
+            }
+            // outgoing data written to eeprom
+            if (tle_serial_buffer_in_pointer != tle_serial_buffer_out_pointer){
+              write_char_to_tle_file_area_result = write_char_to_tle_file_area_eeprom(tle_serial_buffer[tle_serial_buffer_out_pointer],0);
+              if (write_char_to_tle_file_area_result == 0){
+                if (end_of_eeprom_was_hit == 0){
+                  end_of_eeprom_was_hit = 1;
+                }
+              }
+              if (tle_serial_buffer_out_pointer < 2000){
+                tle_serial_buffer_out_pointer++;
+              } else {
+                tle_serial_buffer_out_pointer = 0; 
+              }              
+            }
+            if (end_of_eeprom_was_hit == 1){
+              control_port->println("\r\nEnd of eeprom file area hit.");
+              end_of_eeprom_was_hit = 2;
+            }
+          }    
+          write_char_to_tle_file_area_eeprom(0xFF,0); // write terminating FF
+          control_port->println("\r\nFile stored.");
+          if (end_of_eeprom_was_hit == 2){
+            control_port->println("File was truncated."); 
+          } 
+          break;          
+//zzzzzz
+        case '$':
+          for (x = 2;x < input_buffer_index;x++){
+            satellite_to_find[x-2] = input_buffer[x];
+            satellite_to_find[x-1] = 0; 
+          }      
+          control_port->print("Searching for ");
+          control_port->println(satellite_to_find);
+          pull_satellite_tle_and_activate(satellite_to_find,1);
+          break;  
+
+      #endif //FEATURE_SATELLITE_TRACKING
 
 // TODO : one big status query command    
 
@@ -16932,7 +17332,24 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 }
 
 #endif //FEATURE_NEXTION_DISPLAY
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
 
+  void load_satellite_tle(const char *name_in, const char *tle_line1, const char *tle_line2,byte load_hardcoded_tle){
+
+    static char name[17];
+
+    strcpy(name,name_in);
+   
+    if (load_hardcoded_tle){
+      sat.tle("AO-7","1 07530U 74089B   20205.48277872 -.00000043  00000-0  13494-4 0  9990",
+                     "2 07530 101.8018 175.0260 0011861 296.2265 184.6086 12.53644244090508");
+    } else {
+      sat.tle(name,tle_line1,tle_line2);
+    }                 
+  }
+
+#endif //FEATURE_SATELLITE_TRACKING
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
   void service_satellite_tracking(){
@@ -16971,8 +17388,6 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 //zzzzzz
 
     if ((millis() - last_update_satellite_position) > SATELLITE_UPDATE_POSITION_INTERVAL_MS){
-      sat.tle("AO-7","1 07530U 74089B   20205.48277872 -.00000043  00000-0  13494-4 0  9990",
-                     "2 07530 101.8018 175.0260 0011861 296.2265 184.6086 12.53644244090508");
       sat_datetime.settime(clock_years, clock_months, clock_days, clock_hours, clock_minutes, clock_seconds);
       obs.LA = latitude;
       obs.LO = longitude;
@@ -17025,7 +17440,28 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
   }
 
 #endif //FEATURE_SATELLITE_TRACKING    
+//------------------------------------------------------
 
+
+void initialize_satellite_tracking(){
+
+  #if defined(FEATURE_SATELLITE_TRACKING)
+  
+    byte satellite_tle_pull_result = 0;
+
+    if (strcmp(configuration.current_satellite,"-") == 0){
+      load_satellite_tle(NULL,NULL,NULL,1);  // if there is no current satellite in the configuration, load a hardcode TLE
+    } else {
+      //zzzzzz
+      satellite_tle_pull_result = pull_satellite_tle_and_activate(configuration.current_satellite,0);
+      if (satellite_tle_pull_result == 0){
+        load_satellite_tle(NULL,NULL,NULL,1);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
+      }
+    }
+
+
+  #endif //FEATURE_SATELLITE_TRACKING 
+}
 
 //------------------------------------------------------
 

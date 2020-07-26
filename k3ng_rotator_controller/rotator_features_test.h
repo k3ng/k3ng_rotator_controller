@@ -28,7 +28,7 @@
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
-#define FEATURE_SATELLITE_TRACKING  // In development
+// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -140,6 +140,7 @@
 //#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
 #define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
 
+// LCD Display Options
 #define OPTION_DISPLAY_STATUS
 #define OPTION_DISPLAY_HEADING
 // #define OPTION_DISPLAY_HEADING_AZ_ONLY
@@ -151,10 +152,11 @@
 // #define OPTION_DISPLAY_BIG_CLOCK   // display date & time clock (set row with #define LCD_BIG_CLOCK_ROW)
 #define OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
 #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
-#define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
-//#define OPTION_DISPLAY_DIRECTION_STATUS // N, W, E, S, NW, etc. direction indicator
-// #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
-// #define OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+// #define OPTION_DISPLAY_DIRECTION_STATUS                         // LCD N, W, E, S, NW, etc. direction indicator
+// #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY               // LCD
+#define OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY          // LCD
+// #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY                // LCD
+// #define OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL  // LCD
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ
 // #define OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
 

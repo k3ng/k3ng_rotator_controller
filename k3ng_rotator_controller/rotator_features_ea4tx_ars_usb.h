@@ -17,6 +17,8 @@
 
 //#define FEATURE_TEST_DISPLAY_AT_STARTUP
 
+//#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+
 #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 
 #define FEATURE_EL_POSITION_POTENTIOMETER

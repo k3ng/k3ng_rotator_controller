@@ -121,7 +121,7 @@ You can tweak these, but read the online documentation!
 #define LCD_MOON_TRACKING_UPDATE_INTERVAL 5000
 #define LCD_SUN_TRACKING_ROW 4                                    // LCD display row for OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000
-#define LCD_MOON_OR_SUN_TRACKING_CONDITIONAL_ROW 3                // LCD display row for OPTION_DISPLAY_MOON_OR_SUN_TRACKING_CONDITIONAL
+#define LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW 3                // LCD display row for OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL
 #define SPLASH_SCREEN_TIME 3000
 #define LCD_PERIODIC_REDRAW_TIME_SECS 0      // set to 0 to totally disable periodically redrawing the screen
 #define LCD_CLEAR_BEFORE_REDRAW 1            // set to 0 to disable doing a clear before redraw
@@ -146,7 +146,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 110
+#define EEPROM_MAGIC_NUMBER 111
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 #define DISPLAY_DECIMAL_PLACES 0
@@ -362,3 +362,7 @@ You can tweak these, but read the online documentation!
 #define SATELLITE_AOS_AZIMUTH_MAX 360
 #define SATELLITE_AOS_ELEVATION_MIN 0
 #define SATELLITE_AOS_ELEVATION_MAX 180
+
+// Added in 2020.07.25.01
+#define LCD_SATELLITE_TRACKING_ROW 4
+#define SATELLITE_TLE_CHAR_SIZE 71
