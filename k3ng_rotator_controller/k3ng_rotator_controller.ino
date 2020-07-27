@@ -651,6 +651,12 @@
           LCD_DISPLAY_SUN_TRACKING_INACTIVE_CHAR "-"
         Added nasabare.txt bare TLE file to Github in tle/ directory
 
+      2020.07.26.02
+        FEATURE_SATELLITE_TRACKING
+          \% command now calculates max elevation for each pass
+        FEATURE_NEXTION_DISPLAY
+          vConResult API variable no longer has response code in results from extended backslash commands
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -662,7 +668,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.26.01"
+#define CODE_VERSION "2020.07.26.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1557,7 +1563,7 @@ void loop() {
   #endif
 
   #if defined(FEATURE_SATELLITE_TRACKING)
-    service_satellite_tracking();
+    service_satellite_tracking(0);
   #endif
 
   check_for_reset_flag();
@@ -3341,7 +3347,7 @@ void check_serial(){
           if ((incoming_serial_byte == 13) && ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/'))){
             received_backslash = 0;
             control_port->println();
-            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
+            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
             #endif          
@@ -3373,7 +3379,7 @@ void check_serial(){
           if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
             received_backslash = 0;
             control_port->println();
-            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
+            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
             #endif            
@@ -3425,7 +3431,7 @@ void check_serial(){
         if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {   // we have a backslash command
           received_backslash = 0;
           control_port->println();
-          process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, return_string);
+          process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string);
           control_port->println(return_string);
           clear_command_buffer();
         } else {       // we have a DCU-1 command
@@ -4249,7 +4255,7 @@ void service_nextion_display(){
       }   
 
       if ((serial_byte == 13) || (nextion_port_buffer_index > 31)){  // do we have a carriage return or have we hit the end of the buffer?
-        process_backslash_command(nextion_port_buffer, nextion_port_buffer_index, 0, return_string);
+        process_backslash_command(nextion_port_buffer, nextion_port_buffer_index, 0, DO_NOT_INCLUDE_RESPONSE_CODE, return_string);
         nextion_port_buffer_index = 0;
         received_backslash = 0;
         last_serial_receive_time = 0;
@@ -5729,11 +5735,11 @@ void update_lcd_display(){
           strcat(workstring,workstring2);
         } else {
           strcpy(workstring,"LOS ");
-          if (LCD_COLUMNS > 16){
-            dtostrf(current_satellite_next_los_year,0,0,workstring2);
-            strcat(workstring,workstring2);
-            strcat(workstring,"-");
-          }
+          // if (LCD_COLUMNS > 16){
+          //   dtostrf(current_satellite_next_los_year,0,0,workstring2);
+          //   strcat(workstring,workstring2);
+          //   strcat(workstring,"-");
+          // }
           if (current_satellite_next_los_month < 10){
             strcat(workstring,"0");
           }
@@ -5746,7 +5752,8 @@ void update_lcd_display(){
           dtostrf(current_satellite_next_los_day,0,0,workstring2);
           strcat(workstring,workstring2);
           strcat(workstring," ");
-          if (current_satellite_next_aos_hour < 10){
+
+          if (current_satellite_next_los_hour < 10){
             strcat(workstring,"0");
           }        
           dtostrf(current_satellite_next_los_hour,0,0,workstring2);
@@ -6080,12 +6087,12 @@ void read_settings_from_eeprom(){
 
   #if defined(FEATURE_SATELLITE_TRACKING)
     #if (!defined(ARDUINO_SAM_DUE) || (defined(ARDUINO_SAM_DUE) && defined(FEATURE_EEPROM_E24C1024))) && !defined(HARDWARE_GENERIC_STM32F103C)
-      tle_file_eeprom_memory_area_end = EEPROM.length();
+      tle_file_eeprom_memory_area_end = EEPROM.length() - 5;
     #else
       #if defined(HARDWARE_GENERIC_STM32F103C)
-        tle_file_eeprom_memory_area_end = 254;
+        tle_file_eeprom_memory_area_end = 254 - 5;
       #else
-        tle_file_eeprom_memory_area_end = 1024; // not sure if this is a valid assumption
+        tle_file_eeprom_memory_area_end = 1024 - 5; // not sure if this is a valid assumption
       #endif  
     #endif
   #endif //FEATURE_SATELLITE_TRACKING
@@ -13284,9 +13291,18 @@ void service_rtc(){
   }
 } /* service_rtc */
 #endif // FEATURE_RTC
+// --------------------------------------------------------------
+void strconditionalcpy(char *__dst, const char *__src, byte do_it){
+
+  if (do_it){
+    strcpy(__dst,__src);
+  } else {
+    strcpy(__dst,"");
+  }
+}
 
 // --------------------------------------------------------------
-byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte source_port, char * return_string){
+byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte source_port, byte include_response_code, char * return_string){
 
   strcpy(return_string,"");
   static unsigned long serial_led_time = 0;
@@ -13995,77 +14011,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     #if defined(FEATURE_SATELLITE_TRACKING)
       case '~':
-        control_port->print(F("Satellite:"));
-        control_port->println(sat.name);
-        control_port->print(F("Location:"));
-        control_port->print(obs.name);
-        control_port->print(" (");
-        control_port->print(obs.LA);
-        control_port->print(",");
-        control_port->print(obs.LO);
-        control_port->print(",");
-        control_port->print(obs.HT);
-        control_port->println(")");
-        control_port->print("AZ:");
-        control_port->print(current_satellite_azimuth);
-        control_port->print(" EL:");
-        control_port->print(current_satellite_elevation);   
-        control_port->print(F(" Lat:"));
-        control_port->print(current_satellite_latitude);
-        control_port->print(F(" Long:"));
-        control_port->print(current_satellite_longitude);   
-        if (satellite_visible) {
-          control_port->print(F("  AOS"));
-        } else {
-          control_port->print(F("  LOS"));
-        }
-        control_port->print(F("  TRACKING_"));
-        if (!satellite_tracking_active) {
-          control_port->print(F("IN"));
-        }
-        control_port->println(F("ACTIVE"));
-        control_port->print(F("Next AOS:"));
-        control_port->print(current_satellite_next_aos_year);
-        control_port->print("-");
-        if (current_satellite_next_aos_month < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_aos_month);
-        control_port->print("-");    
-        if (current_satellite_next_aos_day < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_aos_day);
-        control_port->print(" ");
-        if (current_satellite_next_aos_hour < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_aos_hour);
-        control_port->print(":");
-        if (current_satellite_next_aos_minute < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_aos_minute);
-        control_port->print(" ");
-        if (current_satellite_next_aos_az < 10){control_port->print(" ");}
-        if (current_satellite_next_aos_az < 100){control_port->print(" ");}
-        control_port->print(current_satellite_next_aos_az);
-        control_port->print(" ");
-        if (current_satellite_next_aos_el > 0){control_port->print(" ");}
-        control_port->print(current_satellite_next_aos_el);
-        control_port->print("  LOS:");
-        control_port->print(current_satellite_next_los_year);
-        control_port->print("-");
-        if (current_satellite_next_los_month < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_los_month);
-        control_port->print("-");    
-        if (current_satellite_next_los_day < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_los_day);
-        control_port->print(" ");
-        if (current_satellite_next_los_hour < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_los_hour);
-        control_port->print(":");
-        if (current_satellite_next_los_minute < 10){control_port->print("0");}
-        control_port->print(current_satellite_next_los_minute);
-        control_port->print(" ");
-        if (current_satellite_next_los_az < 10){control_port->print(" ");}
-        if (current_satellite_next_los_az < 100){control_port->print(" ");}
-        control_port->print(current_satellite_next_los_az);
-        control_port->print(" ");
-        if (current_satellite_next_los_el > 0){control_port->print(" ");}
-        control_port->println(current_satellite_next_los_el);
+        print_satellite_status();
         break;
 
         case '^':
@@ -14163,6 +14109,8 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           control_port->print(F("Searching for "));
           control_port->println(satellite_to_find);
           pull_satellite_tle_and_activate(satellite_to_find,1);
+          service_satellite_tracking(1);
+          print_satellite_status();
           break;  
 //zzzzzz
         case '%':
@@ -14179,7 +14127,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               }
             }
           }
-          calculate_satellite_upcoming_aos_and_los(x,2,1);
+          calculate_satellite_upcoming_aos_and_los(x,AOS_LOS_TABULAR_REPORT,1);
           break;
 
 
@@ -14190,10 +14138,12 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS)
 
     case '?':
-      strcpy(return_string, "\\!??");  //  \\??xxyy - failed response back
+      if (include_response_code){ 
+        strcpy(return_string, "\\!??");  //  \\??xxyy - failed response back
+      }
       if (input_buffer_index == 4){
         if ((input_buffer[2] == 'F') && (input_buffer[3] == 'S')) {  // \?FS - Full Status
-          strcpy(return_string, "\\!OKFS");
+          strconditionalcpy(return_string, "\\!OKFS",include_response_code);
           // AZ
           if (raw_azimuth < 100) {
             strcat(return_string,"0");
@@ -14264,7 +14214,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
         }
         if ((input_buffer[2] == 'A') && (input_buffer[3] == 'Z')) {  // \?AZ - query AZ
-          strcpy(return_string, "\\!OKAZ");
+          strconditionalcpy(return_string, "\\!OKAZ", include_response_code);
           if (raw_azimuth < 100) {
             strcat(return_string,"0");
           }
@@ -14276,7 +14226,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
         if ((input_buffer[2] == 'E') && (input_buffer[3] == 'L')) {  // \?EL - query EL
           #ifdef FEATURE_ELEVATION_CONTROL
-            strcpy(return_string, "\\!OKEL");
+            strconditionalcpy(return_string, "\\!OKFS", include_response_code);    
             if (elevation >= 0) {
               strcat(return_string,"+");
             } else {
@@ -14295,42 +14245,42 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           #endif //FEATURE_ELEVATION_CONTROL 
         }
         if ((input_buffer[2] == 'A') && (input_buffer[3] == 'S')) {  // \?AS - AZ status
-          strcpy(return_string, "\\!OKAS");
+          strconditionalcpy(return_string, "\\!OKAS", include_response_code);
           dtostrf(az_state, 0, 0, temp_string);
           strcat(return_string, temp_string); 
         }  
         if ((input_buffer[2] == 'E') && (input_buffer[3] == 'S')) {  // \?ES - EL Status
           #ifdef FEATURE_ELEVATION_CONTROL
-            strcpy(return_string, "\\!OKES");
+            strconditionalcpy(return_string, "\\!OKES", include_response_code);        
             dtostrf(el_state, 0, 0, temp_string);
             strcat(return_string, temp_string);
           #else // FEATURE_ELEVATION_CONTROL  
             strcpy(return_string, "\\!??ES");
           #endif //FEATURE_ELEVATION_CONTROL              
         }   
-        if ((input_buffer[2] == 'P') && (input_buffer[3] == 'G')) {  // \?PG - Ping
+        if ((input_buffer[2] == 'P') && (input_buffer[3] == 'G')) {  // \?PG - Ping        
           strcpy(return_string, "\\!OKPG");     
         }    
           
         if ((input_buffer[2] == 'R') && (input_buffer[3] == 'L')) {  // \?RL - rotate left
           submit_request(AZ, REQUEST_CCW, 0, 121);
-          strcpy(return_string, "\\!OKRL");
+          strconditionalcpy(return_string, "\\!OKRL", include_response_code);     
         }     
         if ((input_buffer[2] == 'R') && (input_buffer[3] == 'R')) {  // \?RR - rotate right
           submit_request(AZ, REQUEST_CW, 0, 122);
-          strcpy(return_string, "\\!OKRR");
+          strconditionalcpy(return_string, "\\!OKRR", include_response_code);      
         }   
         if ((input_buffer[2] == 'R') && (input_buffer[3] == 'U')) {  //  \?RU - elevate up
           submit_request(EL, REQUEST_UP, 0, 129);
-          strcpy(return_string, "\\!OKRU");
+          strconditionalcpy(return_string, "\\!OKRU", include_response_code);       
         } 
         if ((input_buffer[2] == 'R') && (input_buffer[3] == 'D')) {  // \?RD - elevate down
           submit_request(EL, REQUEST_DOWN, 0, 130);
-          strcpy(return_string, "\\!OKRD");
+          strconditionalcpy(return_string, "\\!OKRD", include_response_code);       
         }  
         #ifdef FEATURE_GPS
           if ((input_buffer[2] == 'R') && (input_buffer[3] == 'C')) {  // \?RC - Read coordinates
-            strcpy(return_string,"\\!OKRC");
+            strconditionalcpy(return_string, "\\!OKRC", include_response_code);        
             if (latitude < 0){strcat(return_string,"-");} else {strcat(return_string,"+");}
             dtostrf(abs(latitude),0,4,temp_string);
             strcat(return_string,temp_string);         
@@ -14341,13 +14291,13 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             strcat(return_string,temp_string); 
           }
           if ((input_buffer[2] == 'R') && (input_buffer[3] == 'G')) {  // \?RG - Read grid square
-            strcpy(return_string,"\\!OKRG");
+            strconditionalcpy(return_string, "\\!OKRG", include_response_code);      
             strcat(return_string,coordinates_to_maidenhead(latitude,longitude));
           }
         #endif //FEATURE_GPS
         #ifdef FEATURE_CLOCK
           if ((input_buffer[2] == 'G') && (input_buffer[3] == 'S')) { // \?GS - query GPS sync
-            strcpy(return_string,"\\!OKGS");
+            strconditionalcpy(return_string,"\\!OKGS", include_response_code);
             if (clock_status == GPS_SYNC){                
               strcat(return_string,"1");
             } else {
@@ -14358,29 +14308,29 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
         if ((input_buffer[2] == 'S') && (input_buffer[3] == 'A')) {  // \?SA - stop azimuth rotation
           submit_request(AZ, REQUEST_STOP, 0, 124);
-          strcpy(return_string,"\\!OKSA");
+          strconditionalcpy(return_string,"\\!OKSA", include_response_code);
         }   
         if ((input_buffer[2] == 'S') && (input_buffer[3] == 'E')) {  // \?SE - stop elevation rotation
           #ifdef FEATURE_ELEVATION_CONTROL
             submit_request(EL, REQUEST_STOP, 0, 125);
           #endif
-          strcpy(return_string,"\\!OKSE");
+          strconditionalcpy(return_string,"\\!OKSE", include_response_code);
         } 
         if ((input_buffer[2] == 'S') && (input_buffer[3] == 'S')) {  // \?SS - stop all rotation
           submit_request(AZ, REQUEST_STOP, 0, 124);
           #ifdef FEATURE_ELEVATION_CONTROL
             submit_request(EL, REQUEST_STOP, 0, 125);
           #endif
-          strcpy(return_string,"\\!OKSS");
+          strconditionalcpy(return_string,"\\!OKSS", include_response_code);
         }   
 
         if ((input_buffer[2] == 'C') && (input_buffer[3] == 'L')) {  // \?CL - read the clock
           #ifdef FEATURE_CLOCK
-            strcpy(return_string,"\\!OKCL");
+            strconditionalcpy(return_string,"\\!OKCL", include_response_code);
             update_time();
             strcat(return_string,timezone_modified_clock_string());
           #else //FEATURE_CLOCK
-            strcpy(return_string,"\\!??CL");
+            strconditionalcpy(return_string,"\\!??CL", include_response_code);
           #endif //FEATURE_CLOCK
         }
 
@@ -14389,7 +14339,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
 
         if ((input_buffer[2] == 'C') && (input_buffer[3] == 'V')) {  // \?CV Code Verson
-          strcpy(return_string,"\\!OKCV");
+          strconditionalcpy(return_string,"\\!OKCV", include_response_code);
           strcat(return_string,CODE_VERSION);
         }
 
@@ -14397,14 +14347,14 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           read_azimuth(1);
           configuration.analog_az_full_ccw = analog_az;
           write_settings_to_eeprom();        
-          strcpy(return_string,"\\!OKAO");
+          strconditionalcpy(return_string,"\\!OKAO", include_response_code);
         }
 
         if ((input_buffer[2] == 'A') && (input_buffer[3] == 'F')) {  // \?AF - Azimuth Full CW Calibration
           read_azimuth(1);
           configuration.analog_az_full_cw = analog_az;
           write_settings_to_eeprom();        
-          strcpy(return_string,"\\!OKAF");
+          strconditionalcpy(return_string,"\\!OKAF", include_response_code);
         }
   
         #if defined(FEATURE_ELEVATION_CONTROL)
@@ -14412,14 +14362,14 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             read_elevation(1);
             configuration.analog_el_0_degrees = analog_el;
             write_settings_to_eeprom();        
-            strcpy(return_string,"\\!OKEO");
+            strconditionalcpy(return_string,"\\!OKEO", include_response_code);
           }
 
           if ((input_buffer[2] == 'E') && (input_buffer[3] == 'F')) {  // \?EF - Elevation Full UP Calibration
             read_elevation(1);
             configuration.analog_el_max_elevation = analog_el;
             write_settings_to_eeprom();        
-            strcpy(return_string,"\\!OKEF");
+            strconditionalcpy(return_string,"\\!OKEF", include_response_code);
           }
         #endif  
 
@@ -14435,7 +14385,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           } else {
             pin_value = ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
           }
-          strcpy(return_string,"\\!OKDO");
+          strconditionalcpy(return_string,"\\!OKDO", include_response_code);
           pinModeEnhanced(pin_value, OUTPUT);
         }
       }
@@ -14450,10 +14400,10 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           }
           if (input_buffer[3] == 'H') {
             digitalWriteEnhanced(pin_value, HIGH);
-            strcpy(return_string,"\\!OKDH");
+            strconditionalcpy(return_string,"\\!OKDH", include_response_code);
           } else {
             digitalWriteEnhanced(pin_value, LOW);
-            strcpy(return_string,"\\!OKDL");
+            strconditionalcpy(return_string,"\\!OKDL", include_response_code);
           }
         }
       }
@@ -14483,7 +14433,7 @@ Not implemented yet:
             pin_value = ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
           }
           pinModeEnhanced(pin_value, INPUT);
-          strcpy(return_string,"\\!OKDI");
+          strconditionalcpy(return_string,"\\!OKDI", include_response_code);
         }
       }
 
@@ -14497,7 +14447,7 @@ Not implemented yet:
           }
           pinModeEnhanced(pin_value, INPUT);
           digitalWriteEnhanced(pin_value, HIGH);
-          strcpy(return_string,"\\!OKDP");
+          strconditionalcpy(return_string,"\\!OKDP", include_response_code);
         }
       }
 
@@ -14510,7 +14460,7 @@ Not implemented yet:
             pin_value = ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
           }
           byte pin_read = digitalReadEnhanced(pin_value);
-          strcpy(return_string,"\\!OKDR");
+          strconditionalcpy(return_string,"\\!OKDR", include_response_code);
           dtostrf((input_buffer[4]-48),0,0,temp_string);
           strcat(return_string,temp_string);              
           dtostrf((input_buffer[5]-48),0,0,temp_string);
@@ -14531,7 +14481,7 @@ Not implemented yet:
             pin_value = ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
           }
           int pin_read = analogReadEnhanced(pin_value);
-          strcpy(return_string,"\\!OKAR");
+          strconditionalcpy(return_string,"\\!OKAR", include_response_code);
           if (toupper(input_buffer[4]) == 'A') {
             strcat(return_string,"A");
           } else {
@@ -14563,7 +14513,7 @@ Not implemented yet:
             pin_value = ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
           }
           noTone(pin_value);
-          strcpy(return_string,"\\!OKNT");
+          strconditionalcpy(return_string,"\\!OKNT", include_response_code);
         }
     }  //if ((input_buffer_index == 6)
 
@@ -14587,9 +14537,9 @@ Not implemented yet:
       // debug.println(heading);      
       if ((heading >= 0) && (heading < 451)) {  
         submit_request(AZ, REQUEST_AZIMUTH, (heading), 136);
-        strcpy(return_string,"\\!OKGA");
+        strconditionalcpy(return_string,"\\!OKGA", include_response_code);
       } else {
-        strcpy(return_string,"\\!??GA");
+        strconditionalcpy(return_string,"\\!??GA", include_response_code);
       }
     }  
     if ((input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // \?GExxx.x - go to EL
@@ -14611,19 +14561,19 @@ Not implemented yet:
         // debug.println(heading);  
         if ((heading >= 0) && (heading < 181)) {
           submit_request(EL, REQUEST_ELEVATION, (heading), 37);
-          strcpy(return_string,"\\!OKGE");
+          strconditionalcpy(return_string,"\\!OKGE", include_response_code);
         } else {
-          strcpy(return_string,"\\!??GE");
+          strconditionalcpy(return_string,"\\!??GE", include_response_code);
         }
       #else 
-        strcpy(return_string,"\\!OKGE");  
+        strconditionalcpy(return_string,"\\!OKGE", include_response_code);  
       #endif // #FEATURE_ELEVATION_CONTROL  
     } 
 
 
     // \?CGxxxx or \?CGxxxxxx  - Convert grid to coordinates
     if (((input_buffer_index == 8) || (input_buffer_index == 10)) && ((input_buffer[2] == 'C') && (input_buffer[3] == 'G'))){    
-      strcpy(return_string,"\\!OKCG");
+      strconditionalcpy(return_string,"\\!OKCG", include_response_code);
       temp_string[0] = input_buffer[4];
       temp_string[1] = input_buffer[5];
       temp_string[2] = input_buffer[6];
@@ -14704,7 +14654,7 @@ Not implemented yet:
         if ((temp_latitude >= 0) && (temp_latitude <= 90) && (temp_longitude >= 0) && (temp_longitude <= 180)){
           if (latitude_negative){temp_latitude = temp_latitude * -1.0;}
           if (longitude_negative){temp_longitude = temp_longitude * -1.0;}
-          strcpy(return_string,"\\!OKCC");
+          strconditionalcpy(return_string,"\\!OKCC", include_response_code);
           float temp_bearing = calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude);
           dtostrf(temp_bearing,0,DISPLAY_DECIMAL_PLACES,temp_string);
           strcat(return_string,temp_string);
@@ -14733,7 +14683,7 @@ Not implemented yet:
         maidenhead_to_coordinates(temp_string,&temp_latitude,&temp_longitude);
 
         if ((temp_latitude >= -90) && (temp_latitude <= 90) && (temp_longitude >= -180) && (temp_longitude <= 180)){
-          strcpy(return_string,"\\!OKGT");
+          strconditionalcpy(return_string,"\\!OKGT", include_response_code);
           float temp_bearing = calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude);
           dtostrf(temp_bearing,0,DISPLAY_DECIMAL_PLACES,temp_string);
           strcat(return_string,temp_string);
@@ -14762,7 +14712,7 @@ Not implemented yet:
         maidenhead_to_coordinates(temp_string,&temp_latitude,&temp_longitude);
 
         if ((temp_latitude >= -90) && (temp_latitude <= 90) && (temp_longitude >= -180) && (temp_longitude <= 180)){
-          strcpy(return_string,"\\!OKBG");
+          strconditionalcpy(return_string,"\\!OKBG", include_response_code);
           dtostrf(calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude),0,DISPLAY_DECIMAL_PLACES,temp_string);
           strcat(return_string,temp_string);
         }
@@ -14822,7 +14772,7 @@ Not implemented yet:
         if ((temp_latitude >= 0) && (temp_latitude <= 90) && (temp_longitude >= 0) && (temp_longitude <= 180)){
           if (latitude_negative){temp_latitude = temp_latitude * -1.0;}
           if (longitude_negative){temp_longitude = temp_longitude * -1.0;}
-          strcpy(return_string,"\\!OKBC");
+          strconditionalcpy(return_string,"\\!OKBC", include_response_code);
           dtostrf(calculate_target_bearing(latitude,longitude,temp_latitude,temp_longitude),0,DISPLAY_DECIMAL_PLACES,temp_string);
           strcat(return_string,temp_string);
         }
@@ -14889,7 +14839,7 @@ Not implemented yet:
       if ((temp_latitude >= 0) && (temp_latitude <= 90) && (temp_longitude >= 0) && (temp_longitude <= 180)){
         if (latitude_negative){temp_latitude = temp_latitude * -1.0;}
         if (longitude_negative){temp_longitude = temp_longitude * -1.0;}
-        strcpy(return_string,"\\!OKCC");
+        strconditionalcpy(return_string,"\\!OKCC", include_response_code);
         strcat(return_string,coordinates_to_maidenhead(temp_latitude,temp_longitude));
       }
 
@@ -14903,9 +14853,9 @@ Not implemented yet:
       //   heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[6] - 48.) + ((input_buffer[8] - 48) / 10.);     
       //   if (((heading >= 0) && (heading < 451))  && (input_buffer[7] == '.')) {
       //     submit_request(AZ, REQUEST_AZIMUTH, (heading), 136);
-      //     strcpy(return_string,"\\!OKGA");
+      //     strconditionalcpy(return_string,"\\!OKGA", include_response_code);
       //   } else {
-      //     strcpy(return_string,"\\!??GA");
+      //     strconditionalcpy(return_string,"\\!??GA", include_response_code);
       //   }
       // }  
       // if ((input_buffer[2] == 'G') && (input_buffer[3] == 'E')) {  // \?GExxx.x - go to EL
@@ -14913,12 +14863,12 @@ Not implemented yet:
       //     heading = ((input_buffer[4] - 48) * 100.) + ((input_buffer[5] - 48) * 10.) + (input_buffer[5] - 48) + ((input_buffer[8] - 48) / 10.);
       //     if (((heading >= 0) && (heading < 181)) && (input_buffer[7] == '.')) {
       //       submit_request(EL, REQUEST_ELEVATION, (heading), 37);
-      //       strcpy(return_string,"\\!OKGE");
+      //       strconditionalcpy(return_string,"\\!OKGE", include_response_code);
       //     } else {
-      //       strcpy(return_string,"\\!??GE");
+      //       strconditionalcpy(return_string,"\\!??GE", include_response_code);
       //     }
       //   #else 
-      //     strcpy(return_string,"\\!OKGE");  
+      //     strconditionalcpy(return_string,"\\!OKGE", include_response_code);  
       //   #endif // #FEATURE_ELEVATION_CONTROL  
       // } 
 
@@ -14934,7 +14884,7 @@ Not implemented yet:
           int write_value = ((input_buffer[6] - 48) * 100) + ((input_buffer[7] - 48) * 10) + (input_buffer[8] - 48);
           if ((write_value >= 0) && (write_value < 256)) {
             analogWriteEnhanced(pin_value, write_value);
-            strcpy(return_string,"\\!OKAW");
+            strconditionalcpy(return_string,"\\!OKAW", include_response_code);
           }
         }
       }
@@ -14952,7 +14902,7 @@ Not implemented yet:
           int write_value = ((input_buffer[6] - 48) * 1000) + ((input_buffer[7] - 48) * 100) + ((input_buffer[8] - 48) * 10) + (input_buffer[9] - 48);
           if ((write_value >= 0) && (write_value <= 9999)) {
             tone(pin_value, write_value);
-            strcpy(return_string,"\\!OKDT");
+            strconditionalcpy(return_string,"\\!OKDT", include_response_code);
 
           }
         }
@@ -14973,7 +14923,84 @@ Not implemented yet:
 
   return(0);
 } // process_backslash_command
+//-----------------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void print_satellite_status(){
 
+        control_port->print(F("Satellite:"));
+        control_port->println(sat.name);
+        control_port->print(F("Location:"));
+        control_port->print(obs.name);
+        control_port->print(" (");
+        control_port->print(obs.LA,4);
+        control_port->print(",");
+        control_port->print(obs.LO,4);
+        control_port->print(",");
+        control_port->print(obs.HT,0);
+        control_port->println("m)");
+        control_port->print("AZ:");
+        control_port->print(current_satellite_azimuth,0);
+        control_port->print(" EL:");
+        control_port->print(current_satellite_elevation,0);   
+        control_port->print(F(" Lat:"));
+        control_port->print(current_satellite_latitude,4);
+        control_port->print(F(" Long:"));
+        control_port->print(current_satellite_longitude,4);   
+        if (satellite_visible) {
+          control_port->print(F("  AOS"));
+        } else {
+          control_port->print(F("  LOS"));
+        }
+        control_port->print(F("  TRACKING_"));
+        if (!satellite_tracking_active) {
+          control_port->print(F("IN"));
+        }
+        control_port->println(F("ACTIVE"));
+        control_port->print(F("Next AOS:"));
+        control_port->print(current_satellite_next_aos_year);
+        control_port->print("-");
+        if (current_satellite_next_aos_month < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_month);
+        control_port->print("-");    
+        if (current_satellite_next_aos_day < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_day);
+        control_port->print(" ");
+        if (current_satellite_next_aos_hour < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_hour);
+        control_port->print(":");
+        if (current_satellite_next_aos_minute < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_aos_minute);
+        control_port->print(" ");
+        if (current_satellite_next_aos_az < 10){control_port->print(" ");}
+        if (current_satellite_next_aos_az < 100){control_port->print(" ");}
+        control_port->print(current_satellite_next_aos_az,0);
+        control_port->print(" ");
+        if (current_satellite_next_aos_el > 0){control_port->print(" ");}
+        control_port->print(current_satellite_next_aos_el,0);
+        control_port->print("  LOS:");
+        control_port->print(current_satellite_next_los_year);
+        control_port->print("-");
+        if (current_satellite_next_los_month < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_month);
+        control_port->print("-");    
+        if (current_satellite_next_los_day < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_day);
+        control_port->print(" ");
+        if (current_satellite_next_los_hour < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_hour);
+        control_port->print(":");
+        if (current_satellite_next_los_minute < 10){control_port->print("0");}
+        control_port->print(current_satellite_next_los_minute);
+        control_port->print(" ");
+        if (current_satellite_next_los_az < 10){control_port->print(" ");}
+        if (current_satellite_next_los_az < 100){control_port->print(" ");}
+        control_port->print(current_satellite_next_los_az,0);
+        control_port->print(" ");
+        if (current_satellite_next_los_el > 0){control_port->print(" ");}
+        control_port->println(current_satellite_next_los_el,0);
+    
+  }
+#endif //FEATURE_SATELLITE_TRACKING
 //-----------------------------------------------------------------------
 
 #ifdef FEATURE_EASYCOM_EMULATION
@@ -16420,7 +16447,7 @@ void service_ethernet(){
 
       if (((incoming_byte == 13) || (ethernet_port_buffer_index0 >= COMMAND_BUFFER_SIZE)) && (ethernet_port_buffer_index0 > 0)){  // do we have a carriage return?
         if ((ethernet_port_buffer0[0] == '\\') || (ethernet_port_buffer0[0] == '/')) {
-          process_backslash_command(ethernet_port_buffer0, ethernet_port_buffer_index0, ETHERNET_PORT0, return_string);
+          process_backslash_command(ethernet_port_buffer0, ethernet_port_buffer_index0, ETHERNET_PORT0, INCLUDE_RESPONSE_CODE, return_string);
         } else {
           #ifdef FEATURE_YAESU_EMULATION
           process_yaesu_command(ethernet_port_buffer0,ethernet_port_buffer_index0,ETHERNET_PORT0,return_string);
@@ -16471,7 +16498,7 @@ void service_ethernet(){
       }
       if (incoming_byte == 13) {  // do we have a carriage return?
         if ((ethernet_port_buffer1[0] == '\\') || (ethernet_port_buffer1[0] == '/')) {
-          process_backslash_command(ethernet_port_buffer1, ethernet_port_buffer_index1, ETHERNET_PORT1, return_string);
+          process_backslash_command(ethernet_port_buffer1, ethernet_port_buffer_index1, ETHERNET_PORT1, INCLUDE_RESPONSE_CODE, return_string);
         } else {
           #ifdef FEATURE_YAESU_EMULATION
           process_yaesu_command(ethernet_port_buffer1,ethernet_port_buffer_index1,ETHERNET_PORT1,return_string);
@@ -17252,7 +17279,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #endif //FEATURE_SATELLITE_TRACKING
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-  void service_satellite_tracking(){
+  void service_satellite_tracking(byte push_update){
 
     static unsigned long last_tracking_check = 0;
     static unsigned long last_update_satellite_position = 0;
@@ -17287,7 +17314,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
 //zzzzzz
 
-    if ((millis() - last_update_satellite_position) > SATELLITE_UPDATE_POSITION_INTERVAL_MS){
+    if (((millis() - last_update_satellite_position) > SATELLITE_UPDATE_POSITION_INTERVAL_MS) || (push_update)){
       sat_datetime.settime(clock_years, clock_months, clock_days, clock_hours, clock_minutes, clock_seconds);
       obs.LA = latitude;
       obs.LO = longitude;
@@ -17297,7 +17324,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       sat.altaz(obs, current_satellite_elevation, current_satellite_azimuth);
 
       if (current_satellite_next_aos_year == 0){  // 0 is a flag that this needs to be populated
-        calculate_satellite_upcoming_aos_and_los(1,0,0);
+        calculate_satellite_upcoming_aos_and_los(1,JUST_UPDATE_AOS_AND_LOS_GLOBAL_VARS,0);
       }
 
       last_update_satellite_position = millis();
@@ -17414,10 +17441,6 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
   void calculate_satellite_upcoming_aos_and_los(byte number_of_passes,byte format,byte print_header){
 
 
-    // format
-    //  0 = just populate next AOS and LOS global variables
-    //  1 = line report (good for one satellite)
-    //  2 = tabular (better for multiple satellites)
 
 //zzzzzz
     double calc_satellite_latitude;
@@ -17425,180 +17448,236 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     double calc_satellite_azimuth;
     double calc_satellite_elevation;
 
+    double pass_max_elevation = 0;
+
     int calc_years = clock_years;
     int calc_months = clock_months;
     int calc_days = clock_days;
     int calc_hours = clock_hours;
     int calc_minutes = clock_minutes;
 
+    // #define AOS_LOS_UNDEF 0
+    // #define IN_AOS 1
+    // #define IN_LOS 2
+    // byte os_state = AOS_LOS_UNDEF;
+
     byte AOS = 0;
     byte LOS = 0;
 
-    byte hit_first_event = 1;
+    byte hit_first_event = 0;
 
     byte progress_dots = 0;
 
-    byte got_first_aos = 0;
+
+    #define JUST_GETTING_STARTED 0
+    #define GET_AOS_THEN_LOS 1
+    #define GET_LOS_THEN_AOS 2   
+    #define GOT_AOS_NEED_LOS 3
+    #define GOT_LOS_NEED_AOS 4
+    #define WE_ARE_DONE 5
 
 
-    if (format == 1){
-      if (print_header){
-        control_port->println(sat.name);
-        control_port->println(F("\r\n       Date     Time    Az     El"));
-        control_port->println(F("----------------------------------"));
-      }
-      progress_dots = 1;
-    }
 
-    if (format == 2){
-      if (print_header){                    
-        control_port->println(F("\r\n                 AOS                                LOS"));
-        control_port->println(F(" Sat       Date     UTC    az     el       Date     UTC    az     el"));
-        control_port->println(F("---------------------------------------------------------------------"));
-                               //AO-07   2020-07-26 12:16 353.66  3.09   2020-07-26 12:27 288.33  0.98
-                                     
-      }
-    }
+    byte aos_and_los_collection_state = JUST_GETTING_STARTED;
 
 
-    while(number_of_passes > 0){
-      add_time(calc_years,calc_months,calc_days,calc_hours,calc_minutes,1,progress_dots);
-      sat_datetime.settime(calc_years, calc_months, calc_days, calc_hours, calc_minutes, 0);
-      sat.predict(sat_datetime);
-      sat.LL(calc_satellite_latitude,calc_satellite_longitude);
-      sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+    // - - - - - - - - - 
 
-      if (calc_satellite_elevation > SATELLITE_AOS_ELEVATION_MIN){
-        if (!AOS){
-            if ((format == 0) && (got_first_aos == 0)){
-              if (hit_first_event){  // we're currently in AOS/visible
-                if (got_first_aos == 5){  // we got the next LOS
-                  current_satellite_next_aos_year = calc_years;
-                  current_satellite_next_aos_month = calc_months;
-                  current_satellite_next_aos_day = calc_days;
-                  current_satellite_next_aos_hour = calc_hours;
-                  current_satellite_next_aos_minute = calc_minutes;
-                  current_satellite_next_aos_az = calc_satellite_azimuth;
-                  current_satellite_next_aos_el = calc_satellite_elevation;   
-                  got_first_aos = 6; // we're done; we got the LOS first, AOS second             
-                } else {
-                  got_first_aos = 4; // got the next LOS first, then the next AOS
-                }
-              } else { // we're not in AOS/visible; get AOS first, LOS second
-                current_satellite_next_aos_year = calc_years;
-                current_satellite_next_aos_month = calc_months;
-                current_satellite_next_aos_day = calc_days;
-                current_satellite_next_aos_hour = calc_hours;
-                current_satellite_next_aos_minute = calc_minutes;
-                current_satellite_next_aos_az = calc_satellite_azimuth;
-                current_satellite_next_aos_el = calc_satellite_elevation;
-                got_first_aos = 1; // get LOS next and we're done
+    if (format == JUST_UPDATE_AOS_AND_LOS_GLOBAL_VARS){
+      while (aos_and_los_collection_state != WE_ARE_DONE){
+        add_time(calc_years,calc_months,calc_days,calc_hours,calc_minutes,1,0);
+        sat_datetime.settime(calc_years, calc_months, calc_days, calc_hours, calc_minutes, 0);
+        sat.predict(sat_datetime);
+        sat.LL(calc_satellite_latitude,calc_satellite_longitude);
+        sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+
+        if (calc_satellite_elevation > SATELLITE_AOS_ELEVATION_MIN){
+          // in AOS
+          if (aos_and_los_collection_state == JUST_GETTING_STARTED){
+            // we're in AOS already, we need to get LOS first, then AOS
+            aos_and_los_collection_state = GET_LOS_THEN_AOS;
+          }
+          if (!AOS){
+            if ((aos_and_los_collection_state == GET_AOS_THEN_LOS) || (aos_and_los_collection_state == GOT_LOS_NEED_AOS)){
+              current_satellite_next_aos_year = calc_years;
+              current_satellite_next_aos_month = calc_months;
+              current_satellite_next_aos_day = calc_days;
+              current_satellite_next_aos_hour = calc_hours;
+              current_satellite_next_aos_minute = calc_minutes;
+              current_satellite_next_aos_az = calc_satellite_azimuth;
+              current_satellite_next_aos_el = calc_satellite_elevation;   
+              if (aos_and_los_collection_state == GET_AOS_THEN_LOS){
+                aos_and_los_collection_state = GOT_AOS_NEED_LOS;
+              } else {
+                aos_and_los_collection_state = WE_ARE_DONE;
               }
-            }        
+            }
+            LOS = 0;
+            AOS = 1;
+          }
+        } else {
+          // in LOS
+          if (aos_and_los_collection_state == JUST_GETTING_STARTED){
+            // we're starting in LOS, so we get AOS then LOS
+            aos_and_los_collection_state = GET_AOS_THEN_LOS;
+          }
+          if (!LOS){
+            if ((aos_and_los_collection_state == GOT_AOS_NEED_LOS) || (aos_and_los_collection_state == GET_LOS_THEN_AOS)){
+              current_satellite_next_los_year = calc_years;
+              current_satellite_next_los_month = calc_months;
+              current_satellite_next_los_day = calc_days;
+              current_satellite_next_los_hour = calc_hours;
+              current_satellite_next_los_minute = calc_minutes;
+              current_satellite_next_los_az = calc_satellite_azimuth;
+              current_satellite_next_los_el = calc_satellite_elevation;
+              if (aos_and_los_collection_state == GOT_AOS_NEED_LOS){
+                aos_and_los_collection_state = WE_ARE_DONE;
+              } else {
+                aos_and_los_collection_state = GOT_LOS_NEED_AOS; // got LOS first, will get AOS second next
+              }
+            }
+            LOS = 1;
+            AOS = 0;
+          }    
+        } 
+      } // while (aos_and_los_collection_state != WE_ARE_DONE)
+    } // if (format == JUST_UPDATE_AOS_AND_LOS_GLOBAL_VARS)
 
-          if (format == 1){
-            control_port->print(F("\rAOS: "));
-          }
-          if (format == 2){
-            control_port->print(sat.name);
-            control_port->print("\t");
-          }
-          if (hit_first_event){
-            hit_first_event = 0;
-            if (format == 1){control_port->println(F("now"));}
-            if (format == 2){control_port->print(F("*****        now        *****"));}
-          } else {
-            if ((format == 1) || (format == 2)){
-              control_port->print(calc_years);
-              control_port->print("-");
-              if (calc_months < 10){control_port->print("0");}
-              control_port->print(calc_months);
-              control_port->print("-");    
-              if (calc_days < 10){control_port->print("0");}
-              control_port->print(calc_days);
-              control_port->print(" ");
-              if (calc_hours < 10){control_port->print("0");}
-              control_port->print(calc_hours);
-              control_port->print(":");
-              if (calc_minutes < 10){control_port->print("0");}
-              control_port->print(calc_minutes);
-              control_port->print(" ");
-              if (calc_satellite_azimuth < 10){control_port->print(" ");}
-              if (calc_satellite_azimuth < 100){control_port->print(" ");}
-              control_port->print(calc_satellite_azimuth);
-              control_port->print(" ");
-              if (calc_satellite_elevation > 0){control_port->print(" ");}
-              
-            }
-            if (format == 1){
-              control_port->println(calc_satellite_elevation);
-            }
-            if (format == 2){
-              control_port->print(calc_satellite_elevation);
-            }            
-          }
-          AOS = 1;
-          LOS = 0;
+
+
+
+    // - - - - - - - - - 
+
+    if ((format == AOS_LOS_MULTILINE_REPORT) || (format == AOS_LOS_TABULAR_REPORT)){
+
+      if (format == AOS_LOS_MULTILINE_REPORT){
+        if (print_header){
+          control_port->println(sat.name);
+          control_port->println(F("\r\n       Date     Time    Az     El"));
+          control_port->println(F("----------------------------------"));
         }
-      } else {
-        if (!LOS){
-          if ((got_first_aos == 1) || (got_first_aos == 4)){
-            current_satellite_next_los_year = calc_years;
-            current_satellite_next_los_month = calc_months;
-            current_satellite_next_los_day = calc_days;
-            current_satellite_next_los_hour = calc_hours;
-            current_satellite_next_los_minute = calc_minutes;
-            current_satellite_next_los_az = calc_satellite_azimuth;
-            current_satellite_next_los_el = calc_satellite_elevation;
-            if (got_first_aos == 1){
-              got_first_aos = 2; // we're done; got AOS then LOS;
-            } else {
-              got_first_aos = 5; // got LOS first, will get AOS second next
-            }
-          }
-          if (hit_first_event){
-            hit_first_event = 0;  // if the first thing we calculated was an LOS, ignore it; we want the first AOS
-          } else {
-            if (format == 1){
-              control_port->print(F("\rLOS: "));
+        progress_dots = 1;
+      }
+
+      if (format == AOS_LOS_TABULAR_REPORT){
+        if (print_header){                    
+      control_port->println(F("\r\n                   AOS                          LOS"));
+          control_port->println(F("        ------------------------     ------------------------    el"));
+          control_port->println(F(" Sat       Date     UTC   az  el       Date      UTC   az  el    max"));
+          control_port->println(F("--------------------------------------------------------------------"));
+                                 //HUBBLE  2020-07-27 14:53 163  3   -  2020-07-27 14:56 133  1      3
+                                      
+        }
+      }
+
+
+      while(number_of_passes > 0){
+        add_time(calc_years,calc_months,calc_days,calc_hours,calc_minutes,1,progress_dots);
+        sat_datetime.settime(calc_years, calc_months, calc_days, calc_hours, calc_minutes, 0);
+        sat.predict(sat_datetime);
+        sat.LL(calc_satellite_latitude,calc_satellite_longitude);
+        sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+
+        if (calc_satellite_elevation > SATELLITE_AOS_ELEVATION_MIN){
+          if (calc_satellite_elevation > pass_max_elevation){
+            pass_max_elevation = calc_satellite_elevation;
+          }              
+          if (!AOS){     
+            if (format == AOS_LOS_MULTILINE_REPORT){
+              control_port->print(F("\rAOS: "));
             }
             if (format == 2){
+              control_port->print(sat.name);
               control_port->print("\t");
             }
-            if ((format == 1) || (format == 2)){
-              control_port->print(calc_years);
-              control_port->print("-");
-              if (calc_months < 10){control_port->print("0");}
-              control_port->print(calc_months);
-              control_port->print("-");    
-              if (calc_days < 10){control_port->print("0");}
-              control_port->print(calc_days);
-              control_port->print(" ");
-              if (calc_hours < 10){control_port->print("0");}
-              control_port->print(calc_hours);
-              control_port->print(":");
-              if (calc_minutes < 10){control_port->print("0");}
-              control_port->print(calc_minutes);
-              control_port->print(" ");
-              if (calc_satellite_azimuth < 10){control_port->print(" ");}
-              if (calc_satellite_azimuth < 100){control_port->print(" ");}            
-              control_port->print(calc_satellite_azimuth);
-              control_port->print(" ");
-              if (calc_satellite_elevation > 0){control_port->print(" ");}
-              control_port->println(calc_satellite_elevation);
+            if (!hit_first_event){
+              hit_first_event = 1;
+              if (format == 1){control_port->println(F("now"));}
+              if (format == 2){control_port->print(F("*****     now     *****"));}
+            } else {
+              if ((format == AOS_LOS_MULTILINE_REPORT) || (format == AOS_LOS_TABULAR_REPORT)){
+                control_port->print(calc_years);
+                control_port->print("-");
+                if (calc_months < 10){control_port->print("0");}
+                control_port->print(calc_months);
+                control_port->print("-");    
+                if (calc_days < 10){control_port->print("0");}
+                control_port->print(calc_days);
+                control_port->print(" ");
+                if (calc_hours < 10){control_port->print("0");}
+                control_port->print(calc_hours);
+                control_port->print(":");
+                if (calc_minutes < 10){control_port->print("0");}
+                control_port->print(calc_minutes);
+                control_port->print(" ");
+                if (round(calc_satellite_azimuth) < 10){control_port->print(" ");}
+                if (round(calc_satellite_azimuth) < 100){control_port->print(" ");}
+                control_port->print(calc_satellite_azimuth,0);
+                control_port->print(" ");
+                if (calc_satellite_elevation > 0){control_port->print(" ");}
+                
+              }
+              if (format == AOS_LOS_MULTILINE_REPORT){
+                control_port->println(calc_satellite_elevation,0);
+              }
+              if (format == AOS_LOS_TABULAR_REPORT){
+                control_port->print(calc_satellite_elevation,0);
+              }            
             }
-            if (format == 1){control_port->println();}
-            number_of_passes--;
-          }
-          LOS = 1;
-          AOS = 0;
-        }        
+            AOS = 1;
+            LOS = 0;
+          }      
+        } else {
+          if (!LOS){
+            if (!hit_first_event){
+              hit_first_event = 1;  // if the first thing we calculated was an LOS, ignore it; we want the first AOS
+            } else {
+              if (format == AOS_LOS_MULTILINE_REPORT){
+                control_port->print(F("\rLOS: "));
+              }
+              if (format == AOS_LOS_TABULAR_REPORT){
+                control_port->print("   -  ");
+              }
+              if ((format == AOS_LOS_MULTILINE_REPORT) || (format == AOS_LOS_TABULAR_REPORT)){
+                control_port->print(calc_years);
+                control_port->print("-");
+                if (calc_months < 10){control_port->print("0");}
+                control_port->print(calc_months);
+                control_port->print("-");    
+                if (calc_days < 10){control_port->print("0");}
+                control_port->print(calc_days);
+                control_port->print(" ");
+                if (calc_hours < 10){control_port->print("0");}
+                control_port->print(calc_hours);
+                control_port->print(":");
+                if (calc_minutes < 10){control_port->print("0");}
+                control_port->print(calc_minutes);
+                control_port->print(" ");
+                if (round(calc_satellite_azimuth) < 10){control_port->print(" ");}
+                if (round(calc_satellite_azimuth) < 100){control_port->print(" ");}            
+                control_port->print(calc_satellite_azimuth,0);
+                control_port->print(" ");
+                if (calc_satellite_elevation > 0){control_port->print(" ");}
+                control_port->print(calc_satellite_elevation,0);
+                control_port->print("    ");
+                if (round(pass_max_elevation) < 10){control_port->print(" ");}
+                if (round(pass_max_elevation) < 100){control_port->print(" ");}
+                control_port->println(pass_max_elevation,0);
+              }
+              if (format == AOS_LOS_MULTILINE_REPORT){control_port->println();}
+              number_of_passes--;
+              pass_max_elevation = 0;
+            }
+            LOS = 1;
+            AOS = 0;
+          }        
+        } 
       } // while(number_of_passes > 0){
-    }
+    } // if ((format == 1) || (format == 2)){
 
 
   }
-#endif //FEATURE_SATELLITE_TRACKING    
+#endif //FEATURE_SATELLITE_TRACKING
 //------------------------------------------------------
 
 void initialize_satellite_tracking(){
