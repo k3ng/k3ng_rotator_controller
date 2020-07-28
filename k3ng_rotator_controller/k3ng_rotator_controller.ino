@@ -657,6 +657,9 @@
         FEATURE_NEXTION_DISPLAY
           vConResult API variable no longer has response code in results from extended backslash commands
 
+      2020.07.27.01
+        Fixed issue with race condition when changing moon, sun, and satellite tracking modes    
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -668,7 +671,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.26.02"
+#define CODE_VERSION "2020.07.27.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -832,6 +835,7 @@
     #include <TimerFive.h>
   #endif
 #endif
+
 
 #include "rotator_language.h"
 #include "rotator_debug.h"
@@ -1102,25 +1106,52 @@ byte current_az_speed_voltage = 0;
 #endif // FEATURE_SUN_TRACKING
 
 #ifdef FEATURE_CLOCK
-  unsigned long clock_years = 0;
-  unsigned long clock_months = 0;
-  unsigned long clock_days = 0;
-  unsigned long clock_hours = 0;
-  unsigned long clock_minutes = 0;
-  unsigned long clock_seconds = 0;
-  long local_clock_years = 0;
-  long local_clock_months = 0;
-  long local_clock_days = 0;
-  long local_clock_hours = 0;
-  long local_clock_minutes = 0;
-  long local_clock_seconds = 0;
-  int clock_year_set = 2017;
+
+
+  unsigned int clock_years = 0;
+  byte clock_months = 0;
+  byte  clock_days = 0;
+  byte clock_hours = 0;
+  byte clock_minutes = 0;
+  byte clock_seconds = 0;
+  unsigned int local_clock_years = 0;
+  byte local_clock_months = 0;
+  byte local_clock_days = 0;
+  byte local_clock_hours = 0;
+  byte local_clock_minutes = 0;
+  byte local_clock_seconds = 0;
+
+  // unsigned long clock_years = 0;
+  // unsigned long clock_months = 0;
+  // unsigned long clock_days = 0;
+  // unsigned long clock_hours = 0;
+  // unsigned long clock_minutes = 0;
+  // unsigned long clock_seconds = 0;
+  // long local_clock_years = 0;
+  // long local_clock_months = 0;
+  // long local_clock_days = 0;
+  // long local_clock_hours = 0;
+  // long local_clock_minutes = 0;
+  // long local_clock_seconds = 0;
+  int clock_year_set = 2020;
   byte clock_month_set = 1;
   byte clock_day_set = 1;
   byte clock_sec_set = 0;
   unsigned long clock_hour_set = 0;
   unsigned long clock_min_set = 0;
   unsigned long millis_at_last_calibration = 0;
+
+  struct tm {
+    byte seconds;         
+    byte minutes;
+    byte hours;
+    byte day;     
+    byte month;
+    unsigned int year;
+  };
+
+  tm current_clock, temp_datetime;
+
 #endif // FEATURE_CLOCK
 
 #if defined(FEATURE_GPS) || defined(FEATURE_RTC) || defined(FEATURE_CLOCK)
@@ -1332,6 +1363,7 @@ DebugClass debug;
   Observer obs("my_location", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M);
   SatDateTime sat_datetime;
 
+  
 
 #endif //FEATURE_SATELLITE_TRACKING
 
@@ -3940,23 +3972,12 @@ void check_buttons(){
           change_tracking(ACTIVATE_MOON_TRACKING);
           #if defined(FEATURE_LCD_DISPLAY)
             perform_screen_redraw = 1;
-          #endif          
-          #ifdef FEATURE_SUN_TRACKING
-            change_tracking(DEACTIVATE_SUN_TRACKING);
-          #endif // FEATURE_SUN_TRACKING    
-          #ifdef FEATURE_SATELLITE_TRACKING
-            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
-          #endif // FEATURE_SATELLITE_TRACKING                    
+          #endif                           
         } else {
           #ifdef DEBUG_BUTTONS
            debug.println("check_buttons: moon tracking off");
           #endif // DEBUG_BUTTONS
           change_tracking(DEACTIVATE_MOON_TRACKING);
-          submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_MOON);
-          #ifdef FEATURE_ELEVATION_CONTROL
-            submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_MOON);
-          #endif
-
         }
         moon_tracking_button_pushed = 0;
       }
@@ -3983,22 +4004,12 @@ void check_buttons(){
           change_tracking(ACTIVATE_SUN_TRACKING);
           #if defined(FEATURE_LCD_DISPLAY)
             perform_screen_redraw = 1;
-          #endif          
-          #ifdef FEATURE_MOON_TRACKING
-            change_tracking(DEACTIVATE_MOON_TRACKING);
-          #endif // FEATURE_MOON_TRACKING   
-          #ifdef FEATURE_SATELLITE_TRACKING
-            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
-          #endif // FEATURE_SATELLITE_TRACKING                  
+          #endif                           
         } else {
           #ifdef DEBUG_BUTTONS
             debug.print("check_buttons: sun tracking off");
           #endif // DEBUG_BUTTONS
           change_tracking(DEACTIVATE_SUN_TRACKING);
-          submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SUN);
-          #ifdef FEATURE_ELEVATION_CONTROL
-            submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SUN);
-          #endif
         }
         sun_tracking_button_pushed = 0;
       }
@@ -4026,22 +4037,12 @@ void check_buttons(){
             change_tracking(ACTIVATE_SATELLITE_TRACKING);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
-            #endif          
-            #ifdef FEATURE_MOON_TRACKING
-              change_tracking(DEACTIVATE_MOON_TRACKING);
-            #endif // FEATURE_MOON_TRACKING    
-            #ifdef FEATURE_SUN_TRACKING
-              change_tracking(DEACTIVATE_SUN_TRACKING);
-            #endif // FEATURE_SUN_TRACKING                    
+            #endif                            
           } else {
             #ifdef DEBUG_BUTTONS
               debug.print("check_buttons: sun tracking off");
             #endif // DEBUG_BUTTONS
             change_tracking(DEACTIVATE_SATELLITE_TRACKING);
-            submit_request(AZ, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SATELLITE);
-            #ifdef FEATURE_ELEVATION_CONTROL
-              submit_request(EL, REQUEST_STOP, 0, DBG_CHECK_BUTTONS_SATELLITE);
-            #endif
           }
           satellite_tracking_button_pushed = 0;
         }
@@ -12848,6 +12849,16 @@ void update_time(){
   clock_seconds = time;
 
 
+
+   current_clock.seconds = clock_seconds;
+   current_clock.minutes = clock_minutes;
+   current_clock.hours = clock_hours;
+   current_clock.day = clock_days;
+   current_clock.month = clock_months;
+   current_clock.year = clock_years;
+
+
+
   // calculate local time
 
   long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
@@ -13707,18 +13718,10 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       switch (input_buffer[2]) {
         case '0':
           change_tracking(DEACTIVATE_MOON_TRACKING);
-          submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_MOON_CLI_CMD);
-          submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_MOON_CLI_CMD);
           strcpy(return_string, "Moon tracking deactivated.");
           break;
         case '1':
-          change_tracking(ACTIVATE_MOON_TRACKING);
-          #ifdef FEATURE_SUN_TRACKING
-            change_tracking(DEACTIVATE_SUN_TRACKING);
-          #endif // FEATURE_SUN_TRACKING
-          #ifdef FEATURE_SATELLITE_TRACKING
-            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
-          #endif // FEATURE_SATELLITE_TRACKING             
+          change_tracking(ACTIVATE_MOON_TRACKING);          
           strcpy(return_string, "Moon tracking activated.");
           break;
         default: strcpy(return_string, "Error."); break;
@@ -13789,19 +13792,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       switch (input_buffer[2]) {
         case '0':
           change_tracking(DEACTIVATE_SUN_TRACKING);
-          submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
-          submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
           strcpy(return_string, "Sun tracking deactivated.");
           break;
         case '1':
           change_tracking(ACTIVATE_SUN_TRACKING);
-          strcpy(return_string, "Sun tracking activated.");
-          #ifdef FEATURE_MOON_TRACKING
-            change_tracking(DEACTIVATE_MOON_TRACKING);
-          #endif // FEATURE_MOON_TRACKING
-          #ifdef FEATURE_SATELLITE_TRACKING
-            change_tracking(DEACTIVATE_SATELLITE_TRACKING);
-          #endif // FEATURE_SATELLITE_TRACKING          
+          strcpy(return_string, "Sun tracking activated.");       
           break;
         default: strcpy(return_string, "Error."); break;
       }
@@ -14010,6 +14005,15 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     break;
 
     #if defined(FEATURE_SATELLITE_TRACKING)
+
+
+      // case '|':
+      //   control_port->print("asctime:");
+      //   control_port->println(asctime(&current_clock));
+
+
+      //   break;
+
       case '~':
         print_satellite_status();
         break;
@@ -14018,8 +14022,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           switch (input_buffer[2]) {
             case '0':
               change_tracking(DEACTIVATE_SATELLITE_TRACKING);
-              submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
-              submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_CLI_CMD);
               strcpy(return_string, "Satellite tracking deactivated.");
               break;
             case '1':
@@ -14027,13 +14029,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               if (!satellite_visible){
                 submit_request(AZ, REQUEST_AZIMUTH, current_satellite_next_aos_az, DBG_SERVICE_SATELLITE_CLI_CMD_PREROTATE);
                 submit_request(EL, REQUEST_ELEVATION, current_satellite_next_aos_el, DBG_SERVICE_SATELLITE_CLI_CMD_PREROTATE);
-              }
-              #ifdef FEATURE_SUN_TRACKING
-                change_tracking(DEACTIVATE_SUN_TRACKING);
-              #endif // FEATURE_SUN_TRACKING
-              #ifdef FEATURE_MOON_TRACKING
-                change_tracking(DEACTIVATE_MOON_TRACKING);
-              #endif // FEATURE_SUN_TRACKING            
+              }           
               strcpy(return_string, "Satellite tracking activated.");
               break;
             default: strcpy(return_string, "Error."); break;
@@ -14927,6 +14923,8 @@ Not implemented yet:
 #if defined(FEATURE_SATELLITE_TRACKING)
   void print_satellite_status(){
 
+        int32_t time_difference_seconds;
+
         control_port->print(F("Satellite:"));
         control_port->println(sat.name);
         control_port->print(F("Location:"));
@@ -14998,6 +14996,24 @@ Not implemented yet:
         control_port->print(" ");
         if (current_satellite_next_los_el > 0){control_port->print(" ");}
         control_port->println(current_satellite_next_los_el,0);
+        temp_datetime.seconds = 0; 
+
+        if (satellite_visible) {
+          temp_datetime.minutes = current_satellite_next_los_minute;   
+          temp_datetime.hours = current_satellite_next_los_hour; 
+          temp_datetime.day = current_satellite_next_los_day;          
+          temp_datetime.month = current_satellite_next_los_month;   
+          temp_datetime.year = current_satellite_next_los_year;
+        } else {
+          temp_datetime.minutes = current_satellite_next_aos_minute;
+          temp_datetime.hours = current_satellite_next_aos_hour;
+          temp_datetime.day = current_satellite_next_aos_day;
+          temp_datetime.month = current_satellite_next_aos_month;
+          temp_datetime.year = current_satellite_next_aos_year;
+          control_port->print("AOS in ");
+        }  
+        control_port->println(difftime(&current_clock,&temp_datetime));
+
     
   }
 #endif //FEATURE_SATELLITE_TRACKING
@@ -16632,7 +16648,8 @@ void change_tracking(byte action){
   switch(action){
 
 
-    case DEACTIVATE_ALL:
+
+    case DEACTIVATE_ALL: 
       #if defined(FEATURE_MOON_TRACKING)
         moon_tracking_active = 0;
       #endif
@@ -16646,19 +16663,19 @@ void change_tracking(byte action){
 
     case DEACTIVATE_MOON_TRACKING:
       #if defined(FEATURE_MOON_TRACKING)
-        moon_tracking_active = 0;
+        moon_tracking_active = 0;   
       #endif    
       break;   
 
     case DEACTIVATE_SUN_TRACKING:
       #if defined(FEATURE_SUN_TRACKING) 
-        sun_tracking_active = 0;
+        sun_tracking_active = 0;      
       #endif    
       break;    
 
     case DEACTIVATE_SATELLITE_TRACKING:
       #if defined(FEATURE_SATELLITE_TRACKING)
-        satellite_tracking_active = 0;
+        satellite_tracking_active = 0;     
       #endif    
       break;    
 
@@ -16679,7 +16696,7 @@ void change_tracking(byte action){
         moon_tracking_active = 0;
       #endif
       #if defined(FEATURE_SUN_TRACKING) 
-        change_tracking(ACTIVATE_SUN_TRACKING);
+        sun_tracking_active = 1;
       #endif
       #if defined(FEATURE_SATELLITE_TRACKING)
         satellite_tracking_active = 0;
@@ -16741,10 +16758,6 @@ void service_moon_tracking(){
     if ((moon_tracking_active) && (digitalReadEnhanced(moon_tracking_activate_line)) && (moon_tracking_activated_by_activate_line)) {
       change_tracking(DEACTIVATE_MOON_TRACKING);
       moon_tracking_activated_by_activate_line = 0;
-      submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_MOON_TRACKING);
-      #ifdef FEATURE_ELEVATION_CONTROL
-        submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_MOON_TRACKING);
-      #endif
     }
   }
 
@@ -16830,11 +16843,7 @@ void service_sun_tracking(){
     }
     if ((sun_tracking_active) && (digitalReadEnhanced(sun_tracking_activate_line)) && (sun_tracking_activated_by_activate_line)) {
       change_tracking(DEACTIVATE_SUN_TRACKING);
-      sun_tracking_activated_by_activate_line = 0;
-      submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SUN_TRACKING);
-      #ifdef FEATURE_ELEVATION_CONTROL
-        submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SUN_TRACKING);
-      #endif      
+      sun_tracking_activated_by_activate_line = 0;  
     }
   }
 
@@ -17305,10 +17314,6 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       if ((satellite_tracking_active) && (digitalReadEnhanced(satellite_tracking_activate_line)) && (satellite_tracking_activated_by_activate_line)) {
         change_tracking(DEACTIVATE_SATELLITE_TRACKING);
         satellite_tracking_activated_by_activate_line = 0;
-        submit_request(AZ, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_TRACKING);
-        #ifdef FEATURE_ELEVATION_CONTROL
-          submit_request(EL, REQUEST_STOP, 0, DBG_SERVICE_SATELLITE_TRACKING);
-        #endif
       }
     }
 
@@ -17725,5 +17730,17 @@ void run_this_once(){
 
 }
 
+#if defined(FEATURE_CLOCK)
+double difftime(tm * time1,tm * time2){
+
+   // this is   time1   - time2
+   //         <future>    <now>
+
+
+
+
+
+}
+#endif
 
 // that's all, folks !
