@@ -673,6 +673,9 @@
             vALI         String[13]            Satellite AOS/LOS In String (Examples: "AOS in 1d13h","LOS in 30m12s","LOS in 5s")
           There is a bug with the "AOS/LOS in time" function (satellite_aos_los_string()) that only seems to affect HUBBLE, showing negative seconds.  Investigating.
 
+      2020.07.30.01
+        Changed \?GC and \?GT and other coordinate and grid related commands to not require GPS, clock, or moon/sun tracking features.
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -684,7 +687,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.28.01"
+#define CODE_VERSION "2020.07.30.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1095,11 +1098,11 @@ byte current_az_speed_voltage = 0;
   CONTROL_PORT_SERIAL_PORT_CLASS * control_port;
 #endif
 
-#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) || defined(FEATURE_SATELLITE_TRACKING)
+//#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) || defined(FEATURE_SATELLITE_TRACKING)
   double latitude = DEFAULT_LATITUDE;
   double longitude = DEFAULT_LONGITUDE;
   double altitude_m = DEFAULT_ALTITUDE_M;
-#endif
+//#endif
 
 #ifdef FEATURE_MOON_TRACKING
   byte moon_tracking_active = 0;
@@ -14694,7 +14697,7 @@ Not implemented yet:
 
     }       
 
-    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+    //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
       // \?GCxxxx xxxx  - go to coordinate target (rotate azimuth)
       if ((input_buffer[2] == 'G') && (input_buffer[3] == 'C')){ 
 
@@ -14754,10 +14757,10 @@ Not implemented yet:
           submit_request(AZ, REQUEST_AZIMUTH, temp_bearing, DBG_BACKSLASH_GC_CMD);
         }
       } 
-    #endif 
+    //#endif 
 
 
-    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+    //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
       // \?GTxxxx or \?GTxxxxxx  - Go to (rotate azimuth) to grid target
       if (((input_buffer_index == 8) || (input_buffer_index == 10)) && ((input_buffer[2] == 'G') && (input_buffer[3] == 'T'))){    
         temp_string[0] = input_buffer[4];
@@ -14783,10 +14786,10 @@ Not implemented yet:
           submit_request(AZ, REQUEST_AZIMUTH, temp_bearing, DBG_BACKSLASH_GT_CMD);
         }
       }  
-    #endif 
+    //#endif 
 
   
-    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+    //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
       // \?BGxxxx or \?BGxxxxxx  - Calculate bearing to target grid
       if (((input_buffer_index == 8) || (input_buffer_index == 10)) && ((input_buffer[2] == 'B') && (input_buffer[3] == 'G'))){    
         temp_string[0] = input_buffer[4];
@@ -14810,9 +14813,9 @@ Not implemented yet:
           strcat(return_string,temp_string);
         }
       }  
-    #endif 
+    //#endif 
 
-    #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
+    //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
       // \?BCxxxx xxxx  - Calculate bearing to target coordinates
       if ((input_buffer[2] == 'B') && (input_buffer[3] == 'C')){ 
 
@@ -14870,7 +14873,7 @@ Not implemented yet:
           strcat(return_string,temp_string);
         }
       } 
-    #endif 
+    //#endif 
 
 
 
