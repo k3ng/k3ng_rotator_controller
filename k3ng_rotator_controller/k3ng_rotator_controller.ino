@@ -676,6 +676,9 @@
       2020.07.30.01
         Changed \?GC and \?GT and other coordinate and grid related commands to not require GPS, clock, or moon/sun tracking features.
 
+      2020.07.31.01
+        Fixed bug introduced in 2020.07.27.01 with moon, sun, and satellite tracking deactivation not stopping rotation
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -687,7 +690,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.30.01"
+#define CODE_VERSION "2020.07.31.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3962,35 +3965,36 @@ void check_buttons(){
   }
 
   #ifdef FEATURE_MOON_TRACKING
-  static byte moon_tracking_button_pushed = 0;
-  static unsigned long last_time_moon_tracking_button_pushed = 0;
-  if (moon_tracking_button) {
-    if ((digitalReadEnhanced(moon_tracking_button) == BUTTON_ACTIVE_STATE)) {
-      moon_tracking_button_pushed = 1;
-      last_time_moon_tracking_button_pushed = millis();
-      #ifdef DEBUG_BUTTONS
-      debug.println("check_buttons: moon_tracking_button pushed");
-      #endif // DEBUG_BUTTONS
-    } else {
-      if ((moon_tracking_button_pushed) && ((millis() - last_time_moon_tracking_button_pushed) >= 250)) {
-        if (!moon_tracking_active) {
-          #ifdef DEBUG_BUTTONS
-          debug.println("check_buttons: moon tracking on");
-          #endif // DEBUG_BUTTONS
-          change_tracking(ACTIVATE_MOON_TRACKING);
-          #if defined(FEATURE_LCD_DISPLAY)
-            perform_screen_redraw = 1;
-          #endif                           
-        } else {
-          #ifdef DEBUG_BUTTONS
-           debug.println("check_buttons: moon tracking off");
-          #endif // DEBUG_BUTTONS
-          change_tracking(DEACTIVATE_MOON_TRACKING);
+    static byte moon_tracking_button_pushed = 0;
+    static unsigned long last_time_moon_tracking_button_pushed = 0;
+    if (moon_tracking_button) {
+      if ((digitalReadEnhanced(moon_tracking_button) == BUTTON_ACTIVE_STATE)) {
+        moon_tracking_button_pushed = 1;
+        last_time_moon_tracking_button_pushed = millis();
+        #ifdef DEBUG_BUTTONS
+        debug.println("check_buttons: moon_tracking_button pushed");
+        #endif // DEBUG_BUTTONS
+      } else {
+        if ((moon_tracking_button_pushed) && ((millis() - last_time_moon_tracking_button_pushed) >= 250)) {
+          if (!moon_tracking_active) {
+            #ifdef DEBUG_BUTTONS
+            debug.println("check_buttons: moon tracking on");
+            #endif // DEBUG_BUTTONS
+            change_tracking(ACTIVATE_MOON_TRACKING);
+            #if defined(FEATURE_LCD_DISPLAY)
+              perform_screen_redraw = 1;
+            #endif                           
+          } else {
+            #ifdef DEBUG_BUTTONS
+            debug.println("check_buttons: moon tracking off");
+            #endif // DEBUG_BUTTONS
+            change_tracking(DEACTIVATE_MOON_TRACKING);
+            stop_rotation();
+          }
+          moon_tracking_button_pushed = 0;
         }
-        moon_tracking_button_pushed = 0;
       }
     }
-  }
   #endif // FEATURE_MOON_TRACKING
 
   #ifdef FEATURE_SUN_TRACKING
@@ -4018,6 +4022,7 @@ void check_buttons(){
             debug.print("check_buttons: sun tracking off");
           #endif // DEBUG_BUTTONS
           change_tracking(DEACTIVATE_SUN_TRACKING);
+          stop_rotation();
         }
         sun_tracking_button_pushed = 0;
       }
@@ -4051,6 +4056,7 @@ void check_buttons(){
               debug.print("check_buttons: sun tracking off");
             #endif // DEBUG_BUTTONS
             change_tracking(DEACTIVATE_SATELLITE_TRACKING);
+            stop_rotation();
           }
           satellite_tracking_button_pushed = 0;
         }
@@ -13812,6 +13818,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       switch (input_buffer[2]) {
         case '0':
           change_tracking(DEACTIVATE_MOON_TRACKING);
+          stop_rotation();
           strcpy(return_string, "Moon tracking deactivated.");
           break;
         case '1':
@@ -13886,6 +13893,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       switch (input_buffer[2]) {
         case '0':
           change_tracking(DEACTIVATE_SUN_TRACKING);
+          stop_rotation();
           strcpy(return_string, "Sun tracking deactivated.");
           break;
         case '1':
@@ -14122,6 +14130,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           switch (input_buffer[2]) {
             case '0':
               change_tracking(DEACTIVATE_SATELLITE_TRACKING);
+              stop_rotation();
               strcpy(return_string, "Satellite tracking deactivated.");
               break;
             case '1':
@@ -16091,10 +16100,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
             debug.print("yaesu_serial_command: S\n");
           }
         #endif // DEBUG_PROCESS_YAESU
-        submit_request(AZ, REQUEST_STOP, 0, 24);
-        #ifdef FEATURE_ELEVATION_CONTROL
-          submit_request(EL, REQUEST_STOP, 0, 25);
-        #endif
+        stop_rotation();
         #ifdef FEATURE_TIMED_BUFFER
           clear_timed_buffer();
         #endif // FEATURE_TIMED_BUFFER
@@ -16771,12 +16777,22 @@ byte ethernet_slave_link_send(char * string_to_send){
 
 //-------------------------------------------------------
 
+void stop_rotation(){
+
+  submit_request(AZ, REQUEST_STOP, 0, DBG_STOP_ROTATION);
+  #ifdef FEATURE_ELEVATION_CONTROL
+    submit_request(EL, REQUEST_STOP, 0, DBG_STOP_ROTATION);
+  #endif
+
+
+}
+
+//-------------------------------------------------------
+
 void change_tracking(byte action){
 
   #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
   switch(action){
-
-
 
     case DEACTIVATE_ALL: 
       #if defined(FEATURE_MOON_TRACKING)
@@ -16886,6 +16902,7 @@ void service_moon_tracking(){
     }
     if ((moon_tracking_active) && (digitalReadEnhanced(moon_tracking_activate_line)) && (moon_tracking_activated_by_activate_line)) {
       change_tracking(DEACTIVATE_MOON_TRACKING);
+      stop_rotation();
       moon_tracking_activated_by_activate_line = 0;
     }
   }
@@ -16972,6 +16989,7 @@ void service_sun_tracking(){
     }
     if ((sun_tracking_active) && (digitalReadEnhanced(sun_tracking_activate_line)) && (sun_tracking_activated_by_activate_line)) {
       change_tracking(DEACTIVATE_SUN_TRACKING);
+      stop_rotation();
       sun_tracking_activated_by_activate_line = 0;  
     }
   }
@@ -17228,10 +17246,7 @@ void service_autopark(){
       last_activity_time_autopark = millis();
       if (park_status == PARK_INITIATED){
         deactivate_park();
-        submit_request(AZ, REQUEST_STOP, 0, 85);
-        #ifdef FEATURE_ELEVATION_CONTROL
-          submit_request(EL, REQUEST_STOP, 0, 85);
-        #endif
+        stop_rotation();
       }      
     }
   }
@@ -17242,10 +17257,7 @@ void service_autopark(){
       last_activity_time_autopark = millis();
       if (park_status == PARK_INITIATED){
         deactivate_park();
-        submit_request(AZ, REQUEST_STOP, 0, 86);
-        #ifdef FEATURE_ELEVATION_CONTROL
-          submit_request(EL, REQUEST_STOP, 0, 86);
-        #endif        
+        stop_rotation();   
       }
     }
   }
@@ -17404,8 +17416,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     strcpy(name,name_in);
    
     if (load_hardcoded_tle){
-      sat.tle("AO-7","1 07530U 74089B   20205.48277872 -.00000043  00000-0  13494-4 0  9990",
-                     "2 07530 101.8018 175.0260 0011861 296.2265 184.6086 12.53644244090508");
+      sat.tle("AO-7","1 07530U 74089B   20212.50338344 -.00000036  00000-0  60602-4 0  9998",  // 2020-07-31
+                     "2 07530 101.8025 182.0092 0011808 282.3347 189.8188 12.53644405 91628");
+
+                     
+
     } else {
       sat.tle(name,tle_line1,tle_line2);
     }      
@@ -17442,6 +17457,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       }
       if ((satellite_tracking_active) && (digitalReadEnhanced(satellite_tracking_activate_line)) && (satellite_tracking_activated_by_activate_line)) {
         change_tracking(DEACTIVATE_SATELLITE_TRACKING);
+        stop_rotation();
         satellite_tracking_activated_by_activate_line = 0;
       }
     }
