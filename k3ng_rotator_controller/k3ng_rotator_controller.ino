@@ -679,6 +679,12 @@
       2020.07.31.01
         Fixed bug introduced in 2020.07.27.01 with moon, sun, and satellite tracking deactivation not stopping rotation
 
+      2020.08.03.01
+        FEATURE_SATELLITE_TRACKING
+          Fixed bug with controller locking up upon boot up if previously selected satellite wasn't available in TLEs stored in eeprom
+          Enhanced TLE storage so unnecessary data in TLE line 1 isn't stored in eeprom, resulting in space savings and allowing more TLEs to be stored  
+          Working on \| command to list satellites available for tracking
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -690,7 +696,7 @@
 
   */
 
-#define CODE_VERSION "2020.07.31.01"
+#define CODE_VERSION "2020.08.03.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1054,8 +1060,6 @@ byte current_az_speed_voltage = 0;
 
 
 #ifdef DEBUG_POSITION_PULSE_INPUT
-  // unsigned int az_position_pule_interrupt_handler_flag = 0;
-  // unsigned int el_position_pule_interrupt_handler_flag = 0;
   volatile unsigned long az_pulse_counter = 0;
   volatile unsigned long el_pulse_counter = 0;
   volatile unsigned int az_pulse_counter_ambiguous = 0;
@@ -1125,11 +1129,9 @@ byte current_az_speed_voltage = 0;
 #endif // FEATURE_SUN_TRACKING
 
 #ifdef FEATURE_CLOCK
-
-
   unsigned int clock_years = 0;
   byte clock_months = 0;
-  byte  clock_days = 0;
+  byte clock_days = 0;
   byte clock_hours = 0;
   byte clock_minutes = 0;
   byte clock_seconds = 0;
@@ -1140,18 +1142,6 @@ byte current_az_speed_voltage = 0;
   byte local_clock_minutes = 0;
   byte local_clock_seconds = 0;
 
-  // unsigned long clock_years = 0;
-  // unsigned long clock_months = 0;
-  // unsigned long clock_days = 0;
-  // unsigned long clock_hours = 0;
-  // unsigned long clock_minutes = 0;
-  // unsigned long clock_seconds = 0;
-  // long local_clock_years = 0;
-  // long local_clock_months = 0;
-  // long local_clock_days = 0;
-  // long local_clock_hours = 0;
-  // long local_clock_minutes = 0;
-  // long local_clock_seconds = 0;
   int clock_year_set = 2020;
   byte clock_month_set = 1;
   byte clock_day_set = 1;
@@ -1353,6 +1343,8 @@ DebugClass debug;
 
   #include <P13.h>
   #define tle_file_eeprom_memory_area_start (sizeof(configuration)+5)
+  #define SATELLITE_NAME_LENGTH 17
+  #define SATELLITE_LIST_LENGTH 30
 
   double current_satellite_elevation;
   double current_satellite_azimuth;      
@@ -1374,7 +1366,9 @@ DebugClass debug;
   Observer obs("my_location", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M);
   SatDateTime sat_datetime;
 
-  
+  struct satellite_list{
+    char name[SATELLITE_NAME_LENGTH];
+  } satellite[SATELLITE_LIST_LENGTH];
 
 #endif //FEATURE_SATELLITE_TRACKING
 
@@ -6455,12 +6449,16 @@ void write_settings_to_eeprom(){
         configuration_dirty = 1; 
         return 1;  
       } else {
-        control_port->println("TLE corrupt :-(");
+        if (verbose){
+          control_port->println("TLE corrupt :-(");
+        }
       }
     } else {
-      control_port->println("Not found :-(");
+      if (verbose){
+        control_port->println("Not found :-(");
+      }
     }
-         
+    return(0);    
 
   }
 #endif //FEATURE_SATELLITE_TRACKING
@@ -6470,68 +6468,62 @@ void write_settings_to_eeprom(){
 
 
     static unsigned int eeprom_location = tle_file_eeprom_memory_area_start;
+    byte eeprom_byte;
     char eeprom_read[2];
     static char tle_line[SATELLITE_TLE_CHAR_SIZE];
-    byte hit_return = 0;
+    static byte tle_line_number = 0;
     byte char_counter = 0;
-    static byte need_hit_return = 1;
+    byte get_out = 0;
+
 
     // I hope I never have to figure out what I did here when I'm 80 and trying to debug something.
 
-    if ((EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF) || (need_hit_return == 99)){
-      strcpy(tle_line,"<END>");
-      need_hit_return = 99;
+    if ((EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF) || (tle_line_number == 99)){
+      strcpy(tle_line,"");
+      tle_line_number = 99;
       return(tle_line);
     }  
 
     if (initialize_me_dude){
       eeprom_location = tle_file_eeprom_memory_area_start;
-      need_hit_return = 1;
+      tle_line_number = 0;
       return NULL;
     } else {
 
       strcpy(tle_line,"");
       eeprom_read[1] = 0;
-      hit_return = 0;
-
-      while ((eeprom_location < tle_file_eeprom_memory_area_end) && (hit_return < need_hit_return) && (char_counter < 71)){
-        eeprom_read[0] = EEPROM.read(eeprom_location);
+   
+      while ((eeprom_location < tle_file_eeprom_memory_area_end) && (get_out == 0) && (char_counter < 71)){
+        eeprom_byte =  EEPROM.read(eeprom_location);
+        eeprom_read[0] = eeprom_byte;
         char_counter++;
         if (eeprom_read[0] == '\r'){
-          hit_return++;
-          char_counter = 0;
-          if (hit_return < need_hit_return){
+          if (tle_line_number == 0){
+            get_out = 1;
+            tle_line_number++;
+          } else {
+            tle_line_number++;
+            if (tle_line_number > 2){tle_line_number = 0;}
+            char_counter = 0;
             strcpy(tle_line,"");
           }
         } else {
-          if (eeprom_read[0] == 0xFF){  // hit the end of the file
-            strcpy(tle_line,"<END>");
-            hit_return = 255;
-            need_hit_return = 99;
-          }
-          if ((eeprom_read[0] != '\n')){
-            strcat(tle_line,eeprom_read);
+          if (eeprom_byte == 0xFF){  // hit the end of the file
+            get_out = 1;
+            //control_port->println("hit end");
+          } else {
+            if ((eeprom_read[0] != '\n') && (tle_line_number == 0)){
+              strcat(tle_line,eeprom_read);
+            }
           }
         }  
         eeprom_location++;
       }
     }  
 
-    if (eeprom_location == tle_file_eeprom_memory_area_end){
-      strcpy(tle_line,"<END>");
-      need_hit_return = 99;
-    }
-
-    if (char_counter > 70){
-      strcpy(tle_line,"<END>");
-      need_hit_return = 99;
-    }
-
-    need_hit_return = 3;
-
-    if (tle_line == ""){
-      strcpy(tle_line,"<END>");
-      need_hit_return = 99;
+    if ((eeprom_location >= tle_file_eeprom_memory_area_end) || (char_counter > 70) || (tle_line == "") || (eeprom_byte == 0xFF)){
+      strcpy(tle_line,"");
+      tle_line_number = 99;
     }
 
     return(tle_line);
@@ -6539,6 +6531,25 @@ void write_settings_to_eeprom(){
   }
 #endif //FEATURE_SATELLITE_TRACKING
 
+// --------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void populate_satellite_list_array(){
+
+    char sat_name[SATELLITE_NAME_LENGTH];
+
+    get_satellite_from_tle_file(1);
+    for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
+      strcpy(sat_name,get_satellite_from_tle_file(0));
+      if ((strlen(sat_name) > 2) /*&& (sat_name != "")*/){
+        //control_port->println(sat_name);
+        strcpy(satellite[z].name,sat_name);
+      } else {
+        z = SATELLITE_LIST_LENGTH;
+      }
+    }  
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING
 // --------------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
   char print_tle_file_area_eeprom(){
@@ -13462,6 +13473,8 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     char satellite_to_find[17];
     byte get_line_result = 0;
     byte x = 0;
+    byte tle_line_number;
+    byte line_char_counter;
   #endif
 
   float new_azimuth_starting_point;
@@ -14108,13 +14121,13 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     #if defined(FEATURE_SATELLITE_TRACKING)
 
-    char sat_name[15]; 
+    char sat_name[SATELLITE_NAME_LENGTH]; 
 
       case '|':
         get_satellite_from_tle_file(1);
         for (int z = 0;z < 16;z++){
           strcpy(sat_name,get_satellite_from_tle_file(0));
-          if (sat_name != "<END>"){
+          if (strlen(sat_name) > 2){
             control_port->println(sat_name);
           } else {
             z = 16;
@@ -14159,22 +14172,30 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           control_port->println("Paste bare TLE file text now; double return to end.");
           write_char_to_tle_file_area_eeprom(0,1); // initialize   
           tle_upload_start_time = millis();
+          tle_line_number = 0;  // 0 = sat name line, 1 = tle line 1, 2 = tle line 2
+          line_char_counter = 0;
           // this code below is nuts.  it's a circular buffer for incoming serial data and writing to eeprom
           while (((millis() - tle_upload_start_time) < 20000) && ((got_return < 2) || (tle_serial_buffer_in_pointer != tle_serial_buffer_out_pointer))){
             // incoming serial data
             while ((control_port->available()) && ((tle_serial_buffer_in_pointer+1) != tle_serial_buffer_out_pointer) &&
               (!((tle_serial_buffer_in_pointer == 2000) && (tle_serial_buffer_out_pointer == 0)))){    
-              tle_char_read = toupper(control_port->read());        
-              tle_serial_buffer[tle_serial_buffer_in_pointer] = tle_char_read;
-              if (tle_serial_buffer_in_pointer < 2000){
-                tle_serial_buffer_in_pointer++;
-              } else {
-                tle_serial_buffer_in_pointer = 0; // buffer roll over
+              tle_char_read = toupper(control_port->read());   
+              if ((tle_line_number != 1) || (tle_char_read == '\r') || ((tle_line_number == 1) && (line_char_counter < 44))) {  // truncate TLE line 1 
+                tle_serial_buffer[tle_serial_buffer_in_pointer] = tle_char_read;
+                if (tle_serial_buffer_in_pointer < 2000){
+                  tle_serial_buffer_in_pointer++;
+                } else {
+                  tle_serial_buffer_in_pointer = 0; // buffer roll over
+                }
+                line_char_counter++;
               }
               control_port->write(tle_char_read);
               if (tle_char_read == '\r'){
                 control_port->print("\n");
                 got_return++;
+                tle_line_number++;
+                if (tle_line_number > 2){tle_line_number = 0;}
+                line_char_counter = 0;
               } else {
                 got_return = 0;
               }
@@ -17411,7 +17432,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
   void load_satellite_tle(const char *name_in, const char *tle_line1, const char *tle_line2,byte load_hardcoded_tle){
 
-    static char name[17];
+    static char name[SATELLITE_NAME_LENGTH];
 
     strcpy(name,name_in);
    
