@@ -685,6 +685,12 @@
           Enhanced TLE storage so unnecessary data in TLE line 1 isn't stored in eeprom, resulting in space savings and allowing more TLEs to be stored  
           Working on \| command to list satellites available for tracking
 
+      2020.08.08.01   
+        FEATURE_SATELLITE_TRACKING
+          Finished \| command to list all available satellites.  This will be updated later to show next AOS of each satellite.
+          Added vS1..vS34 API variables that contain all satellites available for tracking
+          \$ command will now first search for a literal match of the entered satellite name, and if no match is found, it will match on the first four characters 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -696,7 +702,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.03.01"
+#define CODE_VERSION "2020.08.08.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1344,7 +1350,7 @@ DebugClass debug;
   #include <P13.h>
   #define tle_file_eeprom_memory_area_start (sizeof(configuration)+5)
   #define SATELLITE_NAME_LENGTH 17
-  #define SATELLITE_LIST_LENGTH 30
+  #define SATELLITE_LIST_LENGTH 35
 
   double current_satellite_elevation;
   double current_satellite_azimuth;      
@@ -4982,7 +4988,18 @@ TODO:
           strcpy(workstring1,"vALI.txt=\"");
           strcat(workstring1,satellite_aos_los_string());
           strcat(workstring1,"\"");
-          sendNextionCommand(workstring1);   
+          sendNextionCommand(workstring1);  
+
+
+          for (int x = 0;x < SATELLITE_LIST_LENGTH;x++){
+            strcpy(workstring1,"vS");
+            dtostrf(x+1,0,0,workstring2);
+            strcat(workstring1,workstring2);
+            strcat(workstring1,"=\"");
+            strcat(workstring1,satellite[x].name);
+            strcat(workstring1,"\"");
+            sendNextionCommand(workstring1);              
+          } 
 
         #endif // FEATURE_SATELLITE_TRACKING
 
@@ -6391,52 +6408,87 @@ void write_settings_to_eeprom(){
     // 0 = didn't find it
  
     byte get_line_result;
-    byte stop_looping = 0;
+    byte stop_looping1 = 0;
+    byte stop_looping2 = 0;
     char tle_line1[SATELLITE_TLE_CHAR_SIZE];
     char tle_line2[SATELLITE_TLE_CHAR_SIZE];
     byte found_it = 0;
     byte invalid = 0;
+    byte pass = 0;
+    byte string_pointer = 0;
+    char alternate_satellite_search_string[SATELLITE_NAME_LENGTH];
 
-    // control_port->print("pull_satellite_tle_and_activate: searching:");
-    // control_port->print(satellite_to_find);
-    // control_port->print("$");
 
-    get_line_from_tle_file_eeprom(NULL,1);
+    for (int x = 0;x < SATELLITE_NAME_LENGTH;x++){
+      if ((satellite_to_find[x] != ' ') && (satellite_to_find[x] != '-') && (satellite_to_find[x] != '/')){
+        alternate_satellite_search_string[string_pointer] = satellite_to_find[x];
+        string_pointer++;
+      }
+      if (satellite_to_find[x] == 0){
+        x = SATELLITE_NAME_LENGTH;
+      }
+    }
 
-    while(!stop_looping){
-      
-      get_line_result = get_line_from_tle_file_eeprom(tle_line1,0);
-      if (get_line_result == 0){
-          //control_port->println(tle_line1);
-          if (strcmp(tle_line1,satellite_to_find) == 0){
-            if (verbose){
-              control_port->println("Found it! :-)");
+//control_port->print(alternate_satellite_search_string);
+//zzzzzz
+//todo: strfuzzycmp()
+
+    while(!stop_looping2){
+
+      get_line_from_tle_file_eeprom(NULL,1);
+
+      stop_looping1 = 0;
+
+      while(!stop_looping1){
+        
+        get_line_result = get_line_from_tle_file_eeprom(tle_line1,0);
+        if (get_line_result == 0){
+            //control_port->println(tle_line1);
+            if ( ((pass == 0) && (strcmp(tle_line1,satellite_to_find) == 0)) || 
+                 ((pass == 1) && (strcmp(tle_line1,alternate_satellite_search_string) == 0)) || 
+                 ((pass == 2) && (strncmp(tle_line1,satellite_to_find,4) == 0))
+                 ){
+              if (verbose){
+                control_port->println("Found it! :-)");
+              }
+              strcpy(satellite_to_find,tle_line1);
+              if (verbose){   
+                control_port->println(tle_line1);
+              }              
+              get_line_from_tle_file_eeprom(tle_line1,0);
+              if (verbose){
+                control_port->println(tle_line1);
+              }
+              get_line_from_tle_file_eeprom(tle_line2,0);
+              if (verbose){
+                control_port->println(tle_line2);  
+              }
+              stop_looping1 = 1; 
+              stop_looping2 = 1;       
+              found_it = 1; 
             }
-            get_line_from_tle_file_eeprom(tle_line1,0);
-            if (verbose){
-              control_port->println(tle_line1);
-            }
-            get_line_from_tle_file_eeprom(tle_line2,0);
-            if (verbose){
-              control_port->println(tle_line2);  
-            }
-            stop_looping = 1;        
-            found_it = 1; 
-          }
-      } else {
-        stop_looping = 1;
-      }    
-    } 
+        } else {
+          stop_looping1 = 1;
+          pass++;
+        }    
+      }  //while(!stop_looping1){
+
+      if (pass > 2){
+        stop_looping2 = 1; 
+      }
+
+    } //while(!stop_looping2){ 
+
+
 
     if (found_it){
 
-//zzzzzz
-//TODO: TLE error checking
-//           11111111112222222222333333333334444444444555555555566666666
-// 012345678901234567890123456789012345678901234567890123456789012345678
-// Max Valier Sat
-// 1 42778U 17036P   20205.42106858  .00000564  00000-0  27122-4 0  9991
-// 2 42778 097.3024 258.0582 0010470 253.0928 106.9161 15.22670617171208
+      // TLE error checking
+      //           11111111112222222222333333333334444444444555555555566666666
+      // 012345678901234567890123456789012345678901234567890123456789012345678
+      // Max Valier Sat
+      // 1 42778U 17036P   20205.42106858  .00000564  00000-0  27122-4 0  9991
+      // 2 42778 097.3024 258.0582 0010470 253.0928 106.9161 15.22670617171208
 
       if ((tle_line1[0] != '1') || (tle_line1[7] != 'U') || (tle_line1[18] != '2') || (tle_line2[0] != '2')){invalid = 1;}
       if ((tle_line1[17] != ' ') || (tle_line1[23] != '.') || (tle_line1[32] != ' ') || (tle_line1[34] != '.')  || (tle_line1[43] != ' ')){invalid = 1;}
@@ -6536,11 +6588,11 @@ void write_settings_to_eeprom(){
   void populate_satellite_list_array(){
 
     char sat_name[SATELLITE_NAME_LENGTH];
-
+//zzzzzz
     get_satellite_from_tle_file(1);
     for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
       strcpy(sat_name,get_satellite_from_tle_file(0));
-      if ((strlen(sat_name) > 2) /*&& (sat_name != "")*/){
+      if ((strlen(sat_name) > 2) && (sat_name[0] != 0)){
         //control_port->println(sat_name);
         strcpy(satellite[z].name,sat_name);
       } else {
@@ -14124,13 +14176,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     char sat_name[SATELLITE_NAME_LENGTH]; 
 
       case '|':
-        get_satellite_from_tle_file(1);
-        for (int z = 0;z < 16;z++){
-          strcpy(sat_name,get_satellite_from_tle_file(0));
-          if (strlen(sat_name) > 2){
-            control_port->println(sat_name);
-          } else {
-            z = 16;
+        for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
+          if (strlen(satellite[z].name) > 2){
+            control_port->print(z+1);
+            control_port->print(": ");
+            control_port->println(satellite[z].name);
           }
         }
         break;
@@ -14225,6 +14275,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           if (end_of_eeprom_was_hit == 2){
             control_port->println("File was truncated."); 
           } 
+
+          populate_satellite_list_array();
+
           break;          
 
         case '$':
@@ -17865,6 +17918,8 @@ void initialize_satellite_tracking(){
         load_satellite_tle(NULL,NULL,NULL,1);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
       }
     }
+
+    populate_satellite_list_array();
 
 
   #endif //FEATURE_SATELLITE_TRACKING 
