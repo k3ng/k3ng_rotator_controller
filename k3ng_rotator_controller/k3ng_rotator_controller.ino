@@ -691,6 +691,11 @@
           Added vS1..vS34 API variables that contain all satellites available for tracking
           \$ command will now first search for a literal match of the entered satellite name, and if no match is found, it will match on the first four characters 
 
+      2020.08.09.01
+        FEATURE_SATELLITE_TRACKING
+          Fixed bug with vS1..vS34 API variables (Thanks,Adam, VK4GHZ)
+          
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -702,7 +707,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.08.01"
+#define CODE_VERSION "2020.08.09.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4995,7 +5000,7 @@ TODO:
             strcpy(workstring1,"vS");
             dtostrf(x+1,0,0,workstring2);
             strcat(workstring1,workstring2);
-            strcat(workstring1,"=\"");
+            strcat(workstring1,".txt=\"");
             strcat(workstring1,satellite[x].name);
             strcat(workstring1,"\"");
             sendNextionCommand(workstring1);              
