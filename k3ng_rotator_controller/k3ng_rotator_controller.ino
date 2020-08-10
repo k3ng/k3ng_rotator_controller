@@ -694,6 +694,13 @@
       2020.08.09.01
         FEATURE_SATELLITE_TRACKING
           Fixed bug with vS1..vS34 API variables (Thanks,Adam, VK4GHZ)
+
+      2020.08.10.01
+        FEATURE_SATELLITE_TRACKING
+          Changed TLE loading routine to store carriage returns as 0xFE in eeprom and eliminated differences with systems that do carriage return
+          versus carriage return + line feed, however, regardless TLEs cannot be loaded with the Arduino IDE Serial Monitor
+          as it strips multi-line pasted text in the send window.  Argh.  You need to use PuTTY on Windows.  Screen on *nix works fine.
+                    
           
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -707,7 +714,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.09.01"
+#define CODE_VERSION "2020.08.10.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -6362,6 +6369,7 @@ void write_settings_to_eeprom(){
     char tle_line[SATELLITE_TLE_CHAR_SIZE]; //make this global for giggles
     byte hit_return = 0;
     byte char_counter = 0;
+    byte eeprom_byte;
 
     if (EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF){
       return 1;
@@ -6375,15 +6383,16 @@ void write_settings_to_eeprom(){
     eeprom_read[1] = 0;
 
     while ((eeprom_location < tle_file_eeprom_memory_area_end) && (!hit_return) && (char_counter < 71)){
-      eeprom_read[0] = EEPROM.read(eeprom_location);
+      eeprom_byte = EEPROM.read(eeprom_location);
+      eeprom_read[0] = eeprom_byte;
       char_counter++;
-      if (eeprom_read[0] == '\r'){
+      if (eeprom_byte == 254 /*'\r'*/){
         hit_return = 1;
       } else {
         if (eeprom_read[0] == 0xFF){  // hit the end of the file
           return 2;
         }
-        if ((eeprom_read[0] != '\n')){
+        if (eeprom_read[0] != '\n'){
           strcat(tle_line,eeprom_read);
         }
       }  
@@ -6399,6 +6408,7 @@ void write_settings_to_eeprom(){
     }
 
     strcpy(tle_line_out,tle_line);
+    //control_port->println(tle_line_out);
     return 0;
     
   
@@ -6551,10 +6561,11 @@ void write_settings_to_eeprom(){
       eeprom_read[1] = 0;
    
       while ((eeprom_location < tle_file_eeprom_memory_area_end) && (get_out == 0) && (char_counter < 71)){
-        eeprom_byte =  EEPROM.read(eeprom_location);
+        eeprom_byte = EEPROM.read(eeprom_location);
         eeprom_read[0] = eeprom_byte;
         char_counter++;
-        if (eeprom_read[0] == '\r'){
+        //if (eeprom_read[0] == '\r'){
+        if (eeprom_byte == 254){
           if (tle_line_number == 0){
             get_out = 1;
             tle_line_number++;
@@ -6620,9 +6631,10 @@ void write_settings_to_eeprom(){
       for (eeprom_location = tle_file_eeprom_memory_area_start; eeprom_location < tle_file_eeprom_memory_area_end; eeprom_location++) {
         eeprom_read = EEPROM.read(eeprom_location);
         if (eeprom_read != 0xFF){
-          control_port->write(eeprom_read);
-          if (eeprom_read == '\r'){
-            control_port->print('\n');
+          if (eeprom_read == 254 /*'\r'*/){
+            control_port->print("\r\n");
+          } else {
+            control_port->write(eeprom_read);
           }
         } else {
           eeprom_location = tle_file_eeprom_memory_area_end;
@@ -13532,6 +13544,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     byte x = 0;
     byte tle_line_number;
     byte line_char_counter;
+    byte last_tle_char_read = 0;
   #endif
 
   float new_azimuth_starting_point;
@@ -14236,13 +14249,28 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               (!((tle_serial_buffer_in_pointer == 2000) && (tle_serial_buffer_out_pointer == 0)))){    
               tle_char_read = toupper(control_port->read());   
               if ((tle_line_number != 1) || (tle_char_read == '\r') || ((tle_line_number == 1) && (line_char_counter < 44))) {  // truncate TLE line 1 
-                tle_serial_buffer[tle_serial_buffer_in_pointer] = tle_char_read;
-                if (tle_serial_buffer_in_pointer < 2000){
-                  tle_serial_buffer_in_pointer++;
+                if ((tle_char_read == '\n') || (tle_char_read == '\r')){
+                  if (last_tle_char_read != 254){  // use 254 to mark end of a line
+                    tle_serial_buffer[tle_serial_buffer_in_pointer] = 254;
+                    last_tle_char_read = 254;
+                    if (tle_serial_buffer_in_pointer < 2000){
+                      tle_serial_buffer_in_pointer++;
+                    } else {
+                      tle_serial_buffer_in_pointer = 0; // buffer roll over
+                    }
+                    line_char_counter++;                     
+                  }
                 } else {
-                  tle_serial_buffer_in_pointer = 0; // buffer roll over
+                  tle_serial_buffer[tle_serial_buffer_in_pointer] = tle_char_read;
+                  last_tle_char_read = tle_char_read;
+                  if (tle_serial_buffer_in_pointer < 2000){
+                    tle_serial_buffer_in_pointer++;
+                  } else {
+                    tle_serial_buffer_in_pointer = 0; // buffer roll over
+                  }
+                  line_char_counter++; 
                 }
-                line_char_counter++;
+   
               }
               control_port->write(tle_char_read);
               if (tle_char_read == '\r'){
@@ -17495,8 +17523,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     strcpy(name,name_in);
    
     if (load_hardcoded_tle){
-      sat.tle("AO-7","1 07530U 74089B   20212.50338344 -.00000036  00000-0  60602-4 0  9998",  // 2020-07-31
-                     "2 07530 101.8025 182.0092 0011808 282.3347 189.8188 12.53644405 91628");
+      sat.tle("AO7-HARDCODED","1 07530U 74089B   20219.44701373 -.00000036  00000-0  58084-4 0  9995",  // 2020-08-10
+                              "2 07530 101.8033 188.9163 0011776 268.5387 207.6898 12.53644475092259");
 
                      
 
