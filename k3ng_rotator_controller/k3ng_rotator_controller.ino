@@ -693,15 +693,21 @@
 
       2020.08.09.01
         FEATURE_SATELLITE_TRACKING
-          Fixed bug with vS1..vS34 API variables (Thanks,Adam, VK4GHZ)
+          Fixed bug with vS1..vS34 API variables (Thanks, Adam, VK4GHZ)
 
       2020.08.10.01
         FEATURE_SATELLITE_TRACKING
           Changed TLE loading routine to store carriage returns as 0xFE in eeprom and eliminated differences with systems that do carriage return
           versus carriage return + line feed, however, regardless TLEs cannot be loaded with the Arduino IDE Serial Monitor
           as it strips multi-line pasted text in the send window.  Argh.  You need to use PuTTY on Windows.  Screen on *nix works fine.
-                    
-          
+
+      2020.08.10.02              
+        FEATURE_SATELLITE_TRACKING
+          Fixed bug with \# load TLE command not populating satellite list array correctly (Thanks, Adam, VK4GHZ)
+        FEATURE_NEXTION_DISPLAY
+          Changed initialization so we don't wait for 200 mS doing nothing while the display initializes after we reset it
+        Got rid of 1 second delay at start up.  There's really no need for it.   
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -714,7 +720,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.10.01"
+#define CODE_VERSION "2020.08.10.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1396,8 +1402,6 @@ DebugClass debug;
 
 void setup() {
 
-  delay(1000);
-
   initialize_serial();
 
   initialize_peripherals();
@@ -1413,8 +1417,6 @@ void setup() {
   initialize_rotary_encoders();
 
   initialize_interrupts();
-
-  initialize_satellite_tracking();
 
   run_this_once();
 
@@ -4199,10 +4201,27 @@ void service_nextion_display(){
   unsigned int temp = 0;
   char *buffer;
   uint16_t len;
-
   double x;
   double y;
   static unsigned long last_cartesian_update = 0;
+  static byte initialization_stage = 0;
+  
+
+  if ((initialization_stage == 0) && (millis() > 500)){
+    nexSerial.begin(NEXTION_SERIAL_BAUD);
+    sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
+    sendNextionCommand("rest");      // reset the Nextion unit
+    initialization_stage = 1;
+    last_various_things_update = millis();
+  }
+
+  if ((initialization_stage == 1) && ((millis() - last_various_things_update) > 199)){  // wait 200 mS before doing the first servicing
+    last_various_things_update = 0;
+    initialization_stage = 2;
+  }
+
+  if (initialization_stage != 2){return;}
+
 
   #if defined(FEATURE_ELEVATION_CONTROL)
     static int last_elevation = 0;
@@ -6531,21 +6550,21 @@ void write_settings_to_eeprom(){
 #endif //FEATURE_SATELLITE_TRACKING
 // --------------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-  char* get_satellite_from_tle_file(byte initialize_me_dude){
+const char* get_satellite_from_tle_file(byte initialize_me_dude){
 
 
-    static unsigned int eeprom_location = tle_file_eeprom_memory_area_start;
+    static unsigned int eeprom_location;
     byte eeprom_byte;
     char eeprom_read[2];
     static char tle_line[SATELLITE_TLE_CHAR_SIZE];
-    static byte tle_line_number = 0;
+    static byte tle_line_number;
     byte char_counter = 0;
     byte get_out = 0;
 
 
     // I hope I never have to figure out what I did here when I'm 80 and trying to debug something.
 
-    if ((EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF) || (tle_line_number == 99)){
+    if ((EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF) || ((tle_line_number == 99) && (!initialize_me_dude))){
       strcpy(tle_line,"");
       tle_line_number = 99;
       return(tle_line);
@@ -6604,12 +6623,11 @@ void write_settings_to_eeprom(){
   void populate_satellite_list_array(){
 
     char sat_name[SATELLITE_NAME_LENGTH];
-//zzzzzz
+
     get_satellite_from_tle_file(1);
     for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
       strcpy(sat_name,get_satellite_from_tle_file(0));
       if ((strlen(sat_name) > 2) && (sat_name[0] != 0)){
-        //control_port->println(sat_name);
         strcpy(satellite[z].name,sat_name);
       } else {
         z = SATELLITE_LIST_LENGTH;
@@ -9678,14 +9696,6 @@ void initialize_peripherals(){
   #ifdef FEATURE_WIRE_SUPPORT
     Wire.begin();
   #endif
-
-  #ifdef FEATURE_NEXTION_DISPLAY
-    nexSerial.begin(NEXTION_SERIAL_BAUD);
-    sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
-    sendNextionCommand("rest");      // reset the Nextion unit
-    delay(200);
-    service_nextion_display();
-  #endif //FEATURE_NEXTION_DISPLAY
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L
     compass = HMC5883L();
@@ -13544,7 +13554,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     byte x = 0;
     byte tle_line_number;
     byte line_char_counter;
-    byte last_tle_char_read = 0;
+    byte last_tle_char_read = 0;    
   #endif
 
   float new_azimuth_starting_point;
@@ -14191,7 +14201,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     #if defined(FEATURE_SATELLITE_TRACKING)
 
-    char sat_name[SATELLITE_NAME_LENGTH]; 
+    //char sat_name[SATELLITE_NAME_LENGTH]; 
 
       case '|':
         for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
@@ -14312,6 +14322,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           populate_satellite_list_array();
 
           break;          
+      
 
         case '$':
           for (x = 2;x < input_buffer_index;x++){
@@ -15195,7 +15206,13 @@ Not implemented yet:
         control_port->println(current_satellite_next_los_el,0);
         temp_datetime.seconds = 0; 
         control_port->print(satellite_aos_los_string());
-        control_port->println();                
+        control_port->println();       
+
+        // control_port->print(F("DE:"));
+        // control_port->println(sat.DE);   
+
+        // control_port->print(F("TE:"));
+        // control_port->println(sat.TE);                   
 
     
   }
@@ -17523,8 +17540,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     strcpy(name,name_in);
    
     if (load_hardcoded_tle){
-      sat.tle("AO7-HARDCODED","1 07530U 74089B   20219.44701373 -.00000036  00000-0  58084-4 0  9995",  // 2020-08-10
-                              "2 07530 101.8033 188.9163 0011776 268.5387 207.6898 12.53644475092259");
+      sat.tle("AO7TEST","1 07530U 74089B   20219.44701373 -.00000036  00000-0  58084-4 0  9995",  // 2020-08-10
+                        "2 07530 101.8033 188.9163 0011776 268.5387 207.6898 12.53644475092259");
 
                      
 
@@ -17545,6 +17562,29 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     static unsigned long last_update_satellite_position = 0;
     static byte satellite_tracking_activated_by_activate_line = 0;
     static byte satellite_tracking_pin_state = 0;
+    static byte satellite_initialized = 0;
+
+
+    if ((!satellite_initialized) && (millis() > 4000)){  // wait until 4 seconds of update to load first TLE and initialize
+
+      if (strcmp(configuration.current_satellite,"-") == 0){
+        load_satellite_tle(NULL,NULL,NULL,1);  // if there is no current satellite in the configuration, load a hardcode TLE
+      } else {
+        satellite_initialized = pull_satellite_tle_and_activate(configuration.current_satellite,0);
+        if (satellite_initialized == 0){
+          load_satellite_tle(NULL,NULL,NULL,1);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
+        }
+      }
+      satellite_initialized = 1;
+
+      populate_satellite_list_array();
+
+      return;
+    }
+
+
+    if (!satellite_initialized){return;}
+
 
     if (satellite_tracking_active_pin) {
       if ((satellite_tracking_active) && (!satellite_tracking_pin_state)) {
@@ -17937,26 +17977,26 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #endif //FEATURE_SATELLITE_TRACKING
 //------------------------------------------------------
 
-void initialize_satellite_tracking(){
+// void initialize_satellite_tracking(){
 
-  #if defined(FEATURE_SATELLITE_TRACKING)
+//   #if defined(FEATURE_SATELLITE_TRACKING)
   
-    byte satellite_tle_pull_result = 0;
+//     byte satellite_tle_pull_result = 0;
 
-    if (strcmp(configuration.current_satellite,"-") == 0){
-      load_satellite_tle(NULL,NULL,NULL,1);  // if there is no current satellite in the configuration, load a hardcode TLE
-    } else {
-      satellite_tle_pull_result = pull_satellite_tle_and_activate(configuration.current_satellite,0);
-      if (satellite_tle_pull_result == 0){
-        load_satellite_tle(NULL,NULL,NULL,1);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
-      }
-    }
+//     if (strcmp(configuration.current_satellite,"-") == 0){
+//       load_satellite_tle(NULL,NULL,NULL,1);  // if there is no current satellite in the configuration, load a hardcode TLE
+//     } else {
+//       satellite_tle_pull_result = pull_satellite_tle_and_activate(configuration.current_satellite,0);
+//       if (satellite_tle_pull_result == 0){
+//         load_satellite_tle(NULL,NULL,NULL,1);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
+//       }
+//     }
 
-    populate_satellite_list_array();
+//     populate_satellite_list_array();
 
 
-  #endif //FEATURE_SATELLITE_TRACKING 
-}
+//   #endif //FEATURE_SATELLITE_TRACKING 
+// }
 
 //------------------------------------------------------
 
