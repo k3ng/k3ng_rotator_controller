@@ -708,6 +708,26 @@
           Changed initialization so we don't wait for 200 mS doing nothing while the display initializes after we reset it
         Got rid of 1 second delay at start up.  There's really no need for it.   
 
+      2020.08.13.01
+        FEATURE_SATELLITE_TRACKING
+          gSC API Variable
+            This is now the first variable written to the display after initialization
+            Added additional capability but values
+              ENGLISH 2048
+              SPANISH 4096
+              CZECH 8192
+              PORTUGUESE_BRASIL 16384
+              GERMAN 32768
+              FRENCH 65536
+          Language Support (rotator_language.h)
+            NEXTION_GPS_STRING
+            NEXTION_PARKING_STRING
+            NEXTION_PARKED_STRING
+            NEXTION_OVERLAP_STRING
+          vSS3 API variable deprecated
+          Parked and Overlap messages move to vSS2 API variable
+          Change wait time after reboot of Nextion display from 200 mS to 300 mS
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -720,7 +740,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.10.02"
+#define CODE_VERSION "2020.08.13.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1380,6 +1400,10 @@ DebugClass debug;
 
   tm current_satellite_next_aos, current_satellite_next_los;
 
+
+
+
+
   float current_satellite_next_aos_az = 0;
   float current_satellite_next_aos_el = 0;
 
@@ -1392,6 +1416,8 @@ DebugClass debug;
 
   struct satellite_list{
     char name[SATELLITE_NAME_LENGTH];
+    // tm next_aos;
+    // tm next_los;
   } satellite[SATELLITE_LIST_LENGTH];
 
 #endif //FEATURE_SATELLITE_TRACKING
@@ -4205,23 +4231,12 @@ void service_nextion_display(){
   double y;
   static unsigned long last_cartesian_update = 0;
   static byte initialization_stage = 0;
-  
-
-  if ((initialization_stage == 0) && (millis() > 500)){
-    nexSerial.begin(NEXTION_SERIAL_BAUD);
-    sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
-    sendNextionCommand("rest");      // reset the Nextion unit
-    initialization_stage = 1;
-    last_various_things_update = millis();
-  }
-
-  if ((initialization_stage == 1) && ((millis() - last_various_things_update) > 199)){  // wait 200 mS before doing the first servicing
-    last_various_things_update = 0;
-    initialization_stage = 2;
-  }
-
-  if (initialization_stage != 2){return;}
-
+  uint8_t serial_byte = 0;
+  unsigned long last_serial_receive_time = 0;
+  static int nextion_port_buffer_index = 0;
+  static byte nextion_port_buffer[32];
+  char return_string[32];
+  static byte received_backslash = 0;  
 
   #if defined(FEATURE_ELEVATION_CONTROL)
     static int last_elevation = 0;
@@ -4267,12 +4282,106 @@ void service_nextion_display(){
     static unsigned long last_status3_update = 0;
   #endif
 
-  uint8_t serial_byte = 0;
-  unsigned long last_serial_receive_time = 0;
-  static int nextion_port_buffer_index = 0;
-  static byte nextion_port_buffer[32];
-  char return_string[32];
-  static byte received_backslash = 0;
+
+  
+
+  if ((initialization_stage == 0) && (millis() > 500)){
+    nexSerial.begin(NEXTION_SERIAL_BAUD);
+    sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
+    sendNextionCommand("rest");      // reset the Nextion unit
+    initialization_stage = 1;
+    last_various_things_update = millis();
+  }
+
+  if ((initialization_stage == 1) && ((millis() - last_various_things_update) > 299)){  // wait 200 mS before doing the first servicing
+    last_various_things_update = 0;
+    initialization_stage = 2;
+  }
+
+  if (initialization_stage < 2){return;}
+
+  // Update various things
+  if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
+    // System Capabilities
+    #if defined(FEATURE_YAESU_EMULATION)
+      #if defined(OPTION_GS_232B_EMULATION)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
+      #else
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232A; //1
+      #endif
+    #endif
+    #if defined(FEATURE_EASYCOM_EMULATION)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_EASYCOM; //4
+    #endif
+    #if defined(FEATURE_DCU_1_EMULATION)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_DCU_1; //8
+    #endif
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ELEVATION; //16
+    #endif
+    #if defined(FEATURE_CLOCK)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CLOCK;  //32
+    #endif    
+    #if defined(FEATURE_GPS)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GPS;  //64
+    #endif
+    #if defined(FEATURE_MOON_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_MOON;  //128
+    #endif
+    #if defined(FEATURE_SUN_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
+    #endif
+    #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
+    #endif    
+    #if defined(FEATURE_SATELLITE_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
+    #endif    
+    #if defined(LANGUAGE_ENGLISH)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ENGLISH;
+    #endif    
+    #if defined(LANGUAGE_SPANISH)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SPANISH;
+    #endif    
+    #if defined(LANGUAGE_CZECH)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CZECH;
+    #endif    
+    #if defined(LANGUAGE_PORTUGUESE_BRASIL)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PORTUGUESE_BRASIL;
+    #endif        
+    #if defined(LANGUAGE_GERMAN)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GERMAN;
+    #endif
+    #if defined(LANGUAGE_FRENCH)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_FRENCH;
+    #endif            
+  
+
+    strcpy(workstring1,"gSC=");
+    dtostrf(temp, 1, 0, workstring2);
+    strcat(workstring1,workstring2);
+    sendNextionCommand(workstring1);
+
+    // Rotator Controller API Implementation Version
+    sendNextionCommand("vRCAPIv.val=2020050601");
+
+    // Rotator Controller Arduino Code Version
+    strcpy(workstring1,"vRCVersion.txt=\"");
+    strcat(workstring1,CODE_VERSION);
+    strcat(workstring1,"\"");
+    sendNextionCommand(workstring1);
+
+    // gDP - Display decimal places
+    dtostrf(DISPLAY_DECIMAL_PLACES, 1, 0, workstring1);
+    strcpy(workstring2,"gDP=");
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2);     
+
+    last_various_things_update = millis();
+
+    initialization_stage = 3;
+  }
+
 
   // Get incoming commands
   if (nexSerial.available()){
@@ -4582,11 +4691,22 @@ TODO:
     #if defined(FEATURE_PARK)
       switch(park_status){
         case PARK_INITIATED:
-          strcat(workstring1,"PARKING"); 
+          strcat(workstring1,NEXTION_PARKING_STRING); 
+        case PARKED:
+          strcat(workstring1,NEXTION_PARKED_STRING);           
           break;
-        // case PARKED:
-        //   strcat(workstring1,"PARKED"); 
-      }    
+        default:
+          if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
+            strcat(workstring1,NEXTION_OVERLAP_STRING);
+            strcat(workstring1,"\r\n");
+          }
+          break;  
+      }  
+    #else
+      if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
+        strcat(workstring1,"OVERLAP");
+        strcat(workstring1,"\r\n");
+      }        
     #endif
     strcpy(workstring2,"vSS2.txt=\"");
     strcat(workstring2,workstring1);
@@ -4594,98 +4714,32 @@ TODO:
     sendNextionCommand(workstring2);  
     // end - vSS2 - Status String 2
 
-//zzzzzz
-    // vSS3 - Status String 3 - Overlap, Parked Message
-    strcpy(workstring1,"");
-    if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
-      strcat(workstring1,"OVERLAP");
-      strcat(workstring1,"\r\n");
-    }
-    #if defined(FEATURE_PARK)
-      switch(park_status){
-        // case PARK_INITIATED:
-        //   strcat(workstring1,"PARKING"); 
-        //   break;
-        case PARKED:
-          strcat(workstring1,"PARKED"); 
-      }    
-    #endif
-    strcpy(workstring2,"vSS3.txt=\"");
-    strcat(workstring2,workstring1);
-    strcat(workstring2,"\"");
-    sendNextionCommand(workstring2);  
-    // end - vSS3 - Status String 3
+    // // vSS3 - Status String 3 - Overlap, Parked Message
+    // strcpy(workstring1,"");
+    // if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
+    //   strcat(workstring1,"OVERLAP");
+    //   strcat(workstring1,"\r\n");
+    // }
+    // #if defined(FEATURE_PARK)
+    //   switch(park_status){
+    //     // case PARK_INITIATED:
+    //     //   strcat(workstring1,"PARKING"); 
+    //     //   break;
+    //     case PARKED:
+    //       strcat(workstring1,"PARKED"); 
+    //   }    
+    // #endif
+    // strcpy(workstring2,"vSS3.txt=\"");
+    // strcat(workstring2,workstring1);
+    // strcat(workstring2,"\"");
+    // sendNextionCommand(workstring2);  
+    // // end - vSS3 - Status String 3
 
 
     last_statuses_update = millis();
 
   } //if ((millis() - last_statuses_update) > NEXTION_VERY_FREQUENT_UPDATE_MS){
   
-
-
-  // Update various things
-  if ((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
-    // Rotator Controller API Implementation Version
-    sendNextionCommand("vRCAPIv.val=2020050601");
-
-    // Rotator Controller Arduino Code Version
-    strcpy(workstring1,"vRCVersion.txt=\"");
-    strcat(workstring1,CODE_VERSION);
-    strcat(workstring1,"\"");
-    sendNextionCommand(workstring1);
-
-    // gDP - Display decimal places
-    dtostrf(DISPLAY_DECIMAL_PLACES, 1, 0, workstring1);
-    strcpy(workstring2,"gDP=");
-    strcat(workstring2,workstring1);
-    sendNextionCommand(workstring2);     
-
-    // System Capabilities
-    #if defined(FEATURE_YAESU_EMULATION)
-      #if defined(OPTION_GS_232B_EMULATION)
-        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
-      #else
-        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232A; //1
-      #endif
-    #endif
-    #if defined(FEATURE_EASYCOM_EMULATION)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_EASYCOM; //4
-    #endif
-    #if defined(FEATURE_DCU_1_EMULATION)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_DCU_1; //8
-    #endif
-    #if defined(FEATURE_ELEVATION_CONTROL)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ELEVATION; //16
-    #endif
-    #if defined(FEATURE_CLOCK)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CLOCK;  //32
-    #endif    
-    #if defined(FEATURE_GPS)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GPS;  //64
-    #endif
-    #if defined(FEATURE_MOON_TRACKING)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_MOON;  //128
-    #endif
-    #if defined(FEATURE_SUN_TRACKING)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
-    #endif
-    #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
-    #endif    
-    #if defined(FEATURE_SATELLITE_TRACKING)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
-    #endif    
-
-
-    strcpy(workstring1,"gSC=");
-    dtostrf(temp, 1, 0, workstring2);
-    strcat(workstring1,workstring2);
-    sendNextionCommand(workstring1);
-
-    last_various_things_update = millis();
-  }
-
-
     //gX and gY - Cartesian coordinates of heading
     #if defined(FEATURE_ELEVATION_CONTROL)
       if ((azimuth != last_azimuth) || (elevation != last_elevation) || ((millis() - last_cartesian_update) > NEXTION_FREQUENT_UPDATE_MS)){
@@ -4727,14 +4781,11 @@ TODO:
       }
     #endif
 
-
-
-
   // Azimuth
   if (((azimuth != last_azimuth) || ((millis() - last_az_update) > NEXTION_FREQUENT_UPDATE_MS))){
     // zAz
     dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-    strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING); // haven't figured out how the hell to get degrees symbol to display
+    strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
     strcpy(workstring2,"vAz.txt=\"");
     strcat(workstring2,workstring1);
     strcat(workstring2,"\"");
@@ -4772,33 +4823,32 @@ TODO:
 
   }
 
-    // Elevation
-    #if defined(FEATURE_ELEVATION_CONTROL)
-      if ((elevation != last_elevation) || ((millis() - last_el_update) > NEXTION_FREQUENT_UPDATE_MS)){
-        dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
-        strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
-        strcpy(workstring2,"vEl.txt=\"");
-        strcat(workstring2,workstring1);
-        strcat(workstring2,"\"");
-        sendNextionCommand(workstring2);  
+  // Elevation
+  #if defined(FEATURE_ELEVATION_CONTROL)
+    if ((elevation != last_elevation) || ((millis() - last_el_update) > NEXTION_FREQUENT_UPDATE_MS)){
+      dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
+      strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
+      strcpy(workstring2,"vEl.txt=\"");
+      strcat(workstring2,workstring1);
+      strcat(workstring2,"\"");
+      sendNextionCommand(workstring2);  
 
-        // gEl
-        dtostrf(elevation , 1, 0, workstring1);
-        strcpy(workstring2,"gEl=");
-        strcat(workstring2,workstring1);
-        sendNextionCommand(workstring2); 
+      // gEl
+      dtostrf(elevation , 1, 0, workstring1);
+      strcpy(workstring2,"gEl=");
+      strcat(workstring2,workstring1);
+      sendNextionCommand(workstring2); 
 
-        last_elevation = elevation;
-        last_el_update = millis();
-      }
-    #endif
+      last_elevation = elevation;
+      last_el_update = millis();
+    }
+  #endif
 
 
 
 
 // Clock
     #if defined(FEATURE_CLOCK)
-      //update_time();
       if (local_clock_seconds != last_clock_seconds){
         last_clock_seconds = clock_seconds;
         strcpy(workstring1,"vClk.txt=\"");
@@ -4837,11 +4887,10 @@ TODO:
       if ((last_clock_status != clock_status) || (last_gps_sats != gps.satellites()) || ((millis()-last_gps_update) > NEXTION_FREQUENT_UPDATE_MS)){
         if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {
           strcpy(workstring1,"vGPS.txt=\"");
-          strcat(workstring1,GPS_STRING);
-          strcat(workstring1," ");
           dtostrf(gps.satellites(),0,0,workstring2);
           strcat(workstring1,workstring2);
-          strcat(workstring1," Sats");
+          strcat(workstring1," ");
+          strcat(workstring1,NEXTION_GPS_STRING);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);
           last_gps_sats = gps.satellites();
@@ -13002,19 +13051,22 @@ void update_time(){
     case 8:
     case 10:
     case 12:
-      if (clock_days > 31) {
-        clock_days = 1; clock_months++;
+      if (clock_days > 31){
+        clock_days = 1;
+        clock_months++;
       }
       break;
 
     case 2:
-      if ((float(clock_years) / 4.0) == 0.0) {  // do we have a leap year?
+      if (is_a_leap_year(clock_years) == 1){
         if (clock_days > 29) {
-          clock_days = 1; clock_months++;
+          clock_days = 1;
+          clock_months++;
         }
       } else {
-        if (clock_days > 28) {
-          clock_days = 1; clock_months++;
+        if (clock_days > 28){
+          clock_days = 1;
+          clock_months++;
         }
       }
       break;
@@ -13023,31 +13075,28 @@ void update_time(){
     case 6:
     case 9:
     case 11:
-      if (clock_days > 30) {
-        clock_days = 1; clock_months++;
+      if (clock_days > 30){
+        clock_days = 1;
+        clock_months++;
       }
       break;
   } /* switch */
 
-  if (clock_months > 12) {
+  if (clock_months > 12){
     clock_months = 1; clock_years++;
   }
 
   time -= clock_hours * 3600L;
-  clock_minutes  = time / 60L;
+  clock_minutes = time / 60L;
   time -= clock_minutes * 60L;
   clock_seconds = time;
 
-
-
-   current_clock.seconds = clock_seconds;
-   current_clock.minutes = clock_minutes;
-   current_clock.hours = clock_hours;
-   current_clock.day = clock_days;
-   current_clock.month = clock_months;
-   current_clock.year = clock_years;
-
-
+  current_clock.seconds = clock_seconds;
+  current_clock.minutes = clock_minutes;
+  current_clock.hours = clock_hours;
+  current_clock.day = clock_days;
+  current_clock.month = clock_months;
+  current_clock.year = clock_years;
 
   // calculate local time
 
@@ -13078,7 +13127,7 @@ void update_time(){
           local_clock_days = 31;
           break;
         case 2: //February
-          if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
+          if (is_a_leap_year(local_clock_years) == 1){
             local_clock_days = 29;
           } else {
             local_clock_days = 28;
@@ -13114,20 +13163,20 @@ void update_time(){
       case 8:
       case 10:
       case 12:
-        if (local_clock_days > 31) {
+        if (local_clock_days > 31){
           local_clock_days = 1;
           local_clock_months++;
         }
         break;
 
       case 2:
-        if ((float(local_clock_years) / 4.0) == 0.0) {  // do we have a leap year?
-          if (local_clock_days > 29) {
+        if (is_a_leap_year(local_clock_years) == 1){
+          if (local_clock_days > 29){
             local_clock_days = 1; 
             local_clock_months++;
           }
         } else {
-          if (local_clock_days > 28) {
+          if (local_clock_days > 28){
             local_clock_days = 1;
             local_clock_months++;
           }
@@ -13138,7 +13187,7 @@ void update_time(){
       case 6:
       case 9:
       case 11:
-        if (local_clock_days > 30) {
+        if (local_clock_days > 30){
           local_clock_days = 1;
           local_clock_months++;
         }
@@ -15259,7 +15308,7 @@ Not implemented yet:
           dtostrf(minutes,0,0,tempstring2);
           strcat(tempstring,tempstring2);          
           strcat(tempstring,"m");
-          if (minutes > 0){
+          if (seconds > 0){
             dtostrf(seconds,0,0,tempstring2);
             strcat(tempstring,tempstring2);  
             strcat(tempstring,"s");
@@ -17753,18 +17802,10 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     int calc_hours = clock_hours;
     int calc_minutes = clock_minutes;
 
-    // #define AOS_LOS_UNDEF 0
-    // #define IN_AOS 1
-    // #define IN_LOS 2
-    // byte os_state = AOS_LOS_UNDEF;
-
     byte AOS = 0;
     byte LOS = 0;
-
     byte hit_first_event = 0;
-
     byte progress_dots = 0;
-
 
     #define JUST_GETTING_STARTED 0
     #define GET_AOS_THEN_LOS 1
@@ -17772,8 +17813,6 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     #define GOT_AOS_NEED_LOS 3
     #define GOT_LOS_NEED_AOS 4
     #define WE_ARE_DONE 5
-
-
 
     byte aos_and_los_collection_state = JUST_GETTING_STARTED;
 
@@ -18024,38 +18063,227 @@ void run_this_once(){
 
 }
 //-----------------------------------------------------------------------
+#if defined(FEATURE_CLOCK)
+  byte is_a_leap_year(int year){
+
+    if (((year % 4 == 0) && (year % 100 !=0)) || (year % 400 == 0)){
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+#endif 
+//-----------------------------------------------------------------------
+#if defined(FEATURE_CLOCK)
+  byte days_in_month(byte month, int year){
+
+    switch(month){
+      case 1:
+      case 3:
+      case 5:
+      case 7:
+      case 8:
+      case 10:
+      case 12:
+        return 31;
+        break;
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        return 30;
+        break;
+      case 2:
+        if (is_a_leap_year(year) == 1){
+          return 29;
+        } else {
+          return 28;
+        }
+        break;  
+    }
+  }
+
+#endif 
+//-----------------------------------------------------------------------
+
 
 #if defined(FEATURE_CLOCK)
-double difftime(tm * time1,tm * time2,int* days_diff,int* hours_diff,int* minutes_diff,int* seconds_diff){
+void difftime(tm * time1,tm * time2,int* days_diff,int* hours_diff,int* minutes_diff,int* seconds_diff){
 
    // this is   time1   - time2
    //         <future>    <now>
 
 
-  double seconds_diff_secs = (time1->seconds - time2->seconds);
-  double minutes_diff_secs = (time1->minutes - time2->minutes) * 60;
-  double hours_diff_secs = (time1->hours - time2->hours) * 60 * 60;
-  double days_diff_secs = 0;
+  int days_diff_days = 0;
+  int temp = 0;
+//zzzzzz
+
+// this is under construction.  works for dates with a month
+
+  if (time1->year == time2->year){                 // same year
+    if (time1->month == time2->month){             // same year, same month
+      if (time1->day == time2->day){
+        days_diff_days = 0;                        // same year, same month, same day
+      } else {                                     // same year, same month, different day 
+        days_diff_days =  time1->day - time2->day;
+      }    
+    } else {                                       // same year, different month
+      if (time2->month < time1->month){
+        for (int i = time2->month; i < time1->month; i++){  
+          days_diff_days = days_diff_days + days_in_month(i,time1->year);
+        }
+      } else {
+        for (int i = time1->month; i < time2->month; i++){
+          days_diff_days = days_diff_days + days_in_month(i,time2->year);
+        }        
+      }  
+      if (time1->day != time2->day){               // same year, different month, different day
+        if (time1->day < time2->day){
+          days_diff_days =  temp + days_diff_days + time2->day - time1->day;
+        } else {
+          days_diff_days =  temp + days_diff_days - time1->day - time2->day;
+        }
+      }
+    }
+  } else {                                        // different year
+    for (int i = time2->year; i < time1->year; i++){
+      if (is_a_leap_year(i)){
+        temp = temp + 366;
+      } else {
+        temp = temp + 365;
+      }
+    }
+    if (time1->month == time2->month){            // different year, same month
+      if (time1->day == time2->day){              // different year, same month, same day
+        days_diff_days = temp;
+      } else {                                    // different year, same month, different day
+        if (time1->day < time2->day){
+          days_diff_days =  temp + time2->day - time1->day;
+        } else {
+          days_diff_days =  temp - time1->day - time2->day;
+        }
+      }
+    } else {                                      // different year, different month
 
 
-  if (time1->month == time2->month){
-    days_diff_secs = ((double)time1->day - (double)time2->day) * (double)60 * (double)60 * (double)24;
-  } else {
-    //control_port->println("no day match");
-    //TODO: handle a new month
-  }  
 
-  double total_diff_secs = (seconds_diff_secs + minutes_diff_secs + hours_diff_secs + days_diff_secs);
+    }
+  }
+  
 
-  *days_diff = int((double)total_diff_secs/((double)60 * (double)60 * (double)24));
-  total_diff_secs = total_diff_secs - ((double)*days_diff * (double)60 * (double)60 * (double)24);
-  *hours_diff = int((double)total_diff_secs/((double)60 * (double)60));
-  total_diff_secs = total_diff_secs - ((double)*hours_diff * (double)60 * (double)60);
+  
+  
+  // if (time1->year < time2->year) {
+  //     for (int i = time1->year; i < time2->year; i++){
+  //       if (is_a_leap_year(i)){
+  //         temp = temp + 366;
+  //       } else {
+  //         temp = temp + 365;
+  //       }
+  //     }
+      
+  //     if (time1->month == time2->month){
+  //       if (time1->day == time2->day){      // same month, same day but diff year
+  //         days_diff_days = temp;
+  //       }
+  //       else if (time1->day < time2->day)
+  //           days_diff_days = temp + time2->day - time1->day;
+  //       else
+  //           days_diff_days = temp - time1->day - time2->day;
+  //     } else if (time1->month < time2->month){
+  //       for (int i = time1->month; i < time2->month; i++){
+  //         days_diff_days = days_diff_days + days_in_month(i,time2->year);
+  //       }
+  //       if (time1->day == time2->day){      // same day, diff year and diff month
+  //         days_diff_days =  temp + days_diff_days;
+  //       } else {
+  //         if (time1->day < time2->day){
+  //           days_diff_days =  temp + days_diff_days + time2->day - time1->day;
+  //         } else {
+  //           days_diff_days =  temp + days_diff_days - time1->day - time2->day;
+  //         }
+  //       }
+  //     } else {
+  //         for (int i = time2->month; i < time1->month; i++){
+  //           days_diff_days = days_diff_days + days_in_month(i,time2->year);
+  //         }
+              
+  //         if (time1->day == time2->day){
+  //           days_diff_days =  temp - days_diff_days;
+  //         } else {
+  //           if (time2->day < time1->day){
+  //             days_diff_days = temp - days_diff_days + time1->day - time2->day;
+  //           } else {
+  //             days_diff_days =  temp - days_diff_days - time2->day - time1->day;
+  //           }
+  //         }
+  //     }
+  // } else {
+  //     for (int i = time2->year; i< time1->year; i++){
+  //       if (is_a_leap_year(i)){
+  //         temp = temp + 366;
+  //       } else {
+  //         temp = temp + 365;
+  //       }
+  //     }
+      
+  //     if (time1->month == time2->month){
+  //       if (time1->day == time2->day){      // same day, same month but diff year
+  //         days_diff_days = temp;
+  //       } else { 
+  //         if (time2->day < time1->day){
+  //           days_diff_days =  temp + time1->day - time2->day;
+  //         } else {
+  //           days_diff_days = temp - time2->day - time1->day;
+  //         }
+  //       }
+  //     } else {
+  //       if (time2->month < time1->month){
+  //         for(int i = time2->month; i < time1->month; i++)
+  //         days_diff_days = days_diff_days + days_in_month(i,time1->year);
+              
+  //         if (time1->day == time2->day){
+  //           days_diff_days = temp + days_diff_days;
+  //         } else {
+  //           if (time2->day < time1->day){
+  //             days_diff_days = temp + days_diff_days + time1->day - time2->day;
+  //           } else {
+  //             days_diff_days = temp + days_diff_days - time2->day - time1->day;
+  //           }
+  //         }
+  //       }
+  //     } else {
+  //         for (int i = time1->month; i < time2->month; i++){
+  //           days_diff_days = days_diff_days + days_in_month(i,time1->year);
+  //         }
+  //         if (time1->day == time2->day){      // same day, diff year and diff month
+  //           days_diff_days = temp - days_diff_days;
+  //         } else {
+  //           if (time1->day < time2->day){
+  //             days_diff_days = temp - days_diff_days + time2->day - time1->day;
+  //           } else {
+  //             days_diff_days = temp - days_diff_days - time1->day - time2->day;
+  //           }
+  //         }
+  //     }
+  // }
+
+ 
+  double total_diff_secs = (((double)time1->seconds - (double)time2->seconds) 
+                           + ((double)time1->minutes - (double)time2->minutes) * (double)60 
+                           + ((double)time1->hours - (double)time2->hours) * (double)3600 
+                           + ((double)days_diff_days * (double)86400));
+  
+
+  *days_diff = int((double)total_diff_secs/((double)86400));
+  total_diff_secs = total_diff_secs - ((double)*days_diff * (double)86400);
+  *hours_diff = int((double)total_diff_secs/((double)3600));
+  total_diff_secs = total_diff_secs - ((double)*hours_diff * (double)3600);
   *minutes_diff = int((double)total_diff_secs/(double)(60));
   total_diff_secs = total_diff_secs - ((double)*minutes_diff * (double)60);  
   *seconds_diff = total_diff_secs;
 
-  return (seconds_diff_secs + minutes_diff_secs + hours_diff_secs + days_diff_secs);
+  //return (seconds_diff_secs + minutes_diff_secs + hours_diff_secs + days_diff_secs);
 
 
 
