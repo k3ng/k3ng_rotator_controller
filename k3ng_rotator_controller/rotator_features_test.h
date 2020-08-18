@@ -17,7 +17,7 @@
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 // #define FEATURE_DCU_1_EMULATION            // DCU-1 protocol emulation on control port
 
-#define FEATURE_MOON_TRACKING
+// #define FEATURE_MOON_TRACKING
 // #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
@@ -29,6 +29,7 @@
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
 #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+#define FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
