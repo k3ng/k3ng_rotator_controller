@@ -732,6 +732,33 @@
         FEATURE_SATELLITE_TRACKING
           The \% command (print current satellite AOS and LOS times) now runs asynchronously in the background
 
+      2020.08.15.02
+        FEATURE_CLOCK
+          Refactoring of the variables for various clocks into structs to make things look neater 
+
+      2020.08.16.01
+        FEATURE_NEXTION_DISPLAY
+          Improved initialization; we now look for 0xFF 0xFF 0xFF from the Nextion at boot up and then get to work.
+        FEATURE_SATELLITE_TRACKING
+          The \~ command (print current satellite status) can now have a periodic print out (example: \~5 = print status every 5 seconds) 
+        Refactored process_backslash_command() code to recover a boatload of SRAM (local variable space).  Yeahhh.   
+
+      2020.08.17.01  
+        FEATURE_NEXTION_DISPLAY
+          Removed languages from gSC API variable and added two new bit values:
+            PARK 2048
+            AUTOPARK 4096
+          Create new API variable gL for language
+            ENGLISH 1
+            SPANISH 2
+            CZECH 4
+            PORTUGUESE_BRASIL 8
+            GERMAN 16
+            FRENCH 32
+        FEATURE_SATELLITE_TRACKING
+          Created FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS
+            Created \& command which prints out the next AOS and LOS for each satellite    
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -743,7 +770,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.15.01"
+#define CODE_VERSION "2020.08.17.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -917,14 +944,11 @@
 /*----------------------- variables -------------------------------------*/
 
 byte incoming_serial_byte = 0;
-
 byte reset_the_unit = 0;
-
 float azimuth = 0;
 float raw_azimuth = 0;
 float target_azimuth = 0;
 float target_raw_azimuth = 0;
-
 byte control_port_buffer[COMMAND_BUFFER_SIZE];
 int control_port_buffer_index = 0;
 byte az_state = IDLE;
@@ -937,20 +961,23 @@ byte brake_az_engaged = 0;
 byte brake_el_engaged = 0;
 byte configuration_dirty = 0;
 unsigned long last_serial_receive_time = 0;
-
 byte az_slowstart_active = AZ_SLOWSTART_DEFAULT;
 byte az_slowdown_active = AZ_SLOWDOWN_DEFAULT;
-
 byte az_request = 0;
 float az_request_parm = 0;
 byte az_request_queue_state = NONE;
-
 unsigned long az_slowstart_start_time = 0;
 byte az_slow_start_step = 0;
 unsigned long az_last_step_time = 0;
 byte az_slow_down_step = 0;
 unsigned long az_timed_slow_down_start_time = 0;
 byte backslash_command = 0;
+byte normal_az_speed_voltage = 0;
+byte current_az_speed_voltage = 0;
+double latitude = DEFAULT_LATITUDE;
+double longitude = DEFAULT_LONGITUDE;
+double altitude_m = DEFAULT_ALTITUDE_M;
+DebugClass debug;
 
 struct config_t {
   byte magic_number;
@@ -979,8 +1006,6 @@ struct config_t {
 } configuration;
 
 
-
-
 #ifdef FEATURE_TIMED_BUFFER
   int timed_buffer_azimuths[TIMED_INTERVAL_ARRAY_SIZE];
   int timed_buffer_number_entries_loaded = 0;
@@ -990,13 +1015,9 @@ struct config_t {
   byte timed_buffer_status = EMPTY;
 #endif // FEATURE_TIMED_BUFFER
 
-byte normal_az_speed_voltage = 0;
-byte current_az_speed_voltage = 0;
-
 #ifdef FEATURE_ELEVATION_CONTROL
   float elevation = 0;
   float target_elevation = 0;
-
   byte el_request = 0;
   float el_request_parm = 0;
   byte el_request_queue_state = NONE;
@@ -1009,22 +1030,14 @@ byte current_az_speed_voltage = 0;
   unsigned long el_timed_slow_down_start_time = 0;
   byte normal_el_speed_voltage = 0;
   byte current_el_speed_voltage = 0;
-
-  //int display_elevation = 0;
   byte el_state = IDLE;
   int analog_el = 0;
-
   unsigned long el_last_rotate_initiation = 0;
+  byte elevation_button_was_pushed = 0;
   #ifdef FEATURE_TIMED_BUFFER
     int timed_buffer_elevations[TIMED_INTERVAL_ARRAY_SIZE];
-  #endif // FEATURE_TIMED_BUFFER
-  byte elevation_button_was_pushed = 0;
+  #endif // FEATURE_TIMED_BUFFER  
 #endif // FEATURE_ELEVATION_CONTROL
-
-#if defined(FEATURE_LCD_DISPLAY)
-  //byte push_lcd_update = 0;
-  byte perform_screen_redraw = 0;
-#endif // FEATURE_LCD_DISPLAY
 
 #ifdef FEATURE_ROTARY_ENCODER_SUPPORT
   #ifdef OPTION_ENCODER_HALF_STEP_MODE      // Use the half-step state table (emits a code at 00 and 11)
@@ -1034,21 +1047,12 @@ byte current_az_speed_voltage = 0;
       { 0x3,  0x3,  0x4, 0x10 }, { 0x3,  0x5,  0x3, 0x20 }
     };
   #else                                      // Use the full-step state table (emits a code at 00 only)
-    // const unsigned char ttable[7][4] = {                   // corrected 2016-09-08 
-    //   { 0x0, 0x2, 0x4, 0x0  }, { 0x3, 0x0, 0x1, 0x10 },
-    //   { 0x3, 0x2, 0x0, 0x0  }, { 0x3, 0x2, 0x1, 0x0  },
-    //   { 0x6, 0x0, 0x4, 0x0  }, { 0x6, 0x5, 0x0, 0x10 },
-    //   { 0x6, 0x5, 0x4, 0x0  },
-    // };
-
     const unsigned char ttable[7][4] = {
       {0x0, 0x2, 0x4,  0x0}, {0x3, 0x0, 0x1, 0x10},
       {0x3, 0x2, 0x0,  0x0}, {0x3, 0x2, 0x1,  0x0},
       {0x6, 0x0, 0x4,  0x0}, {0x6, 0x5, 0x0, 0x20},
       {0x6, 0x5, 0x4,  0x0},
     };
-
-
   #endif // OPTION_ENCODER_HALF_STEP_MODE
 
   #ifdef FEATURE_AZ_PRESET_ENCODER            // Rotary Encoder State Tables
@@ -1105,7 +1109,6 @@ byte current_az_speed_voltage = 0;
   #endif
 #endif //FEATURE_MASTER_WITH_SERIAL_SLAVE
 
-
 #ifdef DEBUG_POSITION_PULSE_INPUT
   volatile unsigned long az_pulse_counter = 0;
   volatile unsigned long el_pulse_counter = 0;
@@ -1119,6 +1122,7 @@ byte current_az_speed_voltage = 0;
 #endif // FEATURE_PARK
 
 #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+  volatile byte read_azimuth_lock = 0;
   volatile long az_incremental_encoder_position = 0;
   volatile byte az_3_phase_encoder_last_phase_a_state = 0;
   volatile byte az_3_phase_encoder_last_phase_b_state = 0;
@@ -1131,18 +1135,11 @@ byte current_az_speed_voltage = 0;
   volatile long el_incremental_encoder_position = 0;
   volatile byte el_3_phase_encoder_last_phase_a_state = 0;
   volatile byte el_3_phase_encoder_last_phase_b_state = 0;
+  volatile byte read_elevation_lock = 0;
   #ifdef DEBUG_EL_POSITION_INCREMENTAL_ENCODER
     volatile long el_position_incremental_encoder_interrupt = 0;
   #endif // DEBUG_EL_POSITION_INCREMENTAL_ENCODER
 #endif // FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-
-#ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-  volatile byte read_azimuth_lock = 0;
-#endif
-
-#ifdef FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-  volatile byte read_elevation_lock = 0;
-#endif
 
 #if defined(FEATURE_AZ_POSITION_INCREMENTAL_ENCODER) || defined(FEATURE_EL_POSITION_INCREMENTAL_ENCODER)
   volatile byte service_rotation_lock = 0;
@@ -1151,12 +1148,6 @@ byte current_az_speed_voltage = 0;
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(FEATURE_CLOCK) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
   CONTROL_PORT_SERIAL_PORT_CLASS * control_port;
 #endif
-
-//#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) || defined(FEATURE_SATELLITE_TRACKING)
-  double latitude = DEFAULT_LATITUDE;
-  double longitude = DEFAULT_LONGITUDE;
-  double altitude_m = DEFAULT_ALTITUDE_M;
-//#endif
 
 #ifdef FEATURE_MOON_TRACKING
   byte moon_tracking_active = 0;
@@ -1176,25 +1167,7 @@ byte current_az_speed_voltage = 0;
 #endif // FEATURE_SUN_TRACKING
 
 #ifdef FEATURE_CLOCK
-  unsigned int clock_years = 0;
-  byte clock_months = 0;
-  byte clock_days = 0;
-  byte clock_hours = 0;
-  byte clock_minutes = 0;
-  byte clock_seconds = 0;
-  unsigned int local_clock_years = 0;
-  byte local_clock_months = 0;
-  byte local_clock_days = 0;
-  byte local_clock_hours = 0;
-  byte local_clock_minutes = 0;
-  byte local_clock_seconds = 0;
 
-  int clock_year_set = 2020;
-  byte clock_month_set = 1;
-  byte clock_day_set = 1;
-  byte clock_sec_set = 0;
-  unsigned long clock_hour_set = 0;
-  unsigned long clock_min_set = 0;
   unsigned long millis_at_last_calibration = 0;
 
   struct tm {
@@ -1206,7 +1179,7 @@ byte current_az_speed_voltage = 0;
     unsigned int year;
   };
 
-  tm current_clock, temp_datetime;
+  tm current_clock, local_clock, temp_datetime, set_clock;
 
 #endif // FEATURE_CLOCK
 
@@ -1278,9 +1251,8 @@ byte current_az_speed_voltage = 0;
   float el_a2_encoder = 0;
 #endif //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER 
 
-DebugClass debug;
-
 #if defined(FEATURE_LCD_DISPLAY)
+  byte perform_screen_redraw = 0;
   K3NGdisplay k3ngdisplay(LCD_COLUMNS,LCD_ROWS,LCD_UPDATE_TIME);
 #endif   
 
@@ -1385,14 +1357,11 @@ DebugClass debug;
   unsigned long last_activity_time_autopark = 0;
 #endif  
 
-
 #if defined(FEATURE_SATELLITE_TRACKING)
-
   #include <P13.h>
   #define tle_file_eeprom_memory_area_start (sizeof(configuration)+5)
   #define SATELLITE_NAME_LENGTH 17
   #define SATELLITE_LIST_LENGTH 35
-
   double current_satellite_elevation;
   double current_satellite_azimuth;      
   double current_satellite_longitude;
@@ -1400,18 +1369,12 @@ DebugClass debug;
   unsigned int tle_file_eeprom_memory_area_end;
   byte satellite_tracking_active = 0;
   byte satellite_visible = 0;
-
-  tm current_satellite_next_aos, current_satellite_next_los;
-
-
-
-
-
   float current_satellite_next_aos_az = 0;
   float current_satellite_next_aos_el = 0;
-
   float current_satellite_next_los_az = 0;
   float current_satellite_next_los_el = 0;
+  tm current_satellite_next_aos, current_satellite_next_los;
+  byte periodic_satellite_status = 0;
 
   Satellite sat, calc_sat;
   Observer obs("my_location", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M);
@@ -1419,8 +1382,10 @@ DebugClass debug;
 
   struct satellite_list{
     char name[SATELLITE_NAME_LENGTH];
-    // tm next_aos;
-    // tm next_los;
+    #if defined FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS
+      tm next_aos;
+      tm next_los;
+    #endif
   } satellite[SATELLITE_LIST_LENGTH];
 
 #endif //FEATURE_SATELLITE_TRACKING
@@ -1650,7 +1615,10 @@ void loop() {
 
   #if defined(FEATURE_SATELLITE_TRACKING)
     service_satellite_tracking(0);
-    service_calculate_satellite_upcoming_aos_and_los(0,0,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_SERVICE,SERVICE_CALC_DO_NOT_PRINT_DONE);
+    service_calculate_satellite_upcoming_aos_and_los(CURRENT_SATELLITE,0,0,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_SERVICE,SERVICE_CALC_DO_NOT_PRINT_DONE);
+    #if defined(FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS)
+      service_calculate_multi_satellite_upcoming_aos_and_los(SERVICE_CALC_SERVICE);
+    #endif
   #endif
 
   check_for_reset_flag();
@@ -4241,6 +4209,8 @@ void service_nextion_display(){
   static byte nextion_port_buffer[32];
   char return_string[32];
   static byte received_backslash = 0;  
+  byte nextion_i_am_alive_string[4];
+  static byte i_am_alive_bytes_received = 0;
 
   #if defined(FEATURE_ELEVATION_CONTROL)
     static int last_elevation = 0;
@@ -4287,22 +4257,71 @@ void service_nextion_display(){
   #endif
 
 
-  
-
   if ((initialization_stage == 0) && (millis() > 500)){
     nexSerial.begin(NEXTION_SERIAL_BAUD);
     sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
     sendNextionCommand("rest");      // reset the Nextion unit
     initialization_stage = 1;
     last_various_things_update = millis();
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      debug.println("\r\nservice_nextion_display: init -> 1");
+    #endif    
   }
 
-  if ((initialization_stage == 1) && ((millis() - last_various_things_update) > 299)){  // wait 200 mS before doing the first servicing
-    last_various_things_update = 0;
-    initialization_stage = 2;
+  nextion_i_am_alive_string[0] = 255;
+  nextion_i_am_alive_string[1] = 255;
+  nextion_i_am_alive_string[2] = 255;
+  nextion_i_am_alive_string[3] = 0;
+
+  if (initialization_stage == 1){  // look for I'm alive bytes from Nextion
+    if (nexSerial.available()){
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.print("\r\nservice_nextion_display: recv:");
+      #endif
+  
+      serial_byte = nexSerial.read();  
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.write(serial_byte);
+        debug.print(":");
+        debug.print(serial_byte);
+      #endif            
+      if (i_am_alive_bytes_received < 254){  // we're looking for the i am alive bytes from the Nextion
+        if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
+          i_am_alive_bytes_received++;
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.println(" match");
+          #endif             
+          if (nextion_i_am_alive_string[i_am_alive_bytes_received] == 0){  // a null is the end of the nextion_i_am_alive_string char[]
+            i_am_alive_bytes_received = 254;       
+          }         
+        } else {
+          i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.println(" no match");
+          #endif              
+        }
+      }
+      
+    }
+    if (i_am_alive_bytes_received == 254){   // we got the i am alive bytes from the Nextion
+      initialization_stage = 2;
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.println("\r\nservice_nextion_display: init -> 2");
+      #endif            
+    }
   }
 
-  if (initialization_stage < 2){return;}
+  
+  // if ((initialization_stage == 1) && ((millis() - last_various_things_update) > 299)){  // wait 200 mS before doing the first servicing
+  //   last_various_things_update = 0;
+  //   initialization_stage = 2;
+  // }
+
+
+
+
+
+  if (initialization_stage < 2){return;}  // we have initialized yet.  come back later.
 
   // Update various things
   if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
@@ -4341,6 +4360,21 @@ void service_nextion_display(){
     #if defined(FEATURE_SATELLITE_TRACKING)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
     #endif    
+    #if defined(FEATURE_SATELLITE_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PARK;  //2048
+    #endif 
+    #if defined(FEATURE_SATELLITE_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUTOPARK;  //4096
+    #endif 
+
+          
+
+    strcpy(workstring1,"gSC=");
+    dtostrf(temp, 1, 0, workstring2);
+    strcat(workstring1,workstring2);
+    sendNextionCommand(workstring1);
+
+
     #if defined(LANGUAGE_ENGLISH)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ENGLISH;
     #endif    
@@ -4358,10 +4392,9 @@ void service_nextion_display(){
     #endif
     #if defined(LANGUAGE_FRENCH)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_FRENCH;
-    #endif            
-  
+    #endif  
 
-    strcpy(workstring1,"gSC=");
+    strcpy(workstring1,"gL=");
     dtostrf(temp, 1, 0, workstring2);
     strcat(workstring1,workstring2);
     sendNextionCommand(workstring1);
@@ -4853,33 +4886,33 @@ TODO:
 
 // Clock
     #if defined(FEATURE_CLOCK)
-      if (local_clock_seconds != last_clock_seconds){
-        last_clock_seconds = clock_seconds;
+      if (local_clock.seconds != last_clock_seconds){
+        last_clock_seconds = current_clock.seconds;
         strcpy(workstring1,"vClk.txt=\"");
         #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-          if (local_clock_hours < 10) {
+          if (local_clock.hours < 10) {
             strcat(workstring1, "0");
-            dtostrf(local_clock_hours, 0, 0, workstring2);
+            dtostrf(local_clock.hours, 0, 0, workstring2);
             strcat(workstring1,workstring2); 
           } else { 
-            dtostrf(local_clock_hours, 0, 0, workstring2);
+            dtostrf(local_clock.hours, 0, 0, workstring2);
             strcat(workstring1,workstring2);
           }    
         #else    
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcat(workstring1,workstring2);
         #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         strcat(workstring1,":");
-        if (local_clock_minutes < 10) {
+        if (local_clock.minutes < 10) {
           strcat(workstring1, "0");
         }
-        dtostrf(local_clock_minutes, 0, 0, workstring2);
+        dtostrf(local_clock.minutes, 0, 0, workstring2);
         strcat(workstring1,workstring2);
         strcat(workstring1,":");
-        if (local_clock_seconds < 10) {
+        if (local_clock.seconds < 10) {
           strcat(workstring1, "0");
         }
-        dtostrf(local_clock_seconds, 0, 0, workstring2);
+        dtostrf(local_clock.seconds, 0, 0, workstring2);
         strcat(workstring1,workstring2);
         strcat(workstring1,"\"");
         sendNextionCommand(workstring1);         
@@ -5571,29 +5604,29 @@ void update_lcd_display(){
     if (!row_override[LCD_HHMMSS_CLOCK_ROW]){
       //update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (local_clock_hours < 10) {
+        if (local_clock.hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else    
-        dtostrf(local_clock_hours, 0, 0, workstring2);
+        dtostrf(local_clock.hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (local_clock_minutes < 10) {
+      if (local_clock.minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock.minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring,":");
-      if (local_clock_seconds < 10) {
+      if (local_clock.seconds < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_seconds, 0, 0, workstring2);
+      dtostrf(local_clock.seconds, 0, 0, workstring2);
       strcat(workstring,workstring2);
       if (LCD_HHMMSS_CLOCK_POSITION == LEFT){
         k3ngdisplay.print_left_fixed_field_size(workstring,LCD_HHMMSS_CLOCK_ROW-1,8);
@@ -5604,8 +5637,8 @@ void update_lcd_display(){
       if (LCD_HHMMSS_CLOCK_POSITION == CENTER){
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HHMMSS_CLOCK_ROW-1,8);
       }    
-      if (last_clock_seconds != clock_seconds) {force_display_update_now = 1;}
-      last_clock_seconds = clock_seconds;
+      if (last_clock_seconds != current_clock.seconds) {force_display_update_now = 1;}
+      last_clock_seconds = current_clock.seconds;
     }
   #endif //defined(OPTION_DISPLAY_HHMMSS_CLOCK) && defined(FEATURE_CLOCK)
 
@@ -5614,23 +5647,23 @@ void update_lcd_display(){
     if (!row_override[LCD_HHMM_CLOCK_ROW]){
       //update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (local_clock_hours < 10) {
+        if (local_clock.hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }   
       #else    
-        dtostrf(local_clock_hours, 0, 0, workstring2);
+        dtostrf(local_clock.hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (local_clock_minutes < 10) {
+      if (local_clock.minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock.minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       if (LCD_HHMM_CLOCK_POSITION == LEFT){
         k3ngdisplay.print_left_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
@@ -5917,23 +5950,23 @@ void update_lcd_display(){
       //update_time();
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (local_clock_hours < 10) {
+        if (local_clock.hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else          
-      dtostrf(local_clock_hours, 0, 0, workstring2);
+      dtostrf(local_clock.hours, 0, 0, workstring2);
       strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (local_clock_minutes < 10) {
+      if (local_clock.minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock.minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       switch (LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION){
         case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
@@ -5958,29 +5991,29 @@ void update_lcd_display(){
     if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
       //update_time();
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
-        if (local_clock_hours < 10) {
+        if (local_clock.hours < 10) {
           strcpy(workstring, "0");
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcat(workstring,workstring2); 
         } else { 
-          dtostrf(local_clock_hours, 0, 0, workstring2);
+          dtostrf(local_clock.hours, 0, 0, workstring2);
           strcpy(workstring,workstring2);
         }    
       #else    
-        dtostrf(local_clock_hours, 0, 0, workstring2);
+        dtostrf(local_clock.hours, 0, 0, workstring2);
         strcpy(workstring,workstring2);
       #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
       strcat(workstring,":");
-      if (local_clock_minutes < 10) {
+      if (local_clock.minutes < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_minutes, 0, 0, workstring2);
+      dtostrf(local_clock.minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring,":");
-      if (local_clock_seconds < 10) {
+      if (local_clock.seconds < 10) {
         strcat(workstring, "0");
       }
-      dtostrf(local_clock_seconds, 0, 0, workstring2);
+      dtostrf(local_clock.seconds, 0, 0, workstring2);
       strcat(workstring,workstring2);
       strcat(workstring," ");
       strcat(workstring,coordinates_to_maidenhead(latitude,longitude));
@@ -5989,8 +6022,8 @@ void update_lcd_display(){
         case RIGHT: k3ngdisplay.print_right_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
         case CENTER: k3ngdisplay.print_center_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
       }
-      if (last_clock_seconds_clock_and_maidenhead != local_clock_seconds) {force_display_update_now = 1;}
-      last_clock_seconds_clock_and_maidenhead = local_clock_seconds;
+      if (last_clock_seconds_clock_and_maidenhead != local_clock.seconds) {force_display_update_now = 1;}
+      last_clock_seconds_clock_and_maidenhead = local_clock.seconds;
     }
 
   #endif //defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
@@ -6103,9 +6136,9 @@ void update_lcd_display(){
     if (!row_override[LCD_BIG_CLOCK_ROW]){    
       //update_time();
       k3ngdisplay.print_center_entire_row(timezone_modified_clock_string(),LCD_BIG_CLOCK_ROW-1,0);
-      if (big_clock_last_clock_seconds != clock_seconds) {
+      if (big_clock_last_clock_seconds != current_clock.seconds) {
         force_display_update_now = 1;
-        big_clock_last_clock_seconds = clock_seconds;
+        big_clock_last_clock_seconds = current_clock.seconds;
       }
     }
   #endif //defined(OPTION_DISPLAY_BIG_CLOCK) && defined(FEATURE_CLOCK)
@@ -6488,7 +6521,7 @@ void write_settings_to_eeprom(){
 #endif //FEATURE_SATELLITE_TRACKING
 // --------------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-  byte pull_satellite_tle_and_activate(char* satellite_to_find,byte verbose){
+  byte pull_satellite_tle_and_activate(char* satellite_to_find,byte verbose,byte where_to_activate_it){
 
     // returns
     // 1 = found it
@@ -6516,10 +6549,6 @@ void write_settings_to_eeprom(){
       }
     }
 
-//control_port->print(alternate_satellite_search_string);
-//zzzzzz
-//todo: strfuzzycmp()
-
     while(!stop_looping2){
 
       get_line_from_tle_file_eeprom(NULL,1);
@@ -6535,19 +6564,19 @@ void write_settings_to_eeprom(){
                  ((pass == 1) && (strcmp(tle_line1,alternate_satellite_search_string) == 0)) || 
                  ((pass == 2) && (strncmp(tle_line1,satellite_to_find,4) == 0))
                  ){
-              if (verbose){
-                control_port->println("Found it! :-)");
+              if (verbose == _VERBOSE_){
+                control_port->println(F("Found it! :-)"));
               }
               strcpy(satellite_to_find,tle_line1);
-              if (verbose){   
+              if (verbose == _VERBOSE_){   
                 control_port->println(tle_line1);
               }              
               get_line_from_tle_file_eeprom(tle_line1,0);
-              if (verbose){
+              if (verbose == _VERBOSE_){
                 control_port->println(tle_line1);
               }
               get_line_from_tle_file_eeprom(tle_line2,0);
-              if (verbose){
+              if (verbose == _VERBOSE_){
                 control_port->println(tle_line2);  
               }
               stop_looping1 = 1; 
@@ -6583,18 +6612,22 @@ void write_settings_to_eeprom(){
       if ((tle_line2[33] != ' ') || (tle_line2[37] != '.') || (tle_line2[42] != ' ') || (tle_line2[46] != '.')  || (tle_line2[51] != ' ') || (tle_line2[54] != '.')){invalid = 1;}
 
       if (!invalid){
-        load_satellite_tle(satellite_to_find,tle_line1,tle_line2,0);  
-        strcpy(configuration.current_satellite,sat.name);
-        configuration_dirty = 1; 
+        if (where_to_activate_it == LOAD_INTO_CURRENT_SATELLITE){
+          load_satellite_tle(satellite_to_find,tle_line1,tle_line2,DO_NOT_LOAD_HARDCODED_TLE,LOAD_INTO_CURRENT_SATELLITE);  
+          strcpy(configuration.current_satellite,sat.name);
+          configuration_dirty = 1; 
+        } else {
+          load_satellite_tle(satellite_to_find,tle_line1,tle_line2,DO_NOT_LOAD_HARDCODED_TLE,LOAD_INTO_CALC_SATELLITE); 
+        }
         return 1;  
       } else {
-        if (verbose){
-          control_port->println("TLE corrupt :-(");
+        if (verbose == _VERBOSE_){
+          control_port->println(F("TLE corrupt :-("));
         }
       }
     } else {
-      if (verbose){
-        control_port->println("Not found :-(");
+      if (verbose == _VERBOSE_){
+        control_port->println(F("Not found :-("));
       }
     }
     return(0);    
@@ -9905,6 +9938,15 @@ void initialize_peripherals(){
      TWBR = ((F_CPU / SET_I2C_BUS_SPEED) - 16) / 2;
   #endif
 
+  #ifdef FEATURE_CLOCK
+    current_clock.year = CLOCK_DEFAULT_YEAR_AT_BOOTUP;
+    current_clock.month = CLOCK_DEFAULT_MONTH_AT_BOOTUP;
+    current_clock.day = CLOCK_DEFAULT_DAY_AT_BOOTUP;
+    current_clock.hours = CLOCK_DEFAULT_HOURS_AT_BOOTUP;
+    current_clock.minutes = CLOCK_DEFAULT_MINUTES_AT_BOOTUP;
+    current_clock.seconds = CLOCK_DEFAULT_SECONDS_AT_BOOTUP;
+  #endif
+
 
 } /* initialize_peripherals */
 
@@ -11694,12 +11736,12 @@ void service_remote_communications_incoming_buffer(){
                 (temp_minute >= 0) && (temp_minute < 60) &&
                 (temp_sec >= 0) && (temp_sec < 60) ) {
 
-              clock_year_set = temp_year;
-              clock_month_set = temp_month;
-              clock_day_set = temp_day;
-              clock_hour_set = temp_hour;
-              clock_min_set = temp_minute;
-              clock_sec_set = temp_sec;
+              set_clock.year = temp_year;
+              set_clock.month = temp_month;
+              set_clock.day = temp_day;
+              set_clock.hours = temp_hour;
+              set_clock.minutes = temp_minute;
+              set_clock.seconds = temp_sec;
               millis_at_last_calibration = millis();
               #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
               debug.println("service_remote_communications_incoming_buffer: clock synced to slave clock");
@@ -12796,13 +12838,13 @@ void update_sun_position(){
     service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_UPDATE_SUN_POSITION);
   #endif      
 
-  c_time.iYear = clock_years;
-  c_time.iMonth = clock_months;
-  c_time.iDay = clock_days;
+  c_time.iYear = current_clock.year;
+  c_time.iMonth = current_clock.month;
+  c_time.iDay = current_clock.day;
 
-  c_time.dHours = clock_hours;
-  c_time.dMinutes = clock_minutes;
-  c_time.dSeconds = clock_seconds;
+  c_time.dHours = current_clock.hours;
+  c_time.dMinutes = current_clock.minutes;
+  c_time.dSeconds = current_clock.seconds;
 
   c_loc.dLongitude = longitude;
   c_loc.dLatitude  = latitude;
@@ -12843,7 +12885,7 @@ void update_sun_position(){
 
     double RA, Dec, topRA, topDec, LST, HA, dist;
 
-    moon2(clock_years, clock_months, clock_days, (clock_hours + (clock_minutes / 60.0) + (clock_seconds / 3600.0)), longitude, latitude, &RA, &Dec, &topRA, &topDec, &LST, &HA, &moon_azimuth, &moon_elevation, &dist);
+    moon2(current_clock.year, current_clock.month, current_clock.day, (current_clock.hours + (current_clock.minutes / 60.0) + (current_clock.seconds / 3600.0)), longitude, latitude, &RA, &Dec, &topRA, &topDec, &LST, &HA, &moon_azimuth, &moon_elevation, &dist);
 
 
     #ifdef DEBUG_PROCESSES
@@ -12928,38 +12970,38 @@ char * timezone_modified_clock_string(){
   char temp_string[16] = "";
 
 
-  dtostrf(local_clock_years, 0, 0, temp_string);
+  dtostrf(local_clock.year, 0, 0, temp_string);
   strcpy(return_string, temp_string);
   strcat(return_string, "-");
-  if (local_clock_months < 10) {
+  if (local_clock.month < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(local_clock_months, 0, 0, temp_string);
+  dtostrf(local_clock.month, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, "-");
-  if (local_clock_days < 10) {
+  if (local_clock.day < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(local_clock_days, 0, 0, temp_string);
+  dtostrf(local_clock.day, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, " ");
 
-  if (local_clock_hours < 10) {
+  if (local_clock.hours < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(local_clock_hours, 0, 0, temp_string);
+  dtostrf(local_clock.hours, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, ":");
-  if (local_clock_minutes < 10) {
+  if (local_clock.minutes < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(local_clock_minutes, 0, 0, temp_string);
+  dtostrf(local_clock.minutes, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, ":");
-  if (local_clock_seconds < 10) {
+  if (local_clock.seconds < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(local_clock_seconds, 0, 0, temp_string);
+  dtostrf(local_clock.seconds, 0, 0, temp_string);
   strcat(return_string, temp_string);
   if (configuration.clock_timezone_offset == 0){
     strcat(return_string,"Z");
@@ -12978,38 +13020,38 @@ char * zulu_clock_string(){
   char temp_string[16] = "";
 
 
-  dtostrf(clock_years, 0, 0, temp_string);
+  dtostrf(current_clock.year, 0, 0, temp_string);
   strcpy(return_string, temp_string);
   strcat(return_string, "-");
-  if (clock_months < 10) {
+  if (current_clock.month < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_months, 0, 0, temp_string);
+  dtostrf(current_clock.month, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, "-");
-  if (clock_days < 10) {
+  if (current_clock.day < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_days, 0, 0, temp_string);
+  dtostrf(current_clock.day, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, " ");
 
-  if (clock_hours < 10) {
+  if (current_clock.hours < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_hours, 0, 0, temp_string);
+  dtostrf(current_clock.hours, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, ":");
-  if (clock_minutes < 10) {
+  if (current_clock.minutes < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_minutes, 0, 0, temp_string);
+  dtostrf(current_clock.minutes, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string, ":");
-  if (clock_seconds < 10) {
+  if (current_clock.seconds < 10) {
     strcat(return_string, "0");
   }
-  dtostrf(clock_seconds, 0, 0, temp_string);
+  dtostrf(current_clock.seconds, 0, 0, temp_string);
   strcat(return_string, temp_string);
   strcat(return_string,"Z");
   return return_string;
@@ -13036,16 +13078,16 @@ void update_time(){
 
   // calculate UTC
 
-  unsigned long time = (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
+  unsigned long time = (3600L * set_clock.hours) + (60L * set_clock.minutes) + set_clock.seconds + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
 
-  clock_years = clock_year_set;
-  clock_months = clock_month_set;
-  clock_days = time / 86400L;
-  time -= clock_days * 86400L;
-  clock_days += clock_day_set;
-  clock_hours = time / 3600L;
+  current_clock.year = set_clock.year;
+  current_clock.month = set_clock.month;
+  current_clock.day = time / 86400L;
+  time -= current_clock.day * 86400L;
+  current_clock.day += set_clock.day;
+  current_clock.hours = time / 3600L;
 
-  switch (clock_months) {
+  switch (current_clock.month) {
 
     case 1:
     case 3:
@@ -13054,22 +13096,22 @@ void update_time(){
     case 8:
     case 10:
     case 12:
-      if (clock_days > 31){
-        clock_days = 1;
-        clock_months++;
+      if (current_clock.day > 31){
+        current_clock.day = 1;
+        current_clock.month++;
       }
       break;
 
     case 2:
-      if (is_a_leap_year(clock_years) == 1){
-        if (clock_days > 29) {
-          clock_days = 1;
-          clock_months++;
+      if (is_a_leap_year(current_clock.year) == 1){
+        if (current_clock.day > 29) {
+          current_clock.day = 1;
+          current_clock.month++;
         }
       } else {
-        if (clock_days > 28){
-          clock_days = 1;
-          clock_months++;
+        if (current_clock.day > 28){
+          current_clock.day = 1;
+          current_clock.month++;
         }
       }
       break;
@@ -13078,47 +13120,40 @@ void update_time(){
     case 6:
     case 9:
     case 11:
-      if (clock_days > 30){
-        clock_days = 1;
-        clock_months++;
+      if (current_clock.day > 30){
+        current_clock.day = 1;
+        current_clock.month++;
       }
       break;
   } /* switch */
 
-  if (clock_months > 12){
-    clock_months = 1; clock_years++;
+  if (current_clock.month > 12){
+    current_clock.month = 1; current_clock.year++;
   }
 
-  time -= clock_hours * 3600L;
-  clock_minutes = time / 60L;
-  time -= clock_minutes * 60L;
-  clock_seconds = time;
-
-  current_clock.seconds = clock_seconds;
-  current_clock.minutes = clock_minutes;
-  current_clock.hours = clock_hours;
-  current_clock.day = clock_days;
-  current_clock.month = clock_months;
-  current_clock.year = clock_years;
+  time -= current_clock.hours * 3600L;
+  current_clock.minutes = time / 60L;
+  time -= current_clock.minutes * 60L;
+  current_clock.seconds = time;
 
   // calculate local time
 
-  long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * clock_hour_set) + (60L * clock_min_set) + clock_sec_set + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
+  long local_time = (configuration.clock_timezone_offset * 60L * 60L) + (3600L * set_clock.hours) + (60L * set_clock.minutes) + set_clock.seconds + ((runtime + (runtime * INTERNAL_CLOCK_CORRECTION)) / 1000.0);
 
-  local_clock_years = clock_year_set;
-  local_clock_months = clock_month_set;
-  local_clock_days = clock_day_set;
+  local_clock.year = set_clock.year;
+  local_clock.month = set_clock.month;
+  local_clock.day = set_clock.day;
 
   if (local_time < 0){
     local_time = local_time + (24L * 60L * 60L) - 1;
-    local_clock_days--;
-    if (local_clock_days < 1){
-      local_clock_months--;
-      switch (local_clock_months) {
+    local_clock.day--;
+    if (local_clock.day < 1){
+      local_clock.month--;
+      switch (local_clock.month) {
         case 0:
-          local_clock_months = 12;
-          local_clock_days = 31;
-          local_clock_years--;
+          local_clock.month = 12;
+          local_clock.day = 31;
+          local_clock.year--;
           break;
         case 1:
         case 3:
@@ -13127,37 +13162,37 @@ void update_time(){
         case 8:
         case 10:
         case 12:
-          local_clock_days = 31;
+          local_clock.day = 31;
           break;
         case 2: //February
-          if (is_a_leap_year(local_clock_years) == 1){
-            local_clock_days = 29;
+          if (is_a_leap_year(local_clock.year) == 1){
+            local_clock.day = 29;
           } else {
-            local_clock_days = 28;
+            local_clock.day = 28;
           }
           break;
         case 4:
         case 6:
         case 9:
         case 11:
-          local_clock_days = 30;
+          local_clock.day = 30;
           break;
       } /* switch */    
     }
-    local_clock_hours = local_time / 3600L;
-    local_time -= local_clock_hours * 3600L;
-    local_clock_minutes  = local_time / 60L;
-    local_time -= local_clock_minutes * 60L;
-    local_clock_seconds = local_time;  
+    local_clock.hours = local_time / 3600L;
+    local_time -= local_clock.hours * 3600L;
+    local_clock.minutes  = local_time / 60L;
+    local_time -= local_clock.minutes * 60L;
+    local_clock.seconds = local_time;  
 
   } else {  //(local_time < 0)
 
-    local_clock_days = local_time / 86400L;
-    local_time -= local_clock_days * 86400L;
-    local_clock_days += clock_day_set;
-    local_clock_hours = local_time / 3600L;
+    local_clock.day = local_time / 86400L;
+    local_time -= local_clock.day * 86400L;
+    local_clock.day += set_clock.day;
+    local_clock.hours = local_time / 3600L;
 
-    switch (local_clock_months) {
+    switch (local_clock.month) {
 
       case 1:
       case 3:
@@ -13166,22 +13201,22 @@ void update_time(){
       case 8:
       case 10:
       case 12:
-        if (local_clock_days > 31){
-          local_clock_days = 1;
-          local_clock_months++;
+        if (local_clock.day > 31){
+          local_clock.day = 1;
+          local_clock.month++;
         }
         break;
 
       case 2:
-        if (is_a_leap_year(local_clock_years) == 1){
-          if (local_clock_days > 29){
-            local_clock_days = 1; 
-            local_clock_months++;
+        if (is_a_leap_year(local_clock.year) == 1){
+          if (local_clock.day > 29){
+            local_clock.day = 1; 
+            local_clock.month++;
           }
         } else {
-          if (local_clock_days > 28){
-            local_clock_days = 1;
-            local_clock_months++;
+          if (local_clock.day > 28){
+            local_clock.day = 1;
+            local_clock.month++;
           }
         }
         break;
@@ -13190,22 +13225,22 @@ void update_time(){
       case 6:
       case 9:
       case 11:
-        if (local_clock_days > 30){
-          local_clock_days = 1;
-          local_clock_months++;
+        if (local_clock.day > 30){
+          local_clock.day = 1;
+          local_clock.month++;
         }
         break;
     } /* switch */
 
-    if (local_clock_months > 12) {
-      local_clock_months = 1; 
-      local_clock_years++;
+    if (local_clock.month > 12) {
+      local_clock.month = 1; 
+      local_clock.year++;
     }
 
-    local_time -= local_clock_hours * 3600L;
-    local_clock_minutes  = local_time / 60L;
-    local_time -= local_clock_minutes * 60L;
-    local_clock_seconds = local_time;  
+    local_time -= local_clock.hours * 3600L;
+    local_clock.minutes  = local_time / 60L;
+    local_time -= local_clock.minutes * 60L;
+    local_clock.seconds = local_time;  
 
 
   }  //(local_time < 0)
@@ -13274,12 +13309,12 @@ void service_gps(){
     if (fix_age < GPS_VALID_FIX_AGE_MS) {
 
       if (SYNC_TIME_WITH_GPS) {
-        clock_year_set = gps_year;
-        clock_month_set = gps_month;
-        clock_day_set = gps_day;
-        clock_hour_set = gps_hours;
-        clock_min_set = gps_minutes;
-        clock_sec_set = gps_seconds;
+        set_clock.year = gps_year;
+        set_clock.month = gps_month;
+        set_clock.day = gps_day;
+        set_clock.hours = gps_hours;
+        set_clock.minutes = gps_minutes;
+        set_clock.seconds = gps_seconds;
         millis_at_last_calibration = millis() - GPS_UPDATE_LATENCY_COMPENSATION_MS;
         update_time();
         #ifdef DEBUG_GPS
@@ -13475,12 +13510,12 @@ void service_rtc(){
           debug.print(now.second());
           debug.println("");
         #endif // DEBUG_RTC
-        clock_year_set = now.year();
-        clock_month_set = now.month();
-        clock_day_set = now.day();
-        clock_hour_set = now.hour();
-        clock_min_set = now.minute();
-        clock_sec_set = now.second();
+        set_clock.year = now.year();
+        set_clock.month = now.month();
+        set_clock.day = now.day();
+        set_clock.hours = now.hour();
+        set_clock.minutes = now.minute();
+        set_clock.seconds = now.second();
         millis_at_last_calibration = millis();
         update_time();
         clock_status = RTC_SYNC;
@@ -13511,12 +13546,12 @@ void service_rtc(){
           control_port->print(':');
           control_port->println(rtc.second, DEC);
         #endif // DEBUG_RTC
-        clock_year_set = rtc.year;
-        clock_month_set = rtc.month;
-        clock_day_set = rtc.day;
-        clock_hour_set = rtc.hour;
-        clock_min_set = rtc.minute;
-        clock_sec_set = rtc.second;
+        set_clock.year = rtc.year;
+        set_clock.month = rtc.month;
+        set_clock.day = rtc.day;
+        set_clock.hours = rtc.hour;
+        set_clock.minutes = rtc.minute;
+        set_clock.seconds = rtc.second;
         millis_at_last_calibration = millis();
         update_time();
         clock_status = RTC_SYNC;
@@ -13636,11 +13671,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         configuration.last_azimuth = new_azimuth;
         raw_azimuth = new_azimuth;
         configuration_dirty = 1;
-        strcpy(return_string, "Azimuth set to ");
+        strcpy_P(return_string, (const char*) F("Azimuth set to "));
         dtostrf(new_azimuth, 0, 0, temp_string);
         strcat(return_string, temp_string);
       } else {
-        strcpy(return_string, "Error.  Format: \\Ax[x][x] ");
+        strcpy_P(return_string, (const char*) F("Error.  Format: \\Ax[x][x] "));
       }
       break;
    #else // defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT)
@@ -13663,7 +13698,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         configuration.azimuth_offset = tempfloat - raw_azimuth;
         configuration.azimuth_starting_point = configuration.azimuth_starting_point + abs(configuration.azimuth_offset);      
         configuration_dirty = 1;
-        strcpy(return_string, "Azimuth calibrated to ");
+        strcpy_P(return_string, (const char*) F("Azimuth calibrated to "));
         dtostrf(tempfloat, 0, 2, temp_string);
         strcat(return_string, temp_string);
       } else {
@@ -13688,13 +13723,13 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
       }   
 
-      strcpy(return_string, "Azimuth starting point "); 
+      strcpy_P(return_string, (const char*) F("Azimuth starting point ")); 
       if ((tempfloat > 0) || (input_buffer_index > 2)){
         configuration.azimuth_starting_point = tempfloat;
         configuration_dirty = 1;
-        strcat(return_string, "set to ");
+        strcat_P(return_string, (const char*) F("set to "));
       } else {
-        strcat(return_string, "is ");
+        strcat_P(return_string, (const char*) F("is "));
       }
       dtostrf(configuration.azimuth_starting_point, 0, 0, temp_string);
       strcat(return_string, temp_string);      
@@ -13714,13 +13749,13 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           }
         }
       }   
-      strcpy(return_string, "Azimuth rotation capability "); 
+      strcpy_P(return_string, (const char*) F("Azimuth rotation capability ")); 
       if (tempfloat > 0){
         configuration.azimuth_rotation_capability = tempfloat;
         configuration_dirty = 1;
-        strcat(return_string, "set to ");
+        strcat_P(return_string, (const char*) F("set to "));
       } else {
-        strcat(return_string, "is ");
+        strcat_P(return_string, (const char*) F("is "));
       }
       dtostrf(configuration.azimuth_rotation_capability, 0, 0, temp_string);
       strcat(return_string, temp_string);
@@ -13768,11 +13803,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             elevation = new_elevation;
             configuration.last_elevation = new_elevation;
             configuration_dirty = 1;
-            strcpy(return_string, "Elevation set to ");
+            strcpy_P(return_string, (const char*) F("Elevation set to "));
             dtostrf(new_elevation, 0, 0, temp_string);
             strcat(return_string, temp_string);
           } else {
-            strcpy(return_string, "Error.  Format: \\Bx[x][x]");
+            strcpy_P(return_string, (const char*) F("Error.  Format: \\Bx[x][x]"));
           }
           break;
       #else // defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
@@ -13794,11 +13829,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             read_elevation(1);
             configuration.elevation_offset = tempfloat - elevation;
             configuration_dirty = 1;
-            strcpy(return_string, "Elevation calibrated to ");
+            strcpy_P(return_string, (const char*) F("Elevation calibrated to "));
             dtostrf(tempfloat, 0, 2, temp_string);
             strcat(return_string, temp_string);
           } else {
-            strcpy(return_string, "Error.");
+            strcpy_P(return_string, (const char*) F("Error."));
           }
           break;
       #endif // defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT)
@@ -13823,12 +13858,12 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           (temp_minute >= 0) && (temp_minute < 60) &&
           (input_buffer_index == 14)) {
 
-        clock_year_set = temp_year;
-        clock_month_set = temp_month;
-        clock_day_set = temp_day;
-        clock_hour_set = temp_hour;
-        clock_min_set = temp_minute;
-        clock_sec_set = 0;
+        set_clock.year = temp_year;
+        set_clock.month = temp_month;
+        set_clock.day = temp_day;
+        set_clock.hours = temp_hour;
+        set_clock.minutes = temp_minute;
+        set_clock.seconds = 0;
         millis_at_last_calibration = millis();
 
         #if defined(FEATURE_RTC_DS1307)
@@ -13849,12 +13884,12 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           update_time();
           strcat(return_string, timezone_modified_clock_string());
         #else
-          strcpy(return_string, "Internal clock and RTC set to ");
+          strcpy_P(return_string, (const char*) F("Internal clock and RTC set to "));
           update_time();
           strcat(return_string, timezone_modified_clock_string());
         #endif
       } else {
-        strcpy(return_string, "Error. Usage: \\OYYYYMMDDHHmm");
+        strcpy_P(return_string, (const char*) F("Error. Usage: \\OYYYYMMDDHHmm"));
       }
       break;
 
@@ -13880,11 +13915,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       if ((tempfloat >= -24.0) && (tempfloat <= 24.0)) {
         configuration.clock_timezone_offset = tempfloat;
         configuration_dirty = 1;
-        strcpy(return_string, "Timezone offset set to ");
+        strcpy_P(return_string, (const char*) F("Timezone offset set to "));
         dtostrf(tempfloat, 0, 2, temp_string);
         strcat(return_string, temp_string);
       } else {
-        strcpy(return_string, "Error.");
+        strcpy_P(return_string, (const char*) F("Error."));
       }
       break;
     #endif // FEATURE_CLOCK
@@ -13899,7 +13934,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     case 'E':                                                                      // \E - Initialize eeprom
       initialize_eeprom_with_defaults();
-      strcpy(return_string, "Initialized eeprom, resetting unit in 5 seconds...");
+      strcpy_P(return_string, (const char*) F("Initialized eeprom, resetting unit in 5 seconds..."));
       reset_the_unit = 1;
       break;
 
@@ -13912,7 +13947,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     case 'Q':                                                                      // \Q - Save settings in the EEPROM and restart
       write_settings_to_eeprom();
-      strcpy(return_string, "Settings saved in EEPROM, resetting unit in 5 seconds...");
+      strcpy_P(return_string, (const char*) F("Settings saved in EEPROM, resetting unit in 5 seconds..."));
       reset_the_unit = 1;
       break;
 
@@ -13945,10 +13980,10 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         grid[5] = input_buffer[7];
       } else { hit_error = 1; }
       if ((input_buffer_index != 8) || (hit_error)) {
-        strcpy(return_string, "Error.  Usage \\Gxxxxxx");
+        strcpy_P(return_string, (const char*) F("Error.  Usage \\Gxxxxxx"));
       } else {
         grid2deg(grid, &longitude, &latitude);
-        strcpy(return_string, "Coordinates set to: ");
+        strcpy_P(return_string, (const char*) F("Coordinates set to: "));
         dtostrf(latitude, 0, 4, temp_string);
         strcat(return_string, temp_string);
         strcat(return_string, " ");
@@ -13964,11 +13999,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         case '0':
           change_tracking(DEACTIVATE_MOON_TRACKING);
           stop_rotation();
-          strcpy(return_string, "Moon tracking deactivated.");
+          strcpy_P(return_string, (const char*) F("Moon tracking deactivated."));
           break;
         case '1':
           change_tracking(ACTIVATE_MOON_TRACKING);          
-          strcpy(return_string, "Moon tracking activated.");
+          strcpy_P(return_string, (const char*) F("Moon tracking activated."));
           break;
         default: strcpy(return_string, "Error."); break;
       }
@@ -13977,7 +14012,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
   #if defined(FEATURE_MASTER_WITH_SERIAL_SLAVE) || defined(FEATURE_MASTER_WITH_ETHERNET_SLAVE)
     case 'R':
-      strcpy(return_string, "Remote port rx sniff o");
+      strcpy_P(return_string, (const char*) F("Remote port rx sniff o"));
       if (remote_port_rx_sniff) {
         remote_port_rx_sniff = 0;
         strcat(return_string, "ff");
@@ -14012,7 +14047,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       }
       break;
     case 'T':
-      strcpy(return_string, "Remote port tx sniff o");
+      strcpy_P(return_string,(const char*) F( "Remote port tx sniff o"));
       if (remote_port_tx_sniff) {
         remote_port_tx_sniff = 0;
         strcat(return_string, "ff");
@@ -14022,7 +14057,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       }
       break;
     case 'Z':
-      strcpy(return_string, "Suspend auto remote commands o");
+      strcpy_P(return_string, (const char*) F("Suspend auto remote commands o"));
       if (suspend_remote_commands) {
         suspend_remote_commands = 0;
         strcat(return_string, "ff");
@@ -14039,11 +14074,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         case '0':
           change_tracking(DEACTIVATE_SUN_TRACKING);
           stop_rotation();
-          strcpy(return_string, "Sun tracking deactivated.");
+          strcpy_P(return_string, (const char*) F("Sun tracking deactivated."));
           break;
         case '1':
           change_tracking(ACTIVATE_SUN_TRACKING);
-          strcpy(return_string, "Sun tracking activated.");       
+          strcpy_P(return_string, (const char*) F("Sun tracking activated."));       
           break;
         default: strcpy(return_string, "Error."); break;
       }
@@ -14060,7 +14095,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           if (calibrate_az_el(sun_azimuth, sun_elevation)) {
             strcpy(return_string, az_el_calibrated_string());
           } else {
-            strcpy(return_string, "Error.");
+            strcpy_P(return_string, (const char*) F("Error."));
           }
           break;
         #endif // FEATURE_SUN_TRACKING
@@ -14070,7 +14105,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           if (calibrate_az_el(moon_azimuth, moon_elevation)) {
             strcpy(return_string, az_el_calibrated_string());
           } else {
-            strcpy(return_string, "Error.");
+            strcpy_P(return_string, (const char*) F("Error."));
           }
           break;
         #endif // FEATURE_MOON_TRACKING
@@ -14079,7 +14114,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           configuration.azimuth_offset = 0;
           configuration.elevation_offset = 0;
           configuration_dirty = 1;
-          strcpy(return_string, "Cleared calibration offsets");
+          strcpy_P(return_string, (const char*) F("Cleared calibration offsets"));
           break;
         default: strcpy(return_string, "?>"); break;
 
@@ -14090,7 +14125,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     #ifdef FEATURE_PARK
     case 'P':    // Park
-      strcpy(return_string, "Parking...");
+      strcpy_P(return_string, (const char*) F("Parking..."));
       initiate_park();
       park_serial_initiated = 1;
       break;
@@ -14122,9 +14157,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
         pinModeEnhanced(pin_value, OUTPUT);
         digitalWriteEnhanced(pin_value, LOW);
-        strcpy(return_string, "OK");
+        strcpy_P(return_string, (const char*) F("OK"));
       } else {
-        strcpy(return_string, "Error");
+        strcpy_P(return_string, (const char*) F("Error"));
       }
       break;
     case 'W':    // \Wxxyyy - turn on pin PWM; xx = pin number, yyy = PWM value (0-255)
@@ -14139,12 +14174,12 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         if ((write_value >= 0) && (write_value < 256)) {
           pinModeEnhanced(pin_value, OUTPUT);
           analogWriteEnhanced(pin_value, write_value);
-          strcpy(return_string, "OK");
+          strcpy_P(return_string, (const char*) F("OK"));
         } else {
-          strcpy(return_string, "Error");
+          strcpy_P(return_string, (const char*) F("Error"));
         }
       } else {
-        strcpy(return_string, "Error");
+        strcpy_P(return_string, (const char*) F("Error"));
       }
       break;
   #endif // FEATURE_ANCILLARY_PIN_CONTROL
@@ -14153,30 +14188,30 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     case 'Y':
         if (input_buffer_index == 2){ // query command
           if (configuration.autopark_active){
-            strcpy(return_string, "Autopark is on, timer: ");
+            strcpy_P(return_string, (const char*) F("Autopark is on, timer: "));
             dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
             strcat(return_string, temp_string);
-            strcat(return_string, " minute");
+            strcat_P(return_string, (const char*) F(" minute"));
             if (configuration.autopark_time_minutes > 1){
               strcat(return_string, "s");
             }
           } else {
-            strcpy(return_string, "Autopark is off");
+            strcpy_P(return_string, (const char*) F("Autopark is off"));
           }
         }
         if (input_buffer_index == 3){
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58)){
             if (input_buffer[2] == 48){                              // had to break this up - for some strange reason, properly written 
-              strcpy(return_string, "Autopark off");                 // this would not upload
+              strcpy_P(return_string, (const char*) F("Autopark off"));                 // this would not upload
               configuration.autopark_active = 0;
               configuration_dirty = 1;
             }  
             if (input_buffer[2] != 48){
-              strcpy(return_string, "Autopark on, timer: ");
+              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = input_buffer[2] - 48;
               dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
               strcat(return_string, temp_string);
-              strcat(return_string, " minute");
+              strcat_P(return_string, (const char*) F(" minute"));
               if (configuration.autopark_time_minutes > 1){
                 strcat(return_string, "s");
               }
@@ -14190,44 +14225,44 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
         if (input_buffer_index == 4){
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58)){
-              strcpy(return_string, "Autopark on, timer: ");
+              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
               dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
               strcat(return_string, temp_string);
-              strcat(return_string, " minutes");
+              strcat_P(return_string, (const char*) F(" minutes"));
               configuration.autopark_active = 1;
               last_activity_time_autopark = millis();
               configuration_dirty = 1;
           } else {
-            strcpy(return_string, "Error");
+            strcpy_P(return_string, (const char*) F("Error"));
           }
         }         
         if (input_buffer_index == 5){
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)){
-              strcpy(return_string, "Autopark on, timer: ");
+              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
               dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
               strcat(return_string, temp_string);
-              strcat(return_string, " minutes");
+              strcat_P(return_string, (const char*) F(" minutes"));
               configuration.autopark_active = 1;
               last_activity_time_autopark = millis();
               configuration_dirty = 1;
           } else {
-            strcpy(return_string, "Error");
+            strcpy_P(return_string, (const char*) F("Error"));
           }
         }   
         if (input_buffer_index == 6){
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)  && (input_buffer[5] > 47) && (input_buffer[5] < 58)){
-              strcpy(return_string, "Autopark on, timer: ");
+              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 1000) + ((input_buffer[3] - 48) * 100) + ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
               dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
               strcat(return_string, temp_string);
-              strcat(return_string, " minutes");
+              strcat_P(return_string, (const char*) F(" minutes"));
               configuration.autopark_active = 1;
               last_activity_time_autopark = millis();
               configuration_dirty = 1;
           } else {
-            strcpy(return_string, "Error");
+            strcpy_P(return_string, (const char*) F("Error"));
           }
         }                   
       break;
@@ -14236,15 +14271,15 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   case '+':
     if (configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS){
       configuration.azimuth_display_mode = AZ_DISPLAY_MODE_NORMAL;
-      strcpy(return_string, "Azimuth Display Mode: Normal");
+      strcpy_P(return_string,(const char*) F("Azimuth Display Mode: Normal"));
     } else {
       if (configuration.azimuth_display_mode == AZ_DISPLAY_MODE_RAW){
         configuration.azimuth_display_mode = AZ_DISPLAY_MODE_OVERLAP_PLUS;
-        strcpy(return_string, "Azimuth Display Mode: +Overlap");
+        strcpy_P(return_string,(const char*) F("Azimuth Display Mode: +Overlap"));
       } else {
         if (configuration.azimuth_display_mode == AZ_DISPLAY_MODE_NORMAL){
           configuration.azimuth_display_mode = AZ_DISPLAY_MODE_RAW;
-          strcpy(return_string, "Azimuth Display Mode: Raw Degrees");
+          strcpy_P(return_string,(const char*) F("Azimuth Display Mode: Raw Degrees"));
         }
       }
     }
@@ -14252,8 +14287,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     break;
 
     #if defined(FEATURE_SATELLITE_TRACKING)
-
-    //char sat_name[SATELLITE_NAME_LENGTH]; 
 
       case '|':
         for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
@@ -14266,7 +14299,23 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         break;
 
       case '~':
-        print_satellite_status();
+        if (input_buffer_index == 3){
+          x = (input_buffer[2] - 48);
+        } else {
+          if (input_buffer_index == 4){
+            x = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
+          } else {
+            if (input_buffer_index == 5){
+              x = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);              
+            } else {
+              x = 0;
+            }
+          }
+        }
+        periodic_satellite_status = x;
+        if (periodic_satellite_status == 0){
+          print_current_satellite_status();
+        }
         break;
 
         case '^':
@@ -14274,7 +14323,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             case '0':
               change_tracking(DEACTIVATE_SATELLITE_TRACKING);
               stop_rotation();
-              strcpy(return_string, "Satellite tracking deactivated.");
+              strcpy_P(return_string,(const char*) F("Satellite tracking deactivated."));
               break;
             case '1':
               change_tracking(ACTIVATE_SATELLITE_TRACKING);
@@ -14282,24 +14331,24 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
                 submit_request(AZ, REQUEST_AZIMUTH, current_satellite_next_aos_az, DBG_SERVICE_SATELLITE_CLI_CMD_PREROTATE);
                 submit_request(EL, REQUEST_ELEVATION, current_satellite_next_aos_el, DBG_SERVICE_SATELLITE_CLI_CMD_PREROTATE);
               }           
-              strcpy(return_string, "Satellite tracking activated.");
+              strcpy_P(return_string,(const char*) F("Satellite tracking activated."));
               break;
-            default: strcpy(return_string, "Error."); break;
+            default: strcpy_P(return_string,(const char*) F("Error.")); break;
           }
           break;
 
         case '!':
-          control_port->println("Erased the TLE file area.");
+          control_port->println(F("Erased the TLE file area."));
           initialize_tle_file_area_eeprom(1);
           break;
 
         case '@':
-          control_port->println("TLE file:");
+          control_port->println(F("TLE file:"));
           print_tle_file_area_eeprom();
           break;
 
         case '#':
-          control_port->println("Paste bare TLE file text now; double return to end.");
+          control_port->println(F("Paste bare TLE file text now; double return to end."));
           write_char_to_tle_file_area_eeprom(0,1); // initialize   
           tle_upload_start_time = millis();
           tle_line_number = 0;  // 0 = sat name line, 1 = tle line 1, 2 = tle line 2
@@ -14361,14 +14410,14 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               }              
             }
             if (end_of_eeprom_was_hit == 1){
-              control_port->println("\r\nEnd of eeprom file area hit.");
+              control_port->println(F("\r\nEnd of eeprom file area hit."));
               end_of_eeprom_was_hit = 2;
             }
           }    
           write_char_to_tle_file_area_eeprom(0xFF,0); // write terminating FF
-          control_port->println("\r\nFile stored.");
+          control_port->println(F("\r\nFile stored."));
           if (end_of_eeprom_was_hit == 2){
-            control_port->println("File was truncated."); 
+            control_port->println(F("File was truncated.")); 
           } 
 
           populate_satellite_list_array();
@@ -14383,11 +14432,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           }      
           control_port->print(F("Searching for "));
           control_port->println(satellite_to_find);
-          pull_satellite_tle_and_activate(satellite_to_find,1);
+          pull_satellite_tle_and_activate(satellite_to_find,_VERBOSE_,LOAD_INTO_CURRENT_SATELLITE);
           service_satellite_tracking(1);
-          //print_satellite_status();  //  Can't do this right away do to calculate_satellite_aos_and_los running asynchrously
+          //print_current_satellite_status();  //  Can't do this right away do to calculate_satellite_aos_and_los running asynchrously
           break;  
-//zzzzzz
+
         case '%':
           if (input_buffer_index == 3){
             x = (input_buffer[2] - 48);
@@ -14402,9 +14451,13 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
               }
             }
           }
-          service_calculate_satellite_upcoming_aos_and_los(x,AOS_LOS_TABULAR_REPORT,SERVICE_CALC_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_PRINT_DONE);
+          service_calculate_satellite_upcoming_aos_and_los(CURRENT_SATELLITE,x,AOS_LOS_TABULAR_REPORT,SERVICE_CALC_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_PRINT_DONE);
           break;
 
+
+        case '&':
+          service_calculate_multi_satellite_upcoming_aos_and_los(SERVICE_CALC_INITIALIZE);
+          break;
 
       #endif //FEATURE_SATELLITE_TRACKING
 
@@ -15200,7 +15253,7 @@ Not implemented yet:
 } // process_backslash_command
 //-----------------------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-  void print_satellite_status(){
+  void print_current_satellite_status(){
 
         int32_t time_difference_seconds;
 
@@ -15212,12 +15265,12 @@ Not implemented yet:
         control_port->print(obs.LA,4);
         control_port->print(",");
         control_port->print(obs.LO,4);
-        control_port->print(",");
+        control_port->print(F(","));
         control_port->print(obs.HT,0);
-        control_port->println("m)");
-        control_port->print("AZ:");
+        control_port->println(F("m)"));
+        control_port->print(F("AZ:"));
         control_port->print(current_satellite_azimuth,0);
-        control_port->print(" EL:");
+        control_port->print(F(" EL:"));
         control_port->print(current_satellite_elevation,0);   
         control_port->print(F(" Lat:"));
         control_port->print(current_satellite_latitude,4);
@@ -15245,7 +15298,7 @@ Not implemented yet:
         if (current_satellite_next_aos_el > 0){control_port->print(" ");}
         control_port->print(current_satellite_next_aos_el,0);
 
-        control_port->print("  LOS:");
+        control_port->print(F("  LOS:"));
         control_port->print(tm_date_string(&current_satellite_next_los));
         control_port->print(" ");
         control_port->print(tm_time_string_short(&current_satellite_next_los));
@@ -15258,7 +15311,8 @@ Not implemented yet:
         control_port->println(current_satellite_next_los_el,0);
         temp_datetime.seconds = 0; 
         control_port->print(satellite_aos_los_string());
-        control_port->println();       
+        control_port->println(); 
+        control_port->println();      
 
         // control_port->print(F("DE:"));
         // control_port->println(sat.DE);   
@@ -16225,7 +16279,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
               read_azimuth(1);
               configuration.analog_az_full_ccw = analog_az;
               write_settings_to_eeprom();
-              strcpy(return_string,"Wrote to memory");
+              strcpy_P(return_string,(const char*) F("Wrote to memory"));
             }
           #endif
 
@@ -16396,7 +16450,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
               normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X4;
               update_el_variable_outputs(PWM_SPEED_VOLTAGE_X4);
               #endif
-              strcpy(return_string,"Speed X4");
+              strcpy_P(return_string,(const char*) F("Speed X4"));
               break;
             case '3':
               normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X3;
@@ -16405,7 +16459,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
               normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X3;
               update_el_variable_outputs(PWM_SPEED_VOLTAGE_X3);
               #endif
-              strcpy(return_string,"Speed X3");
+              strcpy_P(return_string,(const char*) F("Speed X3"));
               break;
             case '2':
               normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X2;
@@ -16414,7 +16468,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
               normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X2;
               update_el_variable_outputs(PWM_SPEED_VOLTAGE_X2);
               #endif
-              strcpy(return_string,"Speed X2");
+              strcpy_P(return_string,(const char*) F("Speed X2"));
               break;
             case '1':
               normal_az_speed_voltage = PWM_SPEED_VOLTAGE_X1;
@@ -16423,12 +16477,12 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
               normal_el_speed_voltage = PWM_SPEED_VOLTAGE_X1;
               update_el_variable_outputs(PWM_SPEED_VOLTAGE_X1);
               #endif
-              strcpy(return_string,"Speed X1");
+              strcpy_P(return_string,(const char*) F("Speed X1"));
               break;
-            default: strcpy(return_string,"?>"); break;
+            default: strcpy_P(return_string,(const char*) F("?>")); break;
           } /* switch */
         } else {
-          strcpy(return_string,"?>");
+          strcpy_P(return_string,(const char*) F("?>"));
         }
         break;
         
@@ -16602,30 +16656,30 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
           #if defined(OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP)
             if ((yaesu_command_buffer[1] == '3') && (yaesu_command_buffer_index > 2)) {  // P36 command
               configuration.azimuth_rotation_capability = 360;
-              strcpy(return_string,"Mode 360 degree");
+              strcpy_P(return_string,(const char*) F("Mode 360 degree"));
               configuration_dirty = 1;
             } else {
               if ((yaesu_command_buffer[1] == '4') && (yaesu_command_buffer_index > 2)) { // P45 command
                 configuration.azimuth_rotation_capability = 450;
-                strcpy(return_string,"Mode 450 degree");
+                strcpy_P(return_string,(const char*) F("Mode 450 degree"));
                 configuration_dirty = 1;
               } else {
-                strcpy(return_string,"?>");
+                strcpy_P(return_string,(const char*) F("?>"));
               }
             }
           #else
             if (millis() > ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS){
               if ((yaesu_command_buffer[1] == '3') && (yaesu_command_buffer_index > 2)) {  // P36 command
                 configuration.azimuth_rotation_capability = 360;
-                strcpy(return_string,"Mode 360 degree");
+                strcpy_P(return_string,(const char*) F("Mode 360 degree"));
                 // write_settings_to_eeprom();
               } else {
                 if ((yaesu_command_buffer[1] == '4') && (yaesu_command_buffer_index > 2)) { // P45 command
                   configuration.azimuth_rotation_capability = 450;
-                  strcpy(return_string,"Mode 450 degree");
+                  strcpy_P(return_string,(const char*) F("Mode 450 degree"));
                   // write_settings_to_eeprom();
                 } else {
-                  strcpy(return_string,"?>");
+                  strcpy_P(return_string,(const char*) F("?>"));
                 }
               }
             }
@@ -16652,7 +16706,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
                 configuration.azimuth_starting_point = 180;
                 strcpy(return_string,"S");
               }
-              strcat(return_string," Center");
+              strcat_P(return_string,(const char*) F(" Center"));
             }
           #endif
 
@@ -16660,7 +16714,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         #endif
         
       default:
-        strcpy(return_string,"?>");
+        strcpy_P(return_string,(const char*) F("?>"));
         #ifdef DEBUG_PROCESS_YAESU
           if (debug_mode) {
             debug.print("process_yaesu_command: yaesu_command_buffer_index: ");
@@ -17567,42 +17621,41 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       *y = abs((r * sin(theta)) - 90);
       break;
   }
-  // control_port->print(azimuth_in,0);
-  // control_port->print("\t");
-  // control_port->print(elevation_in,0);
-  // control_port->print("\t");
-  // control_port->print(theta,4);
-  // control_port->print("\t");
-  // control_port->print(r,0);
-  // control_port->print("\t");    
-  // control_port->print(*x);
-  // control_port->print("\t");
-  // control_port->println(*y);
 
 }
 
 #endif //FEATURE_NEXTION_DISPLAY
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-
-  void load_satellite_tle(const char *name_in, const char *tle_line1, const char *tle_line2,byte load_hardcoded_tle){
+  void load_satellite_tle(const char *name_in, const char *tle_line1, const char *tle_line2,byte load_hardcoded_tle,byte where_to_load_it){
 
     static char name[SATELLITE_NAME_LENGTH];
 
-    strcpy(name,name_in);
-   
-    if (load_hardcoded_tle){
-      sat.tle("AO7TEST","1 07530U 74089B   20219.44701373 -.00000036  00000-0  58084-4 0  9995",  // 2020-08-10
-                        "2 07530 101.8033 188.9163 0011776 268.5387 207.6898 12.53644475092259");
+    char hardcoded_tle_line_1[SATELLITE_TLE_CHAR_SIZE];  
+    char hardcoded_tle_line_2[SATELLITE_TLE_CHAR_SIZE];
 
-                     
 
+    if (load_hardcoded_tle == LOAD_HARDCODED_TLE){       
+      strcpy_P(name,(const char*) F("AO7TEST"));
+      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   20226.20693671 -.00000031 "));  //2020-08-16
+      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8041 195.6409 0011768 255.0996 116.4662 12.53644587 93345"));     
+      if (where_to_load_it == LOAD_INTO_CURRENT_SATELLITE){
+        sat.tle(name,hardcoded_tle_line_1,hardcoded_tle_line_2);
+      } else {
+        calc_sat.tle(name,hardcoded_tle_line_1,hardcoded_tle_line_2);
+      }
     } else {
-      sat.tle(name,tle_line1,tle_line2);
+      strcpy(name,name_in);
+      if (where_to_load_it == LOAD_INTO_CURRENT_SATELLITE){
+        sat.tle(name,tle_line1,tle_line2);
+      } else {
+        calc_sat.tle(name,tle_line1,tle_line2);
+      }
     }      
 
-    service_calculate_satellite_upcoming_aos_and_los(1,UPDATE_CURRENT_SAT_AOS_AND_LOS_GLOBAL_VARS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
-
+    if (where_to_load_it == LOAD_INTO_CURRENT_SATELLITE){
+      service_calculate_satellite_upcoming_aos_and_los(CURRENT_SATELLITE,1,UPDATE_CURRENT_SAT_AOS_AND_LOS_GLOBAL_VARS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
+    }
 
   }
 
@@ -17616,16 +17669,17 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     static byte satellite_tracking_activated_by_activate_line = 0;
     static byte satellite_tracking_pin_state = 0;
     static byte satellite_initialized = 0;
+    static unsigned long last_periodic_satellite_status_print = 0;
 
 
     if ((!satellite_initialized) && (millis() > 4000)){  // wait until 4 seconds of update to load first TLE and initialize
 
       if (strcmp(configuration.current_satellite,"-") == 0){
-        load_satellite_tle(NULL,NULL,NULL,1);  // if there is no current satellite in the configuration, load a hardcode TLE
+        load_satellite_tle(NULL,NULL,NULL,LOAD_HARDCODED_TLE,LOAD_INTO_CURRENT_SATELLITE);  // if there is no current satellite in the configuration, load a hardcode TLE
       } else {
-        satellite_initialized = pull_satellite_tle_and_activate(configuration.current_satellite,0);
+        satellite_initialized = pull_satellite_tle_and_activate(configuration.current_satellite,NOT_VERBOSE,LOAD_INTO_CURRENT_SATELLITE);
         if (satellite_initialized == 0){
-          load_satellite_tle(NULL,NULL,NULL,1);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
+          load_satellite_tle(NULL,NULL,NULL,LOAD_HARDCODED_TLE,LOAD_INTO_CURRENT_SATELLITE);  // couldn't find a TLE for the last current satellite stored in the configuration, load a hardcoded one
         }
       }
       satellite_initialized = 1;
@@ -17637,6 +17691,14 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
 
     if (!satellite_initialized){return;}
+
+
+    if ((periodic_satellite_status > 0) && ((millis()-last_periodic_satellite_status_print) >= (periodic_satellite_status * 1000))){
+      print_current_satellite_status();
+      last_periodic_satellite_status_print = millis();
+    }
+
+    if (periodic_satellite_status == 0){last_periodic_satellite_status_print = 0;}
 
 
     if (satellite_tracking_active_pin) {
@@ -17665,7 +17727,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 //zzzzzz
 
     if (((millis() - last_update_satellite_position) > SATELLITE_UPDATE_POSITION_INTERVAL_MS) || (push_update)){
-      sat_datetime.settime(clock_years, clock_months, clock_days, clock_hours, clock_minutes, clock_seconds);
+      sat_datetime.settime(current_clock.year, current_clock.month, current_clock.day, current_clock.hours, current_clock.minutes, current_clock.seconds);
       obs.LA = latitude;
       obs.LO = longitude;
       obs.HT = altitude_m;
@@ -17678,7 +17740,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     if ((current_satellite_azimuth >= SATELLITE_AOS_AZIMUTH_MIN) && (current_satellite_azimuth <= SATELLITE_AOS_AZIMUTH_MAX) && (current_satellite_elevation >= SATELLITE_AOS_ELEVATION_MIN) && (current_satellite_elevation <= SATELLITE_AOS_ELEVATION_MAX)) {
       if (!satellite_visible) {
         satellite_visible = 1;
-        service_calculate_satellite_upcoming_aos_and_los(1,UPDATE_CURRENT_SAT_AOS_AND_LOS_GLOBAL_VARS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
+        service_calculate_satellite_upcoming_aos_and_los(CURRENT_SATELLITE,1,UPDATE_CURRENT_SAT_AOS_AND_LOS_GLOBAL_VARS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
         #ifdef DEBUG_SATELLITE_TRACKING
           debug.println("service_satellite_tracking: sat AOS");
         #endif // DEBUG_SATELLITE_TRACKING
@@ -17781,10 +17843,50 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
   }
 
 #endif //FEATURE_SATELLITE_TRACKING 
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING) && defined(FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS)
+  void service_calculate_multi_satellite_upcoming_aos_and_los(byte action){
 
+    static int z;
+    static byte service_state = SERVICE_IDLE;
+
+    if (action == SERVICE_CALC_INITIALIZE){
+      if (service_calculate_satellite_upcoming_aos_and_los(0,0,0,0,SERVICE_CALC_REPORT_STATE,0) == SERVICE_IDLE){
+        z = 0;
+        service_state = SERVICE_CALC_IN_PROGRESS;
+        return;
+      } else {
+        control_port->println(F("System is busy with a calculation.  Try again later."));
+      }
+    }
+
+    if ((action == SERVICE_CALC_SERVICE) && (service_state == SERVICE_CALC_IN_PROGRESS)){
+      if (service_calculate_satellite_upcoming_aos_and_los(0,0,0,0,SERVICE_CALC_REPORT_STATE,0) == SERVICE_IDLE){
+        if (strlen(satellite[z].name) > 2){
+          pull_satellite_tle_and_activate(satellite[z].name,NOT_VERBOSE,LOAD_INTO_CALC_SATELLITE);
+          if (z == 0){
+            service_calculate_satellite_upcoming_aos_and_los(CALC_SATELLITE,1,AOS_LOS_TABULAR_REPORT,SERVICE_CALC_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
+          } else {
+            service_calculate_satellite_upcoming_aos_and_los(CALC_SATELLITE,1,AOS_LOS_TABULAR_REPORT,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
+          }
+          // control_port->print(z+1);
+          // control_port->print(": ");
+          // control_port->println(satellite[z].name);
+        }
+        if (z < SATELLITE_LIST_LENGTH){
+          z++;
+        } else {
+          service_state = SERVICE_IDLE;
+          control_port->println(F("Done."));
+        }
+      }
+    } //if (service_state = SERVICE_CALC_IN_PROGRESS)
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING 
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-  void service_calculate_satellite_upcoming_aos_and_los(byte run_this_many_passes,byte do_this_format,byte do_this_print_header,byte action,byte do_print_done){
+  byte service_calculate_satellite_upcoming_aos_and_los(byte do_this_satellite,byte run_this_many_passes,byte do_this_format,byte do_this_print_header,byte action,byte do_print_done){
 
 //zzzzzz
     static double calc_satellite_latitude;
@@ -17809,6 +17911,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     static byte format;
     static byte print_header;
     static byte print_done;
+    static byte this_satellite;
 
     #define JUST_GETTING_STARTED 0
     #define GET_AOS_THEN_LOS 1
@@ -17817,11 +17920,14 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     #define GOT_LOS_NEED_AOS 4
     #define WE_ARE_DONE 5
 
-    #define SERVICE_IDLE 0
-    #define SERVICE_CALC_IN_PROGRESS 1
+
 
     static byte aos_and_los_collection_state;
     static byte service_state = SERVICE_IDLE;
+
+    if (action == SERVICE_CALC_REPORT_STATE){
+      return service_state;
+    }
 
     if (action == SERVICE_CALC_INITIALIZE){  // initialize calculation
 
@@ -17842,14 +17948,15 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       pass_max_elevation = 0;
       format = do_this_format;
       print_header = do_this_print_header;
-      calc_years = clock_years;
-      calc_months = clock_months;
-      calc_days = clock_days;
-      calc_hours = clock_hours;
-      calc_minutes = clock_minutes;
+      calc_years = current_clock.year;
+      calc_months = current_clock.month;
+      calc_days = current_clock.day;
+      calc_hours = current_clock.hours;
+      calc_minutes = current_clock.minutes;
       print_done = do_print_done;
       aos_and_los_collection_state = JUST_GETTING_STARTED;
       service_state = SERVICE_CALC_IN_PROGRESS;
+      this_satellite = do_this_satellite;
       return;
 
     }
@@ -17955,9 +18062,21 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         if (number_of_passes > 0){
           add_time(calc_years,calc_months,calc_days,calc_hours,calc_minutes,1,progress_dots);
           sat_datetime.settime(calc_years, calc_months, calc_days, calc_hours, calc_minutes, 0);
-          sat.predict(sat_datetime);
-          sat.LL(calc_satellite_latitude,calc_satellite_longitude);
-          sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+          #if defined(FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS)
+            if (this_satellite == CURRENT_SATELLITE){
+              sat.predict(sat_datetime); //qqqqqq
+              sat.LL(calc_satellite_latitude,calc_satellite_longitude);
+              sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+            } else {
+              calc_sat.predict(sat_datetime);
+              calc_sat.LL(calc_satellite_latitude,calc_satellite_longitude);
+              calc_sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+            }
+          #else
+            sat.predict(sat_datetime);
+            sat.LL(calc_satellite_latitude,calc_satellite_longitude);
+            sat.altaz(obs, calc_satellite_elevation, calc_satellite_azimuth);
+          #endif  
 
           if (calc_satellite_elevation > SATELLITE_AOS_ELEVATION_MIN){
             if (calc_satellite_elevation > pass_max_elevation){
@@ -18056,7 +18175,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         } else { // if(number_of_passes > 0){
           service_state = SERVICE_IDLE;
           if (print_done){
-            control_port->println("Done.");
+            control_port->println(F("Done."));
           }
         }
       } // if ((format == 1) || (format == 2)){
