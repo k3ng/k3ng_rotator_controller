@@ -29,7 +29,7 @@
 #define az_preset_pot 0          // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)
 #define preset_start_button 0    // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
 #define button_stop 0            // connect to momentary switch (ground on button press) for preset stop (set to 0 to disable or for preset automatic start)
-#define rotation_indication_pin 0
+#define rotation_indication_pin 4
 #define blink_led 0
 #define az_stepper_motor_pulse 44 //0
 #define az_stepper_motor_direction 0
@@ -125,7 +125,7 @@
 #define heading_reading_inhibit_pin 0 // input - a high will cause the controller to suspend taking azimuth (and elevation) readings; use when RF interferes with sensors
 
 #ifdef FEATURE_LIMIT_SENSE
-  #define az_limit_sense_pin 0  // input - low stops azimuthal rotation
+  #define az_limit_sense_pin A4  // input - low stops azimuthal rotation
   #define el_limit_sense_pin 0  // input - low stops elevation rotation
 #endif //FEATURE_LIMIT_SENSE
 
