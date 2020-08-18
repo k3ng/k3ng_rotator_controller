@@ -1,8 +1,8 @@
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
-#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
+#define AZIMUTH_STARTING_POINT_DEFAULT 0      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 360 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
 
 /* 
 
@@ -25,8 +25,8 @@ You can tweak these, but read the online documentation!
 */
 
 // analog voltage calibration - these are default values; you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
-#define ANALOG_AZ_FULL_CCW 4
-#define ANALOG_AZ_FULL_CW 1009
+#define ANALOG_AZ_FULL_CCW 6
+#define ANALOG_AZ_FULL_CW 1011
 #define ANALOG_EL_0_DEGREES 2
 #define ANALOG_EL_MAX_ELEVATION 1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
 
@@ -44,7 +44,7 @@ You can tweak these, but read the online documentation!
 
 //AZ
 #define AZ_SLOWSTART_DEFAULT 0            // 0 = off ; 1 = on
-#define AZ_SLOWDOWN_DEFAULT 0             // 0 = off ; 1 = on
+#define AZ_SLOWDOWN_DEFAULT 1             // 0 = off ; 1 = on
 #define AZ_SLOW_START_UP_TIME 2000        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
 #define AZ_SLOW_START_STARTING_PWM 1      // PWM starting value for slow start (must be < 256)
 #define AZ_SLOW_START_STEPS 20            // must be < 256
@@ -79,7 +79,7 @@ You can tweak these, but read the online documentation!
 
 // Settings for OPTION_AZ_MANUAL_ROTATE_LIMITS
 #define AZ_MANUAL_ROTATE_CCW_LIMIT 0   // if using a rotator that starts at 180 degrees, set this to something like 185
-#define AZ_MANUAL_ROTATE_CW_LIMIT 535  // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
+#define AZ_MANUAL_ROTATE_CW_LIMIT 360  // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
 
 // Settings for OPTION_EL_MANUAL_ROTATE_LIMITS
 #define EL_MANUAL_ROTATE_DOWN_LIMIT -1
@@ -176,8 +176,8 @@ You can tweak these, but read the online documentation!
 
 #define JOYSTICK_WAIT_TIME_MS 100
 
-#define ROTATION_INDICATOR_PIN_ACTIVE_STATE HIGH
-#define ROTATION_INDICATOR_PIN_INACTIVE_STATE LOW
+#define ROTATION_INDICATOR_PIN_ACTIVE_STATE LOW
+#define ROTATION_INDICATOR_PIN_INACTIVE_STATE HIGH
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 0
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
 
@@ -252,8 +252,8 @@ You can tweak these, but read the online documentation!
  *
  */
 
-#define AZIMUTH_CALIBRATION_FROM_ARRAY {180,630}            /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
-#define AZIMUTH_CALIBRATION_TO_ARRAY {180,630}
+#define AZIMUTH_CALIBRATION_FROM_ARRAY {0,359}            /* these are in "raw" degrees, i.e. when going east past 360 degrees, add 360 degrees*/
+#define AZIMUTH_CALIBRATION_TO_ARRAY {0,359}
 
 // example: reverse rotation sensing
 //   #define AZIMUTH_CALIBRATION_FROM_ARRAY {0,359}

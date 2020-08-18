@@ -84,7 +84,7 @@
 // #define FEATURE_MIDAS_I2C_DISPLAY
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY  
 
-// #define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+#define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
 
@@ -111,16 +111,16 @@
 
 /* less often used features and options */
 #define OPTION_GS_232B_EMULATION          // comment this out to default to Yaesu GS-232A emulation when using FEATURE_YAESU_EMULATION above
-// #define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
-// #define FEATURE_LIMIT_SENSE
+#define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
+#define FEATURE_LIMIT_SENSE
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 // #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 // #define FEATURE_PARK
 // #define FEATURE_AUTOPARK               // Requires FEATURE_PARK
-// #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings are AZ_MANUAL_ROTATE_CCW_LIMIT, AZ_MANUAL_ROTATE_CW_LIMIT) 
+#define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings are AZ_MANUAL_ROTATE_CCW_LIMIT, AZ_MANUAL_ROTATE_CW_LIMIT) 
 // #define OPTION_EL_MANUAL_ROTATE_LIMITS    // (settings are EL_MANUAL_ROTATE_DOWN_LIMIT, EL_MANUAL_ROTATE_UP_LIMIT)
-// #define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
-// #define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
+#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
+#define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 // #define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
 // #define FEATURE_ELEVATION_CORRECTION      // correct the elevation using a calibration table in rotator_settings.h
 // #define FEATURE_AZ_ROTATION_STALL_DETECTION // Azimuth rotation stall detection - pin: az_rotation_stall_detected
