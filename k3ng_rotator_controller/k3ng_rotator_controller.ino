@@ -765,6 +765,10 @@
           Refactoring service_calc_satellite_data() to do all satellite az, el, lat, long, next AOS, and next LOS calculations.
           Enhanced the satellite[] struct to contain more information.  Going to have service_calc_satellite_data() populate this.
 
+      2020.08.19.01 
+        FEATURE_NEXTION_DISPLAY
+          Fixed bugs with gSC and gL API variables.  I picked the wrong week to quit sniffing glue.   
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -776,7 +780,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.18.01"
+#define CODE_VERSION "2020.08.19.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1391,7 +1395,7 @@ struct config_t {
     char name[SATELLITE_NAME_LENGTH];
     #if defined FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS
       int azimuth;
-      int elevation;
+      float elevation;
       int next_aos_az;
       int next_los_az;
       double longitude;
@@ -4341,6 +4345,7 @@ void service_nextion_display(){
   // Update various things
   if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
     // System Capabilities
+    temp = 0;
     #if defined(FEATURE_YAESU_EMULATION)
       #if defined(OPTION_GS_232B_EMULATION)
         temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
@@ -4375,10 +4380,10 @@ void service_nextion_display(){
     #if defined(FEATURE_SATELLITE_TRACKING)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
     #endif    
-    #if defined(FEATURE_SATELLITE_TRACKING)
+    #if defined(FEATURE_PARK)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PARK;  //2048
     #endif 
-    #if defined(FEATURE_SATELLITE_TRACKING)
+    #if defined(FEATURE_AUTOPARK)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUTOPARK;  //4096
     #endif 
 
@@ -4389,6 +4394,7 @@ void service_nextion_display(){
     strcat(workstring1,workstring2);
     sendNextionCommand(workstring1);
 
+    temp = 0;
 
     #if defined(LANGUAGE_ENGLISH)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ENGLISH;
@@ -17973,6 +17979,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     static byte print_header;
     static byte print_done;
     static byte this_satellite;
+    static byte current_satellite_position_in_array;
 
     #define JUST_GETTING_STARTED 0
     #define GET_AOS_THEN_LOS 1
@@ -18018,17 +18025,29 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       aos_and_los_collection_state = JUST_GETTING_STARTED;
       service_state = SERVICE_CALC_IN_PROGRESS;
       this_satellite = do_this_satellite;
+      current_satellite_position_in_array = 255;
       
 
       if ((format == PRINT_AOS_LOS_MULTILINE_REPORT) || (format == PRINT_AOS_LOS_TABULAR_REPORT)){
-        if (this_satellite < 254){
+        if (this_satellite < 254){  // get satellite from the array
           pull_satellite_tle_and_activate(satellite[this_satellite].name,NOT_VERBOSE,LOAD_INTO_CALC_SATELLITE);
-        } else {
+        } else {                    // get the current satellite
           pull_satellite_tle_and_activate(current_satellite_name,NOT_VERBOSE,LOAD_INTO_CALC_SATELLITE);
         }
       }
 
+
       if ((format == UPDATE_CURRENT_SAT_AOS_AND_LOS_GLOBAL_VARS) || (format == UPDATE_JUST_CURRENT_SAT_AZ_EL)){
+
+        for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
+          if (strlen(satellite[z].name) > 2){
+            if (strcmp(satellite[z].name,current_satellite_name) == 0){
+              current_satellite_position_in_array = z;
+              //control_port->println("found!");
+            }
+          }
+        }
+
         sat_datetime.settime(current_clock.year, current_clock.month, current_clock.day, current_clock.hours, current_clock.minutes, current_clock.seconds);
         obs.LA = latitude;
         obs.LO = longitude;
@@ -18037,6 +18056,12 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         sat.predict(sat_datetime);
         sat.LL(current_satellite_latitude,current_satellite_longitude);
         sat.altaz(obs, current_satellite_elevation, current_satellite_azimuth);
+        if (current_satellite_position_in_array != 255){
+          satellite[current_satellite_position_in_array].azimuth = int(current_satellite_azimuth);
+          satellite[current_satellite_position_in_array].elevation = int(current_satellite_elevation);
+          satellite[current_satellite_position_in_array].latitude = current_satellite_latitude;
+          satellite[current_satellite_position_in_array].longitude = current_satellite_longitude;          
+        }
       }
 
       if (format == UPDATE_JUST_CURRENT_SAT_AZ_EL){
