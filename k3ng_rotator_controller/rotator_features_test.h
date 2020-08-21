@@ -29,7 +29,6 @@
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
 #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
-#define FEATURE_SATELLITE_TRACKING_MULTI_SAT_AOS_LOS
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -186,6 +185,7 @@
 #define OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE
 // #define OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP // if disabled, rotational and configuration commands will be ignored on the serial port for the first 10 second after boot up
 
+#define OPTION_CLI_VT100
 
 										// ######## ########  ######  ######## 
 										//    ##    ##       ##    ##    ##    
