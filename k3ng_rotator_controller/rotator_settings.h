@@ -2,7 +2,7 @@
 /* -------------------------- rotation settings ---------------------------------------*/
 
 #define AZIMUTH_STARTING_POINT_DEFAULT 0      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
-#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 350 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
+#define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
 
 /* 
 
@@ -45,15 +45,15 @@ You can tweak these, but read the online documentation!
 //AZ
 #define AZ_SLOWSTART_DEFAULT 0            // 0 = off ; 1 = on
 #define AZ_SLOWDOWN_DEFAULT 0             // 0 = off ; 1 = on
-#define AZ_SLOW_START_UP_TIME 2000        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
-#define AZ_SLOW_START_STARTING_PWM 1      // PWM starting value for slow start (must be < 256)
+#define AZ_SLOW_START_UP_TIME 600        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
+#define AZ_SLOW_START_STARTING_PWM 180      // PWM starting value for slow start (must be < 256)
 #define AZ_SLOW_START_STEPS 20            // must be < 256
 
 
-#define SLOW_DOWN_BEFORE_TARGET_AZ 10.0  // if slow down is enabled, slowdown will be activated within this many degrees of target azimuth
-#define AZ_SLOW_DOWN_PWM_START 200         // starting PWM value for slow down (must be < 256)
-#define	AZ_SLOW_DOWN_PWM_STOP 20          // ending PWM value for slow down (must be < 256)
-#define AZ_SLOW_DOWN_STEPS 200 //20       // must be < 256
+#define SLOW_DOWN_BEFORE_TARGET_AZ 20.0  // if slow down is enabled, slowdown will be activated within this many degrees of target azimuth
+#define AZ_SLOW_DOWN_PWM_START 220         // starting PWM value for slow down (must be < 256)
+#define	AZ_SLOW_DOWN_PWM_STOP 100          // ending PWM value for slow down (must be < 256)
+#define AZ_SLOW_DOWN_STEPS 20 //20       // must be < 256
 #define AZ_INITIALLY_IN_SLOW_DOWN_PWM 50  // PWM value to start at if we're starting in the slow down zone (1 - 255)
 
 //EL
@@ -79,16 +79,16 @@ You can tweak these, but read the online documentation!
 
 // Settings for OPTION_AZ_MANUAL_ROTATE_LIMITS
 #define AZ_MANUAL_ROTATE_CCW_LIMIT 0   // if using a rotator that starts at 180 degrees, set this to something like 185
-#define AZ_MANUAL_ROTATE_CW_LIMIT 360  // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
+#define AZ_MANUAL_ROTATE_CW_LIMIT 450  // add 360 to this if you go past 0 degrees (i.e. 180 CW after 0 degrees = 540)
 
 // Settings for OPTION_EL_MANUAL_ROTATE_LIMITS
 #define EL_MANUAL_ROTATE_DOWN_LIMIT -1
 #define EL_MANUAL_ROTATE_UP_LIMIT 181
 
 // Speed pot settings
-#define SPEED_POT_LOW 0
+#define SPEED_POT_LOW 10
 #define SPEED_POT_HIGH 1023
-#define SPEED_POT_LOW_MAP 1
+#define SPEED_POT_LOW_MAP 120
 #define SPEED_POT_HIGH_MAP 255
 
 // Azimuth preset pot settings
@@ -100,7 +100,7 @@ You can tweak these, but read the online documentation!
 #define ENCODER_PRESET_TIMEOUT 5000
 
 // various code settings
-#define AZIMUTH_TOLERANCE 3.0            // rotator will stop within X degrees when doing autorotation
+#define AZIMUTH_TOLERANCE 0.6           // rotator will stop within X degrees when doing autorotation
 #define ELEVATION_TOLERANCE 0.1 //1.0
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
@@ -122,7 +122,7 @@ You can tweak these, but read the online documentation!
 #define LCD_SUN_TRACKING_ROW 4                                    // LCD display row for OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000
 #define LCD_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL_ROW 3                // LCD display row for OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL
-#define SPLASH_SCREEN_TIME 3000
+#define SPLASH_SCREEN_TIME 1500
 #define LCD_PERIODIC_REDRAW_TIME_SECS 0      // set to 0 to totally disable periodically redrawing the screen
 #define LCD_CLEAR_BEFORE_REDRAW 1            // set to 0 to disable doing a clear before redraw
 #define LCD_REDRAW_UPON_COMMANDS 0           // set to 1 to enable screen redraws upon commands and button presses
@@ -149,15 +149,15 @@ You can tweak these, but read the online documentation!
 #define EEPROM_MAGIC_NUMBER 111
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
-#define DISPLAY_DECIMAL_PLACES 0
+#define DISPLAY_DECIMAL_PLACES 1
 
-#define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
+#define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.0627
 #define EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
 
-#define AZ_POSITION_PULSE_DEG_PER_PULSE 0.5
+#define AZ_POSITION_PULSE_DEG_PER_PULSE 0.0627
 #define EL_POSITION_PULSE_DEG_PER_PULSE 0.5
 
-#define PARK_AZIMUTH 360.0      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
+#define PARK_AZIMUTH 0.0      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
 #define PARK_ELEVATION 0.0    // replace the 0.0 with your park elevation
 #define NOT_PARKED_DETECT_TIME_MS 1000
 
@@ -171,25 +171,25 @@ You can tweak these, but read the online documentation!
 #define AZIMUTH_SMOOTHING_FACTOR 0      // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR 0    // value = 0 to 99.9
 
-#define AZIMUTH_MEASUREMENT_FREQUENCY_MS 100        // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
-#define ELEVATION_MEASUREMENT_FREQUENCY_MS 100      // this does not apply if using FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT
+#define AZIMUTH_MEASUREMENT_FREQUENCY_MS 50        // this does not apply if using FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT
+#define ELEVATION_MEASUREMENT_FREQUENCY_MS 50      // this does not apply if using FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT
 
 #define JOYSTICK_WAIT_TIME_MS 100
 
-#define ROTATION_INDICATOR_PIN_ACTIVE_STATE LOW
+#define ROTATION_INDICATOR_PIN_ACTIVE_STATE LOW 
 #define ROTATION_INDICATOR_PIN_INACTIVE_STATE HIGH
-#define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 0
+#define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 1
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
 
-#define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
-#define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
+#define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 5700.0
+#define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 5742.0
 #define AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION 0  // can be 0 to 4 x AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV
 #define EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION 0  // can be 0 to 4 x EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV
 
 #define SERIAL_LED_TIME_MS 250
 
-#define DEFAULT_LATITUDE 40.889958
-#define DEFAULT_LONGITUDE -75.585972
+#define DEFAULT_LATITUDE 48.228333
+#define DEFAULT_LONGITUDE -122.46
 
 #define MOON_TRACKING_CHECK_INTERVAL 5000
 #define MOON_AOS_AZIMUTH_MIN 0
@@ -298,11 +298,11 @@ You can tweak these, but read the online documentation!
 #define PIN_LED_INACTIVE_STATE LOW   
 
 #define AUDIBLE_ALERT_TYPE 1   // 1 = Logic high/low (set AUDIBLE_PIN_ACTIVE_STATE and AUDIBLE_PIN_INACTIVE_STATE below, 2 = tone (set AUDIBLE_PIN_TONE_FREQ below)
-#define AUDIBLE_ALERT_DURATION_MS 250
+#define AUDIBLE_ALERT_DURATION_MS 200
 #define AUDIBLE_PIN_ACTIVE_STATE HIGH
 #define AUDIBLE_PIN_INACTIVE_STATE LOW
 #define AUDIBLE_PIN_TONE_FREQ 1000
-#define AUDIBLE_ALERT_AT_STARTUP 1
+#define AUDIBLE_ALERT_AT_STARTUP 0
 #define AUDIBLE_ALERT_AT_AZ_TARGET 1
 #define AUDIBLE_ALERT_AT_EL_TARGET 1
 
@@ -312,10 +312,10 @@ You can tweak these, but read the online documentation!
 #define PRESET_ENCODER_CHANGE_TIME_MS 2000 
 
 // FEATURE_AZ_ROTATION_STALL_DETECTION
-#define STALL_CHECK_FREQUENCY_MS_AZ 2000
+#define STALL_CHECK_FREQUENCY_MS_AZ 1000
 #define STALL_CHECK_DEGREES_THRESHOLD_AZ 2
 // FEATURE_EL_ROTATION_STALL_DETECTION
-#define STALL_CHECK_FREQUENCY_MS_EL 2000
+#define STALL_CHECK_FREQUENCY_MS_EL 1000
 #define STALL_CHECK_DEGREES_THRESHOLD_EL 2
 
 //#define SET_I2C_BUS_SPEED 800000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz

@@ -2,5 +2,7 @@
     "board": "arduino:avr:mega",
     "configuration": "cpu=atmega2560",
     "programmer": "AVRISP mkII",
-    "sketch": "k3ng_rotator_controller\\k3ng_rotator_controller.ino"
+    "sketch": "k3ng_rotator_controller\\k3ng_rotator_controller.ino",
+    "port": "COM3",
+    "output": "../build/"
 }
