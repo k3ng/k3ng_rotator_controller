@@ -6,7 +6,7 @@
 
 /* main features */
 
-// #define FEATURE_ELEVATION_CONTROL      // uncomment this for AZ/EL rotators
+#define FEATURE_ELEVATION_CONTROL      // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION      // Easycom protocol emulation on control port
 // #define FEATURE_DCU_1_EMULATION        // DCU-1 protocol emulation on control port (only supports azimuth only systems)
@@ -14,7 +14,7 @@
 // #define FEATURE_MOON_TRACKING
 // #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
-// #define FEATURE_GPS
+#define FEATURE_GPS
 #define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_ETHERNET
@@ -22,7 +22,7 @@
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
-// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -68,7 +68,7 @@
 // #define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
 // #define FEATURE_EL_POSITION_HH12_AS5045_SSI
-// #define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
+#define FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_EL_POSITION_MEMSIC_2125
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
    
@@ -77,7 +77,7 @@
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
-// #define FEATURE_RFROBOT_I2C_DISPLAY
+#define FEATURE_RFROBOT_I2C_DISPLAY
 // #define FEATURE_YWROBOT_I2C_DISPLAY
 // #define FEATURE_SAINSMART_I2C_LCD
 // #define FEATURE_MIDAS_I2C_DISPLAY
@@ -117,7 +117,7 @@
 //#define FEATURE_PARK
 //#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings are AZ_MANUAL_ROTATE_CCW_LIMIT, AZ_MANUAL_ROTATE_CW_LIMIT) 
-// #define OPTION_EL_MANUAL_ROTATE_LIMITS    // (settings are EL_MANUAL_ROTATE_DOWN_LIMIT, EL_MANUAL_ROTATE_UP_LIMIT)
+#define OPTION_EL_MANUAL_ROTATE_LIMITS    // (settings are EL_MANUAL_ROTATE_DOWN_LIMIT, EL_MANUAL_ROTATE_UP_LIMIT)
 #define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 #define OPTION_DELAY_C_CMD_OUTPUT         // uncomment this when using Yaesu emulation with Ham Radio Deluxe
 // #define FEATURE_AZIMUTH_CORRECTION        // correct the azimuth using a calibration table in rotator_settings.h
@@ -136,8 +136,8 @@
 
 #define OPTION_DISPLAY_STATUS
 #define OPTION_DISPLAY_HEADING
-#define OPTION_DISPLAY_HEADING_AZ_ONLY
-#define OPTION_DISPLAY_HEADING_EL_ONLY
+//#define OPTION_DISPLAY_HEADING_AZ_ONLY
+//#define OPTION_DISPLAY_HEADING_EL_ONLY
 // #define OPTION_DISPLAY_HHMM_CLOCK  // display HH:MM clock  (set position with #define LCD_HHMM_CLOCK_POSITION)
 //#define OPTION_DISPLAY_HHMMSS_CLOCK  // display HH:MM:SS clock  (set position with #define LCD_HHMMSS_CLOCK_POSITION)
 // #define OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD // display alternating HH:MM clock and maidenhead on LCD row 1 (set position with #define LCD_HHMMCLOCK_POSITION)
@@ -147,8 +147,8 @@
 #define OPTION_DISPLAY_GPS_INDICATOR  // display GPS indicator on LCD - set position with LCD_GPS_INDICATOR_POSITION and LCD_GPS_INDICATOR_ROW
 #define OPTION_DISPLAY_DIRECTION_STATUS                         // LCD N, W, E, S, NW, etc. direction indicator
 // #define OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY               // LCD
-// #define OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY          // LCD
-// #define OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING           // LCD
+#define OPTION_DISPLAY_SATELLITE_TRACKING_CONTINUOUSLY          // LCD
+//#define OPTION_DISPLAY_SATELLITE_TRACKING_ALTERNATING           // LCD
 // #define OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY                // LCD
 #define OPTION_DISPLAY_MOON_OR_SUN_OR_SAT_TRACKING_CONDITIONAL  // LCD
 #define OPTION_DISPLAY_VERSION_ON_STARTUP  //code provided by Paolo, IT9IPQ

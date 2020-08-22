@@ -111,13 +111,13 @@ You can tweak these, but read the online documentation!
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION LEFT
-#define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 1
+#define LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW 2
 #define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION CENTER
-#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 3
-#define LCD_BIG_CLOCK_ROW 4
+#define LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW 2
+#define LCD_BIG_CLOCK_ROW 3
 #define LCD_GPS_INDICATOR_POSITION RIGHT //LEFT or RIGHT
-#define LCD_GPS_INDICATOR_ROW 1
-#define LCD_MOON_TRACKING_ROW 3                                   // LCD display row for OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
+#define LCD_GPS_INDICATOR_ROW 3
+#define LCD_MOON_TRACKING_ROW 4                                  // LCD display row for OPTION_DISPLAY_MOON_TRACKING_CONTINUOUSLY
 #define LCD_MOON_TRACKING_UPDATE_INTERVAL 5000
 #define LCD_SUN_TRACKING_ROW 4                                    // LCD display row for OPTION_DISPLAY_SUN_TRACKING_CONTINUOUSLY
 #define LCD_SUN_TRACKING_UPDATE_INTERVAL 5000
@@ -127,17 +127,17 @@ You can tweak these, but read the online documentation!
 #define LCD_CLEAR_BEFORE_REDRAW 1            // set to 0 to disable doing a clear before redraw
 #define LCD_REDRAW_UPON_COMMANDS 0           // set to 1 to enable screen redraws upon commands and button presses
 
-#define LCD_HEADING_ROW 2
+#define LCD_HEADING_ROW 1
 #define LCD_HEADING_FIELD_SIZE 20
 #define LCD_AZ_ONLY_HEADING_ROW 1
 #define LCD_AZ_ONLY_HEADING_FIELD_SIZE 20
 #define LCD_EL_ONLY_HEADING_ROW 2
 #define LCD_EL_ONLY_HEADING_FIELD_SIZE 20
-#define LCD_STATUS_ROW 1
+#define LCD_STATUS_ROW 3
 #define LCD_STATUS_FIELD_SIZE 20
-#define LCD_DIRECTION_ROW 1
-#define LCD_HHMMSS_CLOCK_ROW 1
-#define LCD_HHMM_CLOCK_ROW 1
+#define LCD_DIRECTION_ROW 3
+#define LCD_HHMMSS_CLOCK_ROW 2
+#define LCD_HHMM_CLOCK_ROW 2
 #define PARKING_STATUS_DISPLAY_TIME_MS 5000
 
 #define AZ_BRAKE_DELAY 3000            // in milliseconds
