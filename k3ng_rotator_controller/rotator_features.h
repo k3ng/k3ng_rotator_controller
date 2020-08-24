@@ -77,7 +77,7 @@
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
-#define FEATURE_RFROBOT_I2C_DISPLAY
+// #define FEATURE_RFROBOT_I2C_DISPLAY
 // #define FEATURE_YWROBOT_I2C_DISPLAY
 // #define FEATURE_SAINSMART_I2C_LCD
 // #define FEATURE_MIDAS_I2C_DISPLAY
@@ -126,12 +126,12 @@
 // #define FEATURE_EL_ROTATION_STALL_DETECTION // Elevation rotation stall detection - pin: el_rotation_stall_detected
 // #define OPTION_ROTATION_STALL_DETECTION_SERIAL_MESSAGE // Sends message out serial port when rotation stall has been detected
 // #define FEATURE_ANCILLARY_PIN_CONTROL     // control I/O pins with serial commands \F, \N, \P
-// #define FEATURE_JOYSTICK_CONTROL          // analog joystick support
+#define FEATURE_JOYSTICK_CONTROL          // analog joystick support
 // #define OPTION_JOYSTICK_REVERSE_X_AXIS
 // #define OPTION_JOYSTICK_REVERSE_Y_AXIS
 #define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED    // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
 // #define OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES // for azimuth and elevation position pulse input feature, ignore pulses that arrive when no rotation is active
-// #define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
+#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
 #define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
 
 #define OPTION_DISPLAY_STATUS

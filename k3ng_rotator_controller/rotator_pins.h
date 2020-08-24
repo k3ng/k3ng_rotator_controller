@@ -101,8 +101,8 @@
 
 
 #ifdef FEATURE_JOYSTICK_CONTROL
-  #define pin_joystick_x A0
-  #define pin_joystick_y A1
+  #define pin_joystick_x A14
+  #define pin_joystick_y A15
 #endif //FEATURE_JOYSTICK_CONTROL
 
 #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
