@@ -788,6 +788,9 @@
           Added NEXTION_NUMBER_OF_NEXT_SATELLITES setting.  This determines how many satellites are sent via the vSatNx, vSatOx, and vSatAx API variables
           https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display for more information
 
+      2020.08.24.02
+        DEBUG_LOOP - additional code for various new subroutines    
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -799,7 +802,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.24.01"
+#define CODE_VERSION "2020.08.24.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -3263,7 +3266,7 @@ void service_remote_unit_serial_buffer(){
 void check_serial(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("check_serial");
+    control_port->println(F("check_serial"));
     control_port->flush();
   #endif // DEBUG_LOOP    
 
@@ -4198,6 +4201,11 @@ char * azimuth_direction(int azimuth_in){
 // --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
 void sendNextionCommand(const char* send_command){
+
+    #ifdef DEBUG_LOOP
+      control_port->println(F("sendNextionCommand()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP    
     
     #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_SEND)
       debug.print("\r\nsendNextionCommand: send:");
@@ -4216,7 +4224,7 @@ void sendNextionCommand(const char* send_command){
 void service_nextion_display(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_nextion_display()");
+    control_port->println(F("service_nextion_display()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -5215,7 +5223,7 @@ TODO:
 void update_lcd_display(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("update_lcd_display()");
+    control_port->println(F("update_lcd_display()"));
     control_port->flush();
   #endif // DEBUG_LOOP   
 
@@ -6785,6 +6793,8 @@ const char* get_satellite_from_tle_file(byte initialize_me_dude){
 // --------------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
   void populate_satellite_list_array(){
+
+
 
     char sat_name[SATELLITE_NAME_LENGTH];
     byte hit_the_end = 0;
@@ -8649,7 +8659,7 @@ void update_el_variable_outputs(byte speed_voltage){
 
 
   #ifdef DEBUG_LOOP
-    control_port->println("update_el_variable_outputs()");
+    control_port->println(F("update_el_variable_outputs()"));
     control_port->flush();
   #endif // DEBUG_LOOP   
 
@@ -13128,7 +13138,7 @@ char * zulu_clock_string(){
 void update_time(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("update_time()");
+    control_port->println(F("update_time()"));
     control_port->flush();
   #endif // DEBUG_LOOP   
 
@@ -13323,7 +13333,7 @@ void update_time(){
 void service_gps(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_gps()");
+    control_port->println(F("service_gps()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -15410,6 +15420,11 @@ Not implemented yet:
   void populate_satellite_array_order(){
 
 
+    #ifdef DEBUG_LOOP
+      control_port->println(F("populate_satellite_array_order()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP   
+
     //#define ZNXR_NZREVPN_NZREVPN_NTNVA 2020
 
     long satellite_next_event_seconds[SATELLITE_LIST_LENGTH];
@@ -17387,7 +17402,7 @@ void change_tracking(byte action){
 void service_moon_tracking(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_moon_tracking()");
+    control_port->println(F("service_moon_tracking()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -17912,6 +17927,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #if defined(FEATURE_SATELLITE_TRACKING)
   void load_satellite_tle_into_P13(const char *name_in, const char *tle_line1, const char *tle_line2,byte load_hardcoded_tle,byte where_to_load_it){
 
+    #ifdef DEBUG_LOOP
+      control_port->println(F("load_satellite_tle_into_P13()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP   
+
     static char name[SATELLITE_NAME_LENGTH];
 
     char hardcoded_tle_line_1[SATELLITE_TLE_CHAR_SIZE];  
@@ -17950,6 +17970,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
   void service_satellite_tracking(byte push_update){
+
+    #ifdef DEBUG_LOOP
+      control_port->println(F("service_satellite_tracking()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP
 
     static unsigned long last_tracking_check = 0;
     static unsigned long last_update_satellite_position = 0;
@@ -18275,6 +18300,12 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
                                   // the # of the sat
                                   // in the satellite[] array
                                   // 255 = current sat
+
+    #ifdef DEBUG_LOOP
+      control_port->println(F("service_calc_satellite_data()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP
+
 
     static double calc_satellite_latitude;
     static double calc_satellite_longitude;
@@ -18945,6 +18976,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
 void run_this_once(){
 
+
+  #ifdef DEBUG_LOOP
+    control_port->println(F("run_this_once()"));
+    control_port->flush();
+  #endif // DEBUG_LOOP  
 
   #if defined(DEBUG_TEST_POLAR_TO_CARTESIAN)
     double x = 0;
