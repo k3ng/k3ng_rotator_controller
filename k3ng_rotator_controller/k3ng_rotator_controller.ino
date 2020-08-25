@@ -789,7 +789,10 @@
           https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display for more information
 
       2020.08.24.02
-        DEBUG_LOOP - additional code for various new subroutines    
+        DEBUG_LOOP - additional code for various new subroutines  
+
+      2020.08.25.01
+        DEBUG_SATELLITE_ARRAY_ORDER - additional debugging code  
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -802,7 +805,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.24.02"
+#define CODE_VERSION "2020.08.25.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4888,10 +4891,10 @@ TODO:
     last_az_update = millis();
 
     #if defined(DEBUG_NEXTION_DISPLAY)
-      sendNextionCommand("prints vAz.txt,6");
-      // sendNextionCommand("get vAz.txt");
-      len = 6;
-      recvNextionRetString(buffer,len,500); 
+      // sendNextionCommand("prints vAz.txt,6");
+      // // sendNextionCommand("get vAz.txt");
+      // len = 6;
+      // recvNextionRetString(buffer,len,500); 
       debug.print("\r\nservice_nextion_display: get recv len: ");
       debug.print(len);
       debug.print(" buffer: ");
@@ -13360,7 +13363,7 @@ void service_gps(){
       #if defined(DEBUG_GPS_SERIAL)
         debug.println("");
       #endif //DEBUG_GPS_SERIAL    
-      debug.print("service_gps: fix_age:");
+      debug.print(F("service_gps: fix_age:"));
       debug.print(fix_age);
       debug.print(" lat:");
       debug.print(gps_lat,4);
@@ -13394,7 +13397,7 @@ void service_gps(){
           #ifdef DEBUG_GPS_SERIAL
             debug.println("");
           #endif //DEBUG_GPS_SERIAL        
-          debug.print("service_gps: clock sync:");
+          debug.print(F("service_gps: clock sync:"));
           sprintf(tempstring,"%s",timezone_modified_clock_string());
           debug.print(tempstring);
           debug.println("");
@@ -13406,7 +13409,7 @@ void service_gps(){
         if ((millis() - last_rtc_gps_sync_time) >= ((unsigned long)SYNC_RTC_TO_GPS_SECONDS * 1000)) {
           rtc.adjust(DateTime(gps_year, gps_month, gps_day, gps_hours, gps_minutes, gps_seconds));
           #ifdef DEBUG_RTC
-            debug.println("service_gps: synced RTC");
+            debug.println(F("service_gps: synced RTC"));
           #endif // DEBUG_RTC
           last_rtc_gps_sync_time = millis();
         }
@@ -13436,12 +13439,12 @@ void service_gps(){
           longitude = float(gps_lon) / 1000000.0;
           altitude_m = float(gps.altitude()) / 100.0;
           #ifdef DEBUG_GPS
-            debug.print("service_gps: coord sync:");
+            debug.print(F("service_gps: coord sync:"));
             debug.print(latitude,2);
             debug.print(" ");
             debug.print(longitude,2);
             debug.print(" ");
-            debug.print(altitude,2);
+            debug.print(altitude_m,2);
             debug.println("m");
           #endif // DEBUG_GPS
         }
@@ -13490,7 +13493,7 @@ void sync_master_coordinates_to_slave(){
   if ((millis() - last_sync_master_coordinates_to_slave) >= ((unsigned long)SYNC_MASTER_COORDINATES_TO_SLAVE_SECS * 1000)){
     if (submit_remote_command(REMOTE_UNIT_RC_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
-      debug.println("sync_master_coordinates_to_slave: submitted REMOTE_UNIT_RC_COMMAND");
+      debug.println(F("sync_master_coordinates_to_slave: submitted REMOTE_UNIT_RC_COMMAND"));
       #endif //DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
       last_sync_master_coordinates_to_slave = millis();  
     }  
@@ -13509,7 +13512,7 @@ void sync_master_clock_to_slave(){
   if ((millis() - last_sync_master_clock_to_slave) >= ((unsigned long)SYNC_MASTER_CLOCK_TO_SLAVE_CLOCK_SECS * 1000)){
     if (submit_remote_command(REMOTE_UNIT_CL_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
-      debug.println("sync_master_clock_to_slave: submitted REMOTE_UNIT_CL_COMMAND");
+      debug.println(F("sync_master_clock_to_slave: submitted REMOTE_UNIT_CL_COMMAND"));
       #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
       last_sync_master_clock_to_slave = millis();  
     }  
@@ -13519,7 +13522,7 @@ void sync_master_clock_to_slave(){
   if (clock_synced_to_remote){
     if (submit_remote_command(REMOTE_UNIT_GS_COMMAND, 0, 0)) {
       #ifdef DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
-      debug.println("sync_master_clock_to_slave: submitted REMOTE_UNIT_GS_COMMAND");
+      debug.println(F("sync_master_clock_to_slave: submitted REMOTE_UNIT_GS_COMMAND"));
       #endif //DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
       clock_synced_to_remote = 0; 
     }      
@@ -13547,7 +13550,7 @@ char * clock_status_string(){
 void service_rtc(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_rtc()");
+    control_port->println(F("service_rtc()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -13558,7 +13561,7 @@ void service_rtc(){
     #ifdef FEATURE_GPS
       if (clock_status == GPS_SYNC) { // if we're also equipped with GPS and we're synced to it, don't sync to realtime clock
         #ifdef DEBUG_RTC
-          debug.println("service_rtc: synced to GPS already.  Exiting.");
+          debug.println(F("service_rtc: synced to GPS already.  Exiting."));
         #endif // DEBUG_RTC
         return;
       }
@@ -13569,7 +13572,7 @@ void service_rtc(){
       if (rtc.isrunning()){
         DateTime now = rtc.now();
         #ifdef DEBUG_RTC
-          debug.print("service_rtc: syncing: ");
+          debug.print(F("service_rtc: syncing: "));
           debug.print(now.year());
           debug.print("/");
           debug.print(now.month());
@@ -13595,7 +13598,7 @@ void service_rtc(){
       } else {
         clock_status = FREE_RUNNING;
         #ifdef DEBUG_RTC
-          debug.println("service_rtc: error: RTC not running");
+          debug.println(F("service_rtc: error: RTC not running"));
         #endif // DEBUG_RTC
       }
     #endif //#FEATURE_RTC_DS1307
@@ -13606,7 +13609,7 @@ void service_rtc(){
       rtc.get_time();
       if ((rtc.year > 2000) && (rtc.month > 0) && (rtc.month < 13)){  // do we have a halfway reasonable date?
         #ifdef DEBUG_RTC
-          control_port->print("service_rtc: syncing: ");
+          control_port->print(F("service_rtc: syncing: "));
           control_port->print(rtc.year, DEC);
           control_port->print('/');
           control_port->print(rtc.month, DEC);
@@ -13631,7 +13634,7 @@ void service_rtc(){
       } else {
         clock_status = FREE_RUNNING;
         #ifdef DEBUG_RTC
-          control_port->print("service_rtc: error: RTC not returning valid date or time: ");
+          control_port->print(F("service_rtc: error: RTC not returning valid date or time: "));
           control_port->print(rtc.year, DEC);
           control_port->print('/');
           control_port->print(rtc.month, DEC);
@@ -15379,7 +15382,7 @@ Not implemented yet:
         control_port->print(tm_date_string(&current_satellite_next_aos));
         control_port->print(" ");
         control_port->print(tm_time_string_short(&current_satellite_next_aos));        
-        control_port->print(" Az:");
+        control_port->print(F(" Az:"));
         // if (current_satellite_next_aos_az < 10){control_port->print(" ");}
         // if (current_satellite_next_aos_az < 100){control_port->print(" ");}
         control_port->print(current_satellite_next_aos_az,0);
@@ -15391,14 +15394,14 @@ Not implemented yet:
         control_port->print(tm_date_string(&current_satellite_next_los));
         control_port->print(" ");
         control_port->print(tm_time_string_short(&current_satellite_next_los));
-        control_port->print(" Az:");
+        control_port->print(F(" Az:"));
         // if (current_satellite_next_los_az < 10){control_port->print(" ");}
         // if (current_satellite_next_los_az < 100){control_port->print(" ");}
         control_port->print(current_satellite_next_los_az,0);
         //control_port->print(" ");
         // if (current_satellite_next_los_el > 0){control_port->print(" ");}
         // control_port->println(current_satellite_next_los_el,0);
-        control_port->print(" Max El:");
+        control_port->print(F(" Max El:"));
         control_port->println(current_satellite_next_aos_max_el);
         temp_datetime.seconds = 0; 
         control_port->print(satellite_aos_los_string(255));
@@ -15433,6 +15436,10 @@ Not implemented yet:
     byte x = 0;
     byte last_lowest_position_value = 255;
 
+    #if defined(DEBUG_SATELLITE_ARRAY_ORDER)
+      debug.println(F("populate_satellite_array_order: 1st loop"));
+    #endif
+
     // populate array with the next event time in seconds
     for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
       satellite_next_event_seconds[z] = 2147483646;
@@ -15454,7 +15461,7 @@ Not implemented yet:
     }
 
     #if defined(DEBUG_SATELLITE_ARRAY_ORDER)
-      debug.println("");
+      debug.println(F("\r\npopulate_satellite_array_order: 2nd loop"));
     #endif
 
     while(x < SATELLITE_LIST_LENGTH){
@@ -15476,8 +15483,10 @@ Not implemented yet:
         x = SATELLITE_LIST_LENGTH; // we're done
       }
       #if defined(DEBUG_SATELLITE_ARRAY_ORDER)
-        debug.print("populate_satellite_array_order: lowest_value_position: ");
-        debug.println(lowest_value_position);
+        debug.print(F("populate_satellite_array_order: lowest_value_position: "));
+        debug.print(lowest_value_position);
+        debug.print(F(" x: "));
+        debug.println(x);        
       #endif   
     } // while(x < SATELLITE_LIST_LENGTH){
 
@@ -16612,7 +16621,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'A':  // A - CW/CCW rotation stop
         #ifdef DEBUG_PROCESS_YAESU
           if (debug_mode) {
-            debug.print("yaesu_serial_command: A\n");
+            debug.print(F("yaesu_serial_command: A\n"));
           }
         #endif // DEBUG_PROCESS_YAESU
         submit_request(AZ, REQUEST_STOP, 0, 23);
@@ -16625,7 +16634,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'S':         // S - all stop
         #ifdef DEBUG_PROCESS_YAESU
           if (debug_mode) {
-            debug.print("yaesu_serial_command: S\n");
+            debug.print(F("yaesu_serial_command: S\n"));
           }
         #endif // DEBUG_PROCESS_YAESU
         stop_rotation();
@@ -16641,7 +16650,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'M': // M - auto azimuth rotation
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug.print("yaesu_serial_command: M\n");
+          debug.print(F("yaesu_serial_command: M\n"));
         }
         #endif // DEBUG_PROCESS_YAESU
         #ifdef FEATURE_PARK
@@ -16734,7 +16743,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'X':  // X - azimuth speed change
         #ifdef DEBUG_PROCESS_YAESU
         if (debug_mode) {
-          debug.print("yaesu_serial_command: X\n");
+          debug.print(F("yaesu_serial_command: X\n"));
         }
         #endif // DEBUG_PROCESS_YAESU
         
@@ -16788,7 +16797,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         case 'U':  // U - manual up rotation
           #ifdef DEBUG_PROCESS_YAESU
               if (debug_mode) {
-                debug.print("yaesu_serial_command: U\n");
+                debug.print(F("yaesu_serial_command: U\n"));
               }
           #endif // DEBUG_PROCESS_YAESU
           #ifdef FEATURE_PARK
@@ -16826,7 +16835,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         case 'E':  // E - stop elevation rotation
           #ifdef DEBUG_PROCESS_YAESU
             if (debug_mode) {
-              debug.print("yaesu_serial_command: E\n");
+              debug.print(F("yaesu_serial_command: E\n"));
             }
           #endif // DEBUG_PROCESS_YAESU
           #ifdef FEATURE_PARK
@@ -16861,7 +16870,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
       case 'W':  // W - auto elevation rotation
         #ifdef DEBUG_PROCESS_YAESU
           if (debug_mode) {
-            debug.print("yaesu_serial_command: W\n");
+            debug.print(F("yaesu_serial_command: W\n"));
           }
         #endif // DEBUG_PROCESS_YAESU
 
@@ -16919,7 +16928,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
           } else {
             #ifdef DEBUG_PROCESS_YAESU
               if (debug_mode) {
-                debug.print("process_yaesu_command: W cmd az error");
+                debug.print(F("process_yaesu_command: W cmd az error"));
               }
             #endif // DEBUG_PROCESS_YAESU
             strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
@@ -16939,7 +16948,7 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         } else {
           #ifdef DEBUG_PROCESS_YAESU
             if (debug_mode) {
-              debug.print("process_yaesu_command: W cmd az/el error");
+              debug.print(F("process_yaesu_command: W cmd az/el error"));
             }
           #endif // DEBUG_PROCESS_YAESU
           strcpy(return_string,"?>");      // bogus elevation - return and error and don't do anything
@@ -17015,10 +17024,10 @@ void process_yaesu_command(byte * yaesu_command_buffer, int yaesu_command_buffer
         strcpy_P(return_string,(const char*) F("?>"));
         #ifdef DEBUG_PROCESS_YAESU
           if (debug_mode) {
-            debug.print("process_yaesu_command: yaesu_command_buffer_index: ");
+            debug.print(F("process_yaesu_command: yaesu_command_buffer_index: "));
             debug.print(yaesu_command_buffer_index);
             for (int debug_x = 0; debug_x < yaesu_command_buffer_index; debug_x++) {
-              debug.print("process_yaesu_command: yaesu_command_buffer[");
+              debug.print(F("process_yaesu_command: yaesu_command_buffer["));
               debug.print(debug_x);
               debug.print("]: ");
               debug.print(yaesu_command_buffer[debug_x]);
@@ -17444,14 +17453,14 @@ void service_moon_tracking(){
     if (!moon_visible) {
       moon_visible = 1;
       #ifdef DEBUG_MOON_TRACKING
-        debug.println("service_moon_tracking: moon AOS");
+        debug.println(F("service_moon_tracking: moon AOS"));
       #endif // DEBUG_MOON_TRACKING
     }
   } else {
     if (moon_visible) {
       moon_visible = 0;
       #ifdef DEBUG_MOON_TRACKING
-        debug.println("service_moon_tracking: moon loss of AOS");
+        debug.println(F("service_moon_tracking: moon loss of AOS"));
       #endif // DEBUG_MOON_TRACKING
     } 
   }  
@@ -17490,7 +17499,7 @@ void service_moon_tracking(){
 void service_sun_tracking(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_sun_tarcking()");
+    control_port->println(F("service_sun_tracking()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -17531,14 +17540,14 @@ void service_sun_tracking(){
     if (!sun_visible) {
       sun_visible = 1;
       #ifdef DEBUG_SUN_TRACKING
-        debug.println("service_sun_tracking: sun AOS");
+        debug.println(F("service_sun_tracking: sun AOS"));
       #endif // DEBUG_SUN_TRACKING
     }
   } else {
     if (sun_visible) {
       sun_visible = 0;
       #ifdef DEBUG_SUN_TRACKING
-        debug.println("service_sun_tracking: sun loss of AOS");
+        debug.println(F("service_sun_tracking: sun loss of AOS"));
       #endif // DEBUG_SUN_TRACKING
     }
   }  
@@ -17672,9 +17681,9 @@ void set_az_stepper_freq(unsigned int frequency){
   }
 
   #ifdef DEBUG_STEPPER
-  debug.print("set_az_stepper_freq: ");
+  debug.print(F("set_az_stepper_freq: "));
   debug.print(frequency);
-  debug.print(" az_stepper_freq_count:");
+  debug.print(F(" az_stepper_freq_count:"));
   debug.print(az_stepper_freq_count);
   debug.println("");
   #endif //DEBUG_STEPPER
@@ -17835,13 +17844,13 @@ void service_process_debug(byte action,byte process_id){
                 case PROCESS_CHECK_SERIAL: control_port->print("check_serial\t\t"); break;
                 case PROCESS_SERVICE_NEXTION: control_port->print("service_nextion\t\t"); break;
                 case PROCESS_UPDATE_LCD_DISPLAY: control_port->print("update_lcd_display\t"); break;
-                case PROCESS_SERVICE_ROTATION: control_port->print("service_rotation\t"); break;
-                case PROCESS_UPDATE_SUN_POSITION: control_port->print("update_sun_position\t"); break;
-                case PROCESS_UPDATE_MOON_POSITION: control_port->print("update_moon_position\t"); break;
-                case PROCESS_UPDATE_TIME: control_port->print("update_time\t\t"); break;
-                case PROCESS_SERVICE_GPS: control_port->print("service_gps\t\t"); break;
-                case PROCESS_CHECK_FOR_DIRTY_CONFIGURATION: control_port->print("check_for_dirty_configuration"); break;
-                case PROCESS_CHECK_BUTTONS: control_port->print("check_buttons\t\t"); break;
+                case PROCESS_SERVICE_ROTATION: control_port->print(F("service_rotation\t")); break;
+                case PROCESS_UPDATE_SUN_POSITION: control_port->print(F("update_sun_position\t")); break;
+                case PROCESS_UPDATE_MOON_POSITION: control_port->print(F("update_moon_position\t")); break;
+                case PROCESS_UPDATE_TIME: control_port->print(F("update_time\t\t")); break;
+                case PROCESS_SERVICE_GPS: control_port->print(F("service_gps\t\t")); break;
+                case PROCESS_CHECK_FOR_DIRTY_CONFIGURATION: control_port->print(F("check_for_dirty_configuration")); break;
+                case PROCESS_CHECK_BUTTONS: control_port->print(F("check_buttons\t\t")); break;
                 case PROCESS_MISC_ADMIN: control_port->print("misc_admin\t\t"); break;
                 case PROCESS_DEBUG: control_port->print("debug\t\t\t"); break;
               }
@@ -18128,25 +18137,25 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       } else {  // do refreshing of the array only where needed: az, el, lat, and long (quick calculations) all the time; next aos/los only when satellite is within 5 degrees of the horizon
         if ((strlen(satellite[satellite_array_refresh_position].name) > 2) && (satellite[satellite_array_refresh_position].no_aos_ever != 1)){
             #if defined(DEBUG_SATELLITE_SERVICE)
-            debug.print("service_satellite_tracking: CALC_SEQUENTIAL_INTELLIGENT:");
+            debug.print(F("service_satellite_tracking: CALC_SEQUENTIAL_INTELLIGENT:"));
             debug.print(satellite_array_refresh_position);
             debug.print(": ");
           #endif 
           if (satellite[satellite_array_refresh_position].elevation > -5){
             #if defined(DEBUG_SATELLITE_SERVICE)
-              debug.println("UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS");
+              debug.println(F("UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS"));
             #endif             
             service_calc_satellite_data(satellite_array_refresh_position,1,UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
           } else {
             #if defined(DEBUG_SATELLITE_SERVICE)
-              debug.println("UPDATE_SAT_ARRAY_SLOT_JUST_AZ_EL");
+              debug.println(F("UPDATE_SAT_ARRAY_SLOT_JUST_AZ_EL"));
             #endif               
             service_calc_satellite_data(satellite_array_refresh_position,1,UPDATE_SAT_ARRAY_SLOT_JUST_AZ_EL,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
           }
         } else {
           #if defined(DEBUG_SATELLITE_SERVICE)
             if (satellite[satellite_array_refresh_position].no_aos_ever == 1){
-              debug.print("service_satellite_tracking: CALC_SEQUENTIAL_INTELLIGENT: skipping:");
+              debug.print(F("service_satellite_tracking: CALC_SEQUENTIAL_INTELLIGENT: skipping:"));
               debug.println(satellite[satellite_array_refresh_position].name);
             }
           #endif 
@@ -18370,16 +18379,16 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
       #if defined(DEBUG_SATELLITE_TRACKING_CALC)
         
-        debug.print("service_calc_satellite_data: ");
+        debug.print(F("service_calc_satellite_data: "));
         switch(do_this_format){
           case UPDATE_CURRENT_SAT_AZ_EL_NEXT_AOS_AND_LOS:
-            debug.print("UPDATE_CURRENT_SAT_AZ_EL_NEXT_AOS_AND_LOS");
+            debug.print(F("UPDATE_CURRENT_SAT_AZ_EL_NEXT_AOS_AND_LOS"));
             break;
           case UPDATE_CURRENT_SAT_JUST_AZ_EL:
-            debug.print("UPDATE_CURRENT_SAT_JUST_AZ_EL");
+            debug.print(F("UPDATE_CURRENT_SAT_JUST_AZ_EL"));
             break;
           case UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS:
-            debug.print("UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS");
+            debug.print(F("UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS"));
             break;                        
         }
 
@@ -18387,7 +18396,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         debug.print(do_this_satellite);
 
         if (service_state == SERVICE_CALC_IN_PROGRESS){
-          debug.print(" calc terminated by ");
+          debug.print(F(" calc terminated by "));
           if (do_this_format == UPDATE_CURRENT_SAT_AZ_EL_NEXT_AOS_AND_LOS){
             debug.print("system");
           } else {

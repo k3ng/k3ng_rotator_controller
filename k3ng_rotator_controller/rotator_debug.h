@@ -49,6 +49,8 @@ class DebugClass
 	void print(long i);
 	void print(double i);
 	
+	void println(int i);
+	void println(long i);	
 	void println(double i);
 	void println(const char *str);
 	void println(const __FlashStringHelper *str);
