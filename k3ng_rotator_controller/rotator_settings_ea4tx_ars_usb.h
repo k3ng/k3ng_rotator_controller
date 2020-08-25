@@ -370,3 +370,6 @@ You can tweak these, but read the online documentation!
 #define LCD_DISPLAY_MON_TRACKING_INACTIVE_CHAR "-"
 #define LCD_DISPLAY_SUN_TRACKING_ACTIVE_CHAR "*"
 #define LCD_DISPLAY_SUN_TRACKING_INACTIVE_CHAR "-"
+
+// Added in 2020.08.24.01
+#define NEXTION_NUMBER_OF_NEXT_SATELLITES 6

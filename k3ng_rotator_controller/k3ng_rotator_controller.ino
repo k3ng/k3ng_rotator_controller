@@ -781,6 +781,15 @@
         The \X0 command (clear azimuth and elevation calibration / offsets) is now available without FEATURE_MOON_TRACKING and FEATURE_SUN_TRACKING enabled 
         FEATURE_SATELLITE_TRACKING
           The \| list satellites command is now sorted by next AOS time.
+      
+      2020.08.24.01
+        FEATURE_NEXTION_DISPLAY & FEATURE_SATELLITE_TRACKING
+          Added vSatNx, vSatOx, and vSatAx API variables which send a list of satellites and their next AOS time  
+          Added NEXTION_NUMBER_OF_NEXT_SATELLITES setting.  This determines how many satellites are sent via the vSatNx, vSatOx, and vSatAx API variables
+          https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display for more information
+
+      2020.08.24.02
+        DEBUG_LOOP - additional code for various new subroutines    
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -793,7 +802,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.23.01"
+#define CODE_VERSION "2020.08.24.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1384,7 +1393,7 @@ struct config_t {
   #define tle_file_eeprom_memory_area_start (sizeof(configuration)+5)
   #define SATELLITE_NAME_LENGTH 17
   #define SATELLITE_LIST_LENGTH 35
-  //char current_satellite_name[SATELLITE_NAME_LENGTH];
+  byte satellite_array_data_ready = 0;
   double current_satellite_elevation;
   double current_satellite_azimuth;      
   double current_satellite_longitude;
@@ -3257,7 +3266,7 @@ void service_remote_unit_serial_buffer(){
 void check_serial(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("check_serial");
+    control_port->println(F("check_serial"));
     control_port->flush();
   #endif // DEBUG_LOOP    
 
@@ -4192,6 +4201,11 @@ char * azimuth_direction(int azimuth_in){
 // --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
 void sendNextionCommand(const char* send_command){
+
+    #ifdef DEBUG_LOOP
+      control_port->println(F("sendNextionCommand()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP    
     
     #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_SEND)
       debug.print("\r\nsendNextionCommand: send:");
@@ -4210,7 +4224,7 @@ void sendNextionCommand(const char* send_command){
 void service_nextion_display(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_nextion_display()");
+    control_port->println(F("service_nextion_display()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -4343,17 +4357,7 @@ void service_nextion_display(){
     }
   }
 
-  
-  // if ((initialization_stage == 1) && ((millis() - last_various_things_update) > 299)){  // wait 200 mS before doing the first servicing
-  //   last_various_things_update = 0;
-  //   initialization_stage = 2;
-  // }
-
-
-
-
-
-  if (initialization_stage < 2){return;}  // we have initialized yet.  come back later.
+  if (initialization_stage < 2){return;}     // we haven't initialized yet.  come back later.
 
   // Update various things
   if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
@@ -4402,7 +4406,7 @@ void service_nextion_display(){
 
           
 
-    strcpy(workstring1,"gSC=");
+    strcpy_P(workstring1,(const char*) F("gSC="));
     dtostrf(temp, 1, 0, workstring2);
     strcat(workstring1,workstring2);
     sendNextionCommand(workstring1);
@@ -4428,23 +4432,24 @@ void service_nextion_display(){
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_FRENCH;
     #endif  
 
-    strcpy(workstring1,"gL=");
+    strcpy_P(workstring1,(const char*) F("gL="));
     dtostrf(temp, 1, 0, workstring2);
     strcat(workstring1,workstring2);
     sendNextionCommand(workstring1);
 
     // Rotator Controller API Implementation Version
-    sendNextionCommand("vRCAPIv.val=2020050601");
+    strcpy_P(workstring1,(const char*) F("vRCAPIv.val=2020082401"));
+    sendNextionCommand(workstring1);
 
     // Rotator Controller Arduino Code Version
-    strcpy(workstring1,"vRCVersion.txt=\"");
+    strcpy_P(workstring1,(const char*) F("vRCVersion.txt=\""));
     strcat(workstring1,CODE_VERSION);
     strcat(workstring1,"\"");
     sendNextionCommand(workstring1);
 
     // gDP - Display decimal places
     dtostrf(DISPLAY_DECIMAL_PLACES, 1, 0, workstring1);
-    strcpy(workstring2,"gDP=");
+    strcpy_P(workstring2,(const char*) F("gDP="));
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2);     
 
@@ -4485,7 +4490,7 @@ void service_nextion_display(){
         nextion_port_buffer_index = 0;
         received_backslash = 0;
         last_serial_receive_time = 0;
-        strcpy(workstring2,"vConResult.txt=\"");
+        strcpy_P(workstring2,(const char*) F("vConResult.txt=\""));
         strcat(workstring2,return_string);
         strcat(workstring2,"\"");
         sendNextionCommand(workstring2); 
@@ -4515,28 +4520,28 @@ void service_nextion_display(){
 
     // gADS - Azimuth Detailed State
     dtostrf(az_state, 1, 0, workstring1);
-    strcpy(workstring2,"gADS=");
+    strcpy_P(workstring2,(const char*) F("gADS="));
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2); 
 
     #if defined(FEATURE_ELEVATION_CONTROL)
       // gEDS - Elevation Detailed State
       dtostrf(el_state, 1, 0, workstring1);
-      strcpy(workstring2,"gEDS=");
+      strcpy_P(workstring2,(const char*) F("gEDS="));
       strcat(workstring2,workstring1);
       sendNextionCommand(workstring2); 
     #endif
 
     // gAOS - Azimuth Overall State
     dtostrf(current_az_state(), 1, 0, workstring1);
-    strcpy(workstring2,"gAOS=");
+    strcpy_P(workstring2,(const char*) F("gAOS="));
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2); 
 
     #if defined(FEATURE_ELEVATION_CONTROL)
       // gEOS - Elevation Overall State
       dtostrf(current_el_state(), 1, 0, workstring1);
-      strcpy(workstring2,"gEOS=");
+      strcpy_P(workstring2,(const char*) F("gEOS="));
       strcat(workstring2,workstring1);
       sendNextionCommand(workstring2); 
     #endif
@@ -4544,7 +4549,7 @@ void service_nextion_display(){
     // gCS - Clock State
     #if defined(FEATURE_CLOCK)
       dtostrf((int)clock_status, 1, 0, workstring1);
-      strcpy(workstring2,"gCS=");
+      strcpy_P(workstring2,(const char*) F("gCS="));
       strcat(workstring2,workstring1);
       sendNextionCommand(workstring2); 
     #else
@@ -4628,7 +4633,7 @@ void service_nextion_display(){
 
 
     dtostrf((int)temp, 1, 0, workstring1);
-    strcpy(workstring2,"gVS=");
+    strcpy_P(workstring2,(const char*) F("gVS="));
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2);  
 
@@ -4734,7 +4739,7 @@ void service_nextion_display(){
         }        
       }
     #endif //!defined(FEATURE_ELEVATION_CONTROL)
-    strcpy(workstring2,"vSS1.txt=\"");
+    strcpy_P(workstring2,(const char*) F("vSS1.txt=\""));
     strcat(workstring2,workstring1);
     strcat(workstring2,"\"");
     sendNextionCommand(workstring2);  
@@ -4780,7 +4785,7 @@ TODO:
         strcat(workstring1,"\r\n");
       }        
     #endif
-    strcpy(workstring2,"vSS2.txt=\"");
+    strcpy_P(workstring2,(const char*) F("vSS2.txt=\""));
     strcat(workstring2,workstring1);
     strcat(workstring2,"\"");
     sendNextionCommand(workstring2);  
@@ -4816,7 +4821,7 @@ TODO:
     #if defined(FEATURE_ELEVATION_CONTROL)
       if ((azimuth != last_azimuth) || (elevation != last_elevation) || ((millis() - last_cartesian_update) > NEXTION_FREQUENT_UPDATE_MS)){
         convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,azimuth,elevation,&x,&y);
-        strcpy(workstring1,"gX=");
+        strcpy_P(workstring1,(const char*) F("gX="));
         dtostrf(int(x), 1, 0, workstring2);
         strcat(workstring1,workstring2);
         sendNextionCommand(workstring1);
@@ -4826,7 +4831,7 @@ TODO:
           debug.println(workstring1);
         #endif
 
-        strcpy(workstring1,"gY=");
+        strcpy_P(workstring1,(const char*) F("gY="));
         dtostrf(int(y), 1, 0, workstring2);
         strcat(workstring1,workstring2);
         sendNextionCommand(workstring1);
@@ -4841,11 +4846,11 @@ TODO:
     #else
       if ((azimuth != last_azimuth) || ((millis() - last_cartesian_update) > NEXTION_FREQUENT_UPDATE_MS)){
         convert_polar_to_cartesian(COORDINATE_PLANE_UPPER_LEFT_ORIGIN,azimuth,0,&x,&y);
-        strcpy(workstring1,"gX=");
+        strcpy_P(workstring1,(const char*) F("gX="));
         dtostrf(int(x), 1, 0, workstring2);
         strcat(workstring1,workstring2);
         sendNextionCommand(workstring1);
-        strcpy(workstring1,"gY=");
+        strcpy_P(workstring1,(const char*) F("gY="));
         dtostrf(int(y), 1, 0, workstring2);
         strcat(workstring1,workstring2);
         sendNextionCommand(workstring1);
@@ -4858,7 +4863,7 @@ TODO:
     // zAz
     dtostrf(azimuth , 1, DISPLAY_DECIMAL_PLACES, workstring1);
     strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
-    strcpy(workstring2,"vAz.txt=\"");
+    strcpy_P(workstring2,(const char*) F("vAz.txt=\""));
     strcat(workstring2,workstring1);
     strcat(workstring2,"\"");
     #if defined(DEBUG_NEXTION_DISPLAY)
@@ -4869,13 +4874,13 @@ TODO:
 
     // gAz
     dtostrf(azimuth , 1, 0, workstring1);
-    strcpy(workstring2,"gAz=");
+    strcpy_P(workstring2,(const char*) F("gAz="));
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2); 
 
     // gAzR
     dtostrf(raw_azimuth , 1, 0, workstring1);
-    strcpy(workstring2,"gAzR=");
+    strcpy_P(workstring2,(const char*) F("gAzR="));
     strcat(workstring2,workstring1);
     sendNextionCommand(workstring2);     
 
@@ -4900,14 +4905,14 @@ TODO:
     if ((elevation != last_elevation) || ((millis() - last_el_update) > NEXTION_FREQUENT_UPDATE_MS)){
       dtostrf(elevation , 1, DISPLAY_DECIMAL_PLACES, workstring1);
       strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
-      strcpy(workstring2,"vEl.txt=\"");
+      strcpy_P(workstring2,(const char*) F("vEl.txt=\""));
       strcat(workstring2,workstring1);
       strcat(workstring2,"\"");
       sendNextionCommand(workstring2);  
 
       // gEl
       dtostrf(elevation , 1, 0, workstring1);
-      strcpy(workstring2,"gEl=");
+      strcpy_P(workstring2,(const char*) F("gEl="));
       strcat(workstring2,workstring1);
       sendNextionCommand(workstring2); 
 
@@ -4923,7 +4928,7 @@ TODO:
     #if defined(FEATURE_CLOCK)
       if (local_clock.seconds != last_clock_seconds){
         last_clock_seconds = current_clock.seconds;
-        strcpy(workstring1,"vClk.txt=\"");
+        strcpy_P(workstring1,(const char*) F("vClk.txt=\""));
         #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
           if (local_clock.hours < 10) {
             strcat(workstring1, "0");
@@ -4958,7 +4963,7 @@ TODO:
     #if defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
       if ((last_clock_status != clock_status) || (last_gps_sats != gps.satellites()) || ((millis()-last_gps_update) > NEXTION_FREQUENT_UPDATE_MS)){
         if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {
-          strcpy(workstring1,"vGPS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vGPS.txt=\""));
           dtostrf(gps.satellites(),0,0,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1," ");
@@ -4979,7 +4984,7 @@ TODO:
     //GRID
     #if defined(FEATURE_GPS)
       if ((millis() - last_grid_update) > (NEXTION_LESS_FREQUENT_UPDATE_MS-125)){
-        strcpy(workstring1,"vGrid.txt=\"");
+        strcpy_P(workstring1,(const char*) F("vGrid.txt=\""));
         strcat(workstring1,coordinates_to_maidenhead(latitude,longitude));
         strcat(workstring1,"\"");
         sendNextionCommand(workstring1);        
@@ -4993,7 +4998,7 @@ TODO:
       if ((millis() - last_coord_update) > (NEXTION_LESS_FREQUENT_UPDATE_MS+125)){
         if ((clock_status == GPS_SYNC) || (clock_status == SLAVE_SYNC_GPS)) {
           gps.f_get_position(&gps_lat_temp,&gps_long_temp,&gps_fix_age_temp);
-          strcpy(workstring1,"vCrd.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vCrd.txt=\"")); 
           dtostrf(gps_lat_temp,4,4,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1," ");
@@ -5006,7 +5011,7 @@ TODO:
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
           
-          strcpy(workstring1,"gGF=");
+          strcpy_P(workstring1,(const char*) F("gGF="));
           dtostrf(gps_fix_age_temp,0,0,workstring2);
           strcat(workstring1,workstring2);
           sendNextionCommand(workstring1);
@@ -5027,13 +5032,13 @@ TODO:
 
         #ifdef FEATURE_MOON_TRACKING
           update_moon_position();
-          strcpy(workstring1,"vMAS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vMAS.txt=\""));
           dtostrf(moon_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
  
-          strcpy(workstring1,"vMES.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vMES.txt=\""));
           dtostrf(moon_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
@@ -5049,13 +5054,13 @@ TODO:
 
         #ifdef FEATURE_SUN_TRACKING
           update_sun_position();
-          strcpy(workstring1,"vSAS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vSAS.txt=\""));
           dtostrf(sun_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
            
-          strcpy(workstring1,"vSES.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vSES.txt=\""));
           dtostrf(sun_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
@@ -5071,30 +5076,30 @@ TODO:
 
         #ifdef FEATURE_SATELLITE_TRACKING
 
-          strcpy(workstring1,"vSAT.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vSAT.txt=\""));
           strcat(workstring1,configuration.current_satellite);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);    
 
-          strcpy(workstring1,"vTAS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vTAS.txt=\""));
           dtostrf(current_satellite_azimuth,0,DISPLAY_DECIMAL_PLACES,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
            
-          strcpy(workstring1,"vTES.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vTES.txt=\""));
           dtostrf(current_satellite_elevation,0,DISPLAY_DECIMAL_PLACES,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);       
 
-          strcpy(workstring1,"vTLA.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vTLA.txt=\""));
           dtostrf(current_satellite_latitude,0,2,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
            
-          strcpy(workstring1,"vTLO.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vTLO.txt=\""));
           dtostrf(current_satellite_longitude,0,2,workstring2);
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
@@ -5107,51 +5112,91 @@ TODO:
             temp = temp | 32;
           }
 
-          strcpy(workstring1,"vADF.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vADF.txt=\""));
           strcat(workstring1,tm_date_string(&current_satellite_next_aos));
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
 
-          strcpy(workstring1,"vADS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vADS.txt=\""));
           strcat(workstring1,tm_month_and_day_string(&current_satellite_next_aos));
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
 
-          strcpy(workstring1,"vATS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vATS.txt=\""));
           strcat(workstring1,tm_time_string_short(&current_satellite_next_aos));
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);           
 
-          strcpy(workstring1,"vLDF.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vLDF.txt=\""));
           strcat(workstring1,tm_date_string(&current_satellite_next_los));
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
 
-          strcpy(workstring1,"vLDS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vLDS.txt=\""));
           strcat(workstring1,tm_month_and_day_string(&current_satellite_next_los));
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
 
-          strcpy(workstring1,"vLTS.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vLTS.txt=\""));
           strcat(workstring1,tm_time_string_short(&current_satellite_next_los));
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);   
 
-          strcpy(workstring1,"vALI.txt=\"");
+          strcpy_P(workstring1,(const char*) F("vALI.txt=\""));
           strcat(workstring1,satellite_aos_los_string(255));
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);  
 
 
           for (int x = 0;x < SATELLITE_LIST_LENGTH;x++){
-            strcpy(workstring1,"vS");
+            strcpy_P(workstring1,(const char*) F("vS"));
             dtostrf(x+1,0,0,workstring2);
             strcat(workstring1,workstring2);
-            strcat(workstring1,".txt=\"");
+            strcat_P(workstring1,(const char*) F(".txt=\""));
             strcat(workstring1,satellite[x].name);
             strcat(workstring1,"\"");
             sendNextionCommand(workstring1);              
           } 
+
+          if (satellite_array_data_ready){
+            for (int x = 0;x < NEXTION_NUMBER_OF_NEXT_SATELLITES;x++){
+              temp = 0;
+              while ((temp < SATELLITE_LIST_LENGTH) && (satellite[temp].order != x)){
+                temp++;
+              }
+
+              strcpy_P(workstring1,(const char*) F("vSatN"));
+              dtostrf(x+1,0,0,workstring2);
+              strcat(workstring1,workstring2);
+              strcat_P(workstring1,(const char*) F(".txt=\""));
+              strcat(workstring1,satellite[temp].name);
+              strcat(workstring1,"\"");
+              sendNextionCommand(workstring1);  
+
+              strcpy_P(workstring1,(const char*) F("vSatO"));
+              dtostrf(x+1,0,0,workstring2);
+              strcat(workstring1,workstring2);
+              strcat_P(workstring1,(const char*) F(".txt=\""));
+              strcat(workstring1,satellite_aos_los_string(temp));
+              strcat(workstring1,"\"");
+              sendNextionCommand(workstring1);   
+
+              strcpy_P(workstring1,(const char*) F("vSatA"));
+              dtostrf(x+1,0,0,workstring2);
+              strcat(workstring1,workstring2);
+              strcat_P(workstring1,(const char*) F(".val="));
+              if (satellite[temp].aos == 1){
+                strcat(workstring1,"1");
+              } else {
+                strcat(workstring1,"0");
+              }
+              sendNextionCommand(workstring1);               
+
+            } //for (int x = 0;x < NEXTION_NUMBER_OF_NEXT_SATELLITES;x++){
+          } else { //if (satellite_array_data_ready){
+            strcpy_P(workstring1,(const char*) F("vSatO1.txt=\"not ready\""));
+            sendNextionCommand(workstring1); 
+          }
 
         #endif // FEATURE_SATELLITE_TRACKING
 
@@ -5178,7 +5223,7 @@ TODO:
 void update_lcd_display(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("update_lcd_display()");
+    control_port->println(F("update_lcd_display()"));
     control_port->flush();
   #endif // DEBUG_LOOP   
 
@@ -6455,7 +6500,7 @@ void write_settings_to_eeprom(){
 
     if (verbose){
       control_port->print(tle_file_eeprom_memory_area_end-tle_file_eeprom_memory_area_start);
-      control_port->println(" bytes free");
+      control_port->println(F(" bytes free"));
     }
 
   
@@ -6472,7 +6517,7 @@ void write_settings_to_eeprom(){
     #ifdef DEBUG_SATELLITE_TLE_EEPROM
       control_port->print(F("\r\nwrite_char_to_tle_file_area_eeprom: "));
       if (initialize_to_start){
-        control_port->println("initialize_to_start");
+        control_port->println(F("initialize_to_start"));
       } else {
         control_port->println(char_to_write);
       }
@@ -6652,9 +6697,7 @@ void write_settings_to_eeprom(){
 
       if (!invalid){
         if (where_to_activate_it == LOAD_INTO_CURRENT_SATELLITE){
-          //zzzzzz
           load_satellite_tle_into_P13(satellite_to_find,tle_line1,tle_line2,DO_NOT_LOAD_HARDCODED_TLE,LOAD_INTO_CURRENT_SATELLITE);  
-          //strcpy(configuration.current_satellite,configuration.current_satellite);
           service_calc_satellite_data(255,1,UPDATE_CURRENT_SAT_AZ_EL_NEXT_AOS_AND_LOS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
           configuration_dirty = 1; 
         } else {
@@ -6724,7 +6767,9 @@ const char* get_satellite_from_tle_file(byte initialize_me_dude){
         } else {
           if (eeprom_byte == 0xFF){  // hit the end of the file
             get_out = 1;
-            //control_port->println("hit end");
+            #if defined(DEBUG_SATELLITE_TLE_EEPROM)
+              debug.println("get_satellite_from_tle_file: hit end");
+            #endif
           } else {
             if ((eeprom_read[0] != '\n') && (tle_line_number == 0)){
               strcat(tle_line,eeprom_read);
@@ -6749,6 +6794,8 @@ const char* get_satellite_from_tle_file(byte initialize_me_dude){
 #if defined(FEATURE_SATELLITE_TRACKING)
   void populate_satellite_list_array(){
 
+
+
     char sat_name[SATELLITE_NAME_LENGTH];
     byte hit_the_end = 0;
 
@@ -6760,14 +6807,15 @@ const char* get_satellite_from_tle_file(byte initialize_me_dude){
         satellite[z].next_pass_max_el = 0;
         cleartime(&satellite[z].next_aos);
         cleartime(&satellite[z].next_los);
-        satellite[z].order = 254;
+        satellite[z].order = 254;  // 254 = valid slot, but no order placed on it yet
       } else {
         hit_the_end = 1;
       }
       if (hit_the_end){
-        satellite[z].order = 255;
+        satellite[z].order = 255; // 255 = invalid slot in the array
       }
     }  
+    satellite_array_data_ready = 0;
 
   }
 #endif //FEATURE_SATELLITE_TRACKING
@@ -6779,13 +6827,13 @@ const char* get_satellite_from_tle_file(byte initialize_me_dude){
     byte eeprom_read;
 
     if (EEPROM.read(tle_file_eeprom_memory_area_start) == 0xFF){
-      control_port->println("<empty>");
+      control_port->println(F("<empty>"));
     } else {
       for (eeprom_location = tle_file_eeprom_memory_area_start; eeprom_location < tle_file_eeprom_memory_area_end; eeprom_location++) {
         eeprom_read = EEPROM.read(eeprom_location);
         if (eeprom_read != 0xFF){
           if (eeprom_read == 254 /*'\r'*/){
-            control_port->print("\r\n");
+            control_port->println();
           } else {
             control_port->write(eeprom_read);
           }
@@ -6836,7 +6884,7 @@ void az_check_rotation_stall(){
             debug.println("az_check_rotation_stall: REQUEST_KILL");
           #endif
           #ifdef OPTION_ROTATION_STALL_DETECTION_SERIAL_MESSAGE
-            control_port->println("AZ Rotation Stall Detected");
+            control_port->println(F("AZ Rotation Stall Detected"));
           #endif  
           submit_request(AZ, REQUEST_KILL, 0, 78);
           digitalWriteEnhanced(az_rotation_stall_detected,HIGH);
@@ -6878,7 +6926,7 @@ void el_check_rotation_stall(){
             debug.println("el_check_rotation_stall: REQUEST_KILL");
           #endif
           #ifdef OPTION_ROTATION_STALL_DETECTION_SERIAL_MESSAGE
-            control_port->println("EL Rotation Stall Detected");
+            control_port->println(F("EL Rotation Stall Detected"));
           #endif            
           submit_request(EL, REQUEST_KILL, 0, 78);
           digitalWriteEnhanced(el_rotation_stall_detected,HIGH);
@@ -6926,7 +6974,7 @@ void initiate_timed_buffer(byte source_port){
       last_timed_buffer_action_time = millis();
       timed_buffer_entry_pointer = 2;
       #ifdef DEBUG_TIMED_BUFFER
-      debug.println("initiate_timed_buffer: changing state to RUNNING_AZIMUTHS_ELEVATIONS");
+        debug.println("initiate_timed_buffer: changing state to RUNNING_AZIMUTHS_ELEVATIONS");
       #endif // DEBUG_TIMED_BUFFER
     } else {
       print_to_port(">",source_port);  // error
@@ -7005,19 +7053,6 @@ void convert_raw_azimuth_to_real_azimuth(){
 
   float temp_azimuth = raw_azimuth;
 
-  // if (raw_azimuth >= 360) {
-  //   azimuth = raw_azimuth - 360;
-  //   if (azimuth >= 360) {
-  //     azimuth = azimuth - 360;
-  //   }
-  // } else {
-  //   if (raw_azimuth < 0) {
-  //     azimuth = raw_azimuth + 360;
-  //   } else {
-  //     azimuth = raw_azimuth;
-  //   }
-  // }
-
   if (raw_azimuth >= 360){
     azimuth = raw_azimuth - (int(raw_azimuth / 360) * 360);
   } else {
@@ -7027,8 +7062,6 @@ void convert_raw_azimuth_to_real_azimuth(){
       azimuth = raw_azimuth;
     }
   }
-
-
 
 }
 
@@ -8133,8 +8166,6 @@ void output_debug(){
           debug.print(" ");
           if (current_satellite_next_los_el > 0){debug.print(" ");}
           debug.println(current_satellite_next_los_el);
-
-
         #endif
 
         debug.print("\tCONFIG_");
@@ -8142,10 +8173,6 @@ void output_debug(){
           debug.print("NOT_");
         }
         debug.println("DIRTY");
-
-
-
-
 
         #if !defined(TEENSYDUINO)
           void * HP = malloc(4);
@@ -8159,15 +8186,12 @@ void output_debug(){
           }
         #endif
 
-
         debug.println("\n\n\n");
 
         last_debug_output_time = millis(); 
 
       }
     #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
-
-
 
     #ifdef DEBUG_PROCESSES
       service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_DEBUG);
@@ -8635,7 +8659,7 @@ void update_el_variable_outputs(byte speed_voltage){
 
 
   #ifdef DEBUG_LOOP
-    control_port->println("update_el_variable_outputs()");
+    control_port->println(F("update_el_variable_outputs()"));
     control_port->flush();
   #endif // DEBUG_LOOP   
 
@@ -13114,7 +13138,7 @@ char * zulu_clock_string(){
 void update_time(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("update_time()");
+    control_port->println(F("update_time()"));
     control_port->flush();
   #endif // DEBUG_LOOP   
 
@@ -13309,7 +13333,7 @@ void update_time(){
 void service_gps(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_gps()");
+    control_port->println(F("service_gps()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -15394,7 +15418,12 @@ Not implemented yet:
 
 #if defined(FEATURE_SATELLITE_TRACKING)
   void populate_satellite_array_order(){
-//zzzzzz
+
+
+    #ifdef DEBUG_LOOP
+      control_port->println(F("populate_satellite_array_order()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP   
 
     //#define ZNXR_NZREVPN_NZREVPN_NTNVA 2020
 
@@ -15402,8 +15431,7 @@ Not implemented yet:
     long current_lowest_value = 2147483647;
     byte lowest_value_position = 0;
     byte x = 0;
-
-
+    byte last_lowest_position_value = 255;
 
     // populate array with the next event time in seconds
     for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
@@ -15417,35 +15445,41 @@ Not implemented yet:
         }
         satellite[z].order = 253;
       }
-// control_port->print(satellite[z].name);
-// control_port->print(":");
-// control_port->println(satellite_next_event_seconds[z]);
+      #if defined(DEBUG_SATELLITE_ARRAY_ORDER)
+        debug.print("populate_satellite_array_order: ");
+        debug.print(satellite[z].name);
+        debug.print(":");
+        debug.println(satellite_next_event_seconds[z]);
+      #endif
     }
 
-// control_port->println("");
+    #if defined(DEBUG_SATELLITE_ARRAY_ORDER)
+      debug.println("");
+    #endif
 
-byte last_lowest_position_value = 255;
-
-  while(x < SATELLITE_LIST_LENGTH){
-    // find the lowest value
-    current_lowest_value = 2147483647;
-    for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
-      if (satellite[z].order == 253){
-        if(satellite_next_event_seconds[z] < current_lowest_value){
-          current_lowest_value = satellite_next_event_seconds[z];
-          lowest_value_position = z;
+    while(x < SATELLITE_LIST_LENGTH){
+      // find the lowest value
+      current_lowest_value = 2147483647;
+      for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
+        if (satellite[z].order == 253){
+          if(satellite_next_event_seconds[z] < current_lowest_value){
+            current_lowest_value = satellite_next_event_seconds[z];
+            lowest_value_position = z;
+          }
         }
       }
-    }
-    if (lowest_value_position != last_lowest_position_value){
-      satellite[lowest_value_position].order = x;
-      last_lowest_position_value = lowest_value_position;
-      x++;
-    } else {
-      x = SATELLITE_LIST_LENGTH; // we're done
-    }
-// control_port->println(lowest_value_position);    
-  }
+      if (lowest_value_position != last_lowest_position_value){
+        satellite[lowest_value_position].order = x;
+        last_lowest_position_value = lowest_value_position;
+        x++;
+      } else {
+        x = SATELLITE_LIST_LENGTH; // we're done
+      }
+      #if defined(DEBUG_SATELLITE_ARRAY_ORDER)
+        debug.print("populate_satellite_array_order: lowest_value_position: ");
+        debug.println(lowest_value_position);
+      #endif   
+    } // while(x < SATELLITE_LIST_LENGTH){
 
 
   }  
@@ -15499,7 +15533,7 @@ byte last_lowest_position_value = 255;
     }
     if (((float)satellite[satellite_array_position].elevation >= SATELLITE_AOS_ELEVATION_MIN) && (satellite[satellite_array_position].next_aos.year > 0)){
       send_vt100_code((char*)VT100_CODE_BLINK);
-      control_port->print(F("   * AOS *"));//zzzzzz
+      control_port->print(F("   * AOS *"));
       send_vt100_code((char*)VT100_CODE_CHAR_ATTR_OFF);
     }
     if (strcmp(satellite[satellite_array_position].name,configuration.current_satellite) == 0){
@@ -17368,7 +17402,7 @@ void change_tracking(byte action){
 void service_moon_tracking(){
 
   #ifdef DEBUG_LOOP
-    control_port->println("service_moon_tracking()");
+    control_port->println(F("service_moon_tracking()"));
     control_port->flush();
   #endif // DEBUG_LOOP
 
@@ -17893,6 +17927,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #if defined(FEATURE_SATELLITE_TRACKING)
   void load_satellite_tle_into_P13(const char *name_in, const char *tle_line1, const char *tle_line2,byte load_hardcoded_tle,byte where_to_load_it){
 
+    #ifdef DEBUG_LOOP
+      control_port->println(F("load_satellite_tle_into_P13()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP   
+
     static char name[SATELLITE_NAME_LENGTH];
 
     char hardcoded_tle_line_1[SATELLITE_TLE_CHAR_SIZE];  
@@ -17932,6 +17971,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #if defined(FEATURE_SATELLITE_TRACKING)
   void service_satellite_tracking(byte push_update){
 
+    #ifdef DEBUG_LOOP
+      control_port->println(F("service_satellite_tracking()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP
+
     static unsigned long last_tracking_check = 0;
     static unsigned long last_update_satellite_position = 0;
     static byte satellite_tracking_activated_by_activate_line = 0;
@@ -17943,10 +17987,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     static byte satellite_array_refresh_position = 0;
 
     #define CALC_SEQUENTIAL 0
-    #define CALC_TOP_FIVE 1
-    #define CALC_ABOVE_TOP_FIVE 2
-    #define CALC_INTERLEAVED_SEQUENTIAL 3
-    #define CALC_INTERLEAVED_TOP 4
+    // #define CALC_TOP_FIVE 1
+    // #define CALC_ABOVE_TOP_FIVE 2
+    // #define CALC_INTERLEAVED_SEQUENTIAL 3
+    // #define CALC_INTERLEAVED_TOP 4
+    #define CALC_SEQUENTIAL_INTELLIGENT 10
 
     static byte satellite_array_refresh_position_interleaved_top = 0;
     static byte match_found = 0;
@@ -18051,7 +18096,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
 //zzzzzz
 
-#define CALC_SEQUENTIAL_INTELLIGENT 10
+
+    // was the satellite list in the array repopulated and we need to recalculate everything?
+    if ((satellite_array_data_ready == 0) && (service_calc_satellite_data_current_mode == CALC_SEQUENTIAL_INTELLIGENT)){
+      service_calc_satellite_data_current_mode = CALC_SEQUENTIAL;
+    }
 
     // let's update data for satellites in the array
     if ((service_calc_satellite_data(0,0,0,0,SERVICE_CALC_REPORT_STATE,0) == SERVICE_IDLE) && (!aos_los_update_needed)){
@@ -18074,8 +18123,9 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         if (satellite_array_refresh_position >= SATELLITE_LIST_LENGTH){
           satellite_array_refresh_position = 0;
           service_calc_satellite_data_current_mode = CALC_SEQUENTIAL_INTELLIGENT;
+          satellite_array_data_ready = 1;
         }
-      } else {  // service the top 5 satellites
+      } else {  // do refreshing of the array only where needed: az, el, lat, and long (quick calculations) all the time; next aos/los only when satellite is within 5 degrees of the horizon
         if ((strlen(satellite[satellite_array_refresh_position].name) > 2) && (satellite[satellite_array_refresh_position].no_aos_ever != 1)){
             #if defined(DEBUG_SATELLITE_SERVICE)
             debug.print("service_satellite_tracking: CALC_SEQUENTIAL_INTELLIGENT:");
@@ -18107,129 +18157,6 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         }
       }
     }
-
-
-
-    // // let's update data for satellites in the array
-    // if ((service_calc_satellite_data(0,0,0,0,SERVICE_CALC_REPORT_STATE,0) == SERVICE_IDLE) && (!aos_los_update_needed)){
-    //   if (service_calc_satellite_data_current_mode == CALC_SEQUENTIAL){  // service the list sequentially
-    //     if ((strlen(satellite[satellite_array_refresh_position].name) > 2) && (satellite[satellite_array_refresh_position].no_aos_ever != 1)){
-    //       service_calc_satellite_data(satellite_array_refresh_position,1,UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
-    //       #if defined(DEBUG_SATELLITE_SERVICE)
-    //         debug.print("service_satellite_tracking: CALC_SEQUENTIAL:");
-    //         debug.println(satellite_array_refresh_position);
-    //       #endif 
-    //     } else {
-    //       #if defined(DEBUG_SATELLITE_SERVICE)
-    //         if (satellite[satellite_array_refresh_position].no_aos_ever == 1){
-    //           debug.print("service_satellite_tracking: CALC_SEQUENTIAL: skipping:");
-    //           debug.println(satellite[satellite_array_refresh_position].name);
-    //         }
-    //       #endif 
-    //     }
-    //     satellite_array_refresh_position++;
-    //     if (satellite_array_refresh_position >= SATELLITE_LIST_LENGTH){
-    //       satellite_array_refresh_position = 5;
-    //       service_calc_satellite_data_current_mode = CALC_INTERLEAVED_SEQUENTIAL;
-    //     }
-    //   } else {  // CALC_INTERLEAVED_SEQUENTIAL
-    //     if (service_calc_satellite_data_current_mode == CALC_INTERLEAVED_SEQUENTIAL){
-    //       match_found = 0;
-    //       for (int w = 0;w < SATELLITE_LIST_LENGTH; w++){
-    //         if ((satellite[w].order == satellite_array_refresh_position) && (satellite[w].no_aos_ever != 1)){
-    //           service_calc_satellite_data(w,1,UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
-    //           #if defined(DEBUG_SATELLITE_SERVICE)
-    //             debug.print("service_satellite_tracking: CALC_INTERLEAVED_SEQUENTIAL: position:");
-    //             debug.println(satellite_array_refresh_position); 
-    //           #endif
-    //           w = SATELLITE_LIST_LENGTH;   
-    //           match_found = 1;        
-    //         }
-    //       }
-    //       satellite_array_refresh_position++;
-    //       if ((satellite_array_refresh_position >= SATELLITE_LIST_LENGTH) || (match_found == 0)){  
-    //         satellite_array_refresh_position = 5;
-    //       }
-    //       service_calc_satellite_data_current_mode = CALC_INTERLEAVED_TOP;
-    //     } else {
-    //       // CALC_INTERLEAVED_TOP 
-    //       if (service_calc_satellite_data_current_mode == CALC_INTERLEAVED_TOP){
-    //         for (int w = 0;w < SATELLITE_LIST_LENGTH; w++){
-    //           if (satellite[w].order == satellite_array_refresh_position_interleaved_top){
-    //             service_calc_satellite_data(w,1,UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
-    //             #if defined(DEBUG_SATELLITE_SERVICE)
-    //               debug.print("service_satellite_tracking: CALC_INTERLEAVED_TOP: position:");
-    //               debug.println(satellite_array_refresh_position_interleaved_top); 
-    //             #endif
-    //             w = SATELLITE_LIST_LENGTH;           
-    //           }
-    //         }
-    //         satellite_array_refresh_position_interleaved_top++;
-    //         if (satellite_array_refresh_position_interleaved_top >= 5){  
-    //           satellite_array_refresh_position_interleaved_top = 0;
-    //           service_calc_satellite_data_current_mode = CALC_INTERLEAVED_SEQUENTIAL;
-    //         }
-
-    //       }
-    //     }
-
-    //   }
-    // }
-
-
-
-
-
-
-// static byte did_first_run = 0;
-//     // let's update data for satellites in the array
-//     if ((service_calc_satellite_data(0,0,0,0,SERVICE_CALC_REPORT_STATE,0) == SERVICE_IDLE) && (!aos_los_update_needed)){
-//       if (service_calc_satellite_data_current_mode == CALC_SEQUENTIAL){  // service the list sequentially
-//         if ((strlen(satellite[satellite_array_refresh_position].name) > 2) && (satellite[satellite_array_refresh_position].no_aos_ever != 1)){
-//           service_calc_satellite_data(satellite_array_refresh_position,1,UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
-//           #if defined(DEBUG_SATELLITE_SERVICE)
-//             debug.print("service_satellite_tracking: CALC_SEQUENTIAL:");
-//             debug.println(satellite_array_refresh_position);
-//           #endif 
-//         } else {
-//           #if defined(DEBUG_SATELLITE_SERVICE)
-//             if (satellite[satellite_array_refresh_position].no_aos_ever == 1){
-//               debug.print("service_satellite_tracking: CALC_SEQUENTIAL: skipping:");
-//               debug.println(satellite[satellite_array_refresh_position].name);
-//             }
-//           #endif 
-//         }
-//         satellite_array_refresh_position++;
-//         if (satellite_array_refresh_position >= SATELLITE_LIST_LENGTH){
-//           satellite_array_refresh_position = 0;
-//           did_first_run = 1;
-//           //service_calc_satellite_data_current_mode = CALC_TOP_FIVE;
-//         }
-//         if (did_first_run){
-//           service_calc_satellite_data_current_mode = CALC_TOP_FIVE;
-//         }
-//       } else {  // service the top 5 satellites
-//         for (int w = 0;w < SATELLITE_LIST_LENGTH; w++){
-//           if (satellite[w].order == satellite_array_refresh_position_interleaved_top){
-//             service_calc_satellite_data(w,1,UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE);
-//             #if defined(DEBUG_SATELLITE_SERVICE)
-//               debug.print("service_satellite_tracking: CALC_TOP_FIVE:");
-//               debug.println(satellite_array_refresh_position_interleaved_top); 
-//             #endif
-//             w = SATELLITE_LIST_LENGTH;           
-//           }
-//         }
-//         satellite_array_refresh_position_interleaved_top++;
-//         if (satellite_array_refresh_position_interleaved_top > 4){  // just do array positions 0 to 4
-//           satellite_array_refresh_position_interleaved_top = 0;
-//           // service_calc_satellite_data_current_mode = CALC_SEQUENTIAL;
-//         }
-//         service_calc_satellite_data_current_mode = CALC_SEQUENTIAL;
-//       }
-//     }
-
-
-
 
 
     if ((satellite_tracking_active) && ((millis() - last_tracking_check) > SATELLITE_TRACKING_UPDATE_INTERVAL)) {
@@ -18373,6 +18300,12 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
                                   // the # of the sat
                                   // in the satellite[] array
                                   // 255 = current sat
+
+    #ifdef DEBUG_LOOP
+      control_port->println(F("service_calc_satellite_data()"));
+      control_port->flush();
+    #endif // DEBUG_LOOP
+
 
     static double calc_satellite_latitude;
     static double calc_satellite_longitude;
@@ -19043,6 +18976,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
 void run_this_once(){
 
+
+  #ifdef DEBUG_LOOP
+    control_port->println(F("run_this_once()"));
+    control_port->flush();
+  #endif // DEBUG_LOOP  
 
   #if defined(DEBUG_TEST_POLAR_TO_CARTESIAN)
     double x = 0;

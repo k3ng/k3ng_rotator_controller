@@ -17,7 +17,7 @@
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 // #define FEATURE_DCU_1_EMULATION            // DCU-1 protocol emulation on control port
 
-// #define FEATURE_MOON_TRACKING
+#define FEATURE_MOON_TRACKING
 // #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
