@@ -12666,8 +12666,16 @@ void digitalWriteEnhanced(uint8_t pin, uint8_t writevalue){
 
 int digitalReadEnhanced(uint8_t pin){
 
-  return digitalRead(pin);
-
+   if(pin >= A0){
+    if(analogRead(pin)>100){
+      return 1;
+    }else{
+      return 0;
+    }
+  }else{
+     return digitalRead(pin);
+   }
+   
 }
 
 // --------------------------------------------------------------
