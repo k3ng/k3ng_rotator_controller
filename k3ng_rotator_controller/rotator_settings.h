@@ -1,21 +1,21 @@
 
 /* -------------------------- rotation settings ---------------------------------------*/
 
-#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run                                               
+#define AZIMUTH_STARTING_POINT_DEFAULT 180      // the starting point in degrees of the azimuthal rotator - only used for initializing EEPROM the first time the code is run
 #define AZIMUTH_ROTATION_CAPABILITY_DEFAULT 450 // the default rotation capability of the rotator in degrees - only used for initializing EEPROM the first time the code is run
 
-/* 
+/*
 
-  Use these commands to change the azimuth starting point and rotation capability if you have already ran the code one which would have 
+  Use these commands to change the azimuth starting point and rotation capability if you have already ran the code one which would have
   initialized the EEPROM:
 
             \Ix[x][x] - set az starting point
             \I - display the current az starting point
             \Jx[x][x] - set az rotation capability
             \J - display the current az rotation capability
-            \Q - Save settings in the EEPROM and restart            
-*/   
-                                                
+            \Q - Save settings in the EEPROM and restart
+*/
+
 #define ELEVATION_MAXIMUM_DEGREES 180           // change this to set the maximum elevation in degrees
 
 /* --------------------------- Settings ------------------------------------------------
@@ -34,7 +34,7 @@ You can tweak these, but read the online documentation!
                                               // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360
                                               // for example, on a Yaesu 450 degree rotator with a starting point of 180 degrees, and an overlap LED
                                               // turning on when going CW and crossing 180, ANALOG_AZ_OVERLAP_DEGREES should be set for 540 (180 + 360)
-#define OPTION_OVERLAP_LED_BLINK_MS 100                                             
+#define OPTION_OVERLAP_LED_BLINK_MS 100
 
 // PWM speed voltage settings
 #define PWM_SPEED_VOLTAGE_X1  64         // 0 to 255
@@ -43,8 +43,8 @@ You can tweak these, but read the online documentation!
 #define PWM_SPEED_VOLTAGE_X4  253        // 0 to 255
 
 //AZ
-#define AZ_SLOWSTART_DEFAULT 0            // 0 = off ; 1 = on
-#define AZ_SLOWDOWN_DEFAULT 0             // 0 = off ; 1 = on
+#define AZ_SLOWSTART_DEFAULT 1            // 0 = off ; 1 = on
+#define AZ_SLOWDOWN_DEFAULT 1             // 0 = off ; 1 = on
 #define AZ_SLOW_START_UP_TIME 2000        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
 #define AZ_SLOW_START_STARTING_PWM 1      // PWM starting value for slow start (must be < 256)
 #define AZ_SLOW_START_STEPS 20            // must be < 256
@@ -105,8 +105,8 @@ You can tweak these, but read the online documentation!
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
-#define LCD_COLUMNS 20 //16
-#define LCD_ROWS 4 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
+#define LCD_COLUMNS 16 //16
+#define LCD_ROWS 2 //2       // this is automatically set below for HARDWARE_EA4TX_ARS_USB and HARDWARE_M0UPU
 #define LCD_UPDATE_TIME 1000           // LCD update time in milliseconds
 #define LCD_HHMM_CLOCK_POSITION LEFT          //LEFT or RIGHT
 #define LCD_HHMMSS_CLOCK_POSITION LEFT          //LEFT or RIGHT
@@ -295,7 +295,7 @@ You can tweak these, but read the online documentation!
 #define AUTOCORRECT_TIME_MS_EL 1000
 
 #define PIN_LED_ACTIVE_STATE HIGH
-#define PIN_LED_INACTIVE_STATE LOW   
+#define PIN_LED_INACTIVE_STATE LOW
 
 #define AUDIBLE_ALERT_TYPE 1   // 1 = Logic high/low (set AUDIBLE_PIN_ACTIVE_STATE and AUDIBLE_PIN_INACTIVE_STATE below, 2 = tone (set AUDIBLE_PIN_TONE_FREQ below)
 #define AUDIBLE_ALERT_DURATION_MS 250
@@ -307,9 +307,9 @@ You can tweak these, but read the online documentation!
 #define AUDIBLE_ALERT_AT_EL_TARGET 1
 
 #define OVERLAP_LED_ACTIVE_STATE HIGH
-#define OVERLAP_LED_INACTIVE_STATE LOW  
+#define OVERLAP_LED_INACTIVE_STATE LOW
 
-#define PRESET_ENCODER_CHANGE_TIME_MS 2000 
+#define PRESET_ENCODER_CHANGE_TIME_MS 2000
 
 // FEATURE_AZ_ROTATION_STALL_DETECTION
 #define STALL_CHECK_FREQUENCY_MS_AZ 2000
@@ -337,7 +337,7 @@ You can tweak these, but read the online documentation!
 #define CONTROL_PORT_MAPPED_TO &Serial     // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
 #define CONTROL_PORT_BAUD_RATE 9600
 //#define REMOTE_PORT Serial3                 // used to control remote unit
-#define REMOTE_UNIT_PORT_BAUD_RATE 9600 
+#define REMOTE_UNIT_PORT_BAUD_RATE 9600
 #define GPS_PORT Serial2
 #define GPS_PORT_BAUD_RATE 9600
 // #define GPS_MIRROR_PORT Serial1          // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
@@ -384,4 +384,3 @@ You can tweak these, but read the online documentation!
 #define SATELLITE_AOS_LOS_CALC_RESOLUTION_HIGH_TRIGGER_SECS 300     //next event is < 5 minutes
 #define SATELLITE_AOS_LOS_CALC_RESOLUTION_MEDIUM_TRIGGER_SECS 3600 //next < 1 hour
 #define SATELLITE_AOS_ELEVATION_MIN 0.0
-
