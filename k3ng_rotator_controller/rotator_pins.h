@@ -1,4 +1,4 @@
-/* -------------------------------------   Pin Definitions ------------------------------------------ 
+/* -------------------------------------   Pin Definitions ------------------------------------------
 
   You need to look at these and set them appropriately !
 
@@ -10,28 +10,28 @@
 
 /* azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator) */
 
-#define rotate_cw 6              // goes high to activate rotator R (CW) rotation - pin 1 on Yaesu connector
-#define rotate_ccw 7             // goes high to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
+#define rotate_cw 8              // goes high to activate rotator R (CW) rotation - pin 1 on Yaesu connector
+#define rotate_ccw 9             // goes high to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
 #define rotate_cw_ccw  0         // goes high for both CW and CCW rotation
 #define rotate_cw_pwm 0          // optional - PWM CW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_ccw_pwm 0         // optional - PWM CCW output - set to 0 to disable (must be PWM capable pin)
-#define rotate_cw_ccw_pwm 0      // optional - PWM on CW and CCW output - set to 0 to disable (must be PWM capable pin)
+#define rotate_cw_ccw_pwm 11      // optional - PWM on CW and CCW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_cw_freq 0         // optional - CW variable frequency output
 #define rotate_ccw_freq 0        // optional - CCW variable frequency output
-#define button_cw 0              // normally open button to ground for manual CW rotation (schematic pin: A2)
-#define button_ccw 0             // normally open button to ground for manual CCW rotation (schematic pin: A3)
+#define button_cw A5              // normally open button to ground for manual CW rotation (schematic pin: A2)
+#define button_ccw A4             // normally open button to ground for manual CCW rotation (schematic pin: A3)
 #define serial_led 0             // LED blinks when command is received on serial port (set to 0 to disable)
-#define rotator_analog_az A0     // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
+#define rotator_analog_az A7     // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
 #define azimuth_speed_voltage 0  // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define overlap_led 0            // line goes active when azimuth rotator is in overlap (> 360 rotators)
-#define brake_az 0               // goes high to disengage azimuth brake (set to 0 to disable)
+#define brake_az 10               // goes high to disengage azimuth brake (set to 0 to disable)
 #define az_speed_pot 0           // connect to wiper of 1K to 10K potentiometer for speed control (set to 0 to disable)
 #define az_preset_pot 0          // connect to wiper of 1K to 10K potentiometer for preset control (set to 0 to disable)
-#define preset_start_button 0    // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
+#define preset_start_button A3    // connect to momentary switch (ground on button press) for preset start (set to 0 to disable or for preset automatic start)
 #define button_stop 0            // connect to momentary switch (ground on button press) for preset stop (set to 0 to disable or for preset automatic start)
 #define rotation_indication_pin 0
 #define blink_led 0
-#define az_stepper_motor_pulse 44 //0
+#define az_stepper_motor_pulse 0 //0
 #define az_stepper_motor_direction 0
 #define az_rotation_stall_detected 0
 
@@ -39,15 +39,15 @@
 
 /*----------- elevation pins --------------*/
 #ifdef FEATURE_ELEVATION_CONTROL
-  #define rotate_up 8               // goes high to activate rotator elevation up
-  #define rotate_down 9             // goes high to activate rotator elevation down
+  #define rotate_up 0               // goes high to activate rotator elevation up
+  #define rotate_down 0             // goes high to activate rotator elevation down
   #define rotate_up_or_down 0       // goes high when elevation up or down is activated
   #define rotate_up_pwm 0           // optional - PWM UP output - set to 0 to disable (must be PWM capable pin)
   #define rotate_down_pwm 0         // optional - PWM DOWN output - set to 0 to disable (must be PWM capable pin)
   #define rotate_up_down_pwm 0      // optional - PWM on both UP and DOWN (must be PWM capable pin)
   #define rotate_up_freq 0          // optional - UP variable frequency output
   #define rotate_down_freq 0        // optional - UP variable frequency output
-  #define rotator_analog_el A1      // reads analog elevation voltage from rotator
+  #define rotator_analog_el 0      // reads analog elevation voltage from rotator
   #define button_up 0               // normally open button to ground for manual up elevation
   #define button_down 0             // normally open button to ground for manual down rotation
   #define brake_el 0                // goes high to disengage elevation brake (set to 0 to disable)
@@ -57,12 +57,12 @@
 #endif //FEATURE_ELEVATION_CONTROL
 
 // rotary encoder pins and options
-#ifdef FEATURE_AZ_PRESET_ENCODER 
-  #define az_rotary_preset_pin1 0                     // CW Encoder Pin
-  #define az_rotary_preset_pin2 0                     // CCW Encoder Pin
+#ifdef FEATURE_AZ_PRESET_ENCODER
+  #define az_rotary_preset_pin1 A6                     // CW Encoder Pin
+  #define az_rotary_preset_pin2 A2                     // CCW Encoder Pin
 #endif //FEATURE_AZ_PRESET_ENCODER
 
-#ifdef FEATURE_EL_PRESET_ENCODER 
+#ifdef FEATURE_EL_PRESET_ENCODER
   #define el_rotary_preset_pin1 0                     // UP Encoder Pin
   #define el_rotary_preset_pin2 0                     // DOWN Encoder Pin
 #endif //FEATURE_EL_PRESET_ENCODER
@@ -83,8 +83,8 @@
 #endif                                                // read http://arduino.cc/en/Reference/AttachInterrupt for details on hardware and interrupts
 
 #ifdef FEATURE_EL_POSITION_PULSE_INPUT
-  #define el_position_pulse_pin 1                       // must be an interrupt capable pin!
-  #define EL_POSITION_PULSE_PIN_INTERRUPT 1             // Uno: pin 2 = interrupt 0, pin 3 = interrupt 1 ; Mega: pin 2 = interrupt 0, pin 3 = interrupt 1, pin 21 = interrupt 2, pin 20 = interrupt 3, pin 19 = interrupt 4, pin 18 = interrupt 5
+  #define el_position_pulse_pin 0                       // must be an interrupt capable pin!
+  #define EL_POSITION_PULSE_PIN_INTERRUPT 0             // Uno: pin 2 = interrupt 0, pin 3 = interrupt 1 ; Mega: pin 2 = interrupt 0, pin 3 = interrupt 1, pin 21 = interrupt 2, pin 20 = interrupt 3, pin 19 = interrupt 4, pin 18 = interrupt 5
 #endif                                                // read http://arduino.cc/en/Reference/AttachInterrupt for details on hardware and interrupts
 
 #ifdef FEATURE_PARK
@@ -93,16 +93,16 @@
 
 //classic 4 bit LCD pins
 #define lcd_4_bit_rs_pin 12
-#define lcd_4_bit_enable_pin 11
-#define lcd_4_bit_d4_pin 5
-#define lcd_4_bit_d5_pin 4
-#define lcd_4_bit_d6_pin 3
-#define lcd_4_bit_d7_pin 2
+#define lcd_4_bit_enable_pin 13
+#define lcd_4_bit_d4_pin 4
+#define lcd_4_bit_d5_pin 5
+#define lcd_4_bit_d6_pin 6
+#define lcd_4_bit_d7_pin 7
 
 
 #ifdef FEATURE_JOYSTICK_CONTROL
-  #define pin_joystick_x A0
-  #define pin_joystick_y A1
+  #define pin_joystick_x 0
+  #define pin_joystick_y 0
 #endif //FEATURE_JOYSTICK_CONTROL
 
 #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
@@ -199,7 +199,7 @@
 
 #if defined(FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER) || defined(FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER)
   #define pin_sei_bus_busy 24
-  #define pin_sei_bus_send_receive 22  
+  #define pin_sei_bus_send_receive 22
 #endif
 
 #ifdef FEATURE_YWROBOT_I2C_DISPLAY
@@ -212,7 +212,7 @@
   #define ywrobot_pin_d6 6
   #define ywrobot_pin_d7 7
   #define ywrobot_pin_bl 3
-  #define ywrobot_blpol POSITIVE             
+  #define ywrobot_blpol POSITIVE
 #endif //FEATURE_YWROBOT_I2C_DISPLAY
 
 
@@ -222,13 +222,13 @@
 // #define pin_led_down 0
 
 #ifdef FEATURE_AUTOPARK
-  #define pin_autopark_disable 0       // Pull low to disable autopark 
-  #define pin_autopark_timer_reset 0   // Pull low to reset the autopark timer (tie in with rig PTT) 
-#endif 
+  #define pin_autopark_disable 0       // Pull low to disable autopark
+  #define pin_autopark_timer_reset 0   // Pull low to reset the autopark timer (tie in with rig PTT)
+#endif
 
 #ifdef FEATURE_AUDIBLE_ALERT
   #define pin_audible_alert 0
-#endif        
+#endif
 
 //#define pin_status_led 0   // Status LED - blinks when there is rotation in progress
 
@@ -236,4 +236,3 @@
 #define satellite_tracking_active_pin 0
 #define satellite_tracking_activate_line 0
 #define satellite_tracking_button 0        // use with a normally open momentary switch to ground
-
