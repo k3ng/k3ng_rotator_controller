@@ -12666,9 +12666,8 @@ void digitalWriteEnhanced(uint8_t pin, uint8_t writevalue){
 
 int digitalReadEnhanced(uint8_t pin){
 
-   // if(pin >= A0){
    // modify for RemoteQTH rev 4
-   if(pin == A6 || pin == A2){
+   if(pin == A6 || pin == A2){    // if(pin >= A0){
     if(analogRead(pin)>150){
       return 1;
     }else{

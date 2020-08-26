@@ -1,5 +1,10 @@
 # K3NG Rotator Controller
 
+## Modify version for RemoteQTH USB rotator interface rev.4
+
+More in [wiki](https://remoteqth.com/w/doku.php?id=usb_rotator_interface_4)
+![OI3](https://remoteqth.com/img/wiki-rot4-29.jpg)
+
 ## Introduction
 
 This is an Arduino-based rotator interface that interfaces a computer to a rotator or rotator controller, emulating the Yaesu GS-232A/B and Easycom protocols which are supported by a myriad of logging, contest, and control programs.  It can be easily interfaced with commercial rotator control units.  With the addition of a proper capacity power supply and several interface components such as relays, this unit could also serve as a total replacement for a rotator control unit or serve as the basis for a 100% homebrew rotation system.  Several azimuth and elevation position sensors including potentiometers, rotary encoders, and I2C devices are supported.  The code is very flexible, modular, and easy to read allowing intermediate and advanced experimenters and builders to customize it.
