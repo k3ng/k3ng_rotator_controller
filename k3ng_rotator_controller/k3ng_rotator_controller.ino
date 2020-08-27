@@ -806,6 +806,13 @@
           Significant updates to next AOS and LOS time calculations.  This is some crazy code that throttles the calculation resolution back depending on the amount of time the calculation has been running. 
           Better handling of TLE loading at boot up and handling a corrupt TLE file
 
+      2020.08.26.03
+        FEATURE_SATELLITE_TRACKING
+          Even more optimizations!  It's working great!
+        FEATURE_NEXTION_DISPLAY
+          Fixed bug with gMSS API variable introduced with satellite related API variable code  
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
     
@@ -817,7 +824,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.26.02"
+#define CODE_VERSION "2020.08.26.03"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4320,6 +4327,10 @@ void service_nextion_display(){
     static unsigned long last_status3_update = 0;
   #endif
 
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    unsigned int temp2 = 0;
+  #endif
+
 
   if ((initialization_stage == 0) && (millis() > 500)){
     nexSerial.begin(NEXTION_SERIAL_BAUD);
@@ -5179,16 +5190,16 @@ TODO:
 
           if (satellite_array_data_ready){
             for (int x = 0;x < NEXTION_NUMBER_OF_NEXT_SATELLITES;x++){
-              temp = 0;
-              while ((temp < SATELLITE_LIST_LENGTH) && (satellite[temp].order != x)){
-                temp++;
+              temp2 = 0;
+              while ((temp2 < SATELLITE_LIST_LENGTH) && (satellite[temp2].order != x)){
+                temp2++;
               }
 
               strcpy_P(workstring1,(const char*) F("vSatN"));
               dtostrf(x+1,0,0,workstring2);
               strcat(workstring1,workstring2);
               strcat_P(workstring1,(const char*) F(".txt=\""));
-              strcat(workstring1,satellite[temp].name);
+              strcat(workstring1,satellite[temp2].name);
               strcat(workstring1,"\"");
               sendNextionCommand(workstring1);  
 
@@ -5196,7 +5207,7 @@ TODO:
               dtostrf(x+1,0,0,workstring2);
               strcat(workstring1,workstring2);
               strcat_P(workstring1,(const char*) F(".txt=\""));
-              strcat(workstring1,satellite_aos_los_string(temp));
+              strcat(workstring1,satellite_aos_los_string(temp2));
               strcat(workstring1,"\"");
               sendNextionCommand(workstring1);   
 
@@ -5204,7 +5215,7 @@ TODO:
               dtostrf(x+1,0,0,workstring2);
               strcat(workstring1,workstring2);
               strcat_P(workstring1,(const char*) F(".val="));
-              if ((satellite[temp].status & 1) == 1){
+              if ((satellite[temp2].status & 1) == 1){
                 strcat(workstring1,"1");
               } else {
                 strcat(workstring1,"0");
@@ -6001,19 +6012,19 @@ void update_lcd_display(){
           dtostrf(current_satellite_next_aos_az,DISPLAY_DECIMAL_PLACES,0,workstring2);
           strcat(workstring,workstring2);
           if ((LCD_COLUMNS>16) && ((current_satellite_next_aos_az < 100) || (abs(current_satellite_next_aos_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
-          strcat(workstring," El ");
-          dtostrf(current_satellite_next_aos_el,DISPLAY_DECIMAL_PLACES,0,workstring2);
-          strcat(workstring,workstring2);    
-          if ((LCD_COLUMNS>16) && ((current_satellite_next_aos_az < 100) || (abs(current_satellite_next_aos_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+          // strcat(workstring," El ");
+          // dtostrf(current_satellite_next_aos_el,DISPLAY_DECIMAL_PLACES,0,workstring2);
+          // strcat(workstring,workstring2);    
+          // if ((LCD_COLUMNS>16) && ((current_satellite_next_aos_az < 100) || (abs(current_satellite_next_aos_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         } else {
           strcpy(workstring,"LOS Az ");
           dtostrf(current_satellite_next_los_az,DISPLAY_DECIMAL_PLACES,0,workstring2);
           strcat(workstring,workstring2);
           if ((LCD_COLUMNS>16) && ((current_satellite_next_los_az < 100) || (abs(current_satellite_next_los_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
-          strcat(workstring," El ");
-          dtostrf(current_satellite_next_los_el,DISPLAY_DECIMAL_PLACES,0,workstring2);
-          strcat(workstring,workstring2);    
-          if ((LCD_COLUMNS>16) && ((current_satellite_next_los_az < 100) || (abs(current_satellite_next_los_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
+          // strcat(workstring," El ");
+          // dtostrf(current_satellite_next_los_el,DISPLAY_DECIMAL_PLACES,0,workstring2);
+          // strcat(workstring,workstring2);    
+          // if ((LCD_COLUMNS>16) && ((current_satellite_next_los_az < 100) || (abs(current_satellite_next_los_el)<100))) {strcat(workstring,LCD_DISPLAY_DEGREES_STRING);}
         }
         
 
@@ -15733,6 +15744,7 @@ Not implemented yet:
     control_port->print(satellite[satellite_array_position].next_pass_max_el);  
     control_port->print("  ");
     if (satellite[satellite_array_position].next_los.year > 0){
+      control_port->print("\t");
       control_port->print(satellite_aos_los_string(satellite_array_position));
     }
     // if (((float)satellite[satellite_array_position].elevation >= SATELLITE_AOS_ELEVATION_MIN) && (satellite[satellite_array_position].next_aos.year > 0)){
@@ -15745,10 +15757,26 @@ Not implemented yet:
       send_vt100_code((char*)VT100_CODE_CHAR_ATTR_OFF); 
     }
 
-    control_port->print(F("\t status: "));
-    control_port->print(satellite[satellite_array_position].status);
+    #if defined(DEBUG_SATELLITE_LIST_EXTRA_INFO)
+      control_port->print(F("\t"));
+      if ((satellite[satellite_array_position].status & 1) == 0){control_port->print(F("          "));}
+      if (strlen(satellite_aos_los_string(satellite_array_position)) < 11){control_port->print(F("\t"));}
+      //control_port->print(satellite[satellite_array_position].status);
 
-    if ((satellite[satellite_array_position].status & 2) == 2){control_port->print(F("\ttout"));}
+      if ((satellite[satellite_array_position].status & 2) == 2){control_port->print(F("CALC_TOUT "));}
+      if ((satellite[satellite_array_position].status & 4) == 4){control_port->print(F("STATE_CHANGE "));}
+      if ((satellite[satellite_array_position].status & 8) == 8){
+        control_port->print(F("HI_RES "));
+      } else {
+        if ((satellite[satellite_array_position].status & 16) == 16){
+          control_port->print(F("MED_RES "));
+        } else {
+          control_port->print(F("LOW_RES "));
+        }
+      }
+      if ((satellite[satellite_array_position].status & 32) == 32){control_port->print(F("CALC_THROTTLE "));}
+    #endif
+
 
     #if defined(DEBUG_SATELLITE_TRACKING_CALC)
       control_port->print("\t\torder: ");
@@ -18363,7 +18391,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
             debug.println("");
           #endif 
 
-          if ((satellite[satellite_array_refresh_position].status & 2) == 1){  // satellite was flagged for calculation timeout, do a low resolution calc
+          if (((satellite[satellite_array_refresh_position].status & 2) == 1) || ((satellite[satellite_array_refresh_position].next_aos.year == 0))){  
+            // satellite was flagged for calculation timeout or for some reason is unpopulated, do a low resolution calc
             satellite[satellite_array_refresh_position].status = satellite[satellite_array_refresh_position].status & B11111101; // clear the timeout flag
             service_calc_satellite_data(satellite_array_refresh_position,1,UPDATE_SAT_ARRAY_SLOT_JUST_AZ_EL,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE,SATELLITE_AOS_LOS_CALC_RESOLUTION_LOW_SECS);
           } else {
@@ -18770,7 +18799,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       service_calc_satellite_data_service_state = SERVICE_CALC_IN_PROGRESS;
       service_calc_current_sat = do_this_satellite;
       increment_seconds = do_this_many_increment_seconds;
-      //increment_seconds = SATELLITE_AOS_LOS_CALC_RESOLUTION_HIGH_SECS;
+
       
 
       if ((service_calc_satellite_data_task == PRINT_AOS_LOS_MULTILINE_REPORT) || (service_calc_satellite_data_task == PRINT_AOS_LOS_TABULAR_REPORT)){
@@ -18830,6 +18859,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         service_calc_satellite_data_service_state = SERVICE_IDLE;
       }
 
+      satellite[service_calc_current_sat].status = satellite[service_calc_current_sat].status & B11011111; // unset CALC_THROTTLE flag
+
       return 0; // exit for now, when we come back it's time to do some calculatin'
 
     } //if (service_action == SERVICE_CALC_INITIALIZE){  // initialize calculation
@@ -18842,9 +18873,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       // calculation throttle back / timeout
       if (((millis() - calculation_start_time) > SATELLITE_CALC_THROTTLE_DOWN_TO_MEDIUM_RESOLUTION_MS) && (increment_seconds < SATELLITE_AOS_LOS_CALC_RESOLUTION_MEDIUM_SECS)){
         increment_seconds = SATELLITE_AOS_LOS_CALC_RESOLUTION_MEDIUM_SECS;
+        satellite[service_calc_current_sat].status = satellite[service_calc_current_sat].status | 32; // set CALC_THROTTLE flag
       } else {
         if (((millis() - calculation_start_time) > SATELLITE_CALC_THROTTLE_DOWN_TO_LOW_RESOLUTION_MS)  && (increment_seconds < SATELLITE_AOS_LOS_CALC_RESOLUTION_LOW_SECS)){
           increment_seconds = SATELLITE_AOS_LOS_CALC_RESOLUTION_LOW_SECS;
+          satellite[service_calc_current_sat].status = satellite[service_calc_current_sat].status | 32; // set CALC_THROTTLE flag
         } else {
           if ((millis() - calculation_start_time) > SATELLITE_CALC_TIMEOUT_MS){
             if (service_calc_satellite_data_task != UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS){
