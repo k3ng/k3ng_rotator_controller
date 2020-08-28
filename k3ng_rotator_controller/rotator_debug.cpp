@@ -222,6 +222,49 @@ void DebugClass::print(double i)
 	// #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
 }
 
+void DebugClass::println(long i)
+{
+	#if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+	if (debug_mode & CONTROL_PORT0){
+		control_port->println(i);
+	}
+	#endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+
+	// #ifdef FEATURE_ETHERNET
+	// if (debug_mode & ETHERNET_PORT0){
+	// 	ethernetclient0.println(i);
+	// }
+	// #endif //FEATURE_ETHERNET
+
+	// #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
+	// if (debug_mode & ETHERNET_PORT1){
+	// 	ethernetclient1.println(i);
+	// }
+	// #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
+}
+
+
+void DebugClass::println(int i)
+{
+	#if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+	if (debug_mode & CONTROL_PORT0){
+		control_port->println(i);
+	}
+	#endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
+
+	// #ifdef FEATURE_ETHERNET
+	// if (debug_mode & ETHERNET_PORT0){
+	// 	ethernetclient0.println(i);
+	// }
+	// #endif //FEATURE_ETHERNET
+
+	// #if defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
+	// if (debug_mode & ETHERNET_PORT1){
+	// 	ethernetclient1.println(i);
+	// }
+	// #endif //defined(FEATURE_ETHERNET) && defined(ETHERNET_TCP_PORT_1)
+}
+
 void DebugClass::println(double i)
 {
 	#if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
