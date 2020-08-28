@@ -812,6 +812,10 @@
         FEATURE_NEXTION_DISPLAY
           Fixed bug with gMSS API variable introduced with satellite related API variable code  
 
+      2020.08.28.01
+        FEATURE_NEXTION_DISPLAY & FEATURE_SATELLITE_TRACKING
+          Fixed bug with vSS1 degrees symbol
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -824,7 +828,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.26.03"
+#define CODE_VERSION "2020.08.28.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4694,7 +4698,7 @@ void service_nextion_display(){
           strcat(workstring1,"+");
         }           
         strcat(workstring1,workstring2);
-        strcat(workstring1,LCD_DISPLAY_DEGREES_STRING);
+        strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
       } else {
         if (current_az_state() == ROTATING_CW) {
           strcpy(workstring1,CW_STRING);
