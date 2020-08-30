@@ -17,7 +17,7 @@
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 // #define FEATURE_DCU_1_EMULATION            // DCU-1 protocol emulation on control port
 
-// #define FEATURE_MOON_TRACKING
+#define FEATURE_MOON_TRACKING
 // #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
@@ -29,6 +29,7 @@
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
 #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+#define TEST_NEW_SAT_CALC
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -121,7 +122,7 @@
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 // #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 #define FEATURE_PARK
-// #define FEATURE_AUTOPARK               // Requires FEATURE_PARK
+#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 // #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
 // #define OPTION_EL_MANUAL_ROTATE_LIMITS
 //#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
