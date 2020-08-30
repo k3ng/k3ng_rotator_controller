@@ -819,10 +819,24 @@
       2020.08.29.01
         FEATURE_SATELLITE_TRACKING
           Yet another significant update to service_calc_satellite_data() - next AOS and LOS calculations are now accurate within 5 seconds!
+      
+      2020.08.29.02
+        FEATURE_CLOCK 
+          Fixed bug with CLOCK_DEFAULT_*_AT_BOOTUP settings not being used at boot up
+          \O (Oscar) command (set clock manually) will now optionally take seconds in the argument (i.e. \O202008292032 or \O20200829203255)
+        FEATURE_SATELLITE_TRACKING & FEATURE_CLOCK
+          The \O (Oscar) command (set clock manually) now resets the satellite data array so it's recalculated using the new time setting
+        FEATURE_NEXTION_DISPLAY & FEATURE_AUTOPARK
+          Added an addition bit value to API variable gVS (various statuses), autopark_active 32768
+        FEATURE_NEXTION_DISPLAY
+          Enhanced initialization routine to retry if "i'm alive" bytes are not received
+          Additional logging in DEBUG_NEXTION_DISPLAY_INIT
            
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
+
+    qwerty
     
   Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki
 
@@ -832,7 +846,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.29.01"
+#define CODE_VERSION "2020.08.29.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4341,25 +4355,42 @@ void service_nextion_display(){
 
 
   if ((initialization_stage == 0) && (millis() > 500)){
+
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      debug.println(F("\r\nservice_nextion_display: init: 0"));
+    #endif     
     nexSerial.begin(NEXTION_SERIAL_BAUD);
     sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
+
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      debug.println(F("\r\nservice_nextion_display: sent code_c"));
+    #endif   
+
     sendNextionCommand("rest");      // reset the Nextion unit
+
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      debug.println(F("\r\nservice_nextion_display: sent rest"));
+    #endif   
+
     initialization_stage = 1;
     last_various_things_update = millis();
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      debug.println("\r\nservice_nextion_display: init -> 1");
+      debug.println(F("\r\nservice_nextion_display: init -> 1"));
     #endif    
   }
 
-  nextion_i_am_alive_string[0] = 255;
-  nextion_i_am_alive_string[1] = 255;
-  nextion_i_am_alive_string[2] = 255;
-  nextion_i_am_alive_string[3] = 0;
+
 
   if (initialization_stage == 1){  // look for I'm alive bytes from Nextion
+
+    nextion_i_am_alive_string[0] = 255;
+    nextion_i_am_alive_string[1] = 255;
+    nextion_i_am_alive_string[2] = 255;
+    nextion_i_am_alive_string[3] = 0;
+
     if (nexSerial.available()){
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-        debug.print("\r\nservice_nextion_display: recv:");
+        debug.print(F("\r\nservice_nextion_display: recv:"));
       #endif
   
       serial_byte = nexSerial.read();  
@@ -4372,7 +4403,7 @@ void service_nextion_display(){
         if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
           i_am_alive_bytes_received++;
           #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-            debug.println(" match");
+            debug.println(F(" match!"));
           #endif             
           if (nextion_i_am_alive_string[i_am_alive_bytes_received] == 0){  // a null is the end of the nextion_i_am_alive_string char[]
             i_am_alive_bytes_received = 254;       
@@ -4380,7 +4411,7 @@ void service_nextion_display(){
         } else {
           i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
           #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-            debug.println(" no match");
+            debug.println(F(" no match"));
           #endif              
         }
       }
@@ -4389,8 +4420,19 @@ void service_nextion_display(){
     if (i_am_alive_bytes_received == 254){   // we got the i am alive bytes from the Nextion
       initialization_stage = 2;
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-        debug.println("\r\nservice_nextion_display: init -> 2");
+        debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init -> 2   mS elapsed since rest:"));
+        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));
+        last_various_things_update = millis();        
       #endif            
+    } else {
+
+      if ((millis()-last_various_things_update) > 2000){
+        initialization_stage = 0;
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, attempting init again"));
+        #endif             
+      }
+
     }
   }
 
@@ -4448,6 +4490,16 @@ void service_nextion_display(){
     strcat(workstring1,workstring2);
     sendNextionCommand(workstring1);
 
+
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      if (initialization_stage == 2){
+        debug.print(F("\r\nservice_nextion_display: init: sent first "));
+        debug.print(workstring1);
+        debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+      }
+    #endif   
+
     temp = 0;
 
     #if defined(LANGUAGE_ENGLISH)
@@ -4474,9 +4526,27 @@ void service_nextion_display(){
     strcat(workstring1,workstring2);
     sendNextionCommand(workstring1);
 
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      if (initialization_stage == 2){
+        debug.print(F("\r\nservice_nextion_display: init: sent first "));
+        debug.print(workstring1);
+        debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+      }
+    #endif
+
     // Rotator Controller API Implementation Version
     strcpy_P(workstring1,(const char*) F("vRCAPIv.val=2020082401"));
     sendNextionCommand(workstring1);
+
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      if (initialization_stage == 2){
+        debug.print(F("\r\nservice_nextion_display: init: sent first "));
+        debug.print(workstring1);
+        debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+      }
+    #endif      
 
     // Rotator Controller Arduino Code Version
     strcpy_P(workstring1,(const char*) F("vRCVersion.txt=\""));
@@ -4484,15 +4554,41 @@ void service_nextion_display(){
     strcat(workstring1,"\"");
     sendNextionCommand(workstring1);
 
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      if (initialization_stage == 2){
+        debug.print(F("\r\nservice_nextion_display: init: sent first "));
+        debug.print(workstring1);
+        debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+      }
+    #endif      
+
     // gDP - Display decimal places
     dtostrf(DISPLAY_DECIMAL_PLACES, 1, 0, workstring1);
     strcpy_P(workstring2,(const char*) F("gDP="));
     strcat(workstring2,workstring1);
-    sendNextionCommand(workstring2);     
+    sendNextionCommand(workstring2);  
+
+    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      if (initialization_stage == 2){
+        debug.print(F("\r\nservice_nextion_display: init: sent first "));
+        debug.print(workstring2);
+        debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+      }
+    #endif         
 
     last_various_things_update = millis();
 
-    initialization_stage = 3;
+    if (initialization_stage == 2){
+      initialization_stage = 3;
+
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.println("\r\nservice_nextion_display: done with init, init -> 3");
+      #endif   
+    }
+
+
   }
 
 
@@ -4635,6 +4731,7 @@ void service_nextion_display(){
           break;
         case PARKED:
           temp = temp | 512; 
+          break;
       }
     #endif //FEATURE_PARK
 
@@ -4663,10 +4760,13 @@ void service_nextion_display(){
       temp = temp | 16384;
     }
 
-    // Future: 32768
+    #if defined(FEATURE_AUTOPARK)
+      if (configuration.autopark_active){
+        temp = temp | 32768;
+      }
+    #endif
+
     // Future: 65536
-
-
 
 
     dtostrf((int)temp, 1, 0, workstring1);
@@ -10112,12 +10212,12 @@ void initialize_peripherals(){
   #endif
 
   #ifdef FEATURE_CLOCK
-    current_clock.year = CLOCK_DEFAULT_YEAR_AT_BOOTUP;
-    current_clock.month = CLOCK_DEFAULT_MONTH_AT_BOOTUP;
-    current_clock.day = CLOCK_DEFAULT_DAY_AT_BOOTUP;
-    current_clock.hours = CLOCK_DEFAULT_HOURS_AT_BOOTUP;
-    current_clock.minutes = CLOCK_DEFAULT_MINUTES_AT_BOOTUP;
-    current_clock.seconds = CLOCK_DEFAULT_SECONDS_AT_BOOTUP;
+    set_clock.year = CLOCK_DEFAULT_YEAR_AT_BOOTUP;
+    set_clock.month = CLOCK_DEFAULT_MONTH_AT_BOOTUP;
+    set_clock.day = CLOCK_DEFAULT_DAY_AT_BOOTUP;
+    set_clock.hours = CLOCK_DEFAULT_HOURS_AT_BOOTUP;
+    set_clock.minutes = CLOCK_DEFAULT_MINUTES_AT_BOOTUP;
+    set_clock.seconds = CLOCK_DEFAULT_SECONDS_AT_BOOTUP;
   #endif
 
 
@@ -13785,6 +13885,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     byte temp_day = 0;
     byte temp_minute = 0;
     byte temp_hour = 0;
+    byte temp_second = 0;
     byte negative_flag = 0;
   #endif // FEATURE_CLOCK
 
@@ -14024,23 +14125,33 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       temp_day = ((input_buffer[8] - 48) * 10) + (input_buffer[9] - 48);
       temp_hour = ((input_buffer[10] - 48) * 10) + (input_buffer[11] - 48);
       temp_minute = ((input_buffer[12] - 48) * 10) + (input_buffer[13] - 48);
-      if ((temp_year > 2013) && (temp_year < 2070) &&
-          (temp_month > 0) && (temp_month < 13) &&
-          (temp_day > 0) && (temp_day < 32) &&
-          (temp_hour >= 0) && (temp_hour < 24) &&
-          (temp_minute >= 0) && (temp_minute < 60) &&
-          (input_buffer_index == 14)) {
+      if (input_buffer_index == 16){
+        temp_second = ((input_buffer[14] - 48) * 10) + (input_buffer[15] - 48);
+      } else {
+        temp_second = 0;
+      }
+      if ( (temp_year > 2019) && (temp_year < 2070) &&
+           (temp_month > 0) && (temp_month < 13) &&
+           (temp_day > 0) && (temp_day < 32) &&
+           (temp_hour >= 0) && (temp_hour < 24) &&
+           (temp_minute >= 0) && (temp_minute < 60) &&
+           (temp_second >= 0) && (temp_second < 60) &&
+           ((input_buffer_index == 14) || (input_buffer_index == 16)) ){
 
         set_clock.year = temp_year;
         set_clock.month = temp_month;
         set_clock.day = temp_day;
         set_clock.hours = temp_hour;
         set_clock.minutes = temp_minute;
-        set_clock.seconds = 0;
+        set_clock.seconds = temp_second;
         millis_at_last_calibration = millis();
 
+        #if defined(FEATURE_SATELLITE_TRACKING)
+          satellite_array_data_ready = 0;
+        #endif
+
         #if defined(FEATURE_RTC_DS1307)
-        rtc.adjust(DateTime(temp_year, temp_month, temp_day, temp_hour, temp_minute, 0));
+        rtc.adjust(DateTime(temp_year, temp_month, temp_day, temp_hour, temp_minute, temp_second));
         #endif // defined(FEATURE_RTC_DS1307)
         #if defined(FEATURE_RTC_PCF8583)
         rtc.year = temp_year;
@@ -14048,7 +14159,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         rtc.day = temp_day;
         rtc.hour  = temp_hour;
         rtc.minute = temp_minute;
-        rtc.second = 0;
+        rtc.second = temp_second;
         rtc.set_time();
         #endif // defined(FEATURE_RTC_PCF8583)
 
@@ -14062,7 +14173,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           strcat(return_string, timezone_modified_clock_string());
         #endif
       } else {
-        strcpy_P(return_string, (const char*) F("Error. Usage: \\OYYYYMMDDHHmm"));
+        strcpy_P(return_string, (const char*) F("Error. Usage: \\OYYYYMMDDHHmm[ss]"));
       }
       break;
 
