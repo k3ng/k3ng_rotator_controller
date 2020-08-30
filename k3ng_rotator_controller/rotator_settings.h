@@ -339,7 +339,7 @@ You can tweak these, but read the online documentation!
 //#define REMOTE_PORT Serial3                 // used to control remote unit
 #define REMOTE_UNIT_PORT_BAUD_RATE 9600 
 #define GPS_PORT Serial2
-#define GPS_PORT_BAUD_RATE 9600
+#define GPS_PORT_BAUD_RATE 38400
 // #define GPS_MIRROR_PORT Serial1          // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
 // #define GPS_MIRROR_PORT_BAUD_RATE 9600
 #define nexSerial Serial3

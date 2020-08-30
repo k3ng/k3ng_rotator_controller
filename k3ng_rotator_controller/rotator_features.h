@@ -46,14 +46,14 @@
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html  
 // #define FEATURE_AZ_POSITION_PULSE_INPUT
-// #define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
+#define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
 // #define FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY            // HMC5883L digital compass support using Jarzebski library at https://github.com/jarzebski/Arduino-HMC5883L  
 // #define FEATURE_AZ_POSITION_DFROBOT_QMC5883            // QMC5883 digital compass support using DFRobot library at https://github.com/DFRobot/DFRobot_QMC5883
 // #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
 // #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
-#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
+//#define FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
 // #define FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER
 // #define FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883   // QMC5883 digital compass support using Mechasolution library at https://github.com/keepworking/Mecha_QMC5883L
 
@@ -171,9 +171,9 @@
 // #define OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS
 // #define OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS  
 // #define OPTION_DONT_READ_GPS_PORT_AS_OFTEN  
-// #define OPTION_GPS_DO_PORT_FLUSHES
+#define OPTION_GPS_DO_PORT_FLUSHES
 // #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING  // change OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING in settings file  
-// #define OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING
-// #define OPTION_MORE_SERIAL_CHECKS
+#define OPTION_GPS_EXCLUDE_MISSING_LF_CR_HANDLING
+#define OPTION_MORE_SERIAL_CHECKS
 // #define OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE  
 // #define OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP // if disabled, rotational and configuration commands will be ignored on the serial port for the first 10 second after boot up
