@@ -142,7 +142,7 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 111
+#define EEPROM_MAGIC_NUMBER 112
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 #define DISPLAY_DECIMAL_PLACES 0
@@ -153,8 +153,6 @@ You can tweak these, but read the online documentation!
 #define AZ_POSITION_PULSE_DEG_PER_PULSE 0.5
 #define EL_POSITION_PULSE_DEG_PER_PULSE 0.5
 
-#define PARK_AZIMUTH 360.0      // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
-#define PARK_ELEVATION 0.0   // replace the 0.0 with your park elevation
 #define NOT_PARKED_DETECT_TIME_MS 1000
 
 #define COMMAND_BUFFER_SIZE 50
@@ -385,3 +383,7 @@ You can tweak these, but read the online documentation!
 #define SATELLITE_CALC_STAGE_1_RESOLUTION_SECS 120
 #define SATELLITE_CALC_STAGE_2_RESOLUTION_SECS 10
 #define SATELLITE_CALC_STAGE_3_RESOLUTION_SECS 1
+
+// Deprecated in 2020.08.30.01
+// #define PARK_AZIMUTH 0.0     // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
+// #define PARK_ELEVATION 0.0    // replace the 0.0 with your park elevation

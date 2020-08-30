@@ -832,6 +832,16 @@
           Enhanced initialization routine to retry if "i'm alive" bytes are not received
           Additional logging in DEBUG_NEXTION_DISPLAY_INIT
            
+      2020.08.30.01
+        FEATURE_PARK
+          The park azimuth and elevation is now stored in the EEPROM configuration
+          Settings PARK_AZIMUTH and PARK_ELEVATION have been deprecated
+          The \P command has been enhanced:
+            \PA[x][x][x] - set the park azimuth
+            \PE[x][x][x] - set the park elevation
+            \PA or \PE (no parameter) - report current park azimuth and elevation 
+        FEATURE_NEXTION_DISPLAY & FEATURE_SATELLITE_TRACKING
+          Changing the current satellite on the Nextion display no longer echoes the command output on the control port      
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -846,7 +856,7 @@
 
   */
 
-#define CODE_VERSION "2020.08.29.02"
+#define CODE_VERSION "2020.08.30.01"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -1080,6 +1090,8 @@ struct config_t {
   unsigned int autopark_time_minutes;
   byte azimuth_display_mode;
   char current_satellite[17];
+  int park_azimuth;
+  int park_elevation;
 } configuration;
 
 
@@ -3490,7 +3502,7 @@ void check_serial(){
           if ((incoming_serial_byte == 13) && ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/'))){
             received_backslash = 0;
             control_port->println();
-            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string);
+            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string, SOURCE_CONTROL_PORT);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
             #endif          
@@ -3522,7 +3534,7 @@ void check_serial(){
           if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {
             received_backslash = 0;
             control_port->println();
-            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string);
+            process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string, SOURCE_CONTROL_PORT);
             #if defined(FEATURE_LCD_DISPLAY)
               perform_screen_redraw = 1;
             #endif            
@@ -3574,7 +3586,7 @@ void check_serial(){
         if ((control_port_buffer[0] == '\\') || (control_port_buffer[0] == '/')) {   // we have a backslash command
           received_backslash = 0;
           control_port->println();
-          process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string);
+          process_backslash_command(control_port_buffer, control_port_buffer_index, CONTROL_PORT0, INCLUDE_RESPONSE_CODE, return_string, SOURCE_CONTROL_PORT);
           control_port->println(return_string);
           clear_command_buffer();
         } else {       // we have a DCU-1 command
@@ -4619,7 +4631,7 @@ void service_nextion_display(){
       }   
 
       if ((serial_byte == 13) || (nextion_port_buffer_index > 31)){  // do we have a carriage return or have we hit the end of the buffer?
-        process_backslash_command(nextion_port_buffer, nextion_port_buffer_index, 0, DO_NOT_INCLUDE_RESPONSE_CODE, return_string);
+        process_backslash_command(nextion_port_buffer, nextion_port_buffer_index, 0, DO_NOT_INCLUDE_RESPONSE_CODE, return_string, SOURCE_NEXTION);
         nextion_port_buffer_index = 0;
         received_backslash = 0;
         last_serial_receive_time = 0;
@@ -12393,14 +12405,14 @@ void initiate_park(){
 
   change_tracking(DEACTIVATE_ALL);
 
-  if (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE)) {
-    submit_request(AZ, REQUEST_AZIMUTH_RAW, PARK_AZIMUTH, 7);
+  if (abs(raw_azimuth - configuration.park_azimuth) > (AZIMUTH_TOLERANCE)) {
+    submit_request(AZ, REQUEST_AZIMUTH_RAW, configuration.park_azimuth, 7);
     park_initiated = 1;
   }
 
   #ifdef FEATURE_ELEVATION_CONTROL
-    if (abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE)) {
-      submit_request(EL, REQUEST_ELEVATION, PARK_ELEVATION, 8);
+    if (abs(elevation - configuration.park_elevation) > (ELEVATION_TOLERANCE)) {
+      submit_request(EL, REQUEST_ELEVATION, configuration.park_elevation, 8);
       park_initiated = 1;
     }
   #endif // FEATURE_ELEVATION_CONTROL
@@ -12431,7 +12443,7 @@ void service_park(){
   if (park_status == PARKED) {
 
     #if !defined(FEATURE_ELEVATION_CONTROL)
-      if (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE)) {
+      if (abs(raw_azimuth - configuration.park_azimuth) > (AZIMUTH_TOLERANCE)) {
         if (time_first_detect_not_parked == 0){
           time_first_detect_not_parked = millis();
         } else {
@@ -12447,7 +12459,7 @@ void service_park(){
 
     #else
 
-      if ((abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE)) || (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE))){
+      if ((abs(elevation - configuration.park_elevation) > (ELEVATION_TOLERANCE)) || (abs(raw_azimuth - configuration.park_azimuth) > (AZIMUTH_TOLERANCE))){
         if (time_first_detect_not_parked == 0){
           time_first_detect_not_parked = millis();
         } else {        
@@ -12467,14 +12479,14 @@ void service_park(){
 
 
   // if (park_status == PARKED) {
-  //   if (abs(raw_azimuth - PARK_AZIMUTH) > (AZIMUTH_TOLERANCE)) {
+  //   if (abs(raw_azimuth - configuration.park_azimuth) > (AZIMUTH_TOLERANCE)) {
   //     park_status = NOT_PARKED;
   //     #ifdef DEBUG_PARK
   //       debug.println(F("service_park: az NOT_PARKED"));
   //     #endif // DEBUG_PARK      
   //   }
   //   #ifdef FEATURE_ELEVATION_CONTROL
-  //   if (abs(elevation - PARK_ELEVATION) > (ELEVATION_TOLERANCE)) {
+  //   if (abs(elevation - configuration.park_elevation) > (ELEVATION_TOLERANCE)) {
   //     park_status = NOT_PARKED;
   //     #ifdef DEBUG_PARK
   //       debug.println(F("service_park: el NOT_PARKED"));
@@ -13863,7 +13875,7 @@ void strconditionalcpy(char *__dst, const char *__src, byte do_it){
 }
 
 // --------------------------------------------------------------
-byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte source_port, byte include_response_code, char * return_string){
+byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte source_port, byte include_response_code, char * return_string, byte input_source){
 
   strcpy(return_string,"");
   static unsigned long serial_led_time = 0;
@@ -13878,6 +13890,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   long place_multiplier = 0;
   byte decimalplace = 0;
   byte x = 0;
+  int temp_int = 0;
 
   #ifdef FEATURE_CLOCK
     int temp_year = 0;
@@ -14421,12 +14434,53 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       } /* switch */
       break;
 
-
+//zzzzzz
     #ifdef FEATURE_PARK
-    case 'P':    // Park
-      strcpy_P(return_string, (const char*) F("Parking..."));
-      initiate_park();
-      park_serial_initiated = 1;
+    case 'P':    // Park, PA and PE commands - set / query park azimuth and elevation
+      temp_int = 999;
+      // control_port->print(F("input_buffer_index:"));
+      // control_port->println(input_buffer_index);
+      if (input_buffer_index == 2){ // no parameters, it's a park initiation
+        strcpy_P(return_string, (const char*) F("Parking..."));
+        initiate_park();
+        park_serial_initiated = 1;
+      } else {
+        if ((input_buffer[2] == 'A') || (input_buffer[2] == 'E')){ 
+          if (input_buffer_index == 3){ // PA or PE, no parameters, it's a query
+            control_port->print(F("Park Azimuth: "));
+            control_port->print(configuration.park_azimuth);
+            control_port->print(F(" Elevation: "));
+            control_port->print(configuration.park_elevation);        
+          } else {
+            if (input_buffer_index == 4){
+              temp_int = (input_buffer[3] - 48);
+            } else {
+              if (input_buffer_index == 5){
+                temp_int = ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
+              } else {
+                if (input_buffer_index == 6){
+                  temp_int = ((input_buffer[3] - 48) * 100) + ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);              
+                } else {
+                  control_port->print(F("Error."));
+                }
+              }
+            }
+          }
+        }
+      }
+      if (temp_int != 999){
+        control_port->print(F("Park "));
+        if (input_buffer[2] == 'A'){
+          configuration.park_azimuth = temp_int;
+          control_port->print(F("Azimuth"));
+        } else {
+          configuration.park_elevation = temp_int;
+          control_port->print(F("Elevation"));
+        }
+        configuration_dirty = 1;
+        control_port->print(F(" set to "));
+        control_port->println(temp_int);
+      }
       break;
       #endif // FEATURE_PARK
 
@@ -14749,9 +14803,14 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             satellite_to_find[x-2] = input_buffer[x];
             satellite_to_find[x-1] = 0; 
           }      
-          control_port->print(F("Searching for "));
-          control_port->println(satellite_to_find);
-          pull_satellite_tle_and_activate(satellite_to_find,_VERBOSE_,MAKE_IT_THE_CURRENT_SATELLITE);
+          if (input_source != SOURCE_NEXTION){
+            control_port->print(F("Searching for "));
+            control_port->println(satellite_to_find);
+            pull_satellite_tle_and_activate(satellite_to_find,_VERBOSE_,MAKE_IT_THE_CURRENT_SATELLITE);
+          } else {
+            pull_satellite_tle_and_activate(satellite_to_find,NOT_VERBOSE,MAKE_IT_THE_CURRENT_SATELLITE);
+          }
+          
           //service_satellite_tracking(1);
           //print_current_satellite_status();  //  Can't do this right away do to calculate_satellite_aos_and_los running asynchrously
           break;  
@@ -15241,9 +15300,10 @@ Not implemented yet:
       if (temp_longitude < 100){strcat(return_string,"0");}
       dtostrf(abs(temp_longitude),0,6,temp_string);
       strcat(return_string,temp_string); 
+    } // \?CGxxxx or \?CGxxxxxx  - Convert grid to coordinates
 
 
-    }       
+
 
     //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_CLOCK) || defined(FEATURE_GPS) || defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(OPTION_DISPLAY_ALT_HHMM_CLOCK_AND_MAIDENHEAD) || defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD)
       // \?GCxxxx xxxx  - go to coordinate target (rotate azimuth)
@@ -17466,7 +17526,7 @@ void service_ethernet(){
 
       if (((incoming_byte == 13) || (ethernet_port_buffer_index0 >= COMMAND_BUFFER_SIZE)) && (ethernet_port_buffer_index0 > 0)){  // do we have a carriage return?
         if ((ethernet_port_buffer0[0] == '\\') || (ethernet_port_buffer0[0] == '/')) {
-          process_backslash_command(ethernet_port_buffer0, ethernet_port_buffer_index0, ETHERNET_PORT0, INCLUDE_RESPONSE_CODE, return_string);
+          process_backslash_command(ethernet_port_buffer0, ethernet_port_buffer_index0, ETHERNET_PORT0, INCLUDE_RESPONSE_CODE, return_string, SOURCE_CONTROL_PORT);
         } else {
           #ifdef FEATURE_YAESU_EMULATION
           process_yaesu_command(ethernet_port_buffer0,ethernet_port_buffer_index0,ETHERNET_PORT0,return_string);
@@ -17517,7 +17577,7 @@ void service_ethernet(){
       }
       if (incoming_byte == 13) {  // do we have a carriage return?
         if ((ethernet_port_buffer1[0] == '\\') || (ethernet_port_buffer1[0] == '/')) {
-          process_backslash_command(ethernet_port_buffer1, ethernet_port_buffer_index1, ETHERNET_PORT1, INCLUDE_RESPONSE_CODE, return_string);
+          process_backslash_command(ethernet_port_buffer1, ethernet_port_buffer_index1, ETHERNET_PORT1, INCLUDE_RESPONSE_CODE, return_string, SOURCE_CONTROL_PORT);
         } else {
           #ifdef FEATURE_YAESU_EMULATION
           process_yaesu_command(ethernet_port_buffer1,ethernet_port_buffer_index1,ETHERNET_PORT1,return_string);

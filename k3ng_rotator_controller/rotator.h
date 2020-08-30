@@ -308,6 +308,9 @@
 #define VT100_CURSOR_UPPER_LEFT_CORNER "[f"
 #define VT100_BOLD "[1m"
 
+#define SOURCE_CONTROL_PORT 0
+#define SOURCE_NEXTION 1
+
 
 /* ------end of macros ------- */
 
