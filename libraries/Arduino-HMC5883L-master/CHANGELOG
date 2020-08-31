@@ -1,0 +1,19 @@
+HMC5883L Arduino Library 1.1.0 / 26.10.2014
+======================================================================
+
+ * Adding tilt compensation examples for MPU6050 / ADXL345
+ * Adding calibrate script and processing
+ * Adding example to work with GY-86 / GY-87 modules
+ * Adding setOffset() method for calibration
+ * Removing fixAngle() from examples
+ * Cleanups codes
+
+HMC5883L Arduino Library 1.0.1 / 26.01.2014
+======================================================================
+
+ * Fix typedefs & structs names
+
+HMC5883L Arduino Library 1.0.0 / 25.01.2014
+======================================================================
+
+ * First release

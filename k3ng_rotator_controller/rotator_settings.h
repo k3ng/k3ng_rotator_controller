@@ -43,8 +43,8 @@ You can tweak these, but read the online documentation!
 #define PWM_SPEED_VOLTAGE_X4  253        // 0 to 255
 
 //AZ
-#define AZ_SLOWSTART_DEFAULT 1            // 0 = off ; 1 = on
-#define AZ_SLOWDOWN_DEFAULT 1             // 0 = off ; 1 = on
+#define AZ_SLOWSTART_DEFAULT 0            // 0 = off ; 1 = on
+#define AZ_SLOWDOWN_DEFAULT 0            // 0 = off ; 1 = on
 #define AZ_SLOW_START_UP_TIME 2000        // if slow start is enabled, the unit will ramp up speed for this many milliseconds
 #define AZ_SLOW_START_STARTING_PWM 60      // PWM starting value for slow start (must be < 256)
 #define AZ_SLOW_START_STEPS 20            // must be < 256
@@ -318,7 +318,7 @@ You can tweak these, but read the online documentation!
 #define STALL_CHECK_FREQUENCY_MS_EL 1000
 #define STALL_CHECK_DEGREES_THRESHOLD_EL 2
 
-//#define SET_I2C_BUS_SPEED 800000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz
+#define SET_I2C_BUS_SPEED 400000L // Can set up to 800 kHz, depending on devices.  800000L = 800 khz, 400000L = 400 khz.  Default is 100 khz
 
 #define ROTATIONAL_AND_CONFIGURATION_CMD_IGNORE_TIME_MS 5000 // if OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP is enabled, ignore configuration and rotational command for this many mS after boot up
 
@@ -335,16 +335,16 @@ You can tweak these, but read the online documentation!
 // Changed in 2020.06.26.02
 // Serial Port Settings
 #define CONTROL_PORT_MAPPED_TO &Serial     // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
-#define CONTROL_PORT_BAUD_RATE 9600
-//#define REMOTE_PORT Serial3                 // used to control remote unit
-#define REMOTE_UNIT_PORT_BAUD_RATE 9600 
+#define CONTROL_PORT_BAUD_RATE 115200
+// #define REMOTE_PORT Serial3                 // used to control remote unit
+// #define REMOTE_UNIT_PORT_BAUD_RATE 9600 
 #define GPS_PORT Serial2
-#define GPS_PORT_BAUD_RATE 38400
+#define GPS_PORT_BAUD_RATE 9600
 // #define GPS_MIRROR_PORT Serial1          // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)
 // #define GPS_MIRROR_PORT_BAUD_RATE 9600
 #define nexSerial Serial3
 #define NEXTION_SERIAL_BAUD 115200
-#define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
+// #define OPTION_SEND_STRING_OUT_CONTROL_PORT_WHEN_INITIALIZING_STRING ("test\n\r")
 
 // Added in 2020.07.19.02
 #define SUN_UPDATE_POSITION_INTERVAL_MS 5000
@@ -389,4 +389,3 @@ You can tweak these, but read the online documentation!
 #define SATELLITE_CALC_STAGE_1_RESOLUTION_SECS 120
 #define SATELLITE_CALC_STAGE_2_RESOLUTION_SECS 10
 #define SATELLITE_CALC_STAGE_3_RESOLUTION_SECS 1
-

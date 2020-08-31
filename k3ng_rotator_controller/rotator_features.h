@@ -113,7 +113,7 @@
 //#define FEATURE_ROTATION_INDICATOR_PIN     // activate rotation_indication_pin to indicate rotation
 //#define FEATURE_LIMIT_SENSE
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
-// #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
+#define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
 //#define FEATURE_PARK
 //#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings are AZ_MANUAL_ROTATE_CCW_LIMIT, AZ_MANUAL_ROTATE_CW_LIMIT) 
@@ -131,7 +131,7 @@
 // #define OPTION_JOYSTICK_REVERSE_Y_AXIS
 #define OPTION_EL_SPEED_FOLLOWS_AZ_SPEED    // changing the azimith speed with Yaesu X commands or an azimuth speed pot will also change elevation speed
 // #define OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES // for azimuth and elevation position pulse input feature, ignore pulses that arrive when no rotation is active
-#define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
+// #define OPTION_BUTTON_RELEASE_NO_SLOWDOWN  // disables slowdown when CW or CCW button is released, or stop button is depressed
 #define OPTION_SYNC_RTC_TO_GPS // if both realtime clock and GPS are present, synchronize realtime clock to GPS
 
 #define OPTION_DISPLAY_STATUS
@@ -160,7 +160,7 @@
 // #define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
 // #define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
 // #define OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE  // use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
-// #define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
+#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
 // #define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
 // #define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
 // #define OPTION_NO_ELEVATION_CHECK_TARGET_DELAY

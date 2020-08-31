@@ -2,7 +2,7 @@
 
 
 
-#define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 1 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
 // #define DEBUG_LOOP
@@ -53,7 +53,7 @@
 // #define DEBUG_MEMSIC_2125
 // #define DEBUG_SYNC_MASTER_CLOCK_TO_SLAVE
 // #define DEBUG_SYNC_MASTER_COORDINATES_TO_SLAVE
-// #define DEBUG_HMC5883L
+#define DEBUG_HMC5883L
 // #define DEBUG_POLOLU_LSM303_CALIBRATION
 // #define DEBUG_STEPPER
 // #define DEBUG_AUTOCORRECT

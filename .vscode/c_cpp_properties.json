@@ -4,10 +4,12 @@
             "name": "Win32",
             "includePath": [
                 "C:\\Program Files (x86)\\Arduino\\tools\\**",
-                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\**"
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\**",
+                "c:/Users/k7mdl/Documents/GitHub/k3ng_rotator_controller/libraries/"
             ],
             "forcedInclude": [
-                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h",
+                "c:\\Users\\k7mdl/Documents\\GitHub\\k3ng_rotator_controller\\libraries\\TinyGPS\\TinyGPS.h"
             ],
             "intelliSenseMode": "msvc-x64"
         }
