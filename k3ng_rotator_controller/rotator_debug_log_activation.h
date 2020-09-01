@@ -2,7 +2,7 @@
 
 
 
-#define DEFAULT_DEBUG_STATE 1 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
+#define DEFAULT_DEBUG_STATE 0 // 1 = activate debug mode at startup; this should be set to zero unless you're debugging something at startup
 
 #define DEBUG_DUMP  // normally compile with this activated unless you're really trying to save memory
 // #define DEBUG_LOOP
