@@ -853,6 +853,11 @@
           \PA or \PE command from Nextion pushes output to vSS1 in transient message
         Now updating software version date based on UTC date, not Eastern US date.  G'day, mates! :-)
 
+      2020.09.01.02
+        Overlap functionality can now be disabled by commenting out define ANALOG_AZ_OVERLAP_DEGREES in settings file  
+        Setting AZIMUTH_STARTING_POINT_DEFAULT renamed to AZIMUTH_STARTING_POINT_EEPROM_INITIALIZE
+        Setting AZIMUTH_ROTATION_CAPABILITY_DEFAULT renamed to AZIMUTH_ROTATION_CAPABILITY_EEPROM_INITIALIZE
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -867,7 +872,7 @@
 
   */
 
-#define CODE_VERSION "2020.09.01.01"
+#define CODE_VERSION "2020.09.01.02"
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -2917,58 +2922,61 @@ void brake_release(byte az_or_el, byte operation){
 // --------------------------------------------------------------
 void check_overlap(){
 
-  #ifdef DEBUG_PROCESSES
-    service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_MISC_ADMIN);
-  #endif    
+  #if defined(ANALOG_AZ_OVERLAP_DEGREES)
 
+    #ifdef DEBUG_PROCESSES
+      service_process_debug(DEBUG_PROCESSES_PROCESS_ENTER,PROCESS_MISC_ADMIN);
+    #endif    
 
-  static byte overlap_led_status = 0;
-  static unsigned long last_check_time;
-  #ifdef OPTION_BLINK_OVERLAP_LED
-  static unsigned long last_overlap_led_transition = 0;
-  static byte blink_status = 0;
-  #endif //OPTION_BLINK_OVERLAP_LED
+    static byte overlap_led_status = 0;
+    static unsigned long last_check_time;
+    #ifdef OPTION_BLINK_OVERLAP_LED
+    static unsigned long last_overlap_led_transition = 0;
+    static byte blink_status = 0;
+    #endif //OPTION_BLINK_OVERLAP_LED
 
-  if ((overlap_led) && ((millis() - last_check_time) > 500)) {
-    if ((raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES) && (!overlap_led_status)) {
-      digitalWriteEnhanced(overlap_led, OVERLAP_LED_ACTIVE_STATE);
-      overlap_led_status = 1;
-      #ifdef OPTION_BLINK_OVERLAP_LED
-      last_overlap_led_transition = millis();
-      blink_status = 1;
-      #endif //OPTION_BLINK_OVERLAP_LED
-      #ifdef DEBUG_OVERLAP
-      debug.println("check_overlap: in overlap");
-      #endif // DEBUG_OVERLAP
-    } else {
-      if ((raw_azimuth < ANALOG_AZ_OVERLAP_DEGREES) && (overlap_led_status)) {
-        digitalWriteEnhanced(overlap_led, OVERLAP_LED_INACTIVE_STATE);
-        overlap_led_status = 0;
+    if ((overlap_led) && ((millis() - last_check_time) > 500)) {
+      if ((raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES) && (!overlap_led_status)) {
+        digitalWriteEnhanced(overlap_led, OVERLAP_LED_ACTIVE_STATE);
+        overlap_led_status = 1;
+        #ifdef OPTION_BLINK_OVERLAP_LED
+        last_overlap_led_transition = millis();
+        blink_status = 1;
+        #endif //OPTION_BLINK_OVERLAP_LED
         #ifdef DEBUG_OVERLAP
-        debug.println("check_overlap: overlap off");
+        debug.println("check_overlap: in overlap");
         #endif // DEBUG_OVERLAP
+      } else {
+        if ((raw_azimuth < ANALOG_AZ_OVERLAP_DEGREES) && (overlap_led_status)) {
+          digitalWriteEnhanced(overlap_led, OVERLAP_LED_INACTIVE_STATE);
+          overlap_led_status = 0;
+          #ifdef DEBUG_OVERLAP
+          debug.println("check_overlap: overlap off");
+          #endif // DEBUG_OVERLAP
+        }
       }
+      last_check_time = millis();
+
     }
-    last_check_time = millis();
 
-  }
-
-  #ifdef OPTION_BLINK_OVERLAP_LED
-  if ((overlap_led_status) && ((millis() - last_overlap_led_transition) >= OPTION_OVERLAP_LED_BLINK_MS)){
-    if (blink_status){
-      digitalWriteEnhanced(overlap_led, OVERLAP_LED_INACTIVE_STATE);
-      blink_status = 0;
-    } else {
-      digitalWriteEnhanced(overlap_led, OVERLAP_LED_ACTIVE_STATE);
-      blink_status = 1;
+    #ifdef OPTION_BLINK_OVERLAP_LED
+    if ((overlap_led_status) && ((millis() - last_overlap_led_transition) >= OPTION_OVERLAP_LED_BLINK_MS)){
+      if (blink_status){
+        digitalWriteEnhanced(overlap_led, OVERLAP_LED_INACTIVE_STATE);
+        blink_status = 0;
+      } else {
+        digitalWriteEnhanced(overlap_led, OVERLAP_LED_ACTIVE_STATE);
+        blink_status = 1;
+      }
+      last_overlap_led_transition = millis();
     }
-    last_overlap_led_transition = millis();
-  }
-  #endif //OPTION_BLINK_OVERLAP_LED
+    #endif //OPTION_BLINK_OVERLAP_LED
 
-  #ifdef DEBUG_PROCESSES
-    service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_MISC_ADMIN);
-  #endif    
+    #ifdef DEBUG_PROCESSES
+      service_process_debug(DEBUG_PROCESSES_PROCESS_EXIT,PROCESS_MISC_ADMIN);
+    #endif    
+
+  #endif //#if defined(ANALOG_AZ_OVERLAP_DEGREES)
 
 } /* check_overlap */
 
@@ -4435,6 +4443,7 @@ void service_nextion_display(){
     #endif   
 
     initialization_stage = 1;
+    //initialization_stage = 2;
     last_various_things_update = millis();
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
       debug.println(F("\r\nservice_nextion_display: init -> 1"));
@@ -4487,6 +4496,13 @@ void service_nextion_display(){
         last_various_things_update = millis();        
       #endif            
     } else {
+
+      // if ((millis()-last_various_things_update) > 300){
+      //   initialization_stage = 2;
+      //   #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+      //     debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, attempting init again"));
+      //   #endif             
+      // }
 
       if ((millis()-last_various_things_update) > 2000){
         initialization_stage = 0;
@@ -4598,7 +4614,7 @@ void service_nextion_display(){
     #endif
 
     // Rotator Controller API Implementation Version         qwerty
-    strcpy_P(workstring1,(const char*) F("vRCAPIv.val=2020083101"));
+    strcpy_P(workstring1,(const char*) F("vRCAPIv.val=2020090102"));
     sendNextionCommand(workstring1);
 
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
@@ -4851,9 +4867,11 @@ void service_nextion_display(){
       #endif  //FEATURE_ELEVATION_CONTROL
     #endif //FEATURE_AUTOCORRECT
 
-    if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
-      temp = temp | 16384;
-    }
+    #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+      if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
+        temp = temp | 16384;
+      }
+    #endif
 
     #if defined(FEATURE_AUTOPARK)
       if (configuration.autopark_active){
@@ -4893,9 +4911,11 @@ void service_nextion_display(){
             dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
             break;              
         }
-        if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
-          strcat(workstring1,"+");
-        }           
+        #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
+            strcat(workstring1,"+");
+          }   
+        #endif        
         strcat(workstring1,workstring2);
         strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
       } else {
@@ -4929,9 +4949,11 @@ void service_nextion_display(){
               dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
-          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
-            strcat(workstring1,"+");
-          }    
+          #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+            if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
+              strcat(workstring1,"+");
+            }    
+          #endif
           strcat(workstring1,workstring2);
           strcat(workstring1,NEXTION_DISPLAY_DEGREES_STRING);
         } else {
@@ -5030,18 +5052,22 @@ TODO:
           strcat(workstring1,NEXTION_PARKED_STRING);           
           break;
         default:
-          if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
-            strcat(workstring1,NEXTION_OVERLAP_STRING);
-            strcat(workstring1,"\r\n");
-          }
+          #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+            if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
+              strcat(workstring1,NEXTION_OVERLAP_STRING);
+              strcat(workstring1,"\r\n");
+            }
+          #endif
           break;  
       }  
 
     #else
-      if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
-        strcat(workstring1,NEXTION_OVERLAP_STRING);
-        strcat(workstring1,"\r\n");
-      }        
+      #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+        if (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES){
+          strcat(workstring1,NEXTION_OVERLAP_STRING);
+          strcat(workstring1,"\r\n");
+        }  
+      #endif      
     #endif
 
     // if we have a transient message requested, initialize the timer and display the message
@@ -5565,9 +5591,11 @@ void update_lcd_display(){
             break;            
         }
       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE  
-      if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
-        strcat(workstring,"+");
-      } 
+      #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+        if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
+          strcat(workstring,"+");
+        } 
+      #endif
       strcat(workstring,workstring2);
       strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
       k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HEADING_ROW-1,LCD_HEADING_FIELD_SIZE);
@@ -5599,9 +5627,11 @@ void update_lcd_display(){
             break;            
         }
       #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE
-        if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
-          strcat(workstring,"+");
-        }         
+        #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
+            strcat(workstring,"+");
+          }      
+        #endif   
         strcat(workstring,workstring2);
         if (DISPLAY_DECIMAL_PLACES > 1){
           if (LCD_COLUMNS > 14) {
@@ -5665,9 +5695,11 @@ void update_lcd_display(){
           break;            
       } 
     #endif //OPTION_LCD_HEADING_FIELD_FIXED_DECIMAL_PLACE   
-    if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
-      strcat(workstring,"+");
-    }        
+    #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+      if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
+        strcat(workstring,"+");
+      }     
+    #endif   
     strcat(workstring,workstring2);
     strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
     k3ngdisplay.print_center_fixed_field_size(workstring,LCD_AZ_ONLY_HEADING_ROW-1,LCD_AZ_ONLY_HEADING_FIELD_SIZE);
@@ -5715,9 +5747,11 @@ void update_lcd_display(){
               dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
-          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
-            strcat(workstring,"+");
-          }           
+          #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+            if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
+              strcat(workstring,"+");
+            } 
+          #endif          
           strcat(workstring,workstring2);
           strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
         } else {
@@ -5810,9 +5844,11 @@ void update_lcd_display(){
               dtostrf(target_raw_azimuth, 1, DISPLAY_DECIMAL_PLACES, workstring2);
               break;              
           }
-          if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
-            strcat(workstring,"+");
-          }    
+          #if defined(ANALOG_AZ_OVERLAP_DEGREES)
+            if ((configuration.azimuth_display_mode == AZ_DISPLAY_MODE_OVERLAP_PLUS) && (raw_azimuth > ANALOG_AZ_OVERLAP_DEGREES)){
+              strcat(workstring,"+");
+            }  
+          #endif  
           strcat(workstring,workstring2);
           strcat(workstring,LCD_DISPLAY_DEGREES_STRING);
           row_override[LCD_STATUS_ROW] = 1;
@@ -6715,8 +6751,8 @@ void initialize_eeprom_with_defaults(){
   configuration.last_el_incremental_encoder_position = 0;
   configuration.azimuth_offset = 0;
   configuration.elevation_offset = 0;
-  configuration.azimuth_starting_point = AZIMUTH_STARTING_POINT_DEFAULT;
-  configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_DEFAULT;
+  configuration.azimuth_starting_point = AZIMUTH_STARTING_POINT_EEPROM_INITIALIZE;
+  configuration.azimuth_rotation_capability = AZIMUTH_ROTATION_CAPABILITY_EEPROM_INITIALIZE;
   configuration.brake_az_disabled = 0; //(brake_az ? 1 : 0);
   configuration.clock_timezone_offset = 0;
   configuration.autopark_active = 0;
@@ -7895,7 +7931,7 @@ void read_azimuth(byte force_read){
 
 
     #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
-      if (configuration.azimuth_starting_point /*AZIMUTH_STARTING_POINT_DEFAULT*/ == 0) {
+      if (configuration.azimuth_starting_point == 0) {
         raw_azimuth = (((((az_incremental_encoder_position) / (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0)));
       } else {
         if (az_incremental_encoder_position > (AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
