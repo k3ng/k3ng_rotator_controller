@@ -858,6 +858,22 @@
         Setting AZIMUTH_STARTING_POINT_DEFAULT renamed to AZIMUTH_STARTING_POINT_EEPROM_INITIALIZE
         Setting AZIMUTH_ROTATION_CAPABILITY_DEFAULT renamed to AZIMUTH_ROTATION_CAPABILITY_EEPROM_INITIALIZE
 
+      2020.09.01.03  
+        FEATURE_NEXTION_DISPLAY & FEATURE_SATELLITE_TRACKING
+          Fixed bug with satellite visible bit in gMSS API variable getting set erroneously after boot up
+        FEATURE_NEXTION_DISPLAY
+          Deprecated the API variable vRCAPIv.  It wasn't providing much value.
+
+      2020.09.02.01
+        Settings Files
+          setting ANALOG_AZ_FULL_CCW renamed to ANALOG_AZ_FULL_CCW_EEPROM_INITIALIZE
+          setting ANALOG_AZ_FULL_CW renamed to ANALOG_AZ_FULL_CW_EEPROM_INITIALIZE
+          setting ANALOG_EL_0_DEGREES renamed to ANALOG_EL_FULL_DOWN_EEPROM_INITIALIZE
+          setting ANALOG_EL_MAX_ELEVATION renamed to ANALOG_EL_FULL_UP_EEPROM_INITIALIZE
+          Added additional comments for clarification
+        FEATURE_NEXTION_DISPLAY
+          Fixed conflicts between moon, sun, and satellite API variables and issues with gMSS variable  
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -872,7 +888,8 @@
 
   */
 
-#define CODE_VERSION "2020.09.01.02"
+#define CODE_VERSION "2020.09.02.01"
+
 
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
@@ -4423,6 +4440,10 @@ void service_nextion_display(){
     char debug_workstring[32];
   #endif
 
+  #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
+    static unsigned long last_moon_and_sun_and_sat_update = 0;
+  #endif
+
 
   if ((initialization_stage == 0) && (millis() > 500)){
 
@@ -4613,9 +4634,10 @@ void service_nextion_display(){
       }
     #endif
 
-    // Rotator Controller API Implementation Version         qwerty
-    strcpy_P(workstring1,(const char*) F("vRCAPIv.val=2020090102"));
-    sendNextionCommand(workstring1);
+    // Rotator Controller API Implementation Version - DEPRECATED 2020.09.01.03
+    // #define NEXTION_API_VERSION_STRING "vRCAPIv.val=2020090103"
+    // strcpy_P(workstring1,(const char*) F(NEXTION_API_VERSION_STRING));
+    // sendNextionCommand(workstring1);
 
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
       if (initialization_stage == 2){
@@ -5334,9 +5356,6 @@ TODO:
 
     #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
 
-      static unsigned long last_moon_and_sun_and_sat_update = 0;
-      temp = 0;
-
       if ((millis() - last_moon_and_sun_and_sat_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
 
         #ifdef FEATURE_MOON_TRACKING
@@ -5352,14 +5371,8 @@ TODO:
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
-
-          if (moon_tracking_active) {
-            temp = temp | 1;
-          }
-          if (moon_visible) {
-            temp = temp | 2;
-          }
         #endif // FEATURE_MOON_TRACKING
+
 
         #ifdef FEATURE_SUN_TRACKING
           update_sun_position();
@@ -5374,13 +5387,6 @@ TODO:
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
-
-          if (sun_tracking_active) {
-            temp = temp | 4;
-          }
-          if (sun_visible) {
-            temp = temp | 8;
-          }
         #endif // FEATURE_SUN_TRACKING
 
         #ifdef FEATURE_SATELLITE_TRACKING
@@ -5413,13 +5419,6 @@ TODO:
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);             
-
-          if (satellite_tracking_active) {
-            temp = temp | 16;
-          }
-          if ((satellite[current_satellite_position_in_array].status & 1) == 1) { // in AOS
-            temp = temp | 32;
-          }
 
           strcpy_P(workstring1,(const char*) F("vADF.txt=\""));
           strcat(workstring1,tm_date_string(&satellite[current_satellite_position_in_array].next_aos));
@@ -5505,8 +5504,40 @@ TODO:
           } else { //if (satellite_array_data_ready){
             strcpy_P(workstring1,(const char*) F("vSatO1.txt=\"not ready\""));
             sendNextionCommand(workstring1); 
-          }
+          }  //if (satellite_array_data_ready){
 
+        #endif // FEATURE_SATELLITE_TRACKING
+
+
+        temp = 0;
+
+        #if defined(FEATURE_MOON_TRACKING)
+          if (moon_tracking_active) {
+            temp = temp | 1;
+          }
+          if (moon_visible) {
+            temp = temp | 2;
+          }
+        #endif // FEATURE_MOON_TRACKING
+
+        #if defined(FEATURE_SUN_TRACKING)
+          if (sun_tracking_active) {
+            temp = temp | 4;
+          }
+          if (sun_visible) {
+            temp = temp | 8;
+          }
+        #endif // FEATURE_SUN_TRACKING        
+
+        #if defined(FEATURE_SATELLITE_TRACKING)
+          if (millis() > 8000){
+            if (satellite_tracking_active) {
+              temp = temp | 16;
+            }          
+            if ((satellite_array_data_ready) && ((satellite[current_satellite_position_in_array].status & 1) == 1)) { // in AOS
+              temp = temp | 32;
+            }
+          }
         #endif // FEATURE_SATELLITE_TRACKING
 
         strcpy(workstring1,"gMSS=");
@@ -5515,7 +5546,7 @@ TODO:
         sendNextionCommand(workstring1);
 
         last_moon_and_sun_and_sat_update = millis();
-      }
+      } // if ((millis() - last_moon_and_sun_and_sat_update) > NEXTION_LESS_FREQUENT_UPDATE_MS){
     #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_SATELLITE_TRACKING)
 
   #ifdef DEBUG_PROCESSES
@@ -6742,10 +6773,10 @@ void initialize_eeprom_with_defaults(){
     debug.println("initialize_eeprom_with_defaults: writing eeprom");
   #endif // DEBUG_EEPROM
 
-  configuration.analog_az_full_ccw = ANALOG_AZ_FULL_CCW;
-  configuration.analog_az_full_cw = ANALOG_AZ_FULL_CW;
-  configuration.analog_el_0_degrees = ANALOG_EL_0_DEGREES;
-  configuration.analog_el_max_elevation = ANALOG_EL_MAX_ELEVATION;
+  configuration.analog_az_full_ccw = ANALOG_AZ_FULL_CCW_EEPROM_INITIALIZE;
+  configuration.analog_az_full_cw = ANALOG_AZ_FULL_CW_EEPROM_INITIALIZE;
+  configuration.analog_el_0_degrees = ANALOG_EL_FULL_DOWN_EEPROM_INITIALIZE;
+  configuration.analog_el_max_elevation = ANALOG_EL_FULL_UP_EEPROM_INITIALIZE;
   configuration.last_azimuth = raw_azimuth;
   configuration.last_az_incremental_encoder_position = 0;
   configuration.last_el_incremental_encoder_position = 0;
@@ -14110,6 +14141,10 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     byte last_tle_char_read = 0;    
   #endif
 
+  #if defined(FEATURE_AUTOPARK)
+    byte valid_input_autopark = 0;
+  #endif  
+
   float new_azimuth_starting_point;
 
   byte brake_az_disabled;
@@ -14747,8 +14782,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   #endif // FEATURE_ANCILLARY_PIN_CONTROL
 
   #if defined(FEATURE_AUTOPARK)
+
     case 'Y':
-        if (input_buffer_index == 2){ // query command
+        if (input_buffer_index == 2){ // query command \Y
           if (configuration.autopark_active){
             strcpy_P(return_string, (const char*) F("Autopark is on, timer: "));
             dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
@@ -14761,72 +14797,93 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             strcpy_P(return_string, (const char*) F("Autopark is off"));
           }
         }
-        if (input_buffer_index == 3){
+        if (input_buffer_index == 3){  // command \Yx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58)){
-            if (input_buffer[2] == 48){                              // had to break this up - for some strange reason, properly written 
-              strcpy_P(return_string, (const char*) F("Autopark off"));                 // this would not upload
+            if (input_buffer[2] == 48){       // deactivate command \Y0 
+              strcpy_P(return_string, (const char*) F("Autopark off"));  
               configuration.autopark_active = 0;
               configuration_dirty = 1;
             }  
-            if (input_buffer[2] != 48){
-              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
+            if (input_buffer[2] != 48){  // set command \Yx
+              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = input_buffer[2] - 48;
-              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              strcat(return_string, temp_string);
-              strcat_P(return_string, (const char*) F(" minute"));
-              if (configuration.autopark_time_minutes > 1){
-                strcat(return_string, "s");
-              }
-              configuration.autopark_active = 1;
-              last_activity_time_autopark = millis();
-              configuration_dirty = 1;
+              valid_input_autopark = 1;
+              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              // strcat(return_string, temp_string);
+              // strcat_P(return_string, (const char*) F(" minute"));
+              // if (configuration.autopark_time_minutes > 1){
+              //   strcat(return_string, "s");
+              // }
+              // configuration.autopark_active = 1;
+              // last_activity_time_autopark = millis();
+              // configuration_dirty = 1;
             }
           } else {
             strcpy(return_string, "Error");
           }
         }
-        if (input_buffer_index == 4){
+        if (input_buffer_index == 4){  // set command \Yxx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58)){
-              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
+              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
-              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              strcat(return_string, temp_string);
-              strcat_P(return_string, (const char*) F(" minutes"));
-              configuration.autopark_active = 1;
-              last_activity_time_autopark = millis();
-              configuration_dirty = 1;
+              valid_input_autopark = 1;
+              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              // strcat(return_string, temp_string);
+              // strcat_P(return_string, (const char*) F(" minutes"));
+              // configuration.autopark_active = 1;
+              // last_activity_time_autopark = millis();
+              // configuration_dirty = 1;
           } else {
             strcpy_P(return_string, (const char*) F("Error"));
           }
         }         
-        if (input_buffer_index == 5){
+        if (input_buffer_index == 5){ // set command \Yxxx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)){
-              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
+              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
-              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              strcat(return_string, temp_string);
-              strcat_P(return_string, (const char*) F(" minutes"));
-              configuration.autopark_active = 1;
-              last_activity_time_autopark = millis();
-              configuration_dirty = 1;
+              valid_input_autopark = 1;
+              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              // strcat(return_string, temp_string);
+              // strcat_P(return_string, (const char*) F(" minutes"));
+              // configuration.autopark_active = 1;
+              // last_activity_time_autopark = millis();
+              // configuration_dirty = 1;
           } else {
             strcpy_P(return_string, (const char*) F("Error"));
           }
         }   
-        if (input_buffer_index == 6){
+        if (input_buffer_index == 6){ // set command \Yxxxxx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)  && (input_buffer[5] > 47) && (input_buffer[5] < 58)){
-              strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
+              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 1000) + ((input_buffer[3] - 48) * 100) + ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
-              dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              strcat(return_string, temp_string);
-              strcat_P(return_string, (const char*) F(" minutes"));
-              configuration.autopark_active = 1;
-              last_activity_time_autopark = millis();
-              configuration_dirty = 1;
+              valid_input_autopark = 1;
+              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+              // strcat(return_string, temp_string);
+              // strcat_P(return_string, (const char*) F(" minutes"));
+              // configuration.autopark_active = 1;
+              // last_activity_time_autopark = millis();
+              // configuration_dirty = 1;
           } else {
             strcpy_P(return_string, (const char*) F("Error"));
           }
-        }                   
+        } 
+        if (valid_input_autopark){
+          if (configuration.autopark_time_minutes > 0){
+            strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
+            dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
+            strcat(return_string, temp_string);
+            strcat_P(return_string, (const char*) F(" minute"));
+            if (configuration.autopark_time_minutes > 1){
+              strcat(return_string, "s");
+            }
+            configuration.autopark_active = 1;
+          } else {
+            strcpy_P(return_string, (const char*) F("Autopark is off"));
+            configuration.autopark_active = 0;
+          }
+          last_activity_time_autopark = millis();          
+          configuration_dirty = 1;
+        }                  
       break;
   #endif
 

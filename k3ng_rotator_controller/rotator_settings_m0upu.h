@@ -24,11 +24,16 @@ You can tweak these, but read the online documentation!
 
 */
 
-// analog voltage calibration - these are default values; you can either tweak these or set via the Yaesu O and F commands (and O2 and F2)....
-#define ANALOG_AZ_FULL_CCW 4
-#define ANALOG_AZ_FULL_CW 1009
-#define ANALOG_EL_0_DEGREES 2
-#define ANALOG_EL_MAX_ELEVATION 1018  // maximum elevation is normally 180 degrees unless change below for ELEVATION_MAXIMUM_DEGREES
+// analog voltage calibration - these are default values written upon the very first code boot up
+// you can change these and write to EEPROM using the \Q command
+// or set via the Yaesu O and F commands (and O2 and F2)....
+// or set via the \?AO (Aplha Oscar), \?AF, \?EO (Echo Oscar), \?EF commands 
+// these correspond with the analog input voltage
+//  a value of 1 is approximately 0 volts, a value of 1024 is approximately 5 volts (or 3.3 volts on some boards)
+#define ANALOG_AZ_FULL_CCW_EEPROM_INITIALIZE 1
+#define ANALOG_AZ_FULL_CW_EEPROM_INITIALIZE 1023
+#define ANALOG_EL_FULL_DOWN_EEPROM_INITIALIZE 1
+#define ANALOG_EL_FULL_UP_EEPROM_INITIALIZE 1023
 
 #define ANALOG_AZ_OVERLAP_DEGREES 540         // if overlap_led above is enabled, turn on overlap led line if azimuth is greater than this setting
                                               // you must use raw azimuth (if the azimuth on the rotator crosses over to 0 degrees, add 360

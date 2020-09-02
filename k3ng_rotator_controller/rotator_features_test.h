@@ -18,7 +18,7 @@
 // #define FEATURE_DCU_1_EMULATION            // DCU-1 protocol emulation on control port
 
 #define FEATURE_MOON_TRACKING
-// #define FEATURE_SUN_TRACKING
+#define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
 #define FEATURE_RTC_DS1307
