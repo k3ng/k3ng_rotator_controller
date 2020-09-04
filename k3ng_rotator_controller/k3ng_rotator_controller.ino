@@ -872,7 +872,13 @@
           setting ANALOG_EL_MAX_ELEVATION renamed to ANALOG_EL_FULL_UP_EEPROM_INITIALIZE
           Added additional comments for clarification
         FEATURE_NEXTION_DISPLAY
-          Fixed conflicts between moon, sun, and satellite API variables and issues with gMSS variable  
+          Fixed conflicts between moon, sun, and satellite API variables and issues with gMSS variable 
+
+      2020.09.04.01
+        FEATURE_NEXTION_DISPLAY
+          Added new bit value to gVS (various statuses): configuration_dirty 65536 
+        FEATURE_AUTOPARK
+          Cleaned up some code for the \Y command that may have had a bug      
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -4901,7 +4907,9 @@ void service_nextion_display(){
       }
     #endif
 
-    // Future: 65536
+    if (configuration_dirty){
+      temp = temp | 65536;
+    }
 
 
     dtostrf((int)temp, 1, 0, workstring1);
@@ -14671,7 +14679,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
                 dtostrf(configuration.park_elevation, 1, 0, workstring2);
                 strcat(workstring1,workstring2);
               #endif
-              request_transient_message(workstring1,1,5000);
+              //request_transient_message(workstring1,1,5000);
               //zzzzzzz
             } else {
               #if defined(FEATURE_ELEVATION_CONTROL)
@@ -14800,23 +14808,12 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         if (input_buffer_index == 3){  // command \Yx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58)){
             if (input_buffer[2] == 48){       // deactivate command \Y0 
-              strcpy_P(return_string, (const char*) F("Autopark off"));  
-              configuration.autopark_active = 0;
-              configuration_dirty = 1;
+              configuration.autopark_time_minutes = 0; 
+              valid_input_autopark = 1;
             }  
             if (input_buffer[2] != 48){  // set command \Yx
-              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = input_buffer[2] - 48;
               valid_input_autopark = 1;
-              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              // strcat(return_string, temp_string);
-              // strcat_P(return_string, (const char*) F(" minute"));
-              // if (configuration.autopark_time_minutes > 1){
-              //   strcat(return_string, "s");
-              // }
-              // configuration.autopark_active = 1;
-              // last_activity_time_autopark = millis();
-              // configuration_dirty = 1;
             }
           } else {
             strcpy(return_string, "Error");
@@ -14824,45 +14821,24 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         }
         if (input_buffer_index == 4){  // set command \Yxx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58)){
-              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 10) + (input_buffer[3] - 48);
               valid_input_autopark = 1;
-              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              // strcat(return_string, temp_string);
-              // strcat_P(return_string, (const char*) F(" minutes"));
-              // configuration.autopark_active = 1;
-              // last_activity_time_autopark = millis();
-              // configuration_dirty = 1;
           } else {
             strcpy_P(return_string, (const char*) F("Error"));
           }
         }         
         if (input_buffer_index == 5){ // set command \Yxxx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)){
-              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 100) + ((input_buffer[3] - 48) * 10) + (input_buffer[4] - 48);
               valid_input_autopark = 1;
-              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              // strcat(return_string, temp_string);
-              // strcat_P(return_string, (const char*) F(" minutes"));
-              // configuration.autopark_active = 1;
-              // last_activity_time_autopark = millis();
-              // configuration_dirty = 1;
           } else {
             strcpy_P(return_string, (const char*) F("Error"));
           }
         }   
         if (input_buffer_index == 6){ // set command \Yxxxxx
           if ((input_buffer[2] > 47) && (input_buffer[2] < 58) && (input_buffer[3] > 47) && (input_buffer[3] < 58) && (input_buffer[4] > 47) && (input_buffer[4] < 58)  && (input_buffer[5] > 47) && (input_buffer[5] < 58)){
-              // strcpy_P(return_string, (const char*) F("Autopark on, timer: "));
               configuration.autopark_time_minutes = ((input_buffer[2] - 48) * 1000) + ((input_buffer[3] - 48) * 100) + ((input_buffer[4] - 48) * 10) + (input_buffer[5] - 48);
               valid_input_autopark = 1;
-              // dtostrf(configuration.autopark_time_minutes, 0, 0, temp_string);
-              // strcat(return_string, temp_string);
-              // strcat_P(return_string, (const char*) F(" minutes"));
-              // configuration.autopark_active = 1;
-              // last_activity_time_autopark = millis();
-              // configuration_dirty = 1;
           } else {
             strcpy_P(return_string, (const char*) F("Error"));
           }
@@ -14878,7 +14854,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             }
             configuration.autopark_active = 1;
           } else {
-            strcpy_P(return_string, (const char*) F("Autopark is off"));
+            strcpy_P(return_string, (const char*) F("Autopark off"));
             configuration.autopark_active = 0;
           }
           last_activity_time_autopark = millis();          
@@ -19007,6 +18983,9 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
                                   // in the satellite[] array
                                  
 
+    // 51 year old me writing to 80 year old me:  the code below is nuts.  good luck figuring it out, although maybe you will.
+    // you thought you were done writing this sort of stuff after you hit 40
+
     #ifdef DEBUG_LOOP
       control_port->println(F("service_calc_satellite_data()"));
       control_port->flush();
@@ -19407,6 +19386,9 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           }
         } //if (calculation_stage_state == STAGE_2_CALC_LOS){  
 
+        // The code below needs to be refactored sometime and combined with the STAGE_2 code above.  
+        // It does exactly the same thing as stage 2, it just uses a different time increment
+        // I think I've easily burned up 200 hours working on this satellite code and I need a break after I got it all working.
 
         if (calculation_stage_state == STAGE_3_CALC){
           calc_years = temp_aos.year;
