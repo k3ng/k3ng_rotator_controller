@@ -878,7 +878,11 @@
         FEATURE_NEXTION_DISPLAY
           Added new bit value to gVS (various statuses): configuration_dirty 65536 
         FEATURE_AUTOPARK
-          Cleaned up some code for the \Y command that may have had a bug      
+          Cleaned up some code for the \Y command that may have had a bug  
+
+      2020.09.09.01
+        FEATURE_NEXTION_DISPLAY
+          Some code cleanup      
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -894,7 +898,7 @@
 
   */
 
-#define CODE_VERSION "2020.09.02.01"
+#define CODE_VERSION "2020.09.09.01"
 
 
 #include <avr/pgmspace.h>
@@ -4639,11 +4643,6 @@ void service_nextion_display(){
         debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
       }
     #endif
-
-    // Rotator Controller API Implementation Version - DEPRECATED 2020.09.01.03
-    // #define NEXTION_API_VERSION_STRING "vRCAPIv.val=2020090103"
-    // strcpy_P(workstring1,(const char*) F(NEXTION_API_VERSION_STRING));
-    // sendNextionCommand(workstring1);
 
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
       if (initialization_stage == 2){
