@@ -127,7 +127,7 @@
 #endif
 
 #if defined(FEATURE_AUTOPARK) && !defined(FEATURE_PARK)
-  #define FEATURE_PARK
+  #error "FEATURE_AUTOPARK requires FEATURE_PARK"
 #endif
 
 #if defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION) || defined(FEATURE_DCU_1_EMULATION)

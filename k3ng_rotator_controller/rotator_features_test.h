@@ -29,7 +29,7 @@
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
 #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
-#define TEST_NEW_SAT_CALC
+//#define TEST_NEW_SAT_CALC
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -64,7 +64,7 @@
 // #define FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883   // QMC5883 digital compass support using Mechasolution library at https://github.com/keepworking/Mecha_QMC5883L
 
 
- #define FEATURE_EL_POSITION_POTENTIOMETER
+#define FEATURE_EL_POSITION_POTENTIOMETER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html
 // #define FEATURE_EL_POSITION_PULSE_INPUT

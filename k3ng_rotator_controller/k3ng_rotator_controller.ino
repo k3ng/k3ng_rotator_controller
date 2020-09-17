@@ -882,7 +882,11 @@
 
       2020.09.09.01
         FEATURE_NEXTION_DISPLAY
-          Some code cleanup      
+          Some code cleanup  
+
+      2020.09.17.01
+        FEATURE_AUTOPARK & FEATURE_PARK - raise an error at compile time if FEATURE_AUTOPARK is enabled without FEATURE_PARK rather than silently including FEATURE_PARK
+        DEBUG_SATELLITE_TRACKING_CALC - fixed compiler error
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -898,7 +902,7 @@
 
   */
 
-#define CODE_VERSION "2020.09.09.01"
+#define CODE_VERSION "2020.09.17.01"
 
 
 #include <avr/pgmspace.h>
@@ -19055,7 +19059,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
       #if defined(DEBUG_SATELLITE_TRACKING_CALC)     
         debug.print(F("service_calc_satellite_data: "));
-        switch(do_this_format){
+        switch(do_this_task){
           case UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS:
             debug.print(F("UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS"));
             break;  
@@ -19074,10 +19078,10 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         }
         if (do_this_satellite == current_satellite_position_in_array){debug.print(F("***CURRENT SAT***"));}
 
-        if (do_this_format == UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS){
-          debug.print(F(" resolution:"));
-          debug.print(do_this_many_increment_seconds);
-        }
+        // if (do_this_task == UPDATE_SAT_ARRAY_SLOT_AZ_EL_NEXT_AOS_LOS){
+        //   debug.print(F(" resolution:"));
+        //   debug.print(do_this_many_increment_seconds);
+        // }
         if (service_calc_satellite_data_service_state == SERVICE_CALC_IN_PROGRESS){
           debug.print(F(" calc terminated by user"));
         } 
