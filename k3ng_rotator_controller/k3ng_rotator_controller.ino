@@ -888,6 +888,10 @@
         FEATURE_AUTOPARK & FEATURE_PARK - raise an error at compile time if FEATURE_AUTOPARK is enabled without FEATURE_PARK rather than silently including FEATURE_PARK
         DEBUG_SATELLITE_TRACKING_CALC - fixed compiler error
 
+      2020.10.20.01
+        Merge of pull request 79 - Added Norwegian Bokmål language https://github.com/k3ng/k3ng_rotator_controller/pull/79  (Thanks, Supermagnum)
+        LANGUAGE_NORWEGIAN_BOKMAAL added with pull request 79 merge
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -902,7 +906,7 @@
 
   */
 
-#define CODE_VERSION "2020.09.17.01"
+#define CODE_VERSION "2020.10.20.01"
 
 
 #include <avr/pgmspace.h>
