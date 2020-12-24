@@ -30,7 +30,6 @@
      Jurgen PE1LWT
      Gianfranco IZ8EWD 
      Jasper PA2J
-     Pablo EA4TX
      Máximo EA1DDO
      Matt VK5ZM
      ...and others
@@ -892,6 +891,9 @@
         Merge of pull request 79 - Added Norwegian Bokmål language https://github.com/k3ng/k3ng_rotator_controller/pull/79  (Thanks, Supermagnum)
         LANGUAGE_NORWEGIAN_BOKMAAL added with pull request 79 merge
 
+      2020.12.23.01
+        Removed EA4TX hardware support due to copying of other open source project hardware and selling it 
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -906,7 +908,7 @@
 
   */
 
-#define CODE_VERSION "2020.10.20.01"
+#define CODE_VERSION "2020.12.23.01"
 
 
 #include <avr/pgmspace.h>
@@ -915,9 +917,6 @@
 
 #include "rotator_hardware.h"
 
-#ifdef HARDWARE_EA4TX_ARS_USB
-  #include "rotator_features_ea4tx_ars_usb.h"
-#endif
 #ifdef HARDWARE_WB6KCN
   #include "rotator_features_wb6kcn.h"
 #endif
@@ -18592,8 +18591,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     if (load_hardcoded_tle == LOAD_HARDCODED_TLE){    // push a hardcoded TLE into the array position 0 and write to EEPROM     
       strcpy_P(name,(const char*) F("AO7TEST"));
-      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   20233.79932519 -.00000039 "));  //2020-08-26
-      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8053 203.1944 0011782 239.9463 182.3764 12.53644665 94290"));     
+      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   20289.51157442 -.00000043 "));  //2020-10-20
+      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8167 258.6455 0012352 131.4560 339.8987 12.53645612101036"));     
       sat.tle(name,hardcoded_tle_line_1,hardcoded_tle_line_2);
       #if defined(DEBUG_SATELLITE_TRACKING_LOAD)
         debug.print(name);
