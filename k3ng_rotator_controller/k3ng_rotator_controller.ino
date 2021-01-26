@@ -894,6 +894,8 @@
       2020.12.23.01
         Removed EA4TX hardware support due to copying of other open source project hardware and selling it 
 
+      2021.01.26.01
+        (Hopefully) Fixed heading decimal place issues (float vs. int) in FEATURE_AZ_POSITION_HH12_AS5045_SSI, FEATURE_EL_POSITION_HH12_AS5045_SSI, and FEATURE_EASYCOM_EMULATION
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -908,7 +910,7 @@
 
   */
 
-#define CODE_VERSION "2020.12.23.01"
+#define CODE_VERSION "2021.01.26.01"
 
 
 #include <avr/pgmspace.h>
@@ -7510,7 +7512,7 @@ void read_azimuth(byte force_read){
       raw_azimuth = float_map(analog_az, configuration.analog_az_full_ccw, configuration.analog_az_full_cw, configuration.azimuth_starting_point, (configuration.azimuth_starting_point + configuration.azimuth_rotation_capability));
 
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
 
       apply_azimuth_offset();
@@ -7548,7 +7550,7 @@ void read_azimuth(byte force_read){
 
 
           #ifdef FEATURE_AZIMUTH_CORRECTION
-            raw_azimuth = (correct_azimuth(raw_azimuth));
+            raw_azimuth = correct_azimuth(raw_azimuth);
           #endif // FEATURE_AZIMUTH_CORRECTION
 
           apply_azimuth_offset();
@@ -7613,7 +7615,7 @@ void read_azimuth(byte force_read){
 
 
         #ifdef FEATURE_AZIMUTH_CORRECTION
-          raw_azimuth = (correct_azimuth(raw_azimuth));
+          raw_azimuth = correct_azimuth(raw_azimuth);
         #endif // FEATURE_AZIMUTH_CORRECTION
 
         convert_raw_azimuth_to_real_azimuth();
@@ -7699,7 +7701,7 @@ void read_azimuth(byte force_read){
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
       apply_azimuth_offset();
       azimuth = raw_azimuth;
@@ -7744,7 +7746,7 @@ void read_azimuth(byte force_read){
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
       apply_azimuth_offset();
       azimuth = raw_azimuth;
@@ -7790,7 +7792,7 @@ void read_azimuth(byte force_read){
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
       apply_azimuth_offset();
       azimuth = raw_azimuth;
@@ -7836,7 +7838,7 @@ void read_azimuth(byte force_read){
         raw_azimuth = int(raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
       }
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
       apply_azimuth_offset();
       azimuth = raw_azimuth;
@@ -7853,7 +7855,7 @@ void read_azimuth(byte force_read){
       if (heading > 2 * PI) heading -= 2 * PI;
       raw_azimuth = (heading * RAD_TO_DEG); // radians to degree
       #ifdef FEATURE_AZIMUTH_CORRECTION
-        raw_azimuth = (correct_azimuth(raw_azimuth));
+        raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
       apply_azimuth_offset();
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
@@ -7956,9 +7958,9 @@ void read_azimuth(byte force_read){
 
     #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
       #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
-        raw_azimuth = int((360.0-azimuth_hh12.heading()+ configuration.azimuth_starting_point));
+        raw_azimuth = 360.0 - azimuth_hh12.heading() + (float)configuration.azimuth_starting_point;
       #else
-        raw_azimuth = int((azimuth_hh12.heading()+ configuration.azimuth_starting_point));
+        raw_azimuth = azimuth_hh12.heading() + (float)configuration.azimuth_starting_point;
       #endif
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
@@ -9011,9 +9013,9 @@ void read_elevation(byte force_read){
 
     #ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
       #if defined(OPTION_REVERSE_EL_HH12_AS5045) 
-        elevation = int((360.0-elevation_hh12.heading()));
+        elevation = 360.0 - elevation_hh12.heading();
       #else
-        elevation = int(elevation_hh12.heading());
+        elevation = elevation_hh12.heading();
       #endif
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 5000) {
@@ -9026,11 +9028,11 @@ void read_elevation(byte force_read){
         }
       #endif // DEBUG_HH12
       #ifdef FEATURE_ELEVATION_CORRECTION
-        elevation = (correct_elevation(elevation));
+        elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
-      elevation = elevation + (configuration.elevation_offset);
-      if (elevation > (180)) {
-        elevation = elevation - 360;
+      elevation = elevation + configuration.elevation_offset;
+      if (elevation > 180) {
+        elevation = elevation - 360.0;
       }
     #endif // FEATURE_EL_POSITION_HH12_AS5045_SSI
 
@@ -9059,7 +9061,7 @@ void read_elevation(byte force_read){
     #endif //DEBUG_MEMSIC_2125
     elevation = Yangle;    
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation));
+    elevation = correct_elevation(elevation);
     #endif //FEATURE_ELEVATION_CORRECTION
     #endif //FEATURE_EL_POSITION_MEMSIC_2125
 
@@ -9069,7 +9071,7 @@ void read_elevation(byte force_read){
   #ifdef FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
     elevation = el_a2_encoder;
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation));
+    elevation = correct_elevation(elevation);
     #endif //FEATURE_ELEVATION_CORRECTION
     elevation = elevation + (configuration.elevation_offset);
   #endif //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER  
@@ -16399,18 +16401,18 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
             return;
             break;
           case 5: // format AZx.x
-            heading = (easycom_command_buffer[2] - 48) + ((easycom_command_buffer[4] - 48) / 10.);
+            heading = float(easycom_command_buffer[2] - 48) + (float(easycom_command_buffer[4] - 48) / 10.);
             break;
           case 6: // format AZxx.x
-            heading = ((easycom_command_buffer[2] - 48) * 10.) + (easycom_command_buffer[3] - 48) + ((easycom_command_buffer[5] - 48) / 10.);
+            heading = (float(easycom_command_buffer[2] - 48) * 10.) + float(easycom_command_buffer[3] - 48) + (float(easycom_command_buffer[5] - 48) / 10.);
             break;
           case 7: // format AZxxx.x
-            heading = ((easycom_command_buffer[2] - 48) * 100.) + ((easycom_command_buffer[3] - 48) * 10.) + (easycom_command_buffer[4] - 48.) + ((easycom_command_buffer[6] - 48) / 10.);
+            heading = (float(easycom_command_buffer[2] - 48) * 100.) + (float(easycom_command_buffer[3] - 48) * 10.) + float(easycom_command_buffer[4] - 48.) + (float(easycom_command_buffer[6] - 48) / 10.);
             break;
             // default: control_port->println("?"); break;
         }
         if (((heading >= 0) && (heading < 451))  && (easycom_command_buffer[easycom_command_buffer_index - 2] == '.')) {
-          submit_request(AZ, REQUEST_AZIMUTH, (heading), 36);
+          submit_request(AZ, REQUEST_AZIMUTH, heading, 36);
         } else {
           strcpy(return_string,"?");
         }
@@ -16432,13 +16434,13 @@ void process_easycom_command(byte * easycom_command_buffer, int easycom_command_
             return;
             break;
           case 5: // format ELx.x
-            heading = (easycom_command_buffer[2] - 48) + ((easycom_command_buffer[4] - 48) / 10.);
+            heading = float(easycom_command_buffer[2] - 48) + (float(easycom_command_buffer[4] - 48) / 10.);
             break;
           case 6: // format ELxx.x
-            heading = ((easycom_command_buffer[2] - 48) * 10.) + (easycom_command_buffer[3] - 48) + ((easycom_command_buffer[5] - 48) / 10.);
+            heading = (float(easycom_command_buffer[2] - 48) * 10.) + float(easycom_command_buffer[3] - 48) + (float(easycom_command_buffer[5] - 48) / 10.);
             break;
           case 7: // format ELxxx.x
-            heading = ((easycom_command_buffer[2] - 48) * 100.) + ((easycom_command_buffer[3] - 48) * 10.) + (easycom_command_buffer[4] - 48) + ((easycom_command_buffer[6] - 48) / 10.);
+            heading = (float(easycom_command_buffer[2] - 48) * 100.) + (float(easycom_command_buffer[3] - 48) * 10.) + float(easycom_command_buffer[4] - 48) + (float(easycom_command_buffer[6] - 48) / 10.);
             break;
             // default: control_port->println("?"); break;
         }
