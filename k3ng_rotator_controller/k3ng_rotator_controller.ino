@@ -897,6 +897,9 @@
       2021.01.26.01
         (Hopefully) Fixed heading decimal place issues (float vs. int) in FEATURE_AZ_POSITION_HH12_AS5045_SSI, FEATURE_EL_POSITION_HH12_AS5045_SSI, and FEATURE_EASYCOM_EMULATION
 
+      2021.02.16.01
+        Fixed potential for latest coordinates from GPS not being used for satellite tracking 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -910,7 +913,7 @@
 
   */
 
-#define CODE_VERSION "2021.01.26.01"
+#define CODE_VERSION "2021.02.16.01"
 
 
 #include <avr/pgmspace.h>
@@ -19056,6 +19059,10 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     byte pull_result = 0;
 
+    obs.LA = latitude;
+    obs.LO = longitude;
+    obs.HT = altitude_m;
+
     if (service_action == SERVICE_CALC_REPORT_STATE){return service_calc_satellite_data_service_state;}
 
     if (service_action == SERVICE_CALC_INITIALIZE){  // initialize calculation
@@ -19136,9 +19143,9 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           return 0;          
         }
         sat_datetime.settime(calc_years, calc_months, calc_days, calc_hours, calc_minutes, calc_seconds);
-        obs.LA = latitude;
-        obs.LO = longitude;
-        obs.HT = altitude_m;
+        // obs.LA = latitude;
+        // obs.LO = longitude;
+        // obs.HT = altitude_m;
         pull_result = pull_satellite_tle_and_activate(satellite[service_calc_current_sat].name,NOT_VERBOSE,DO_NOT_MAKE_IT_THE_CURRENT_SATELLITE);
         if (pull_result == 1){
           sat.predict(sat_datetime);
