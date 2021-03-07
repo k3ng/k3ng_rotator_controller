@@ -900,6 +900,10 @@
       2021.02.16.01
         Fixed potential for latest coordinates from GPS not being used for satellite tracking 
 
+      2021.03.07.01
+        Fixed potential issue with AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE and EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE decimal values being truncated
+        Updated default AO7TEST TLE
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -913,7 +917,7 @@
 
   */
 
-#define CODE_VERSION "2021.02.16.01"
+#define CODE_VERSION "2021.03.07.01"
 
 
 #include <avr/pgmspace.h>
@@ -1487,14 +1491,14 @@ struct config_t {
 
 #ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
   Encoder encoder_pjrc_az(az_rotary_position_pin1, az_rotary_position_pin2);
-  long encoder_pjrc_previous_az_position  = 0;
-  long encoder_pjrc_current_az_position;
+  float encoder_pjrc_previous_az_position  = 0;
+  float encoder_pjrc_current_az_position;
 #endif
 
 #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
   Encoder encoder_pjrc_el(el_rotary_position_pin1, el_rotary_position_pin2);
-  long encoder_pjrc_previous_el_position  = 0;
-  long encoder_pjrc_current_el_position;
+  float encoder_pjrc_previous_el_position  = 0;
+  float encoder_pjrc_current_el_position;
 #endif  
 
 #ifdef FEATURE_AUTOPARK
@@ -7585,13 +7589,13 @@ void read_azimuth(byte force_read){
       byte az_position_encoder_result = az_position_encoder_state & 0x30;
       if (az_position_encoder_result) {
         if (az_position_encoder_result == DIR_CW) {
-          configuration.last_azimuth = configuration.last_azimuth + AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+          configuration.last_azimuth = configuration.last_azimuth + (float)AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
           #ifdef DEBUG_POSITION_ROTARY_ENCODER
             debug.println("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CW");
           #endif // DEBUG_POSITION_ROTARY_ENCODER
         }
         if (az_position_encoder_result == DIR_CCW) {
-          configuration.last_azimuth = configuration.last_azimuth - AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+          configuration.last_azimuth = configuration.last_azimuth - (float)AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
           #ifdef DEBUG_POSITION_ROTARY_ENCODER
             debug.println("read_azimuth: AZ_POSITION_ROTARY_ENCODER: CCW");
           #endif // DEBUG_POSITION_ROTARY_ENCODER
@@ -7632,7 +7636,7 @@ void read_azimuth(byte force_read){
       encoder_pjrc_current_az_position = encoder_pjrc_az.read();
       if ( (encoder_pjrc_current_az_position != encoder_pjrc_previous_az_position) ) 
       {
-        configuration.last_azimuth = configuration.last_azimuth + ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position) * AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE); 
+        configuration.last_azimuth = configuration.last_azimuth + ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position) * (float)AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE); 
           
         #ifdef DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
           if ((encoder_pjrc_current_az_position - encoder_pjrc_previous_az_position ) < 0){
@@ -8782,7 +8786,7 @@ void read_elevation(byte force_read){
       byte el_position_encoder_result = el_position_encoder_state & 0x30;
       if (el_position_encoder_result) {
         if (el_position_encoder_result == DIR_CW) {
-          configuration.last_elevation = configuration.last_elevation + EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+          configuration.last_elevation = configuration.last_elevation + (float)EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
           #ifdef DEBUG_POSITION_ROTARY_ENCODER
             if (debug_mode) {
               debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CW/UP\n"));
@@ -8790,7 +8794,7 @@ void read_elevation(byte force_read){
           #endif // DEBUG_POSITION_ROTARY_ENCODER
         }
         if (el_position_encoder_result == DIR_CCW) {
-          configuration.last_elevation = configuration.last_elevation - EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
+          configuration.last_elevation = configuration.last_elevation - (float)EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE;
           #ifdef DEBUG_POSITION_ROTARY_ENCODER
             if (debug_mode) {
               debug.print(F("read_elevation: EL_POSITION_ROTARY_ENCODER: CCW/DWN\n"));
@@ -8817,7 +8821,7 @@ void read_elevation(byte force_read){
     #ifdef FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY
       encoder_pjrc_current_el_position = encoder_pjrc_el.read();
       if (encoder_pjrc_current_el_position != encoder_pjrc_previous_el_position){
-        configuration.last_elevation = configuration.last_elevation + ((encoder_pjrc_current_el_position - encoder_pjrc_previous_el_position) * EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE);
+        configuration.last_elevation = configuration.last_elevation + ((encoder_pjrc_current_el_position - encoder_pjrc_previous_el_position) * (float)EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE);
             
         #ifdef DEBUG_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY 
           if ((encoder_pjrc_current_el_position - encoder_pjrc_previous_el_position ) < 0){
@@ -18595,9 +18599,9 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     #endif
 
     if (load_hardcoded_tle == LOAD_HARDCODED_TLE){    // push a hardcoded TLE into the array position 0 and write to EEPROM     
-      strcpy_P(name,(const char*) F("AO7TEST"));
-      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   20289.51157442 -.00000043 "));  //2020-10-20
-      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8167 258.6455 0012352 131.4560 339.8987 12.53645612101036"));     
+      strcpy_P(name,(const char*) F("AO7TEST"));  
+      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   21063.80339419 -.00000028 "));  //2021-03-07
+      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8420  38.4674 0011970 222.4803 254.1375 12.53647581118856"));     
       sat.tle(name,hardcoded_tle_line_1,hardcoded_tle_line_2);
       #if defined(DEBUG_SATELLITE_TRACKING_LOAD)
         debug.print(name);
