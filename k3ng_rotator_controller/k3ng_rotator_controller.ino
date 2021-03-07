@@ -904,6 +904,9 @@
         Fixed potential issue with AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE and EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE decimal values being truncated
         Updated default AO7TEST TLE
 
+      2021.03.07.02
+        Fixed issue in FEATURE_EL_POSITION_PULSE_INPUT with EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE decimal values being truncated
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -917,7 +920,7 @@
 
   */
 
-#define CODE_VERSION "2021.03.07.01"
+#define CODE_VERSION "2021.03.07.02"
 
 
 #include <avr/pgmspace.h>
@@ -3431,11 +3434,11 @@ void check_serial(){
   #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
   #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
-    int new_azimuth = 9999;
+    float new_azimuth = 9999;
   #endif
 
   #if defined(FEATURE_ELEVATION_CONTROL) && (defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY))
-    int new_elevation = 9999;
+    float new_elevation = 9999;
   #endif
 
   #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(CONTROL_PROTOCOL_EMULATION) || defined(UNDER_DEVELOPMENT_REMOTE_UNIT_COMMANDS)
@@ -6758,7 +6761,7 @@ void read_settings_from_eeprom(){
     #endif // FEATURE_AZ_POSITION_PULSE_INPUT
 
     #if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_EL_POSITION_PULSE_INPUT)
-      elevation = int(configuration.last_elevation);
+      elevation = configuration.last_elevation;
       el_position_pulse_input_elevation = configuration.last_elevation;
     #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
@@ -8767,7 +8770,7 @@ void read_elevation(byte force_read){
       analog_el = analogReadEnhanced(rotator_analog_el);
       elevation = float_map(analog_el, configuration.analog_el_0_degrees, configuration.analog_el_max_elevation, 0, ELEVATION_MAXIMUM_DEGREES);
       #ifdef FEATURE_ELEVATION_CORRECTION
-        elevation = (correct_elevation(elevation));
+        elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset);
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
@@ -8811,7 +8814,7 @@ void read_elevation(byte force_read){
           #endif
         elevation = int(configuration.last_elevation);
         #ifdef FEATURE_ELEVATION_CORRECTION
-          elevation = (correct_elevation(elevation));
+          elevation = correct_elevation(elevation);
         #endif // FEATURE_ELEVATION_CORRECTION
         configuration_dirty = 1;
       }
@@ -8848,7 +8851,7 @@ void read_elevation(byte force_read){
             
         elevation = int(configuration.last_elevation);
         #ifdef FEATURE_ELEVATION_CORRECTION
-          elevation = (correct_elevation(elevation));
+          elevation = correct_elevation(elevation);
         #endif // FEATURE_ELEVATION_CORRECTION
         configuration_dirty = 1;
         
@@ -8864,7 +8867,7 @@ void read_elevation(byte force_read){
         elevation = int(configuration.last_elevation);
 
         #ifdef FEATURE_ELEVATION_CORRECTION
-          elevation = (correct_elevation(elevation));
+          elevation = correct_elevation(elevation);
         #endif // FEATURE_ELEVATION_CORRECTION
 
         configuration_dirty = 1; 
@@ -8885,7 +8888,7 @@ void read_elevation(byte force_read){
       #endif // DEBUG_ACCEL
       elevation = (atan2(scaled.YAxis, scaled.ZAxis) * 180) / M_PI;
       #ifdef FEATURE_ELEVATION_CORRECTION
-        elevation = (correct_elevation(elevation));
+        elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset);
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
@@ -8907,7 +8910,7 @@ void read_elevation(byte force_read){
       #endif // DEBUG_ACCEL
       elevation = (atan2(event.acceleration.y, event.acceleration.z) * 180) / M_PI;
       #ifdef FEATURE_ELEVATION_CORRECTION
-        elevation = (correct_elevation(elevation));
+        elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset);
     #endif // FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
@@ -8926,7 +8929,7 @@ void read_elevation(byte force_read){
       #endif // DEBUG_ACCEL
       elevation = (atan2(lsm.accelData.y, lsm.accelData.z) * 180) / M_PI;
       #ifdef FEATURE_ELEVATION_CORRECTION
-        elevation = (correct_elevation(elevation));
+        elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset);
     #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303
@@ -8943,7 +8946,7 @@ void read_elevation(byte force_read){
       #endif // DEBUG_ACCEL
       elevation = (atan2(compass.a.x, compass.a.z) * -180) / M_PI; //lsm.accelData.y
       #ifdef FEATURE_ELEVATION_CORRECTION
-        elevation = (correct_elevation(elevation));
+        elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset);
     #endif // FEATURE_EL_POSITION_POLOLU_LSM303
@@ -8970,11 +8973,11 @@ void read_elevation(byte force_read){
       configuration.last_elevation = el_position_pulse_input_elevation;
       configuration_dirty = 1;
       last_el_position_pulse_input_elevation = el_position_pulse_input_elevation;
-      elevation = int(configuration.last_elevation);
+      elevation = configuration.last_elevation;
       #ifdef FEATURE_ELEVATION_CORRECTION
-        elevation = (correct_elevation(elevation));
-      #endif FEATURE_ELEVATION_CORRECTION
-      elevation = elevation + (configuration.elevation_offset);
+        elevation = correct_elevation(elevation);
+      #endif //FEATURE_ELEVATION_CORRECTION
+      elevation = elevation + configuration.elevation_offset;
     }
     #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
@@ -8998,7 +9001,7 @@ void read_elevation(byte force_read){
       #endif // DEBUG_HEADING_READING_TIME
       elevation = remote_unit_command_result_float;
       #ifdef FEATURE_ELEVATION_CORRECTION
-      elevation = (correct_elevation(elevation));
+      elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
       elevation = elevation + (configuration.elevation_offset);
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
@@ -9047,7 +9050,7 @@ void read_elevation(byte force_read){
     #ifdef FEATURE_EL_POSITION_INCREMENTAL_ENCODER
     elevation = ((((el_incremental_encoder_position) / (EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0));
     #ifdef FEATURE_ELEVATION_CORRECTION
-    elevation = (correct_elevation(elevation));
+    elevation = correct_elevation(elevation);
     #endif // FEATURE_ELEVATION_CORRECTION
     if (incremental_encoder_previous_elevation != elevation) {
       configuration.last_el_incremental_encoder_position = el_incremental_encoder_position;
@@ -14141,11 +14144,11 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
   #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
-    int new_azimuth = 9999;
+    float new_azimuth = 9999;
   #endif
 
   #if defined(FEATURE_ELEVATION_CONTROL) && (defined(FEATURE_EL_POSITION_ROTARY_ENCODER) || defined(FEATURE_EL_POSITION_PULSE_INPUT) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY))
-    int new_elevation = 9999;
+    float new_elevation = 9999;
   #endif
 
   #if defined(FEATURE_SATELLITE_TRACKING)
