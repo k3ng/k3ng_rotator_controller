@@ -907,6 +907,9 @@
       2021.03.07.02
         Fixed issue in FEATURE_EL_POSITION_PULSE_INPUT with EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE decimal values being truncated
 
+      2021.03.07.03
+        Additional work on FEATURE_AZ_POSITION_PULSE_INPUT to properly handle float values and preserve decimal places
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -920,7 +923,7 @@
 
   */
 
-#define CODE_VERSION "2021.03.07.02"
+#define CODE_VERSION "2021.03.07.03"
 
 
 #include <avr/pgmspace.h>
@@ -6753,7 +6756,7 @@ void read_settings_from_eeprom(){
     #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
       raw_azimuth = int(configuration.last_azimuth);
       if (raw_azimuth >= 360) {
-        azimuth = raw_azimuth - 360;
+        azimuth = raw_azimuth - 360.0;
       } else {
         azimuth = raw_azimuth;
       }
@@ -7446,7 +7449,7 @@ void check_timed_interval(){
 void apply_azimuth_offset(){
 
   if (configuration.azimuth_offset < 0){
-    raw_azimuth = raw_azimuth + (2 * configuration.azimuth_offset);
+    raw_azimuth = raw_azimuth + (2.0 * configuration.azimuth_offset);
   }
 
 }
@@ -7467,10 +7470,10 @@ void convert_raw_azimuth_to_real_azimuth(){
   float temp_azimuth = raw_azimuth;
 
   if (raw_azimuth >= 360){
-    azimuth = raw_azimuth - (int(raw_azimuth / 360) * 360);
+    azimuth = raw_azimuth - float(int(raw_azimuth / 360) * 360.0);
   } else {
     if (raw_azimuth < 0){
-      azimuth = raw_azimuth + 360;
+      azimuth = raw_azimuth + 360.0;
     } else {
       azimuth = raw_azimuth;
     }
@@ -11791,19 +11794,19 @@ void az_position_pulse_interrupt_handler(){
   #endif // DEBUG_POSITION_PULSE_INPUT
 
   if (current_az_state() == ROTATING_CW) {
-    az_position_pulse_input_azimuth += AZ_POSITION_PULSE_DEG_PER_PULSE;
+    az_position_pulse_input_azimuth += (float)AZ_POSITION_PULSE_DEG_PER_PULSE;
     last_known_az_state = ROTATING_CW;
   } else {
     if (current_az_state() == ROTATING_CCW) {
-      az_position_pulse_input_azimuth -= AZ_POSITION_PULSE_DEG_PER_PULSE;
+      az_position_pulse_input_azimuth -= (float)AZ_POSITION_PULSE_DEG_PER_PULSE;
       last_known_az_state = ROTATING_CCW;
     } else {
           #ifndef OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
       if (last_known_az_state == ROTATING_CW) {
-        az_position_pulse_input_azimuth += AZ_POSITION_PULSE_DEG_PER_PULSE;
+        az_position_pulse_input_azimuth += (float)AZ_POSITION_PULSE_DEG_PER_PULSE;
       } else {
         if (last_known_az_state == ROTATING_CCW) {
-          az_position_pulse_input_azimuth -= AZ_POSITION_PULSE_DEG_PER_PULSE;
+          az_position_pulse_input_azimuth -= (float)AZ_POSITION_PULSE_DEG_PER_PULSE;
         }
       }
             #endif // OPTION_PULSE_IGNORE_AMBIGUOUS_PULSES
@@ -11822,10 +11825,10 @@ void az_position_pulse_interrupt_handler(){
     }
     #else
     if (az_position_pulse_input_azimuth < 0) {
-      az_position_pulse_input_azimuth += 360;
+      az_position_pulse_input_azimuth += 360.0;
     }
     if (az_position_pulse_input_azimuth >= 360) {
-      az_position_pulse_input_azimuth -= 360;
+      az_position_pulse_input_azimuth -= 360.0;
     }
   #endif // OPTION_AZ_POSITION_PULSE_HARD_LIMIT
 
