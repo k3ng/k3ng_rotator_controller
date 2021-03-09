@@ -910,6 +910,9 @@
       2021.03.07.03
         Additional work on FEATURE_AZ_POSITION_PULSE_INPUT to properly handle float values and preserve decimal places
 
+      2021.03.08.01
+        Even more work on FEATURE_AZ_POSITION_PULSE_INPUT to properly handle float values and preserve decimal places
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -923,7 +926,7 @@
 
   */
 
-#define CODE_VERSION "2021.03.07.03"
+#define CODE_VERSION "2021.03.08.01"
 
 
 #include <avr/pgmspace.h>
@@ -7960,7 +7963,7 @@ void read_azimuth(byte force_read){
         configuration.last_azimuth = az_position_pulse_input_azimuth;
         configuration_dirty = 1;
         last_az_position_pulse_input_azimuth = az_position_pulse_input_azimuth;
-        raw_azimuth = int(configuration.last_azimuth);
+        raw_azimuth = configuration.last_azimuth;
         #ifdef FEATURE_AZIMUTH_CORRECTION
           raw_azimuth = correct_azimuth(raw_azimuth);
         #endif // FEATURE_AZIMUTH_CORRECTION
@@ -9814,11 +9817,11 @@ void initialize_interrupts(){
   #endif // DEBUG_LOOP
 
   #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
-  attachInterrupt(AZ_POSITION_PULSE_PIN_INTERRUPT, az_position_pulse_interrupt_handler, FALLING);
+    attachInterrupt(AZ_POSITION_PULSE_PIN_INTERRUPT, az_position_pulse_interrupt_handler, FALLING);
   #endif // FEATURE_AZ_POSITION_PULSE_INPUT
 
   #ifdef FEATURE_EL_POSITION_PULSE_INPUT
-  attachInterrupt(EL_POSITION_PULSE_PIN_INTERRUPT, el_position_pulse_interrupt_handler, FALLING);
+    attachInterrupt(EL_POSITION_PULSE_PIN_INTERRUPT, el_position_pulse_interrupt_handler, FALLING);
   #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
   #ifdef FEATURE_STEPPER_MOTOR
@@ -10008,29 +10011,29 @@ void initialize_pins(){
   #endif // FEATURE_ELEVATION_CONTROL
 
   #ifdef FEATURE_AZ_POSITION_PULSE_INPUT
-  if (az_position_pulse_pin) {
-    pinModeEnhanced(az_position_pulse_pin, INPUT);
-    #ifdef OPTION_POSITION_PULSE_INPUT_PULLUPS
-    digitalWriteEnhanced(az_position_pulse_pin, HIGH);
-    #endif // OPTION_POSITION_PULSE_INPUT_PULLUPS
-  }
+    if (az_position_pulse_pin) {
+      pinModeEnhanced(az_position_pulse_pin, INPUT);
+      #ifdef OPTION_POSITION_PULSE_INPUT_PULLUPS
+        digitalWriteEnhanced(az_position_pulse_pin, HIGH);
+      #endif // OPTION_POSITION_PULSE_INPUT_PULLUPS
+    }
   #endif // FEATURE_AZ_POSITION_PULSE_INPUT
 
 
   #ifdef FEATURE_EL_POSITION_PULSE_INPUT
-  if (el_position_pulse_pin) {
-    pinModeEnhanced(el_position_pulse_pin, INPUT);
-    #ifdef OPTION_POSITION_PULSE_INPUT_PULLUPS
-    digitalWriteEnhanced(el_position_pulse_pin, HIGH);
-    #endif // OPTION_POSITION_PULSE_INPUT_PULLUPS
-  }
+    if (el_position_pulse_pin) {
+      pinModeEnhanced(el_position_pulse_pin, INPUT);
+      #ifdef OPTION_POSITION_PULSE_INPUT_PULLUPS
+      digitalWriteEnhanced(el_position_pulse_pin, HIGH);
+      #endif // OPTION_POSITION_PULSE_INPUT_PULLUPS
+    }
   #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
   #ifdef FEATURE_PARK
-  if (button_park) {
-    pinModeEnhanced(button_park, INPUT);
-    digitalWriteEnhanced(button_park, HIGH);
-  }
+    if (button_park) {
+      pinModeEnhanced(button_park, INPUT);
+      digitalWriteEnhanced(button_park, HIGH);
+    }
   #endif // FEATURE_PARK
 
   #ifdef FEATURE_ROTATION_INDICATOR_PIN
