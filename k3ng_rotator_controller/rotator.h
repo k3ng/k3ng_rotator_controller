@@ -1,4 +1,6 @@
 /*---------------------- macros - don't touch these unless you know what you are doing ---------------------*/
+#define EEPROM_MAGIC_NUMBER 115
+
 #define AZ 1
 #define EL 2
  

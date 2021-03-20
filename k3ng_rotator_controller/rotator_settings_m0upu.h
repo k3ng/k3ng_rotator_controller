@@ -149,7 +149,6 @@ You can tweak these, but read the online documentation!
 #define BRAKE_ACTIVE_STATE HIGH
 #define BRAKE_INACTIVE_STATE LOW
 
-#define EEPROM_MAGIC_NUMBER 112
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
 #define DISPLAY_DECIMAL_PLACES 0
@@ -192,14 +191,14 @@ You can tweak these, but read the online documentation!
 #define DEFAULT_LATITUDE 40.889958
 #define DEFAULT_LONGITUDE -75.585972
 
-#define MOON_TRACKING_CHECK_INTERVAL 5000
+#define MOON_TRACKING_CHECK_INTERVAL 5000 // This is only written to the configuration upon first boot of the code or when EEPROM_MAGIC_NUMBER is changed in rotator.h
 #define MOON_AOS_AZIMUTH_MIN 0
 #define MOON_AOS_AZIMUTH_MAX 360
 #define MOON_AOS_ELEVATION_MIN 0
 #define MOON_AOS_ELEVATION_MAX 180
 
  
-#define SUN_TRACKING_CHECK_INTERVAL 5000
+#define SUN_TRACKING_CHECK_INTERVAL 5000 // This is only written to the configuration upon first boot of the code or when EEPROM_MAGIC_NUMBER is changed in rotator.h
 #define SUN_AOS_AZIMUTH_MIN 0
 #define SUN_AOS_AZIMUTH_MAX 360
 #define SUN_AOS_ELEVATION_MIN 0
@@ -353,7 +352,7 @@ You can tweak these, but read the online documentation!
 
 // Added in 2020.07.24.01
 #define SATELLITE_UPDATE_ARRAY_ORDER_INTERVAL_MS 5000
-#define SATELLITE_TRACKING_UPDATE_INTERVAL 5000
+#define SATELLITE_TRACKING_UPDATE_INTERVAL 5000 // This is only written to the configuration upon first boot of the code or when EEPROM_MAGIC_NUMBER is changed in rotator.h
 
 // Added in 2020.07.25.01
 #define LCD_SATELLITE_TRACKING_ROW 4

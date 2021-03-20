@@ -913,6 +913,33 @@
       2021.03.08.01
         Even more work on FEATURE_AZ_POSITION_PULSE_INPUT to properly handle float values and preserve decimal places
 
+      2021.03.20.01
+        The satellite, sun, and moon automatic tracking algorithms have been enhanced and have new runtime settings
+
+          tracking check interval = the interval in mS the system performs a tracking calculation and decision
+          rotation interval = the minimum amount of time in mS between rotation initiations
+          degrees difference threshold = the decimal degrees difference between the current az/el and the desired az/el which must be met or exceed in order to initiate rotation
+
+          Both the rotation interval and degrees difference threshold must met in order to initiate rotation.
+          The rotation interval and/or degrees difference threshold can be set to 0 to disable.
+
+        New commands:
+
+          \(                  - show satellite, sun, and moon automatic tracking parameters
+
+          \?TSxxxx            - set satellite tracking check interval (mS)
+          \?TUxxxx            - set sun tracking check interval (mS)
+          \?TMxxxx            - set moon tracking check interval (mS)
+
+          \?TXxxxx            - set satellite rotation interval (mS)
+          \?TYxxxx            - set sun rotation interval (mS)
+          \?TZxxxx            - set moon rotation interval (mS)
+
+          \?TAx[.]x            - set satellite degrees difference threshold
+          \?TBx[.]x            - set sun degrees difference threshold
+          \?TCx[.]x            - set moon degrees difference threshold
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -926,7 +953,7 @@
 
   */
 
-#define CODE_VERSION "2021.03.08.01"
+#define CODE_VERSION "2021.03.20.01"
 
 
 #include <avr/pgmspace.h>
@@ -1160,6 +1187,15 @@ struct config_t {
   char current_satellite[17];
   int park_azimuth;
   int park_elevation;
+  unsigned int tracking_sun_check_frequency_ms;
+  unsigned int tracking_moon_check_frequency_ms;
+  unsigned int tracking_sat_check_frequency_ms;
+  unsigned int tracking_sun_minimum_rotation_interval_ms;
+  unsigned int tracking_moon_minimum_rotation_interval_ms;
+  unsigned int tracking_sat_minimum_rotation_interval_ms;  
+  float tracking_sun_degrees_difference_threshold;
+  float tracking_moon_degrees_difference_threshold;
+  float tracking_sat_degrees_difference_threshold;   
 } configuration;
 
 
@@ -1533,7 +1569,7 @@ struct config_t {
   byte periodic_current_satellite_status = 0;
   byte periodic_aos_los_satellite_status = 0;
   byte current_satellite_position_in_array = 255;
-  byte service_calc_satellite_data_service_state = SERVICE_IDLE; //zzzzzz
+  byte service_calc_satellite_data_service_state = SERVICE_IDLE;
   byte service_calc_current_sat;
   byte service_calc_satellite_data_task;
 
@@ -6822,6 +6858,18 @@ void initialize_eeprom_with_defaults(){
   configuration.autopark_time_minutes = 0;
   configuration.azimuth_display_mode = AZ_DISPLAY_MODE_NORMAL;
   strcpy(configuration.current_satellite,"-");
+
+
+  configuration.tracking_sun_check_frequency_ms = SUN_TRACKING_CHECK_INTERVAL;
+  configuration.tracking_moon_check_frequency_ms = MOON_TRACKING_CHECK_INTERVAL;
+  configuration.tracking_sat_check_frequency_ms = SATELLITE_TRACKING_UPDATE_INTERVAL;
+  configuration.tracking_sun_minimum_rotation_interval_ms = 0;
+  configuration.tracking_moon_minimum_rotation_interval_ms = 0;
+  configuration.tracking_sat_minimum_rotation_interval_ms = 0; 
+  configuration.tracking_sun_degrees_difference_threshold = 0.1;
+  configuration.tracking_moon_degrees_difference_threshold = 0.1;
+  configuration.tracking_sat_degrees_difference_threshold = 0.1; 
+
 
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
@@ -14118,6 +14166,10 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   static unsigned long serial_led_time = 0;
   float tempfloat = 0;
   byte hit_decimal = 0;
+  long place_multiplier = 0;
+  byte decimalplace = 0;
+  byte x = 0;
+  int temp_int = 0;
 
   #if defined(FEATURE_PARK) && defined(FEATURE_NEXTION_DISPLAY)
     char workstring1[32];
@@ -14127,12 +14179,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
   #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_REMOTE_CMDS)
     float heading = 0;
   #endif 
-
-
-  long place_multiplier = 0;
-  byte decimalplace = 0;
-  byte x = 0;
-  int temp_int = 0;
 
   #ifdef FEATURE_CLOCK
     int temp_year = 0;
@@ -14680,7 +14726,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       } /* switch */
       break;
 
-//zzzzzz
     #ifdef FEATURE_PARK
     case 'P':    // Park, PA and PE commands - set / query park azimuth and elevation
       temp_int = 999;
@@ -14704,7 +14749,6 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
                 strcat(workstring1,workstring2);
               #endif
               //request_transient_message(workstring1,1,5000);
-              //zzzzzzz
             } else {
               #if defined(FEATURE_ELEVATION_CONTROL)
                 control_port->print(F("Park Azimuth: "));
@@ -14905,13 +14949,46 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     configuration_dirty = 1;
     break;
 
+    #if defined(FEATURE_SATELLITE_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_MOON_TRACKING)
+      case '(':
+        control_port->println(F("\t  Check  \tMin Rotation \tDegree Diff"));
+        control_port->println(F("\tFreq (ms)\tInterval (mS)\t Threshold"));
+
+        #if defined(FEATURE_SATELLITE_TRACKING)
+          control_port->print(F("Sat\t  "));
+          control_port->print(configuration.tracking_sat_check_frequency_ms);
+          control_port->print(F("\t\t  "));
+          control_port->print(configuration.tracking_sat_minimum_rotation_interval_ms);
+          control_port->print(F("\t\t  "));
+          control_port->println(configuration.tracking_sat_degrees_difference_threshold);                    
+        #endif
+        #if defined(FEATURE_SUN_TRACKING)
+          control_port->print(F("Sun\t  "));
+          control_port->print(configuration.tracking_sun_check_frequency_ms);
+          control_port->print(F("\t\t  "));
+          control_port->print(configuration.tracking_sun_minimum_rotation_interval_ms);
+          control_port->print(F("\t\t  "));
+          control_port->println(configuration.tracking_sun_degrees_difference_threshold);                    
+        #endif
+        #if defined(FEATURE_MOON_TRACKING)
+          control_port->print(F("Moon\t  "));
+          control_port->print(configuration.tracking_moon_check_frequency_ms);
+          control_port->print(F("\t\t  "));
+          control_port->print(configuration.tracking_moon_minimum_rotation_interval_ms);
+          control_port->print(F("\t\t  "));
+          control_port->println(configuration.tracking_moon_degrees_difference_threshold);                    
+        #endif        
+      break;
+    #endif //defined(FEATURE_SATELLITE_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_MOON_TRACKING)
+
+
     #if defined(FEATURE_SATELLITE_TRACKING)
 
-      case '&':
+      // case '&':
 
-      satellite_array_data_ready = 0;
-      control_port->println(F("satellite_array_data_ready = 0"));
-      break;
+      // satellite_array_data_ready = 0;
+      // control_port->println(F("satellite_array_data_ready = 0"));
+      // break;
 
       case '|':
         if (input_buffer_index == 3){
@@ -15487,6 +15564,111 @@ Not implemented yet:
     }  //if ((input_buffer_index == 6)
 
     int hit_decimal = 0;
+
+    /*
+        \?TSxxxx            - set satellite tracking check interval (mS)
+        \?TUxxxx            - set sun tracking check interval (mS)
+        \?TMxxxx            - set moon tracking check interval (mS)
+
+        \?TXxxxx            - set satellite rotation interval (mS)
+        \?TYxxxx            - set sun rotation interval (mS)
+        \?TZxxxx            - set moon rotation interval (mS)
+
+        \?TAx[.]x            - set satellite degrees difference threshold
+        \?TBx[.]x            - set sun degrees difference threshold
+        \?TCx[.]x            - set moon degrees difference threshold
+    */     
+
+    //ZZZZZZ
+    #if defined(FEATURE_SATELLITE_TRACKING) || defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+      if (input_buffer[2] == 'T'){
+        if ((input_buffer[3] == 'S') || (input_buffer[3] == 'U') || (input_buffer[3] == 'M') ||
+            (input_buffer[3] == 'X') || (input_buffer[3] == 'Y') || (input_buffer[3] == 'Z'))
+        {
+          temp_int = 0;
+          for (int x = 4;x < input_buffer_index;x++){
+            temp_int = (temp_int * 10) + (input_buffer[x] - 48);
+          }   
+          #if defined(FEATURE_SATELLITE_TRACKING)
+            if (input_buffer[3] == 'S'){
+              configuration.tracking_sat_check_frequency_ms = temp_int;
+              strconditionalcpy(return_string,"\\!OKTS", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif
+          #if defined(FEATURE_SUN_TRACKING)
+            if (input_buffer[3] == 'U'){
+              configuration.tracking_sun_check_frequency_ms = temp_int;
+              strconditionalcpy(return_string,"\\!OKTU", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif
+          #if defined(FEATURE_MOON_TRACKING)
+            if (input_buffer[3] == 'M'){
+              configuration.tracking_moon_check_frequency_ms = temp_int;
+              strconditionalcpy(return_string,"\\!OKTM", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif
+          #if defined(FEATURE_SATELLITE_TRACKING)
+            if (input_buffer[3] == 'X'){
+              configuration.tracking_sat_minimum_rotation_interval_ms = temp_int;
+              strconditionalcpy(return_string,"\\!OKTX", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif  
+          #if defined(FEATURE_SUN_TRACKING)
+            if (input_buffer[3] == 'Y'){
+              configuration.tracking_sun_minimum_rotation_interval_ms = temp_int;
+              strconditionalcpy(return_string,"\\!OKTY", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif  
+          #if defined(FEATURE_MOON_TRACKING)
+            if (input_buffer[3] == 'Z'){
+              configuration.tracking_moon_minimum_rotation_interval_ms = temp_int;
+              strconditionalcpy(return_string,"\\!OKTZ", include_response_code);
+              configuration_dirty = 1;
+            }  
+          #endif          
+
+        }
+        if ((input_buffer[3] == 'A') || (input_buffer[3] == 'B') || (input_buffer[3] == 'C')){
+          hit_decimal = 0;
+          tempfloat = 0;
+          for (int x = 4;x < input_buffer_index;x++){
+            if(input_buffer[x] == '.'){
+              hit_decimal = 10;
+            } else {
+              if (hit_decimal > 0){
+                tempfloat = tempfloat + ((float)(input_buffer[x] - 48) / (float)hit_decimal);
+                hit_decimal = hit_decimal * 10;
+              } else {
+                tempfloat = (tempfloat * 10) + (input_buffer[x] - 48);
+              }
+            }
+          }  
+          if (input_buffer[3] == 'A'){
+            configuration.tracking_sat_degrees_difference_threshold = tempfloat;
+            strconditionalcpy(return_string,"\\!OKTA", include_response_code);
+            configuration_dirty = 1;
+          }
+          if (input_buffer[3] == 'B'){
+            configuration.tracking_sun_degrees_difference_threshold = tempfloat;
+            strconditionalcpy(return_string,"\\!OKTB", include_response_code);
+            configuration_dirty = 1;
+          }
+          if (input_buffer[3] == 'C'){
+            configuration.tracking_moon_degrees_difference_threshold = tempfloat;
+            strconditionalcpy(return_string,"\\!OKTC", include_response_code);
+            configuration_dirty = 1;
+          }
+          
+        }  
+
+      }
+
+    #endif  //defined(FEATURE_SATELLITE_TRACKING) || defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
     if ((input_buffer[2] == 'G') && (input_buffer[3] == 'A')) {  // \?GAxxx.x - go to AZ xxx.x
       heading = 0;
@@ -18073,6 +18255,7 @@ void service_moon_tracking(){
   #endif // DEBUG_LOOP
 
   static unsigned long last_check = 0;
+  static unsigned long last_tracking_submit_request = 0;
   static unsigned long last_update_moon_position = 0;
   static byte moon_tracking_activated_by_activate_line = 0;
 
@@ -18122,7 +18305,7 @@ void service_moon_tracking(){
     } 
   }  
 
-  if ((moon_tracking_active) && ((millis() - last_check) > MOON_TRACKING_CHECK_INTERVAL)) {
+  if ((moon_tracking_active) && ((millis() - last_check) > configuration.tracking_moon_check_frequency_ms)) {
 
     #ifdef DEBUG_MOON_TRACKING
     debug.print(F("service_moon_tracking: AZ: "));
@@ -18137,9 +18320,12 @@ void service_moon_tracking(){
 
 
 
-    if (moon_visible) {
+    if ((moon_visible) && ((millis() - last_tracking_submit_request) >= configuration.tracking_moon_minimum_rotation_interval_ms)
+      && ((abs(azimuth-moon_azimuth)>configuration.tracking_moon_degrees_difference_threshold) || 
+      (abs(elevation-moon_elevation)>configuration.tracking_moon_degrees_difference_threshold))) {
       submit_request(AZ, REQUEST_AZIMUTH, moon_azimuth, DBG_SERVICE_MOON_TRACKING);
       submit_request(EL, REQUEST_ELEVATION, moon_elevation, DBG_SERVICE_MOON_TRACKING);
+      last_tracking_submit_request = millis();
     }
 
     last_check = millis();
@@ -18161,6 +18347,7 @@ void service_sun_tracking(){
   #endif // DEBUG_LOOP
 
   static unsigned long last_check = 0;
+  static unsigned long last_tracking_submit_request = 0;
   static unsigned long last_update_sun_position = 0;
   static byte sun_tracking_pin_state = 0;
   static byte sun_tracking_activated_by_activate_line = 0;
@@ -18209,7 +18396,7 @@ void service_sun_tracking(){
     }
   }  
 
-  if ((sun_tracking_active) && ((millis() - last_check) > SUN_TRACKING_CHECK_INTERVAL)) {
+  if ((sun_tracking_active) && ((millis() - last_check) > configuration.tracking_sun_check_frequency_ms)) {
 
     #ifdef DEBUG_SUN_TRACKING
       debug.print(F("service_sun_tracking: AZ: "));
@@ -18222,9 +18409,12 @@ void service_sun_tracking(){
       debug.println(longitude);
     #endif // DEBUG_SUN_TRACKING
 
-    if (sun_visible) {
+    if ((sun_visible) && ((millis() - last_tracking_submit_request) >= configuration.tracking_sun_minimum_rotation_interval_ms)
+      && ((abs(azimuth-sun_azimuth)>configuration.tracking_sun_degrees_difference_threshold) || 
+      (abs(elevation-sun_elevation)>configuration.tracking_sun_degrees_difference_threshold))) {
       submit_request(AZ, REQUEST_AZIMUTH, sun_azimuth, DBG_SERVICE_SUN_TRACKING);
       submit_request(EL, REQUEST_ELEVATION, sun_elevation, DBG_SERVICE_SUN_TRACKING);
+      last_tracking_submit_request = millis();
     }
 
     last_check = millis();
@@ -18694,6 +18884,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     #endif // DEBUG_LOOP
 
     static unsigned long last_tracking_check = 0;
+    static unsigned long last_tracking_submit_request = 0;
     static unsigned long last_update_satellite_array_order = 0;
     static byte satellite_tracking_activated_by_activate_line = 0;
     static byte satellite_tracking_pin_state = 0;
@@ -18851,7 +19042,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
 
 
-    if ((satellite_tracking_active) && ((millis() - last_tracking_check) > SATELLITE_TRACKING_UPDATE_INTERVAL)) {
+    if ((satellite_tracking_active) && ((millis() - last_tracking_check) > configuration.tracking_sat_check_frequency_ms)) {
 
       #ifdef DEBUG_SATELLITE_TRACKING
         debug.print(F("service_satellite_tracking: AZ: "));
@@ -18864,9 +19055,15 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         debug.println(longitude);
       #endif // DEBUG_SATELLITE_TRACKING
 
-      if ((satellite[current_satellite_position_in_array].status & 1) == 1){
+      //if ((satellite[current_satellite_position_in_array].status & 1) == 1){
+
+
+    if (((satellite[current_satellite_position_in_array].status & 1) == 1) && ((millis() - last_tracking_submit_request) >= configuration.tracking_sat_minimum_rotation_interval_ms)
+      && ((abs(azimuth-current_satellite_azimuth)>configuration.tracking_sat_degrees_difference_threshold) || 
+      (abs(elevation-current_satellite_elevation)>configuration.tracking_sat_degrees_difference_threshold))) {
         submit_request(AZ, REQUEST_AZIMUTH, current_satellite_azimuth, DBG_SERVICE_SATELLITE_TRACKING);
         submit_request(EL, REQUEST_ELEVATION, current_satellite_elevation, DBG_SERVICE_SATELLITE_TRACKING);
+        last_tracking_submit_request = millis();
       }
 
       last_tracking_check = millis();
