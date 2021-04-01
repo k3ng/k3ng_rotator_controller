@@ -920,7 +920,7 @@
           rotation interval = the minimum amount of time in mS between rotation initiations
           degrees difference threshold = the decimal degrees difference between the current az/el and the desired az/el which must be met or exceed in order to initiate rotation
 
-          Both the rotation interval and degrees difference threshold must met in order to initiate rotation.
+          Both the rotation interval and degrees difference threshold must be met in order to initiate rotation.
           The rotation interval and/or degrees difference threshold can be set to 0 to disable.
 
         New commands:
@@ -939,6 +939,28 @@
           \?TBx[.]x            - set sun degrees difference threshold
           \?TCx[.]x            - set moon degrees difference threshold
 
+      2021.04.01.01
+        FEATURE_NEXTION_DISPLAY
+          New Variables:
+            gV2         Integer, Bit Mapped   Various States 2
+              Bit Values
+                audible_alert_enabled 1
+
+            gTS          Integer               Satellite tracking check interval (mS)
+            gTU          Integer               Sun tracking check interval (mS)
+            gTM          Integer               Moon tracking check interval (mS)
+            gTX          Integer               Satellite tracking rotation interval (mS)
+            gTY          Integer               Sun tracking rotation interval (mS)
+            gTZ          Integer               Moon tracking rotation interval (mS)
+            vTA          String[5]             Satellite tracking degrees difference threshold
+            vTB          String[5]             Sun tracking degrees difference threshold
+            vTC          String[5]             Moon tracking degrees difference threshold
+
+          New Bit Mapped in Existing Variable:         
+            gSC         Integer, Bit Mapped   System Capabilities
+              Bit Values
+                AUDIBLE_ALERT 8192
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -953,7 +975,7 @@
 
   */
 
-#define CODE_VERSION "2021.03.20.01"
+#define CODE_VERSION "2021.04.01.01"
 
 
 #include <avr/pgmspace.h>
@@ -1195,7 +1217,8 @@ struct config_t {
   unsigned int tracking_sat_minimum_rotation_interval_ms;  
   float tracking_sun_degrees_difference_threshold;
   float tracking_moon_degrees_difference_threshold;
-  float tracking_sat_degrees_difference_threshold;   
+  float tracking_sat_degrees_difference_threshold; 
+  byte audible_alert_enabled;  
 } configuration;
 
 
@@ -1927,13 +1950,15 @@ void loop() {
         }
         break;
       case AUDIBLE_ALERT_ACTIVATE:
-        if (AUDIBLE_ALERT_TYPE == 1){
-          digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_ACTIVE_STATE);
+        if (configuration.audible_alert_enabled){
+          if ((AUDIBLE_ALERT_TYPE == 1)){
+            digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_ACTIVE_STATE);
+          }
+          if (AUDIBLE_ALERT_TYPE == 2){
+            tone(pin_audible_alert, AUDIBLE_PIN_TONE_FREQ);
+          }
+          alert_start_time = millis();
         }
-        if (AUDIBLE_ALERT_TYPE == 2){
-          tone(pin_audible_alert, AUDIBLE_PIN_TONE_FREQ);
-        }
-        alert_start_time = millis();
         break;  
 
 
@@ -4652,8 +4677,9 @@ void service_nextion_display(){
     #if defined(FEATURE_AUTOPARK)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUTOPARK;  //4096
     #endif 
-
-          
+    #if defined(FEATURE_AUDIBLE_ALERT)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUDIBLE_ALERT; //8192
+    #endif
 
     strcpy_P(workstring1,(const char*) F("gSC="));
     dtostrf(temp, 1, 0, workstring2);
@@ -4979,6 +5005,17 @@ void service_nextion_display(){
 
 
 
+    // gV2 - Various States 2
+    temp = 0;
+    #if defined(FEATURE_AUDIBLE_ALERT)
+      if (configuration.audible_alert_enabled){
+        temp = temp | 1;
+      }
+    #endif
+    dtostrf((int)temp, 1, 0, workstring1);
+    strcpy_P(workstring2,(const char*) F("gV2="));
+    strcat(workstring2,workstring1);
+    sendNextionCommand(workstring2);
 
     // vSS1 - Status String 1
     strcpy(workstring1,"");
@@ -5439,6 +5476,23 @@ TODO:
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
+
+          strcpy_P(workstring1,(const char*) F("vTC.txt=\""));
+          dtostrf(configuration.tracking_moon_degrees_difference_threshold,0,1,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);
+
+          strcpy_P(workstring1,(const char*) F("gTM="));
+          dtostrf(configuration.tracking_moon_check_frequency_ms,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);
+
+          strcpy_P(workstring1,(const char*) F("gTZ="));
+          dtostrf(configuration.tracking_moon_minimum_rotation_interval_ms,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);   
+
         #endif // FEATURE_MOON_TRACKING
 
 
@@ -5455,6 +5509,23 @@ TODO:
           strcat(workstring1,workstring2);
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1); 
+
+          strcpy_P(workstring1,(const char*) F("vTB.txt=\""));
+          dtostrf(configuration.tracking_sun_degrees_difference_threshold,0,1,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);
+
+          strcpy_P(workstring1,(const char*) F("gTU="));
+          dtostrf(configuration.tracking_sun_check_frequency_ms,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);
+
+          strcpy_P(workstring1,(const char*) F("gTY="));
+          dtostrf(configuration.tracking_sun_minimum_rotation_interval_ms,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);   
+
         #endif // FEATURE_SUN_TRACKING
 
         #ifdef FEATURE_SATELLITE_TRACKING
@@ -5523,6 +5594,21 @@ TODO:
           strcat(workstring1,"\"");
           sendNextionCommand(workstring1);  
 
+          strcpy_P(workstring1,(const char*) F("vTA.txt=\""));
+          dtostrf(configuration.tracking_sat_degrees_difference_threshold,0,1,workstring2);
+          strcat(workstring1,workstring2);
+          strcat(workstring1,"\"");
+          sendNextionCommand(workstring1);
+
+          strcpy_P(workstring1,(const char*) F("gTS="));
+          dtostrf(configuration.tracking_sat_check_frequency_ms,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);
+
+          strcpy_P(workstring1,(const char*) F("gTX="));
+          dtostrf(configuration.tracking_sat_minimum_rotation_interval_ms,0,0,workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);          
 
           for (int x = 0;x < SATELLITE_LIST_LENGTH;x++){
             strcpy_P(workstring1,(const char*) F("vS"));
@@ -6858,8 +6944,6 @@ void initialize_eeprom_with_defaults(){
   configuration.autopark_time_minutes = 0;
   configuration.azimuth_display_mode = AZ_DISPLAY_MODE_NORMAL;
   strcpy(configuration.current_satellite,"-");
-
-
   configuration.tracking_sun_check_frequency_ms = SUN_TRACKING_CHECK_INTERVAL;
   configuration.tracking_moon_check_frequency_ms = MOON_TRACKING_CHECK_INTERVAL;
   configuration.tracking_sat_check_frequency_ms = SATELLITE_TRACKING_UPDATE_INTERVAL;
@@ -6869,6 +6953,7 @@ void initialize_eeprom_with_defaults(){
   configuration.tracking_sun_degrees_difference_threshold = 0.1;
   configuration.tracking_moon_degrees_difference_threshold = 0.1;
   configuration.tracking_sat_degrees_difference_threshold = 0.1; 
+  configuration.audible_alert_enabled = 1;
 
 
   #ifdef FEATURE_ELEVATION_CONTROL
