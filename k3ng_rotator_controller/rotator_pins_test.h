@@ -238,10 +238,10 @@
 
 
 #ifdef FEATURE_AUDIBLE_ALERT
-  #define pin_audible_alert 0
+  #define pin_audible_alert A8
 #endif    
 
-#define pin_status_led A8   // Status LED - blinks when there is rotation in progress
+#define pin_status_led 0   // Status LED - blinks when there is rotation in progress
 
 // Added 2020.07.24.01
 #define satellite_tracking_active_pin 0

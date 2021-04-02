@@ -961,6 +961,18 @@
               Bit Values
                 AUDIBLE_ALERT 8192
 
+      2021.04.02.01
+        FEATURE_AUDIBLE_ALERT new commands:
+          \-   Query audible alert state
+          \-0  Disable audible alerts
+          \-1  Enable audible alerts
+          \-X  Silence current audible alert
+          \-~  Manually trigger audible alert    
+          \-A0 Disable AZ target alert
+          \-A1 Enable AZ target alert
+          \-E0 Disable EL target alert
+          \-E1 Enable EL target alert    
+
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -975,7 +987,7 @@
 
   */
 
-#define CODE_VERSION "2021.04.01.01"
+#define CODE_VERSION "2021.04.02.01"
 
 
 #include <avr/pgmspace.h>
@@ -1218,7 +1230,9 @@ struct config_t {
   float tracking_sun_degrees_difference_threshold;
   float tracking_moon_degrees_difference_threshold;
   float tracking_sat_degrees_difference_threshold; 
-  byte audible_alert_enabled;  
+  byte audible_alert_enabled; 
+  byte audible_alert_enabled_az_target;
+  byte audible_alert_enabled_el_target;
 } configuration;
 
 
@@ -1933,7 +1947,7 @@ void loop() {
 // --------------------------------------------------------------
 
 #if defined(FEATURE_AUDIBLE_ALERT)
-  void audible_alert(byte how_called){
+  byte audible_alert(byte how_called){
 
     static unsigned long alert_start_time = 0;
 
@@ -1951,21 +1965,68 @@ void loop() {
         break;
       case AUDIBLE_ALERT_ACTIVATE:
         if (configuration.audible_alert_enabled){
-          if ((AUDIBLE_ALERT_TYPE == 1)){
+          if (AUDIBLE_ALERT_TYPE == 1){
             digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_ACTIVE_STATE);
           }
           if (AUDIBLE_ALERT_TYPE == 2){
             tone(pin_audible_alert, AUDIBLE_PIN_TONE_FREQ);
           }
-          alert_start_time = millis();
+          if (millis() == 0){
+            alert_start_time = 1;
+          } else {
+            alert_start_time = millis();
+          }
         }
+        break; 
+      case AUDIBLE_ALERT_MANUAL_ACTIVATE:
+        if (!configuration.audible_alert_enabled){
+          configuration.audible_alert_enabled = 1;
+          configuration_dirty = 1;
+        }  
+        if ((AUDIBLE_ALERT_TYPE == 1)){
+          digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_ACTIVE_STATE);
+        }
+        if (AUDIBLE_ALERT_TYPE == 2){
+          tone(pin_audible_alert, AUDIBLE_PIN_TONE_FREQ);
+        }
+        alert_start_time = millis();
+        break;           
+      case AUDIBLE_ALERT_SILENCE:
+        if (AUDIBLE_ALERT_TYPE == 1){
+          digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_INACTIVE_STATE);
+        }
+        if (AUDIBLE_ALERT_TYPE == 2){
+          noTone(pin_audible_alert);
+        }
+        break;
+      case AUDIBLE_ALERT_DISABLE:
+        if (AUDIBLE_ALERT_TYPE == 1){
+          digitalWriteEnhanced(pin_audible_alert, AUDIBLE_PIN_INACTIVE_STATE);
+        }
+        if (AUDIBLE_ALERT_TYPE == 2){
+          noTone(pin_audible_alert);
+        }
+        alert_start_time = 0;
+        configuration.audible_alert_enabled = 0;
+        configuration_dirty = 1;
         break;  
-
+      case AUDIBLE_ALERT_ENABLE:
+        configuration.audible_alert_enabled = 1;
+        configuration_dirty = 1;
+        break; 
 
     }
 
+    if (alert_start_time){
+      return(1);
+    } else {
+      return(0);
+    }  
+
   }
 #endif //FEATURE_AUDIBLE_ALERT
+
+/* "make something rare and of value" */
 
 // --------------------------------------------------------------
 
@@ -6954,6 +7015,8 @@ void initialize_eeprom_with_defaults(){
   configuration.tracking_moon_degrees_difference_threshold = 0.1;
   configuration.tracking_sat_degrees_difference_threshold = 0.1; 
   configuration.audible_alert_enabled = 1;
+  configuration.audible_alert_enabled_az_target = AUDIBLE_ALERT_AT_AZ_TARGET;
+  configuration.audible_alert_enabled_el_target = AUDIBLE_ALERT_AT_EL_TARGET; 
 
 
   #ifdef FEATURE_ELEVATION_CONTROL
@@ -10830,7 +10893,7 @@ void service_rotation(){
         az_request_queue_state = NONE;
 
         #if defined(FEATURE_AUDIBLE_ALERT)
-          if (AUDIBLE_ALERT_AT_AZ_TARGET){
+          if (configuration.audible_alert_enabled_az_target){
             audible_alert(AUDIBLE_ALERT_ACTIVATE);
           }
         #endif
@@ -10930,7 +10993,7 @@ void service_rotation(){
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
 
           #if defined(FEATURE_AUDIBLE_ALERT)
-            if (AUDIBLE_ALERT_AT_AZ_TARGET){
+            if (configuration.audible_alert_enabled_az_target){
               audible_alert(AUDIBLE_ALERT_ACTIVATE);
             }
           #endif
@@ -10963,7 +11026,7 @@ void service_rotation(){
           #endif // defined(FEATURE_PARK) && !defined(FEATURE_ELEVATION_CONTROL)
 
           #if defined(FEATURE_AUDIBLE_ALERT)
-            if (AUDIBLE_ALERT_AT_AZ_TARGET){
+            if (configuration.audible_alert_enabled_az_target){
               audible_alert(AUDIBLE_ALERT_ACTIVATE);
             }
           #endif
@@ -11116,7 +11179,7 @@ void service_rotation(){
         el_request_queue_state = NONE;
 
         #if defined(FEATURE_AUDIBLE_ALERT)
-          if (AUDIBLE_ALERT_AT_EL_TARGET){
+          if (configuration.audible_alert_enabled_el_target){
             audible_alert(AUDIBLE_ALERT_ACTIVATE);
           }
         #endif
@@ -11206,7 +11269,7 @@ void service_rotation(){
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_AUDIBLE_ALERT)
-            if (AUDIBLE_ALERT_AT_EL_TARGET){
+            if (configuration.audible_alert_enabled_el_target){
               audible_alert(AUDIBLE_ALERT_ACTIVATE);
             }
           #endif
@@ -11236,7 +11299,7 @@ void service_rotation(){
           #endif // DEBUG_SERVICE_ROTATION
 
           #if defined(FEATURE_AUDIBLE_ALERT)
-            if (AUDIBLE_ALERT_AT_EL_TARGET){
+            if (configuration.audible_alert_enabled_el_target){
               audible_alert(AUDIBLE_ALERT_ACTIVATE);
             }
           #endif
@@ -15263,6 +15326,89 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
       #endif //FEATURE_SATELLITE_TRACKING
 
+      #if defined(FEATURE_AUDIBLE_ALERT)
+        case '-':  // audible alert query and control
+          if (input_buffer_index == 2){
+            control_port->print(F("Audible alerts are "));
+            if (configuration.audible_alert_enabled){
+              control_port->print(F("en"));
+            } else {
+              control_port->print(F("dis"));
+            }
+            control_port->println(F("abled."));
+            control_port->print(F("AZ target alert: o"));
+            if (configuration.audible_alert_enabled_az_target){
+              control_port->println(F("n."));
+            } else {
+              control_port->println(F("ff."));
+            }
+            control_port->print(F("EL target alert: o"));
+            if (configuration.audible_alert_enabled_el_target){
+              control_port->println(F("n."));
+            } else {
+              control_port->println(F("ff."));
+            }
+            if (configuration.audible_alert_enabled){
+              control_port->print(F("Audible alert is o"));
+              if (audible_alert(AUDIBLE_ALERT_SERVICE)){
+                control_port->println(F("n."));
+              } else {
+                control_port->println(F("ff."));
+              }
+            }
+          } else {
+            if (input_buffer_index == 3){
+              if (input_buffer[2] == '0'){
+                configuration.audible_alert_enabled = 0;
+                configuration_dirty = 1;
+                control_port->println(F("Audible alerts disabled."));
+              }
+              if (input_buffer[2] == '1'){
+                configuration.audible_alert_enabled = 1;
+                configuration_dirty = 1;
+                control_port->println(F("Audible alerts enabled."));
+              }              
+              if (input_buffer[2] == 'X'){
+                audible_alert(AUDIBLE_ALERT_SILENCE);
+                control_port->println(F("Audible alert silenced."));
+              }
+              if (input_buffer[2] == '~'){
+                audible_alert(AUDIBLE_ALERT_MANUAL_ACTIVATE);
+                control_port->println(F("Audible alert activated."));
+              }  
+            } else {
+              if (input_buffer_index == 4){
+                if (input_buffer[2] == 'A'){
+                  if (input_buffer[3] == '0'){
+                    configuration.audible_alert_enabled_az_target = 0;
+                    configuration_dirty = 1;
+                    control_port->println(F("AZ target audible alert disabled."));
+                  }
+                  if (input_buffer[3] == '1'){
+                    configuration.audible_alert_enabled_az_target = 1;
+                    configuration_dirty = 1;
+                    control_port->println(F("AZ target audible alert enabled."));
+                  }
+                }
+                if (input_buffer[2] == 'E'){
+                  if (input_buffer[3] == '0'){
+                    configuration.audible_alert_enabled_el_target = 0;
+                    configuration_dirty = 1;
+                    control_port->println(F("EL target audible alert disabled."));
+                  }
+                  if (input_buffer[3] == '1'){
+                    configuration.audible_alert_enabled_el_target = 1;
+                    configuration_dirty = 1;
+                    control_port->println(F("EL target audible alert enabled."));
+                  }
+                }
+              }
+
+            }
+          }
+          break;
+      #endif
+
 // TODO : one big status query command    
 
   #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_EXTENDED_COMMANDS)
@@ -16015,6 +16161,7 @@ Not implemented yet:
         }
       } 
     //#endif 
+
 
 
 

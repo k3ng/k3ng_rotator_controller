@@ -1,5 +1,5 @@
 /*---------------------- macros - don't touch these unless you know what you are doing ---------------------*/
-#define EEPROM_MAGIC_NUMBER 116
+#define EEPROM_MAGIC_NUMBER 117
 
 #define AZ 1
 #define EL 2
@@ -172,6 +172,11 @@
 
 #define AUDIBLE_ALERT_SERVICE 0
 #define AUDIBLE_ALERT_ACTIVATE 1
+#define AUDIBLE_ALERT_SILENCE 2
+#define AUDIBLE_ALERT_DISABLE 3
+#define AUDIBLE_ALERT_ENABLE 4
+#define AUDIBLE_ALERT_MANUAL_ACTIVATE 5
+
 
 
 // for debugging 
