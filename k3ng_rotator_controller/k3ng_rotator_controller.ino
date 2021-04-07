@@ -971,7 +971,11 @@
           \-A0 Disable AZ target alert
           \-A1 Enable AZ target alert
           \-E0 Disable EL target alert
-          \-E1 Enable EL target alert    
+          \-E1 Enable EL target alert  
+
+      2021.04.07.01
+        Fixed issue with el_incremental_encoder_position rolling over to 0 after 32,767 or so
+        Happy Birthday, Mom
 
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -987,7 +991,7 @@
 
   */
 
-#define CODE_VERSION "2021.04.02.01"
+#define CODE_VERSION "2021.04.07.01"
 
 
 #include <avr/pgmspace.h>
@@ -1204,7 +1208,7 @@ struct config_t {
   float last_azimuth;
   float last_elevation;  
   long last_az_incremental_encoder_position;
-  int last_el_incremental_encoder_position;
+  long last_el_incremental_encoder_position;
   float azimuth_offset;
   float elevation_offset;
   byte az_stepper_motor_last_pin_state;
