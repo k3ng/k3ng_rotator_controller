@@ -980,7 +980,10 @@
       2021.06.24.01
         Fixed issues with integer conversions involving azimuth and elevation (Thanks, Alexander, RV6FX)
 
-
+      2021.07.17.01
+        FEATURE_SATELLITE_TRACKING - Fixed issue with \! command not clearing out satellit array and leaving invalid choices displayed on Nextion display
+        FEATURE_NEXTION_DISPLAY - Added \?NG command which prompts the rotator controller to send the gSC variable immediately to the Nextion
+        
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -994,7 +997,7 @@
 
   */
 
-#define CODE_VERSION "2021.06.24.01"
+#define CODE_VERSION "2021.07.17.01"
 
 
 #include <avr/pgmspace.h>
@@ -4516,6 +4519,70 @@ void request_transient_message(char* message,byte vSS_number,unsigned int messag
 }
 
 #endif // #if defined(FEATURE_NEXTION_DISPLAY)
+
+
+// --------------------------------------------------------------
+#if defined(FEATURE_NEXTION_DISPLAY)
+  void output_nextion_gSC_variable(){
+
+    char workstring1[32] = "";
+    char workstring2[32] = "";
+    unsigned int temp = 0;
+
+    #if defined(FEATURE_YAESU_EMULATION)
+      #if defined(OPTION_GS_232B_EMULATION)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
+      #else
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232A; //1
+      #endif
+    #endif
+    #if defined(FEATURE_EASYCOM_EMULATION)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_EASYCOM; //4
+    #endif
+    #if defined(FEATURE_DCU_1_EMULATION)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_DCU_1; //8
+    #endif
+    #if defined(FEATURE_ELEVATION_CONTROL)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ELEVATION; //16
+    #endif
+    #if defined(FEATURE_CLOCK)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CLOCK;  //32
+    #endif    
+    #if defined(FEATURE_GPS)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GPS;  //64
+    #endif
+    #if defined(FEATURE_MOON_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_MOON;  //128
+    #endif
+    #if defined(FEATURE_SUN_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
+    #endif
+    #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
+    #endif    
+    #if defined(FEATURE_SATELLITE_TRACKING)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
+    #endif    
+    #if defined(FEATURE_PARK)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PARK;  //2048
+    #endif 
+    #if defined(FEATURE_AUTOPARK)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUTOPARK;  //4096
+    #endif 
+    #if defined(FEATURE_AUDIBLE_ALERT)
+      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUDIBLE_ALERT; //8192
+    #endif
+
+    strcpy_P(workstring1,(const char*) F("gSC="));
+    dtostrf(temp, 1, 0, workstring2);
+    strcat(workstring1,workstring2);
+    sendNextionCommand(workstring1);
+
+  }
+
+#endif // #if defined(FEATURE_NEXTION_DISPLAY)
+
+
 // --------------------------------------------------------------
 #if defined(FEATURE_NEXTION_DISPLAY)
 void service_nextion_display(){
@@ -4705,54 +4772,55 @@ void service_nextion_display(){
   if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
     // System Capabilities
     temp = 0;
-    #if defined(FEATURE_YAESU_EMULATION)
-      #if defined(OPTION_GS_232B_EMULATION)
-        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
-      #else
-        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232A; //1
-      #endif
-    #endif
-    #if defined(FEATURE_EASYCOM_EMULATION)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_EASYCOM; //4
-    #endif
-    #if defined(FEATURE_DCU_1_EMULATION)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_DCU_1; //8
-    #endif
-    #if defined(FEATURE_ELEVATION_CONTROL)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ELEVATION; //16
-    #endif
-    #if defined(FEATURE_CLOCK)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CLOCK;  //32
-    #endif    
-    #if defined(FEATURE_GPS)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GPS;  //64
-    #endif
-    #if defined(FEATURE_MOON_TRACKING)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_MOON;  //128
-    #endif
-    #if defined(FEATURE_SUN_TRACKING)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
-    #endif
-    #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
-    #endif    
-    #if defined(FEATURE_SATELLITE_TRACKING)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
-    #endif    
-    #if defined(FEATURE_PARK)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PARK;  //2048
-    #endif 
-    #if defined(FEATURE_AUTOPARK)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUTOPARK;  //4096
-    #endif 
-    #if defined(FEATURE_AUDIBLE_ALERT)
-      temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUDIBLE_ALERT; //8192
-    #endif
+    output_nextion_gSC_variable();
+    // #if defined(FEATURE_YAESU_EMULATION)
+    //   #if defined(OPTION_GS_232B_EMULATION)
+    //     temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
+    //   #else
+    //     temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232A; //1
+    //   #endif
+    // #endif
+    // #if defined(FEATURE_EASYCOM_EMULATION)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_EASYCOM; //4
+    // #endif
+    // #if defined(FEATURE_DCU_1_EMULATION)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_DCU_1; //8
+    // #endif
+    // #if defined(FEATURE_ELEVATION_CONTROL)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ELEVATION; //16
+    // #endif
+    // #if defined(FEATURE_CLOCK)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CLOCK;  //32
+    // #endif    
+    // #if defined(FEATURE_GPS)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GPS;  //64
+    // #endif
+    // #if defined(FEATURE_MOON_TRACKING)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_MOON;  //128
+    // #endif
+    // #if defined(FEATURE_SUN_TRACKING)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
+    // #endif
+    // #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
+    // #endif    
+    // #if defined(FEATURE_SATELLITE_TRACKING)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
+    // #endif    
+    // #if defined(FEATURE_PARK)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PARK;  //2048
+    // #endif 
+    // #if defined(FEATURE_AUTOPARK)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUTOPARK;  //4096
+    // #endif 
+    // #if defined(FEATURE_AUDIBLE_ALERT)
+    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUDIBLE_ALERT; //8192
+    // #endif
 
-    strcpy_P(workstring1,(const char*) F("gSC="));
-    dtostrf(temp, 1, 0, workstring2);
-    strcat(workstring1,workstring2);
-    sendNextionCommand(workstring1);
+    // strcpy_P(workstring1,(const char*) F("gSC="));
+    // dtostrf(temp, 1, 0, workstring2);
+    // strcat(workstring1,workstring2);
+    // sendNextionCommand(workstring1);
 
 
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
@@ -7072,7 +7140,6 @@ void write_settings_to_eeprom(){
 #if defined(FEATURE_SATELLITE_TRACKING)
   void initialize_tle_file_area_eeprom(byte verbose){
 
-    // this essentially erases anything in the tle file area by writing FF to all locations
 
     #ifdef DEBUG_SATELLITE_TRACKING
       debug.println("initialize_tle_file_area_eeprom: init file file area");
@@ -7091,6 +7158,35 @@ void write_settings_to_eeprom(){
   
   }
 #endif //FEATURE_SATELLITE_TRACKING
+
+
+// --------------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void clear_satellite_array(){
+
+    #ifdef DEBUG_SATELLITE_TRACKING
+      debug.println("clear_satellite_array: array cleared");
+    #endif // DEBUG_SATELLITE_TRACKING
+
+    for (int x = 0;x < SATELLITE_LIST_LENGTH;x++){
+      strcpy(satellite[x].name,"");  
+      satellite[x].azimuth = 0;
+      satellite[x].elevation = 0;
+      satellite[x].next_aos_az = 0;
+      satellite[x].next_los_az = 0;
+      satellite[x].longitude = 0;
+      satellite[x].latitude = 0;
+      satellite[x].next_pass_max_el = 0;
+      satellite[x].order = 0;
+      satellite[x].status = 255;
+    } 
+
+  }
+#endif //FEATURE_SATELLITE_TRACKING
+
+
+
+
 // --------------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
   byte write_char_to_tle_file_area_eeprom(byte char_to_write,byte initialize_to_start){
@@ -15209,6 +15305,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         case '!':
           control_port->println(F("Erased the TLE file area."));
           initialize_tle_file_area_eeprom(1);
+          clear_satellite_array();
           break;
 
         case '@':
@@ -15656,6 +15753,19 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             strconditionalcpy(return_string,"\\!OKEF", include_response_code);
           }
         #endif  
+
+        #if defined(FEATURE_NEXTION_DISPLAY)
+//zzzzzz
+          if ((input_buffer[2] == 'N') && (input_buffer[3] == 'G')) {  // \?NG - output Nextion gSC variable immediately on Nextion por
+            output_nextion_gSC_variable();
+            if (input_source != SOURCE_NEXTION){
+               strconditionalcpy(return_string,"\\!OKNG", include_response_code);
+            }
+          }
+
+        #endif
+
+
 
       } //if (input_buffer_index == 4)
  
@@ -19038,8 +19148,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     if (load_hardcoded_tle == LOAD_HARDCODED_TLE){    // push a hardcoded TLE into the array position 0 and write to EEPROM     
       strcpy_P(name,(const char*) F("AO7TEST"));  
-      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   21063.80339419 -.00000028 "));  //2021-03-07
-      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8420  38.4674 0011970 222.4803 254.1375 12.53647581118856"));     
+      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   21196.18278108 -.00000036 "));  //2021-07-17
+      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8552 170.6579 0012110 331.0716  97.3732 12.53649403135209"));     
       sat.tle(name,hardcoded_tle_line_1,hardcoded_tle_line_2);
       #if defined(DEBUG_SATELLITE_TRACKING_LOAD)
         debug.print(name);
