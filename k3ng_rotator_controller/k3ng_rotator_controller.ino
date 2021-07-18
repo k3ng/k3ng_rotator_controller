@@ -984,6 +984,10 @@
         FEATURE_SATELLITE_TRACKING - Fixed issue with \! command not clearing out satellit array and leaving invalid choices displayed on Nextion display
         FEATURE_NEXTION_DISPLAY - Added \?NG command which prompts the rotator controller to send the gSC variable immediately to the Nextion
         
+      2021.07.18.01
+        FEATURE_SATELLITE_TRACKING - Fixed another issue with the \! not loading up the AO7-TEST default satellite (Thanks, Karl Jan Skontorp)
+        FEATURE_NEXTION_DISPLAY - Major improvement in Nextion display startup timing (Thanks, Adam, VK4GHZ)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -997,7 +1001,7 @@
 
   */
 
-#define CODE_VERSION "2021.07.17.01"
+#define CODE_VERSION "2021.07.18.01"
 
 
 #include <avr/pgmspace.h>
@@ -1874,7 +1878,7 @@ void loop() {
   #endif
 
   #if defined(FEATURE_SATELLITE_TRACKING)
-    service_satellite_tracking(0);
+    service_satellite_tracking(0,0);
     service_calc_satellite_data(0,0,0,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_SERVICE,SERVICE_CALC_DO_NOT_PRINT_DONE,0);
     //service_calculate_multi_satellite_upcoming_aos_and_los(SERVICE_CALC_SERVICE);
   #endif
@@ -4676,12 +4680,14 @@ void service_nextion_display(){
   #endif
 
 
-  if ((initialization_stage == 0) && (millis() > 500)){
+  if ((initialization_stage == 0) && (millis() > 100)){
+
 
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
       debug.println(F("\r\nservice_nextion_display: init: 0"));
     #endif     
     nexSerial.begin(NEXTION_SERIAL_BAUD);
+
     sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
 
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
@@ -4695,22 +4701,20 @@ void service_nextion_display(){
     #endif   
 
     initialization_stage = 1;
-    //initialization_stage = 2;
     last_various_things_update = millis();
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      debug.println(F("\r\nservice_nextion_display: init -> 1"));
+      debug.println(F("\r\nservice_nextion_display: init 0 -> 1"));
     #endif    
   }
 
 
-
-  if (initialization_stage == 1){  // look for I'm alive bytes from Nextion
+  if (initialization_stage == 1){  // look for 'i am alive' bytes from Nextion
 
     nextion_i_am_alive_string[0] = 255;
     nextion_i_am_alive_string[1] = 255;
     nextion_i_am_alive_string[2] = 255;
-    nextion_i_am_alive_string[3] = 0;
-
+    nextion_i_am_alive_string[3] = 0; // Null - end of string
+  
     if (nexSerial.available()){
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
         debug.print(F("\r\nservice_nextion_display: recv:"));
@@ -4722,7 +4726,7 @@ void service_nextion_display(){
         debug.print(":");
         debug.print(serial_byte);
       #endif            
-      if (i_am_alive_bytes_received < 254){  // we're looking for the i am alive bytes from the Nextion
+      if (i_am_alive_bytes_received < 254){  // we're looking for the 'i am alive' bytes from the Nextion
         if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
           i_am_alive_bytes_received++;
           #if defined(DEBUG_NEXTION_DISPLAY_INIT)
@@ -4737,32 +4741,24 @@ void service_nextion_display(){
             debug.println(F(" no match"));
           #endif              
         }
-      }
-      
+      } 
     }
-    if (i_am_alive_bytes_received == 254){   // we got the i am alive bytes from the Nextion
+
+    if (i_am_alive_bytes_received == 254){   // we got all the 'i am alive' bytes from the Nextion
       initialization_stage = 2;
+      output_nextion_gSC_variable();  // send gSC variable ASAP
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-        debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init -> 2   mS elapsed since rest:"));
+        debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
         debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));
         last_various_things_update = millis();        
       #endif            
     } else {
-
-      // if ((millis()-last_various_things_update) > 300){
-      //   initialization_stage = 2;
-      //   #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      //     debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, attempting init again"));
-      //   #endif             
-      // }
-
-      if ((millis()-last_various_things_update) > 2000){
+      if ((millis()-last_various_things_update) > 2000){  // we've been waiting too long, let's try this again
         initialization_stage = 0;
         #if defined(DEBUG_NEXTION_DISPLAY_INIT)
           debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, attempting init again"));
         #endif             
       }
-
     }
   }
 
@@ -4770,58 +4766,10 @@ void service_nextion_display(){
 
   // Update various things
   if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
-    // System Capabilities
+    
     temp = 0;
-    output_nextion_gSC_variable();
-    // #if defined(FEATURE_YAESU_EMULATION)
-    //   #if defined(OPTION_GS_232B_EMULATION)
-    //     temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232B; //2
-    //   #else
-    //     temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GS_232A; //1
-    //   #endif
-    // #endif
-    // #if defined(FEATURE_EASYCOM_EMULATION)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_EASYCOM; //4
-    // #endif
-    // #if defined(FEATURE_DCU_1_EMULATION)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_DCU_1; //8
-    // #endif
-    // #if defined(FEATURE_ELEVATION_CONTROL)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ELEVATION; //16
-    // #endif
-    // #if defined(FEATURE_CLOCK)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CLOCK;  //32
-    // #endif    
-    // #if defined(FEATURE_GPS)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GPS;  //64
-    // #endif
-    // #if defined(FEATURE_MOON_TRACKING)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_MOON;  //128
-    // #endif
-    // #if defined(FEATURE_SUN_TRACKING)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
-    // #endif
-    // #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
-    // #endif    
-    // #if defined(FEATURE_SATELLITE_TRACKING)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SATELLITE;  //1024
-    // #endif    
-    // #if defined(FEATURE_PARK)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PARK;  //2048
-    // #endif 
-    // #if defined(FEATURE_AUTOPARK)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUTOPARK;  //4096
-    // #endif 
-    // #if defined(FEATURE_AUDIBLE_ALERT)
-    //   temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_AUDIBLE_ALERT; //8192
-    // #endif
 
-    // strcpy_P(workstring1,(const char*) F("gSC="));
-    // dtostrf(temp, 1, 0, workstring2);
-    // strcat(workstring1,workstring2);
-    // sendNextionCommand(workstring1);
-
+    output_nextion_gSC_variable();  // send system capabilities variable
 
     #if defined(DEBUG_NEXTION_DISPLAY_INIT)
       if (initialization_stage == 2){
@@ -15306,6 +15254,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           control_port->println(F("Erased the TLE file area."));
           initialize_tle_file_area_eeprom(1);
           clear_satellite_array();
+          service_satellite_tracking(0,1);  // initialize satellite tracking
           break;
 
         case '@':
@@ -15406,7 +15355,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
             pull_satellite_tle_and_activate(satellite_to_find,NOT_VERBOSE,MAKE_IT_THE_CURRENT_SATELLITE);
           }
           
-          //service_satellite_tracking(1);
+          //service_satellite_tracking(1,0);
           //print_current_satellite_status();  //  Can't do this right away do to calculate_satellite_aos_and_los running asynchrously
           break;  
 
@@ -19225,7 +19174,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #endif //FEATURE_SATELLITE_TRACKING
 //------------------------------------------------------
 #if defined(FEATURE_SATELLITE_TRACKING)
-  void service_satellite_tracking(byte push_update){
+  void service_satellite_tracking(byte push_update, byte push_initialization){
 
     #ifdef DEBUG_LOOP
       control_port->println(F("service_satellite_tracking()"));
@@ -19256,6 +19205,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     // I am so sick and tired of people trying to get shit working on an effing Nano.  My time is worth something... more than 
     // the $10 to go buy a Chinese Mega clone.
+
+    if (push_initialization){satellite_initialized = 0;}
 
     if ((!satellite_initialized) && (millis() > 4000)){  // wait until 4 seconds after boot up to load first TLE and initialize
       #if defined(DEBUG_SATELLITE_SERVICE)
