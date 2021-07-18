@@ -988,6 +988,9 @@
         FEATURE_SATELLITE_TRACKING - Fixed another issue with the \! not loading up the AO7-TEST default satellite (Thanks, Karl Jan Skontorp)
         FEATURE_NEXTION_DISPLAY - Major improvement in Nextion display startup timing (Thanks, Adam, VK4GHZ)
 
+      2021.07.18.02
+        FEATURE_NEXTION_DISPLAY - Added code to watch for unexpected reset / 'i am alive' from Nextion
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1001,7 +1004,7 @@
 
   */
 
-#define CODE_VERSION "2021.07.18.01"
+#define CODE_VERSION "2021.07.18.02"
 
 
 #include <avr/pgmspace.h>
@@ -4625,6 +4628,7 @@ void service_nextion_display(){
   static byte received_backslash = 0;  
   byte nextion_i_am_alive_string[4];
   static byte i_am_alive_bytes_received = 0;
+  static byte consecutive_ff_bytes_received = 0;
 
   #if defined(FEATURE_ELEVATION_CONTROL)
     static int last_elevation = 0;
@@ -4888,7 +4892,6 @@ void service_nextion_display(){
 
   }
 
-
   // Get incoming commands
   if (nexSerial.available()){
     #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
@@ -4896,6 +4899,19 @@ void service_nextion_display(){
     #endif
     while (nexSerial.available()){
       serial_byte = nexSerial.read();
+
+      if (serial_byte == 255){   // did the Nextion reset and send us an 'i am alive'?
+        consecutive_ff_bytes_received++;
+        if (consecutive_ff_bytes_received > 2){
+          output_nextion_gSC_variable();
+          consecutive_ff_bytes_received = 0;
+          #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
+            debug.print("\r\nservice_nextion_display: received i am alive");
+          #endif
+        }
+      } else {
+        consecutive_ff_bytes_received = 0;
+      }
 
       #if defined(DEBUG_NEXTION_DISPLAY_SERIAL_RECV)
         debug.write(serial_byte);
