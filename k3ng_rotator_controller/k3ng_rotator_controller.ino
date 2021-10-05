@@ -991,6 +991,9 @@
       2021.07.18.02
         FEATURE_NEXTION_DISPLAY - Added code to watch for unexpected reset / 'i am alive' from Nextion
 
+      2021.10.05.01
+        DEBUG_ROTATOR - added code to traceback who called rotator()  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1004,7 +1007,7 @@
 
   */
 
-#define CODE_VERSION "2021.07.18.02"
+#define CODE_VERSION "2021.10.05.01"
 
 
 #include <avr/pgmspace.h>
@@ -8329,10 +8332,7 @@ void output_debug(){
         #endif
         #ifdef HARDWARE_M0UPU
           debug.print(" HARDWARE_M0UPU");
-        #endif    
-        #ifdef HARDWARE_EA4TX_ARS_USB
-          debug.print(" HARDWARE_EA4TX_ARS_USB");
-        #endif      
+        #endif       
         debug.print("\t\t");
 
         #ifdef FEATURE_CLOCK
@@ -8359,6 +8359,7 @@ void output_debug(){
           }       
         #else // FEATURE_CLOCK
           dtostrf((millis() / 1000),0,0,tempstring);
+          debug.print("Uptime:");
           debug.print(tempstring);
         #endif // FEATURE_CLOCK
 
@@ -9566,14 +9567,16 @@ void update_az_variable_outputs(byte speed_voltage){
 
 // --------------------------------------------------------------
 
-void rotator(byte rotation_action, byte rotation_type) {
+void rotator(byte rotation_action, byte rotation_type, byte traceback) {
 
   #ifdef DEBUG_ROTATOR
   if (debug_mode) {
     control_port->flush();
-    debug.print(F("rotator: rotation_action:"));
+    debug.print(F("rotator: traceback:"));
+    debug.print(traceback);
+    debug.print(" action:");
     debug.print(rotation_action);
-    debug.print(F(" rotation_type:"));
+    debug.print(F(" type:"));
     control_port->flush();
     debug.print(rotation_type);
     debug.print(F("->"));
@@ -9592,7 +9595,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       if (rotation_action == ACTIVATE) {
       #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("ACTIVATE\n"));
+          debug.print(F("ACTIVATE"));
         }
       #endif // DEBUG_ROTATOR
         brake_release(AZ, BRAKE_RELEASE_ON);
@@ -9658,7 +9661,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         }
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("rotator: normal_az_speed_voltage:"));
+          debug.print(F(" normal_az_speed_voltage:"));
           control_port->println(normal_az_speed_voltage);
           //control_port->flush();
         }
@@ -9666,7 +9669,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       } else {
           #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("DEACTIVATE\n"));
+          debug.print(F("DEACTIVATE"));
         }
           #endif // DEBUG_ROTATOR
         if (rotate_cw_pwm) {
@@ -9705,7 +9708,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       if (rotation_action == ACTIVATE) {
           #ifdef DEBUG_ROTATOR
             if (debug_mode) {
-              debug.print(F("ACTIVATE\n"));
+              debug.print(F("ACTIVATE"));
             }
           #endif // DEBUG_ROTATOR
         brake_release(AZ, BRAKE_RELEASE_ON);
@@ -9787,7 +9790,7 @@ void rotator(byte rotation_action, byte rotation_type) {
         */
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("rotator: normal_az_speed_voltage:"));
+          debug.print(F(" normal_az_speed_voltage:"));
           control_port->println(normal_az_speed_voltage);
           control_port->flush();
         }
@@ -9795,7 +9798,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       } else {
         #ifdef DEBUG_ROTATOR
           if (debug_mode) {
-            debug.print(F("DEACTIVATE\n"));
+            debug.print(F("DEACTIVATE"));
           }
         #endif // DEBUG_ROTATOR
         if (rotate_ccw_pwm) {
@@ -9825,7 +9828,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       if (rotation_action == ACTIVATE) {
       #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("ACTIVATE\n")); 
+          debug.print(F("ACTIVATE")); 
         }
       #endif // DEBUG_ROTATOR
         brake_release(EL, BRAKE_RELEASE_ON);
@@ -9908,7 +9911,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       } else {
       #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("DEACTIVATE\n"));
+          debug.print(F("DEACTIVATE"));
         }
       #endif // DEBUG_ROTATOR
         if (rotate_up) {
@@ -9947,7 +9950,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       if (rotation_action == ACTIVATE) {
         #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("ACTIVATE\n"));
+          debug.print(F("ACTIVATE"));
         }
         #endif // DEBUG_ROTATOR
         brake_release(EL, BRAKE_RELEASE_ON);
@@ -10031,7 +10034,7 @@ void rotator(byte rotation_action, byte rotation_type) {
       } else {
           #ifdef DEBUG_ROTATOR
         if (debug_mode) {
-          debug.print(F("DEACTIVATE\n"));
+          debug.print(F("DEACTIVATE"));
         }
           #endif // DEBUG_ROTATOR
         if (rotate_down) {
@@ -10065,7 +10068,7 @@ void rotator(byte rotation_action, byte rotation_type) {
 
   #ifdef DEBUG_ROTATOR
   if (debug_mode) {
-    debug.print(F("rotator: exiting\n"));
+    debug.print(F("\r\n"));
     control_port->flush();
   }
   #endif // DEBUG_ROTATOR
@@ -10200,8 +10203,8 @@ void initialize_pins(){
     digitalWriteEnhanced(pin_led_down, PIN_LED_INACTIVE_STATE);
   #endif
 
-  rotator(DEACTIVATE, CW);
-  rotator(DEACTIVATE, CCW);
+  rotator(DEACTIVATE, CW, 1);
+  rotator(DEACTIVATE, CCW, 1);
 
   #if defined(FEATURE_AZ_POSITION_POTENTIOMETER)
     pinModeEnhanced(rotator_analog_az, INPUT);
@@ -10250,8 +10253,8 @@ void initialize_pins(){
   if (rotate_down_freq) {
     pinModeEnhanced(rotate_down_freq, OUTPUT);
   }
-  rotator(DEACTIVATE, UP);
-  rotator(DEACTIVATE, DOWN);
+  rotator(DEACTIVATE, UP, 2);
+  rotator(DEACTIVATE, DOWN, 2);
   #ifdef FEATURE_EL_POSITION_POTENTIOMETER
   pinModeEnhanced(rotator_analog_el, INPUT);
   #endif // FEATURE_EL_POSITION_POTENTIOMETER
@@ -10818,19 +10821,19 @@ void service_rotation(){
 
   if (az_state == INITIALIZE_NORMAL_CW) {
     update_az_variable_outputs(normal_az_speed_voltage);
-    rotator(ACTIVATE, CW);
+    rotator(ACTIVATE, CW, 3);
     az_state = NORMAL_CW;
   }
 
   if (az_state == INITIALIZE_NORMAL_CCW) {
     update_az_variable_outputs(normal_az_speed_voltage);
-    rotator(ACTIVATE, CCW);
+    rotator(ACTIVATE, CCW, 4);
     az_state = NORMAL_CCW;
   }
 
   if (az_state == INITIALIZE_SLOW_START_CW) {
     update_az_variable_outputs(AZ_SLOW_START_STARTING_PWM);
-    rotator(ACTIVATE, CW);
+    rotator(ACTIVATE, CW, 5);
     az_slowstart_start_time = millis();
     az_last_step_time = 0;
     az_slow_start_step = 0;
@@ -10842,7 +10845,7 @@ void service_rotation(){
 
   if (az_state == INITIALIZE_SLOW_START_CCW) {
     update_az_variable_outputs(AZ_SLOW_START_STARTING_PWM);
-    rotator(ACTIVATE, CCW);
+    rotator(ACTIVATE, CCW, 6);
     az_slowstart_start_time = millis();
     az_last_step_time = 0;
     az_slow_start_step = 0;
@@ -10938,18 +10941,18 @@ void service_rotation(){
       #ifdef DEBUG_SERVICE_ROTATION
         debug.print("service_rotation: TIMED_SLOW_DOWN->IDLE");
       #endif // DEBUG_SERVICE_ROTATION
-      rotator(DEACTIVATE, CW);
-      rotator(DEACTIVATE, CCW);        
+      rotator(DEACTIVATE, CW, 7);
+      rotator(DEACTIVATE, CCW, 7);        
       if (az_direction_change_flag) {
         if (az_state == TIMED_SLOW_DOWN_CW) {
-          //rotator(ACTIVATE, CCW);
+          //rotator(ACTIVATE, CCW, 8);
           if (az_slowstart_active) {
             az_state = INITIALIZE_SLOW_START_CCW;
           } else { az_state = NORMAL_CCW; };
           az_direction_change_flag = 0;
         }
         if (az_state == TIMED_SLOW_DOWN_CCW) {
-          //rotator(ACTIVATE, CW);
+          //rotator(ACTIVATE, CW, 9);
           if (az_slowstart_active) {
             az_state = INITIALIZE_SLOW_START_CW;
           } else { az_state = NORMAL_CW; };
@@ -11039,8 +11042,8 @@ void service_rotation(){
         delay(50);
         read_azimuth(0);
         if ((abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE)) || ((raw_azimuth > target_raw_azimuth) && ((raw_azimuth - target_raw_azimuth) < ((AZIMUTH_TOLERANCE + 5))))) {
-          rotator(DEACTIVATE, CW);
-          rotator(DEACTIVATE, CCW);
+          rotator(DEACTIVATE, CW, 10);
+          rotator(DEACTIVATE, CCW, 10);
           az_state = IDLE;
           az_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
@@ -11072,8 +11075,8 @@ void service_rotation(){
         delay(50);
         read_azimuth(0);
         if ((abs(raw_azimuth - target_raw_azimuth) < (AZIMUTH_TOLERANCE)) || ((raw_azimuth < target_raw_azimuth) && ((target_raw_azimuth - raw_azimuth) < ((AZIMUTH_TOLERANCE + 5))))) {
-          rotator(DEACTIVATE, CW);
-          rotator(DEACTIVATE, CCW);
+          rotator(DEACTIVATE, CW, 11);
+          rotator(DEACTIVATE, CCW, 11);
           az_state = IDLE;
           az_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
@@ -11108,19 +11111,19 @@ void service_rotation(){
   #ifdef FEATURE_ELEVATION_CONTROL
   if (el_state == INITIALIZE_NORMAL_UP) {
     update_el_variable_outputs(normal_el_speed_voltage);
-    rotator(ACTIVATE, UP);
+    rotator(ACTIVATE, UP, 12);
     el_state = NORMAL_UP;
   }
 
   if (el_state == INITIALIZE_NORMAL_DOWN) {
     update_el_variable_outputs(normal_el_speed_voltage);
-    rotator(ACTIVATE, DOWN);
+    rotator(ACTIVATE, DOWN, 13);
     el_state = NORMAL_DOWN;
   }
 
   if (el_state == INITIALIZE_SLOW_START_UP) {
     update_el_variable_outputs(EL_SLOW_START_STARTING_PWM);
-    rotator(ACTIVATE, UP);
+    rotator(ACTIVATE, UP, 14);
     el_slowstart_start_time = millis();
     el_last_step_time = 0;
     el_slow_start_step = 0;
@@ -11132,7 +11135,7 @@ void service_rotation(){
 
   if (el_state == INITIALIZE_SLOW_START_DOWN) {
     update_el_variable_outputs(EL_SLOW_START_STARTING_PWM);
-    rotator(ACTIVATE, DOWN);
+    rotator(ACTIVATE, DOWN, 15);
     el_slowstart_start_time = millis();
     el_last_step_time = 0;
     el_slow_start_step = 0;
@@ -11226,8 +11229,8 @@ void service_rotation(){
       #ifdef DEBUG_SERVICE_ROTATION
       debug.print("service_rotation: TIMED_SLOW_DOWN->IDLE");
       #endif // DEBUG_SERVICE_ROTATION
-      rotator(DEACTIVATE, UP);
-      rotator(DEACTIVATE, DOWN);
+      rotator(DEACTIVATE, UP, 16);
+      rotator(DEACTIVATE, DOWN, 16);
       if (el_direction_change_flag) {
         if (el_state == TIMED_SLOW_DOWN_UP) {
           if (el_slowstart_active) {
@@ -11327,8 +11330,8 @@ void service_rotation(){
         #endif //OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
         read_elevation(0);
         if ((abs(elevation - target_elevation) < (ELEVATION_TOLERANCE)) || ((elevation > target_elevation) && ((elevation - target_elevation) < ((ELEVATION_TOLERANCE + 5))))) {
-          rotator(DEACTIVATE, UP);
-          rotator(DEACTIVATE, DOWN);
+          rotator(DEACTIVATE, UP, 17);
+          rotator(DEACTIVATE, DOWN, 17);
           el_state = IDLE;
           el_request_queue_state = NONE;
             #ifdef DEBUG_SERVICE_ROTATION
@@ -11357,8 +11360,8 @@ void service_rotation(){
         #endif //OPTION_NO_ELEVATION_CHECK_TARGET_DELAY
         read_elevation(0);
         if ((abs(elevation - target_elevation) <= (ELEVATION_TOLERANCE)) || ((elevation < target_elevation) && ((target_elevation - elevation) < ((ELEVATION_TOLERANCE + 5))))) {
-          rotator(DEACTIVATE, UP);
-          rotator(DEACTIVATE, DOWN);
+          rotator(DEACTIVATE, UP, 18);
+          rotator(DEACTIVATE, DOWN, 18);
           el_state = IDLE;
           el_request_queue_state = NONE;
           #ifdef DEBUG_SERVICE_ROTATION
@@ -11433,8 +11436,8 @@ void service_request_queue(){
         if (az_state != IDLE) {
           if (az_slowdown_active) {
             if ((az_state == TIMED_SLOW_DOWN_CW) || (az_state == TIMED_SLOW_DOWN_CCW) || (az_state == SLOW_DOWN_CW) || (az_state == SLOW_DOWN_CCW)) {  // if we're already in timed slow down and we get another stop, do a hard stop
-              rotator(DEACTIVATE, CW);
-              rotator(DEACTIVATE, CCW);
+              rotator(DEACTIVATE, CW, 19);
+              rotator(DEACTIVATE, CCW, 19);
               az_state = IDLE;
               az_request_queue_state = NONE;
             }
@@ -11450,8 +11453,8 @@ void service_request_queue(){
             }
 
           } else {
-            rotator(DEACTIVATE, CW);
-            rotator(DEACTIVATE, CCW);
+            rotator(DEACTIVATE, CW, 20);
+            rotator(DEACTIVATE, CCW, 20);
             az_state = IDLE;
             az_request_queue_state = NONE;
           }
@@ -11568,8 +11571,8 @@ void service_request_queue(){
                 debug.print(az_request_parm);
                 debug.println("");
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
-            rotator(DEACTIVATE, CW);
-            rotator(DEACTIVATE, CCW);
+            rotator(DEACTIVATE, CW, 21);
+            rotator(DEACTIVATE, CCW, 21);
             az_state = IDLE;
             az_request_queue_state = NONE;         
             return;
@@ -11583,7 +11586,7 @@ void service_request_queue(){
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
           } else {
             if ((az_state != INITIALIZE_SLOW_START_CW) && (az_state != SLOW_START_CW) && (az_state != NORMAL_CW)) { // if we're already rotating CW, don't do anything
-              // rotator(ACTIVATE,CW);
+              // rotator(ACTIVATE,CW, 22);
               if (az_slowstart_active) {
                 az_state = INITIALIZE_SLOW_START_CW;
               } else { az_state = INITIALIZE_NORMAL_CW; };
@@ -11598,7 +11601,7 @@ void service_request_queue(){
             #endif // DEBUG_SERVICE_REQUEST_QUEUE
           } else {
             if ((az_state != INITIALIZE_SLOW_START_CCW) && (az_state != SLOW_START_CCW) && (az_state != NORMAL_CCW)) { // if we're already rotating CCW, don't do anything
-              // rotator(ACTIVATE,CCW);
+              // rotator(ACTIVATE,CCW, 23);
               if (az_slowstart_active) {
                 az_state = INITIALIZE_SLOW_START_CCW;
               } else { az_state = INITIALIZE_NORMAL_CCW; };
@@ -11692,7 +11695,7 @@ void service_request_queue(){
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
           if ((az_state != SLOW_START_CW) && (az_state != NORMAL_CW)) {
-            // rotator(ACTIVATE,CW);
+            // rotator(ACTIVATE,CW, 24);
             if (az_slowstart_active) {
               az_state = INITIALIZE_SLOW_START_CW;
             } else { 
@@ -11724,7 +11727,7 @@ void service_request_queue(){
           #endif // DEBUG_SERVICE_REQUEST_QUEUE
         } else {
           if ((az_state != SLOW_START_CCW) && (az_state != NORMAL_CCW)) {
-            // rotator(ACTIVATE,CCW);
+            // rotator(ACTIVATE,CCW, 25);
             if (az_slowstart_active) {
               az_state = INITIALIZE_SLOW_START_CCW;
             } else { az_state = INITIALIZE_NORMAL_CCW; };
@@ -11747,8 +11750,8 @@ void service_request_queue(){
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
-        rotator(DEACTIVATE, CW);
-        rotator(DEACTIVATE, CCW);
+        rotator(DEACTIVATE, CW, 26);
+        rotator(DEACTIVATE, CCW, 26);
         az_state = IDLE;
         az_request_queue_state = NONE;
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
@@ -11940,8 +11943,8 @@ void service_request_queue(){
         if (el_state != IDLE) {
           if (el_slowdown_active) {
             if ((el_state == TIMED_SLOW_DOWN_UP) || (el_state == TIMED_SLOW_DOWN_DOWN) || (el_state == SLOW_DOWN_UP) || (el_state == SLOW_DOWN_DOWN)) {  // if we're already in timed slow down and we get another stop, do a hard stop
-              rotator(DEACTIVATE, UP);
-              rotator(DEACTIVATE, DOWN);
+              rotator(DEACTIVATE, UP, 27);
+              rotator(DEACTIVATE, DOWN, 27);
               el_state = IDLE;
               el_request_queue_state = NONE;
             }
@@ -11956,8 +11959,8 @@ void service_request_queue(){
               el_last_rotate_initiation = millis();
             }
           } else {
-            rotator(DEACTIVATE, UP);
-            rotator(DEACTIVATE, DOWN);
+            rotator(DEACTIVATE, UP, 28);
+            rotator(DEACTIVATE, DOWN, 28);
             el_state = IDLE;
             el_request_queue_state = NONE;
           }
@@ -11981,8 +11984,8 @@ void service_request_queue(){
         #ifdef FEATURE_PARK
           deactivate_park();
         #endif // FEATURE_PARK
-        rotator(DEACTIVATE, UP);
-        rotator(DEACTIVATE, DOWN);
+        rotator(DEACTIVATE, UP, 29);
+        rotator(DEACTIVATE, DOWN, 29);
         el_state = IDLE;
         el_request_queue_state = NONE;
         #ifdef DEBUG_SERVICE_REQUEST_QUEUE
