@@ -31,8 +31,7 @@
 #define button_stop 0            // connect to momentary switch (ground on button press) for preset stop (set to 0 to disable or for preset automatic start)
 #define rotation_indication_pin 0
 #define blink_led 0
-#define az_stepper_motor_pulse 44 //0
-#define az_stepper_motor_direction 0
+#define az_stepper_motor_pulse 0
 #define az_rotation_stall_detected 0
 
 
