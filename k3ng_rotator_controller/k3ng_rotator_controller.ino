@@ -998,6 +998,13 @@
         Cleaned up code and pins files to remove az_stepper_motor_direction and el_stepper_motor_direction and throw a compiler error if either are defined.  (Use the rotate_* pins instead.)
         Reference: https://github.com/k3ng/k3ng_rotator_controller/commit/b36c5a1d4c2cf21fe342d5c07ded6093adf71503 
 
+      2021.10.06.01  
+        FEATURE_STEPPER_MOTOR and Variable frequency outputs (rotate_cw_freq, rotate_ccw_freq, rotate_up_freq, rotate_down_freq):
+          Clarified in settings files minimum and maximum values for AZ_VARIABLE_FREQ_OUTPUT_LOW, AZ_VARIABLE_FREQ_OUTPUT_HIGH, EL_VARIABLE_FREQ_OUTPUT_LOW, EL_VARIABLE_FREQ_OUTPUT_HIGH
+        FEATURE_STEPPER_MOTOR - added code to limit high frequency value to 2000 hertz
+        Big thanks to Fred, VK2WS!
+        DEVELOPMENT_TIMELIB - working on recoding clock and time functions to the TimeLib library, in preparation for supporting Teensy RTC
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1175,6 +1182,12 @@
   #else
     #include <TimerFive.h>
   #endif
+#endif
+
+#if defined(DEVELOPMENT_TIMELIB)
+#if defined(FEATURE_CLOCK)
+  #include <TimeLib.h>
+#endif
 #endif
 
 
@@ -1424,6 +1437,7 @@ struct config_t {
   byte sun_tracking_active = 0;
 #endif // FEATURE_SUN_TRACKING
 
+#if !defined(DEVELOPMENT_TIMELIB)
 #ifdef FEATURE_CLOCK
 
   unsigned long millis_at_last_calibration = 0;
@@ -1440,6 +1454,7 @@ struct config_t {
   tm current_clock, local_clock, temp_datetime, set_clock;
 
 #endif // FEATURE_CLOCK
+#endif // !defined(DEVELOPMENT_TIMELIB)
 
 #if defined(FEATURE_GPS) || defined(FEATURE_RTC) || defined(FEATURE_CLOCK)
   byte clock_status = FREE_RUNNING;
@@ -5472,6 +5487,7 @@ TODO:
 
 
 // Clock
+    #if !defined(DEVELOPMENT_TIMELIB)
     #if defined(FEATURE_CLOCK)
       if (local_clock.seconds != last_clock_seconds){
         last_clock_seconds = current_clock.seconds;
@@ -5505,6 +5521,43 @@ TODO:
         sendNextionCommand(workstring1);         
       }
     #endif //FEATURE_CLOCK
+    #else // !defined(DEVELOPMENT_TIMELIB)
+    #if defined(FEATURE_CLOCK)
+      if (second() != last_clock_seconds){
+        last_clock_seconds = second();
+        strcpy_P(workstring1,(const char*) F("vClk.txt=\""));
+        #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+          if (hour() < 10) {
+            strcat(workstring1, "0");
+            dtostrf(hour(), 0, 0, workstring2);
+            strcat(workstring1,workstring2); 
+          } else { 
+            dtostrf(hour(), 0, 0, workstring2);
+            strcat(workstring1,workstring2);
+          }    
+        #else    
+          dtostrf(hour(), 0, 0, workstring2);
+          strcat(workstring1,workstring2);
+        #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+        strcat(workstring1,":");
+        if (minute() < 10) {
+          strcat(workstring1, "0");
+        }
+        dtostrf(minute(), 0, 0, workstring2);
+        strcat(workstring1,workstring2);
+        strcat(workstring1,":");
+        if (second() < 10) {
+          strcat(workstring1, "0");
+        }
+        dtostrf(second(), 0, 0, workstring2);
+        strcat(workstring1,workstring2);
+        strcat(workstring1,"\"");
+        sendNextionCommand(workstring1);         
+      }
+    #endif //FEATURE_CLOCK
+
+
+    #endif // !defined(DEVELOPMENT_TIMELIB)
 
     // GPS
     #if defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
@@ -6297,7 +6350,7 @@ void update_lcd_display(){
     static int last_clock_seconds = 0;
 
     if (!row_override[LCD_HHMMSS_CLOCK_ROW]){
-      //update_time();
+      #if !defined(DEVELOPMENT_TIMELIB)
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock.hours < 10) {
           strcpy(workstring, "0");
@@ -6334,13 +6387,54 @@ void update_lcd_display(){
       }    
       if (last_clock_seconds != current_clock.seconds) {force_display_update_now = 1;}
       last_clock_seconds = current_clock.seconds;
+
+      #else //DEVELOPMENT_TIMELIB-------------------------
+
+      #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+        if (hour() < 10) {
+          strcpy(workstring, "0");
+          dtostrf(hour(), 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(hour(), 0, 0, workstring2);
+          strcpy(workstring,workstring2);
+        }    
+      #else    
+        dtostrf(hour(), 0, 0, workstring2);
+        strcpy(workstring,workstring2);
+      #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+      strcat(workstring,":");
+      if (minute() < 10) {
+        strcat(workstring, "0");
+      }
+      dtostrf(minute(), 0, 0, workstring2);
+      strcat(workstring,workstring2);
+      strcat(workstring,":");
+      if (second() < 10) {
+        strcat(workstring, "0");
+      }
+      dtostrf(second(), 0, 0, workstring2);
+      strcat(workstring,workstring2);
+      if (LCD_HHMMSS_CLOCK_POSITION == LEFT){
+        k3ngdisplay.print_left_fixed_field_size(workstring,LCD_HHMMSS_CLOCK_ROW-1,8);
+      } 
+      if (LCD_HHMMSS_CLOCK_POSITION == RIGHT){
+        k3ngdisplay.print_right_fixed_field_size(workstring,LCD_HHMMSS_CLOCK_ROW-1,8);
+      }
+      if (LCD_HHMMSS_CLOCK_POSITION == CENTER){
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HHMMSS_CLOCK_ROW-1,8);
+      }    
+      if (last_clock_seconds != second()) {force_display_update_now = 1;}
+      last_clock_seconds = second();
+
+      #endif //DEVELOPMENT_TIMELIB
     }
   #endif //defined(OPTION_DISPLAY_HHMMSS_CLOCK) && defined(FEATURE_CLOCK)
 
   // OPTION_DISPLAY_HHMM_CLOCK **************************************************************************************************
   #if defined(OPTION_DISPLAY_HHMM_CLOCK) && defined(FEATURE_CLOCK)
     if (!row_override[LCD_HHMM_CLOCK_ROW]){
-      //update_time();
+      #if !defined(DEVELOPMENT_TIMELIB)
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock.hours < 10) {
           strcpy(workstring, "0");
@@ -6369,6 +6463,39 @@ void update_lcd_display(){
       if (LCD_HHMM_CLOCK_POSITION == CENTER){
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
       } 
+
+      #else //#if !defined(DEVELOPMENT_TIMELIB)-------------------
+
+      #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+        if (hour() < 10) {
+          strcpy(workstring, "0");
+          dtostrf(hour() 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(hour(), 0, 0, workstring2);
+          strcpy(workstring,workstring2);
+        }   
+      #else    
+        dtostrf(hour(), 0, 0, workstring2);
+        strcpy(workstring,workstring2);
+      #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+      strcat(workstring,":");
+      if (minute() < 10) {
+        strcat(workstring, "0");
+      }
+      dtostrf(minute(), 0, 0, workstring2);
+      strcat(workstring,workstring2);
+      if (LCD_HHMM_CLOCK_POSITION == LEFT){
+        k3ngdisplay.print_left_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
+      }
+      if (LCD_HHMM_CLOCK_POSITION == RIGHT){
+        k3ngdisplay.print_right_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
+      }
+      if (LCD_HHMM_CLOCK_POSITION == CENTER){
+        k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
+      }
+
+      #endif //#if !defined(DEVELOPMENT_TIMELIB)
     }   
   #endif //defined(OPTION_DISPLAY_HHMM_CLOCK) && defined(FEATURE_CLOCK)
 
@@ -6642,7 +6769,9 @@ void update_lcd_display(){
       last_hhmm_clock_maidenhead_switch_time = millis();
     }
     if (displaying_clock){
-      //update_time();
+
+      #if !defined(DEVELOPMENT_TIMELIB)
+
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock.hours < 10) {
@@ -6663,6 +6792,32 @@ void update_lcd_display(){
       }
       dtostrf(local_clock.minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
+   
+      #else //DEVELOPMENT_TIMELIB-------------
+
+      strcpy(workstring, "");
+      #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+        if (hour() < 10) {
+          strcpy(workstring, "0");
+          dtostrf(hour(), 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(hour(), 0, 0, workstring2);
+          strcpy(workstring,workstring2);
+        }    
+      #else          
+      dtostrf(hour(), 0, 0, workstring2);
+      strcpy(workstring,workstring2);
+      #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+      strcat(workstring,":");
+      if (minute() < 10) {
+        strcat(workstring, "0");
+      }
+      dtostrf(minute(), 0, 0, workstring2);
+      strcat(workstring,workstring2);
+
+      #endif //DEVELOPMENT_TIMELIB
+
       switch (LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION){
         case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
         case RIGHT: k3ngdisplay.print_right_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
@@ -6684,7 +6839,8 @@ void update_lcd_display(){
     static int last_clock_seconds_clock_and_maidenhead = 0;
 
     if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
-      //update_time();
+      #if !defined(DEVELOPMENT_TIMELIB)
+
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock.hours < 10) {
           strcpy(workstring, "0");
@@ -6719,6 +6875,48 @@ void update_lcd_display(){
       }
       if (last_clock_seconds_clock_and_maidenhead != local_clock.seconds) {force_display_update_now = 1;}
       last_clock_seconds_clock_and_maidenhead = local_clock.seconds;
+
+      #else //#if !defined(DEVELOPMENT_TIMELIB)---------------
+
+
+      #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+        if (hour() < 10) {
+          strcpy(workstring, "0");
+          dtostrf(hour(), 0, 0, workstring2);
+          strcat(workstring,workstring2); 
+        } else { 
+          dtostrf(hour(), 0, 0, workstring2);
+          strcpy(workstring,workstring2);
+        }    
+      #else    
+        dtostrf(hour(), 0, 0, workstring2);
+        strcpy(workstring,workstring2);
+      #endif //OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
+      strcat(workstring,":");
+      if (hour() < 10) {
+        strcat(workstring, "0");
+      }
+      dtostrf(minute(), 0, 0, workstring2);
+      strcat(workstring,workstring2);
+      strcat(workstring,":");
+      if (second() < 10) {
+        strcat(workstring, "0");
+      }
+      dtostrf(second(), 0, 0, workstring2);
+      strcat(workstring,workstring2);
+      strcat(workstring," ");
+      strcat(workstring,coordinates_to_maidenhead(latitude,longitude));
+      switch(LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_POSITION){
+        case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
+        case RIGHT: k3ngdisplay.print_right_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
+        case CENTER: k3ngdisplay.print_center_fixed_field_size(workstring,LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW-1,LCD_COLUMNS); break;
+      }
+      if (last_clock_seconds_clock_and_maidenhead != second()) {force_display_update_now = 1;}
+      last_clock_seconds_clock_and_maidenhead = second();
+
+
+      #endif //#if !defined(DEVELOPMENT_TIMELIB)
+
     }
 
   #endif //defined(OPTION_DISPLAY_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD) && defined(FEATURE_CLOCK)
@@ -13703,7 +13901,7 @@ char * timezone_modified_clock_string(){
   char temp_string[16] = "";
 
 
-  dtostrf(local_clock.year, 0, 0, temp_string);
+  dtostrf(local_clock.year, 0, 0, temp_string);  //mmmmmmmmmm
   strcpy(return_string, temp_string);
   strcat(return_string, "-");
   if (local_clock.month < 10) {
@@ -18783,6 +18981,8 @@ void service_stepper_motor_pulse_pins(){
 #ifdef FEATURE_STEPPER_MOTOR
 void set_az_stepper_freq(unsigned int frequency){
 
+  if (frequency > 2000) {frequency = 2000;}
+
   if (frequency > 0) {
     az_stepper_freq_count = 2000 / frequency;
   } else {
@@ -18804,6 +19004,7 @@ void set_az_stepper_freq(unsigned int frequency){
 #if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR)
 void set_el_stepper_freq(unsigned int frequency){
 
+  if (frequency > 2000) {frequency = 20000;}
 
   if (frequency > 0) {
     el_stepper_freq_count = 2000 / frequency;

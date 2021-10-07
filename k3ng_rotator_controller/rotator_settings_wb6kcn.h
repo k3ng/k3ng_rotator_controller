@@ -77,12 +77,11 @@ You can tweak these, but read the online documentation!
 
 #define TIMED_SLOW_DOWN_TIME 500
 
-//Variable frequency output settings - LOWEST FREQUENCY IS 31 HERTZ DUE TO ARDUINO tone() FUNCTION LIMITATIONS!
-// (Except when used with FEATURE_STEPPER_MOTOR and FEATURE_STEPPER_MOTOR_EXPERIMENTAL_CODE)
-#define AZ_VARIABLE_FREQ_OUTPUT_LOW   5 //32     // Frequency in hertz of minimum speed
-#define AZ_VARIABLE_FREQ_OUTPUT_HIGH 1000 //100    // Frequency in hertz of maximum speed
-#define EL_VARIABLE_FREQ_OUTPUT_LOW   5 //32     // Frequency in hertz of minimum speed
-#define EL_VARIABLE_FREQ_OUTPUT_HIGH 500    // Frequency in hertz of maximum speed
+// Variable frequency output settings and FEATURE_STEPPER_MOTOR settings
+#define AZ_VARIABLE_FREQ_OUTPUT_LOW   31    // Frequency in hertz of minimum speed (rotate_cw_freq, rotate_ccw_freq minimum value: 31 !)
+#define AZ_VARIABLE_FREQ_OUTPUT_HIGH 1000   // Frequency in hertz of maximum speed (FEATURE_STEPPER_MOTOR maximum value: 2000 !)
+#define EL_VARIABLE_FREQ_OUTPUT_LOW   31    // Frequency in hertz of minimum speed (rotate_up_freq, rotate_down_freq minimum value: 31 !)
+#define EL_VARIABLE_FREQ_OUTPUT_HIGH 1000   // Frequency in hertz of maximum speed (FEATURE_STEPPER_MOTOR maximum value: 2000 !)
 
 // Settings for OPTION_AZ_MANUAL_ROTATE_LIMITS
 #define AZ_MANUAL_ROTATE_CCW_LIMIT 179   // if using a rotator that starts at 180 degrees, set this to something like 185
