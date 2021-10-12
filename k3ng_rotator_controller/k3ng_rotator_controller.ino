@@ -1009,6 +1009,13 @@
         DEVELOPMENT_TIMELIB - Have TimeLib integrated with all time-related functionality, including FEATURE_CLOCK, FEATURE_GPS, FEATURE_MOON_TRACKING, FEATURE_SUN_TRACKING, FEATURE_RTC_DS1307, FEATURE_RTC_PCF8583
         Place a define for DEVELOPMENT_TIMELIB in your rotator_features file to test
 
+      2021.10.12.01
+        FEATURE_STEPPER_MOTOR: Added several options to change maximum frequency supported.  (Not tested on hardware yet.)
+          OPTION_STEPPER_MOTOR_MAX_2_KHZ (enabled by default)
+          OPTION_STEPPER_MOTOR_MAX_5_KHZ
+          OPTION_STEPPER_MOTOR_MAX_10_KHZ
+          OPTION_STEPPER_MOTOR_MAX_20_KHZ
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1022,7 +1029,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.08.01"
+#define CODE_VERSION "2021.10.12.01"
 
 
 #include <avr/pgmspace.h>
@@ -1499,6 +1506,25 @@ struct config_t {
     volatile unsigned int el_stepper_freq_count = 0;
   #endif //FEATURE_ELEVATION_CONTROL
   volatile unsigned long service_stepper_motor_pulse_pins_count = 0;
+
+  #if defined(OPTION_STEPPER_MOTOR_MAX_20_KHZ)
+    #define STEPPER_MOTOR_INTERRUPT_US 25 // 25 us = 40 khz
+    #define STEPPER_MOTOR_MAX_FREQ 20000
+  #else
+    #if defined(OPTION_STEPPER_MOTOR_MAX_10_KHZ)
+      #define STEPPER_MOTOR_INTERRUPT_US 50 // 50 us = 20 khz
+      #define STEPPER_MOTOR_MAX_FREQ 10000
+    #else
+      #if defined(OPTION_STEPPER_MOTOR_MAX_5_KHZ)
+        #define STEPPER_MOTOR_INTERRUPT_US 100 // 100 us = 10 khz
+        #define STEPPER_MOTOR_MAX_FREQ 5000
+      #else // OPTION_STEPPER_MOTOR_MAX_2_KHZ
+        #define STEPPER_MOTOR_INTERRUPT_US 250 // 250 us = 4 khz
+        #define STEPPER_MOTOR_MAX_FREQ 2000
+      #endif  
+    #endif   
+  #endif
+
 #endif //FEATURE_STEPPER_MOTOR
 
 #ifdef FEATURE_AZIMUTH_CORRECTION
@@ -4608,7 +4634,7 @@ void request_transient_message(char* message,byte vSS_number,unsigned int messag
     #if defined(FEATURE_SUN_TRACKING)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SUN;  //256
     #endif
-    #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583)
+    #if defined(FEATURE_RTC_DS1307) || defined(FEATURE_RTC_PCF8583) || defined(FEATURE_RTC_TEENSY)
       temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_RTC;  //512
     #endif    
     #if defined(FEATURE_SATELLITE_TRACKING)
@@ -10338,10 +10364,10 @@ void initialize_interrupts(){
 
   #ifdef FEATURE_STEPPER_MOTOR
     #ifdef OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE
-      Timer1.initialize(250);  // 250 us = 4 khz rate
+      Timer1.initialize(STEPPER_MOTOR_INTERRUPT_US);
       Timer1.attachInterrupt(service_stepper_motor_pulse_pins);
     #else
-      Timer5.initialize(250);  // 250 us = 4 khz rate
+      Timer5.initialize(STEPPER_MOTOR_INTERRUPT_US);
       Timer5.attachInterrupt(service_stepper_motor_pulse_pins);  
     #endif
   #endif //FEATURE_STEPPER_MOTOR
@@ -14482,7 +14508,7 @@ void service_gps(){
         if ((millis() - last_rtc_gps_sync_time) >= ((unsigned long)SYNC_RTC_TO_GPS_SECONDS * 1000)) {
           rtc.adjust(DateTime(gps_year, gps_month, gps_day, gps_hours, gps_minutes, gps_seconds));
           #ifdef DEBUG_RTC
-            debug.println(F("service_gps: synced RTC"));
+            debug.println(F("service_gps: synced DS1307 RTC"));
           #endif // DEBUG_RTC
           last_rtc_gps_sync_time = millis();
         }
@@ -14499,12 +14525,30 @@ void service_gps(){
           rtc.second = gps_seconds;
           rtc.set_time();
           #ifdef DEBUG_RTC
-            debug.println("service_gps: synced RTC");
+            debug.println("service_gps: synced PCF8583 RTC");
           #endif // DEBUG_RTC
           last_rtc_gps_sync_time = millis();
         }
       #endif // defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_PCF8583)
 
+
+      #if defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_TEENSY)
+        static unsigned long last_rtc_gps_sync_time;
+        tmElements_t temp_tm;
+        if ((millis() - last_rtc_gps_sync_time) >= ((unsigned long)SYNC_RTC_TO_GPS_SECONDS * 1000)) {
+          temp_tm.Year = gps_year;
+          temp_tm.Month = gps_month;
+          temp_tm.Day = gps_day;
+          temp_tm.Hour  = gps_hours;
+          temp_tm.Minute = gps_minutes;
+          temp_tm.Second = gps_seconds;
+          Teensy3Clock.set(makeTime(temp_tm));
+          #ifdef DEBUG_RTC
+            debug.println("service_gps: synced Teensy RTC");
+          #endif // DEBUG_RTC
+          last_rtc_gps_sync_time = millis();
+        }
+      #endif // defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_TEENSY)
 
       //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_REMOTE_UNIT_SLAVE) 
         if (SYNC_COORDINATES_WITH_GPS) {
@@ -14621,6 +14665,10 @@ char * clock_status_string(){
 // --------------------------------------------------------------
 #ifdef FEATURE_RTC
 void service_rtc(){
+
+  // this service synchronizes the Arduino clock to the RTC periodically, unless GPS is available and has a fix
+
+  // if GPS is available and has a fix, the RTC is refreshed with the GPS time periodically by service_gps() if OPTION_SYNC_RTC_TO_GPS is enabled
 
   #ifdef DEBUG_LOOP
     control_port->println(F("service_rtc()"));
@@ -15026,7 +15074,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
       } else {
         temp_second = 0;
       }
-      if ( (temp_year > 2019) && (temp_year < 2070) &&
+      if ( (temp_year > 2020) && (temp_year < 2070) &&
            (temp_month > 0) && (temp_month < 13) &&
            (temp_day > 0) && (temp_day < 32) &&
            (temp_hour >= 0) && (temp_hour < 24) &&
@@ -15049,20 +15097,50 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           satellite_array_data_ready = 0;
         #endif
 
+        // Update the Realtime Clock if we have one
+
         #if defined(FEATURE_RTC_DS1307)
-        rtc.adjust(DateTime(temp_year, temp_month, temp_day, temp_hour, temp_minute, temp_second));
+          #if defined(DEBUG_RTC)
+            debug.println("process_backslash_command: setting DS1307 RTC time");
+          #endif
+          rtc.adjust(DateTime(temp_year, temp_month, temp_day, temp_hour, temp_minute, temp_second));
+          #if defined(DEBUG_RTC)
+            debug.println("process_backslash_command: set DS1307 RTC time");
+          #endif          
         #endif // defined(FEATURE_RTC_DS1307)
         #if defined(FEATURE_RTC_PCF8583)
-        rtc.year = temp_year;
-        rtc.month = temp_month;
-        rtc.day = temp_day;
-        rtc.hour  = temp_hour;
-        rtc.minute = temp_minute;
-        rtc.second = temp_second;
-        rtc.set_time();
+          #if defined(DEBUG_RTC)
+            debug.println("process_backslash_command: setting PCF8583 RTC time");
+          #endif        
+          rtc.year = temp_year;
+          rtc.month = temp_month;
+          rtc.day = temp_day;
+          rtc.hour  = temp_hour;
+          rtc.minute = temp_minute;
+          rtc.second = temp_second;
+          rtc.set_time();
+          #if defined(DEBUG_RTC)
+            debug.println("process_backslash_command: set PCF8583 RTC time");
+          #endif             
         #endif // defined(FEATURE_RTC_PCF8583)
+        #if defined(FEATURE_RTC_TEENSY)
+          #if defined(DEBUG_RTC)
+            debug.println("process_backslash_command: setting Teensy RTC time");
+          #endif        
+          tmElements_t temp_t;
+          temp_t.Year = temp_year - 1970;
+          temp_t.Month = temp_month;
+          temp_t.Day = temp_day;
+          temp_t.Hour = temp_hour;
+          temp_t.Minute = temp_minute;
+          temp_t.Second = temp_second;
+          Teensy3Clock.set(makeTime(temp_t));
+          #if defined(DEBUG_RTC)
+            debug.println("process_backslash_command: set Teensy RTC time");
+          #endif             
+        #endif //FEATURE_RTC_TEENSY
 
-        #if (!defined(FEATURE_RTC_DS1307) && !defined(FEATURE_RTC_PCF8583))
+        #if (!defined(FEATURE_RTC_DS1307) && !defined(FEATURE_RTC_PCF8583) && !defined(FEATURE_RTC_TEENSY))
           strcpy(return_string, "Clock set to ");
           #if !defined(DEVELOPMENT_TIMELIB)
           update_time();
@@ -19250,10 +19328,10 @@ void service_stepper_motor_pulse_pins(){
 #ifdef FEATURE_STEPPER_MOTOR
 void set_az_stepper_freq(unsigned int frequency){
 
-  if (frequency > 2000) {frequency = 2000;}
+  if (frequency > STEPPER_MOTOR_MAX_FREQ) {frequency = STEPPER_MOTOR_MAX_FREQ;}
 
   if (frequency > 0) {
-    az_stepper_freq_count = 2000 / frequency;
+    az_stepper_freq_count = STEPPER_MOTOR_MAX_FREQ / frequency;
   } else {
     az_stepper_freq_count = 0;
   }
@@ -19273,10 +19351,10 @@ void set_az_stepper_freq(unsigned int frequency){
 #if defined(FEATURE_ELEVATION_CONTROL) && defined(FEATURE_STEPPER_MOTOR)
 void set_el_stepper_freq(unsigned int frequency){
 
-  if (frequency > 2000) {frequency = 20000;}
+  if (frequency > STEPPER_MOTOR_MAX_FREQ) {frequency = STEPPER_MOTOR_MAX_FREQ;}
 
   if (frequency > 0) {
-    el_stepper_freq_count = 2000 / frequency;
+    el_stepper_freq_count = STEPPER_MOTOR_MAX_FREQ / frequency;
   } else {
     el_stepper_freq_count = 0;
   }

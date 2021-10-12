@@ -12,7 +12,7 @@
 
 */
 
-// #define DEVELOPMENT_TIMELIB
+#define DEVELOPMENT_TIMELIB
 
 #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
@@ -25,8 +25,9 @@
 #define FEATURE_GPS
 #define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
+// #define FEATURE_RTC_TEENSY // Requires DEVELOPMENT_TIMELIB at the moment
 // #define FEATURE_ETHERNET
-// #define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
+#define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
@@ -189,6 +190,12 @@
 // #define OPTION_MORE_SERIAL_CHECKS
 #define OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE
 // #define OPTION_ALLOW_ROTATIONAL_AND_CONFIGURATION_CMDS_AT_BOOT_UP // if disabled, rotational and configuration commands will be ignored on the serial port for the first 10 second after boot up
+
+#define OPTION_STEPPER_MOTOR_MAX_2_KHZ
+// #define OPTION_STEPPER_MOTOR_MAX_5_KHZ
+// #define OPTION_STEPPER_MOTOR_MAX_10_KHZ
+// #define OPTION_STEPPER_MOTOR_MAX_20_KHZ
+
 
 #define OPTION_CLI_VT100
 
