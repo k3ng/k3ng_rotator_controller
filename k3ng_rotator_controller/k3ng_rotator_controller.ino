@@ -1015,6 +1015,9 @@
           OPTION_STEPPER_MOTOR_MAX_5_KHZ
           OPTION_STEPPER_MOTOR_MAX_10_KHZ
           OPTION_STEPPER_MOTOR_MAX_20_KHZ
+  
+      2021.10.13.01
+        FEATURE_STEPPER_MOTOR: Added OPTION_STEPPER_MOTOR_MAX_50_KHZ
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -1029,7 +1032,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.12.01"
+#define CODE_VERSION "2021.10.13.01"
 
 
 #include <avr/pgmspace.h>
@@ -1507,22 +1510,27 @@ struct config_t {
   #endif //FEATURE_ELEVATION_CONTROL
   volatile unsigned long service_stepper_motor_pulse_pins_count = 0;
 
-  #if defined(OPTION_STEPPER_MOTOR_MAX_20_KHZ)
-    #define STEPPER_MOTOR_INTERRUPT_US 25 // 25 us = 40 khz
-    #define STEPPER_MOTOR_MAX_FREQ 20000
+  #if defined(OPTION_STEPPER_MOTOR_MAX_50_KHZ)
+    #define STEPPER_MOTOR_INTERRUPT_US 10 // 10 us = 100 khz
+    #define STEPPER_MOTOR_MAX_FREQ 50000
   #else
-    #if defined(OPTION_STEPPER_MOTOR_MAX_10_KHZ)
-      #define STEPPER_MOTOR_INTERRUPT_US 50 // 50 us = 20 khz
-      #define STEPPER_MOTOR_MAX_FREQ 10000
+    #if defined(OPTION_STEPPER_MOTOR_MAX_20_KHZ)
+      #define STEPPER_MOTOR_INTERRUPT_US 25 // 25 us = 40 khz
+      #define STEPPER_MOTOR_MAX_FREQ 20000
     #else
-      #if defined(OPTION_STEPPER_MOTOR_MAX_5_KHZ)
-        #define STEPPER_MOTOR_INTERRUPT_US 100 // 100 us = 10 khz
-        #define STEPPER_MOTOR_MAX_FREQ 5000
-      #else // OPTION_STEPPER_MOTOR_MAX_2_KHZ
-        #define STEPPER_MOTOR_INTERRUPT_US 250 // 250 us = 4 khz
-        #define STEPPER_MOTOR_MAX_FREQ 2000
-      #endif  
-    #endif   
+      #if defined(OPTION_STEPPER_MOTOR_MAX_10_KHZ)
+        #define STEPPER_MOTOR_INTERRUPT_US 50 // 50 us = 20 khz
+        #define STEPPER_MOTOR_MAX_FREQ 10000
+      #else
+        #if defined(OPTION_STEPPER_MOTOR_MAX_5_KHZ)
+          #define STEPPER_MOTOR_INTERRUPT_US 100 // 100 us = 10 khz
+          #define STEPPER_MOTOR_MAX_FREQ 5000
+        #else // OPTION_STEPPER_MOTOR_MAX_2_KHZ
+          #define STEPPER_MOTOR_INTERRUPT_US 250 // 250 us = 4 khz
+          #define STEPPER_MOTOR_MAX_FREQ 2000
+        #endif  
+      #endif   
+    #endif
   #endif
 
 #endif //FEATURE_STEPPER_MOTOR
