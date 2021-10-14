@@ -48,7 +48,7 @@
  ***************************************************************************************************************
 
  
-    Copyright (C) 2020  Anthony Good, K3NG
+    Copyright (C) 2021  Anthony Good, K3NG
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1026,7 +1026,11 @@
         FEATURE_STEPPER_MOTOR
           Removed OPTION_STEPPER_MOTOR_MAX_50_KHZ.  Too much overhead from interrupts.
           Implemented faster digital writes using digitalWriteFast library (library now included in Github)
-          Added OPTION_STEPPER_DO_NOT_USE_DIGITALWRITEFAST_LIBRARY to disable digitalWriteFast library use 
+          Added OPTION_STEPPER_DO_NOT_USE_DIGITALWRITEFAST_LIBRARY to disable digitalWriteFast library use
+
+      2021.10.14.02
+        Added OPTION_CLI_VT100 - VT100 terminal emulation; currently used only by satellite tracking status command \|
+        Updated hardcoded default AO7TEST TLE
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -1041,7 +1045,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.14.01"
+#define CODE_VERSION "2021.10.14.02"
 
 
 #include <avr/pgmspace.h>
@@ -1050,8 +1054,11 @@
 
 #include "rotator_hardware.h"
 
-#ifdef HARDWARE_WB6KCN
+#ifdef HARDWARE_WB6KCN_K3NG
   #include "rotator_features_wb6kcn.h"
+#endif
+#ifdef HARDWARE_WB6KCN
+  #include "rotator_features_wb6kcn_k3ng.h"
 #endif
 #ifdef HARDWARE_M0UPU
   #include "rotator_features_m0upu.h"
@@ -1169,6 +1176,9 @@
 #ifdef HARDWARE_M0UPU
   #include "rotator_pins_m0upu.h"
 #endif
+#ifdef HARDWARE_WB6KCN_K3NG
+  #include "rotator_pins_wb6kcn_k3ng.h"
+#endif
 #ifdef HARDWARE_WB6KCN
   #include "rotator_pins_wb6kcn.h"
 #endif
@@ -1183,8 +1193,9 @@
   #error "az_stepper_motor_direction and el_stepper_motor_direction pins are not supported anymore.  Use rotate_* pins instead."
 #endif
 
-#ifdef HARDWARE_EA4TX_ARS_USB
-  #include "rotator_settings_ea4tx_ars_usb.h"
+
+#ifdef HARDWARE_WB6KCN_K3NG
+  #include "rotator_settings_wb6kcn_k3ng.h"
 #endif
 #ifdef HARDWARE_WB6KCN
   #include "rotator_settings_wb6kcn.h"
@@ -3974,7 +3985,7 @@ void check_serial(){
 
                 debug.print("\tGPS: satellites:");
                 gps_chars = gps.satellites();
-                //if (gps_chars == 255){gps_chars = 0;}
+                if (gps_chars == 255){gps_chars = 0;}
                 dtostrf(gps_chars,0,0,gps_temp_string);
                 debug.print(gps_temp_string);  
                 unsigned long gps_fix_age_temp = 0;
@@ -8607,6 +8618,9 @@ void output_debug(){
         #ifdef HARDWARE_WB6KCN
           debug.print(" HARDWARE_WB6KCN");
         #endif
+        #ifdef HARDWARE_WB6KCN_K3NG
+          debug.print(" HARDWARE_WB6KCN_K3NG");
+        #endif        
         #ifdef HARDWARE_M0UPU
           debug.print(" HARDWARE_M0UPU");
         #endif       
@@ -19649,8 +19663,8 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     if (load_hardcoded_tle == LOAD_HARDCODED_TLE){    // push a hardcoded TLE into the array position 0 and write to EEPROM     
       strcpy_P(name,(const char*) F("AO7TEST"));  
-      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   21196.18278108 -.00000036 "));  //2021-07-17
-      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8552 170.6579 0012110 331.0716  97.3732 12.53649403135209"));     
+      strcpy_P(hardcoded_tle_line_1,(const char*) F("1 07530U 74089B   21280.85174194 -.00000049 "));  //2021-10-13
+      strcpy_P(hardcoded_tle_line_2,(const char*) F("2 07530 101.8690 255.2887 0012171 164.7462 264.0607 12.53650626146058"));     
       sat.tle(name,hardcoded_tle_line_1,hardcoded_tle_line_2);
       #if defined(DEBUG_SATELLITE_TRACKING_LOAD)
         debug.print(name);

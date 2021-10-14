@@ -131,7 +131,7 @@
 #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
   #define az_incremental_encoder_pin_phase_a 19 //3 must be an interrupt capable pin
   #define az_incremental_encoder_pin_phase_b 18 //3 // must be an interrupt capable pin
-  #define az_incremental_encoder_pin_phase_z 15 //4
+  #define az_incremental_encoder_pin_phase_z A15 //4
   #define AZ_POSITION_INCREMENTAL_ENCODER_A_PIN_INTERRUPT 5 //0             // Uno: pin 2 = interrupt 0, pin 3 = interrupt 1 ; Mega: pin 2 = interrupt 0, pin 3 = interrupt 1, pin 21 = interrupt 2, pin 20 = interrupt 3, pin 19 = interrupt 4, pin 18 = interrupt 5
   #define AZ_POSITION_INCREMENTAL_ENCODER_B_PIN_INTERRUPT 4 //1             // Uno: pin 2 = interrupt 0, pin 3 = interrupt 1 ; Mega: pin 2 = interrupt 0, pin 3 = interrupt 1, pin 21 = interrupt 2, pin 20 = interrupt 3, pin 19 = interrupt 4, pin 18 = interrupt 5
                                                                               // read http://arduino.cc/en/Reference/AttachInterrupt for details on hardware and interrupts

@@ -9,7 +9,8 @@
 
 // #define HARDWARE_M0UPU          // customize rotator_features_m0upu.h, rotators_pins_m0upu.h, rotator_settings_m0upu.h
 // #define HARDWARE_WB6KCN         // customize rotator_features_wb6kcn.h, rotators_pins_wb6kcn.h, rotator_settings_wb6kcn.h
-// #define HARDWARE_TEST         // customize rotator_features_test.h, rotators_pins_test.h, rotator_settings_test.h
+// #define HARDWARE_WB6KCN_K3NG         // K3NG test jig - do not use
+// #define HARDWARE_TEST         // K3NG test jig - do not use
 
 
 /* Serial port class definitions for various devices
