@@ -41,7 +41,7 @@
 
 // do not modify anything below this line
 
-#if defined(HARDWARE_M0UPU) || defined(HARDWARE_EA4TX_ARS_USB) || defined(HARDWARE_WB6KCN) || defined(HARDWARE_TEST)
+#if defined(HARDWARE_M0UPU) || defined(HARDWARE_EA4TX_ARS_USB) || defined(HARDWARE_WB6KCN) || defined(HARDWARE_TEST) || defined(HARDWARE_WB6KCN_K3NG)
   #define HARDWARE_CUSTOM
 #endif
 

@@ -199,7 +199,13 @@
 
 //#define OPTION_STEPPER_DO_NOT_USE_DIGITALWRITEFAST_LIBRARY
 
+//#define OPTION_USE_OLD_TIME_CODE
+
 #define OPTION_CLI_VT100
+
+#define OPTION_GPS_USE_TINY_GPS_LIBRARY               // For serial port based NMEA GPS units; serial port defined by GPS_PORT and GPS_PORT_BAUD_RATE in settings file
+#define OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY   // For Sparkfun (and perhaps others) u-blox GPS units interfaced via I2C ( https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library)
+
 
 										// ######## ########  ######  ######## 
 										//    ##    ##       ##    ##    ##    

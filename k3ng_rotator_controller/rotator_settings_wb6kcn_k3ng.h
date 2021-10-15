@@ -192,6 +192,8 @@ You can tweak these, but read the online documentation!
 
 #define SERIAL_LED_TIME_MS 250
 
+// #define DEFAULT_LATITUDE 1.0
+// #define DEFAULT_LONGITUDE -2.0
 #define DEFAULT_LATITUDE 40.889958
 #define DEFAULT_LONGITUDE -75.585972
 

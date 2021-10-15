@@ -1032,6 +1032,14 @@
         Added OPTION_CLI_VT100 - VT100 terminal emulation; currently used only by satellite tracking status command \|
         Updated hardcoded default AO7TEST TLE
 
+      2021.10.15.01
+        FEATURE_SATELLITE_TRACKING:
+          Added \& command to manually invoke recalculation of all satellite tracking data
+          All satellite data is now recalculated if the clock comes out of FREE_RUNNING state or if the latitude / longitude (current location) changes
+        All time functionality permanent changed to use TimeLib library
+        Working on adding Sparkfun u-blox GNSS library (OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY)  
+
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1045,7 +1053,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.14.02"
+#define CODE_VERSION "2021.10.15.01"
 
 
 #include <avr/pgmspace.h>
@@ -1055,10 +1063,10 @@
 #include "rotator_hardware.h"
 
 #ifdef HARDWARE_WB6KCN_K3NG
-  #include "rotator_features_wb6kcn.h"
+  #include "rotator_features_wb6kcn_k3ng.h"
 #endif
 #ifdef HARDWARE_WB6KCN
-  #include "rotator_features_wb6kcn_k3ng.h"
+  #include "rotator_features_wb6kcn.h"
 #endif
 #ifdef HARDWARE_M0UPU
   #include "rotator_features_m0upu.h"
@@ -1147,7 +1155,14 @@
 #endif
 
 #ifdef FEATURE_GPS
-  #include <TinyGPS.h>
+  #if defined(OPTION_GPS_USE_TINY_GPS_LIBRARY)
+    #include <TinyGPS.h>
+  #endif
+  #if defined(OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY)
+    #include <Wire.h>
+    #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //http://librarymanager/All#SparkFun_u-blox_GNSS
+  #endif
+
 #endif
 
 #ifdef FEATURE_RTC_DS1307
@@ -1221,7 +1236,7 @@
 #endif
 #endif
 
-#if defined(DEVELOPMENT_TIMELIB)
+#if !defined(OPTION_USE_OLD_TIME_CODE)
 #if defined(FEATURE_CLOCK)
   #include <TimeLib.h>
 #endif
@@ -1476,7 +1491,7 @@ struct config_t {
 
 
 #ifdef FEATURE_CLOCK
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
   unsigned long millis_at_last_calibration = 0;
 
   struct tm {
@@ -1491,7 +1506,7 @@ struct config_t {
   tm current_clock, local_clock, temp_datetime, set_clock;
 
 
-#endif // !defined(DEVELOPMENT_TIMELIB)
+#endif // defined(OPTION_USE_OLD_TIME_CODE)
 #endif // FEATURE_CLOCK
 
 
@@ -1633,7 +1648,13 @@ struct config_t {
 #endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
 
 #ifdef FEATURE_GPS
-  TinyGPS gps;
+  #if defined(OPTION_GPS_USE_TINY_GPS_LIBRARY)
+    TinyGPS gps;
+  #endif
+  #if defined(OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY)
+    SFE_UBLOX_GNSS myGNSS;
+  #endif
+
 #endif //FEATURE_GPS
 
 #ifdef FEATURE_RTC_DS1307
@@ -1732,17 +1753,17 @@ struct config_t {
     byte order;
     byte status;   // bitmapped:      1 = aos, 2 = last_calc_timed_out, 4 = AOS/LOS state change
  
-    #if !defined(DEVELOPMENT_TIMELIB)
+    #if defined(OPTION_USE_OLD_TIME_CODE)
 
     tm next_aos;
     tm next_los;
 
-    #else //DEVELOPMENT_TIMELIB
+    #else //OPTION_USE_OLD_TIME_CODE
 
     tmElements_t next_aos;
     tmElements_t next_los;
 
-    #endif //DEVELOPMENT_TIMELIB
+    #endif //OPTION_USE_OLD_TIME_CODE
   } satellite[SATELLITE_LIST_LENGTH];
 
 #endif //FEATURE_SATELLITE_TRACKING
@@ -1793,7 +1814,7 @@ void loop() {
   #endif // DEBUG_LOOP
 
   #ifdef FEATURE_CLOCK
-  #if !defined(DEVELOPMENT_TIMELIB)
+  #if defined(OPTION_USE_OLD_TIME_CODE)
     update_time();
   #endif
   #endif
@@ -3949,14 +3970,13 @@ void check_serial(){
   #endif // defined(FEATURE_MASTER_WITH_SERIAL_SLAVE)
 
 
-  #ifdef FEATURE_GPS
+  #if defined(FEATURE_GPS) && defined(OPTION_GPS_USE_TINY_GPS_LIBRARY)
 
     if (gps_missing_terminator_flag){
       gps.encode('$');
       gps_missing_terminator_flag = 0;
       gps_port_read_data_sent = 1;
     } else {
-
       #if defined(OPTION_DONT_READ_GPS_PORT_AS_OFTEN)
         if (GPS_PORT.available()) {
           gps_port_read = GPS_PORT.read();
@@ -3985,7 +4005,7 @@ void check_serial(){
 
                 debug.print("\tGPS: satellites:");
                 gps_chars = gps.satellites();
-                if (gps_chars == 255){gps_chars = 0;}
+                //if (gps_chars == 255L){gps_chars = 0;}
                 dtostrf(gps_chars,0,0,gps_temp_string);
                 debug.print(gps_temp_string);  
                 unsigned long gps_fix_age_temp = 0;
@@ -4010,9 +4030,7 @@ void check_serial(){
                 dtostrf(gps_failed_checksum,0,0,gps_temp_string);
                 debug.print(gps_temp_string);    
                 debug.println("");
-              #endif //FEATURE_GPS
-
-
+              #endif //DEBUG_GPS
             }          
           #else
             if ((gps_port_read == '$') && (gps_port_read_data_sent)){ // handle missing LF/CR
@@ -4060,7 +4078,7 @@ void check_serial(){
                   dtostrf(gps_failed_checksum,0,0,gps_temp_string);
                   debug.print(gps_temp_string);    
                   debug.println("");
-                #endif //FEATURE_GPS
+                #endif //DEBUG_GPS
 
 
               } else {
@@ -4109,13 +4127,13 @@ void check_serial(){
 
     } // if (gps_missing_terminator_flag)
 
-  #endif // FEATURE_GPS
+  #endif // FEATURE_GPS && defined(OPTION_GPS_USE_TINY_GPS_LIBRARY)
 
-  #if defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS)
+  #if defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS) && defined(OPTION_GPS_USE_TINY_GPS_LIBRARY)
     if (GPS_MIRROR_PORT.available()) {
       GPS_PORT.write(GPS_MIRROR_PORT.read());
     }
-  #endif //defined(GPS_MIRROR_PORT) && defined(FEATURE_GPS)
+  #endif
 
 
   #ifdef DEBUG_PROCESSES
@@ -5562,7 +5580,7 @@ TODO:
 
 
 // Clock
-    #if !defined(DEVELOPMENT_TIMELIB)
+    #if defined(OPTION_USE_OLD_TIME_CODE)
     #if defined(FEATURE_CLOCK)
       if (local_clock.seconds != last_clock_seconds){
         last_clock_seconds = current_clock.seconds;
@@ -5596,7 +5614,7 @@ TODO:
         sendNextionCommand(workstring1);         
       }
     #endif //FEATURE_CLOCK
-    #else // !defined(DEVELOPMENT_TIMELIB)
+    #else // defined(OPTION_USE_OLD_TIME_CODE)
     #if defined(FEATURE_CLOCK)
       if (second() != last_clock_seconds){
         last_clock_seconds = second();
@@ -5632,7 +5650,7 @@ TODO:
     #endif //FEATURE_CLOCK
 
 
-    #endif // !defined(DEVELOPMENT_TIMELIB)
+    #endif // defined(OPTION_USE_OLD_TIME_CODE)
 
     // GPS
     #if defined(FEATURE_GPS) && defined(FEATURE_CLOCK)
@@ -6425,7 +6443,7 @@ void update_lcd_display(){
     static int last_clock_seconds = 0;
 
     if (!row_override[LCD_HHMMSS_CLOCK_ROW]){
-      #if !defined(DEVELOPMENT_TIMELIB)
+      #if defined(OPTION_USE_OLD_TIME_CODE)
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock.hours < 10) {
           strcpy(workstring, "0");
@@ -6463,7 +6481,7 @@ void update_lcd_display(){
       if (last_clock_seconds != current_clock.seconds) {force_display_update_now = 1;}
       last_clock_seconds = current_clock.seconds;
 
-      #else //DEVELOPMENT_TIMELIB-------------------------
+      #else //OPTION_USE_OLD_TIME_CODE-------------------------
 
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (hour() < 10) {
@@ -6502,14 +6520,14 @@ void update_lcd_display(){
       if (last_clock_seconds != second()) {force_display_update_now = 1;}
       last_clock_seconds = second();
 
-      #endif //DEVELOPMENT_TIMELIB
+      #endif //OPTION_USE_OLD_TIME_CODE
     }
   #endif //defined(OPTION_DISPLAY_HHMMSS_CLOCK) && defined(FEATURE_CLOCK)
 
   // OPTION_DISPLAY_HHMM_CLOCK **************************************************************************************************
   #if defined(OPTION_DISPLAY_HHMM_CLOCK) && defined(FEATURE_CLOCK)
     if (!row_override[LCD_HHMM_CLOCK_ROW]){
-      #if !defined(DEVELOPMENT_TIMELIB)
+      #if defined(OPTION_USE_OLD_TIME_CODE)
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock.hours < 10) {
           strcpy(workstring, "0");
@@ -6539,7 +6557,7 @@ void update_lcd_display(){
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
       } 
 
-      #else //#if !defined(DEVELOPMENT_TIMELIB)-------------------
+      #else //#if defined(OPTION_USE_OLD_TIME_CODE)-------------------
 
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (hour() < 10) {
@@ -6570,7 +6588,7 @@ void update_lcd_display(){
         k3ngdisplay.print_center_fixed_field_size(workstring,LCD_HHMM_CLOCK_ROW-1,5);
       }
 
-      #endif //#if !defined(DEVELOPMENT_TIMELIB)
+      #endif //#if defined(OPTION_USE_OLD_TIME_CODE)
     }   
   #endif //defined(OPTION_DISPLAY_HHMM_CLOCK) && defined(FEATURE_CLOCK)
 
@@ -6845,7 +6863,7 @@ void update_lcd_display(){
     }
     if (displaying_clock){
 
-      #if !defined(DEVELOPMENT_TIMELIB)
+      #if defined(OPTION_USE_OLD_TIME_CODE)
 
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
@@ -6868,7 +6886,7 @@ void update_lcd_display(){
       dtostrf(local_clock.minutes, 0, 0, workstring2);
       strcat(workstring,workstring2);
    
-      #else //DEVELOPMENT_TIMELIB-------------
+      #else //OPTION_USE_OLD_TIME_CODE-------------
 
       strcpy(workstring, "");
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
@@ -6891,7 +6909,7 @@ void update_lcd_display(){
       dtostrf(minute(), 0, 0, workstring2);
       strcat(workstring,workstring2);
 
-      #endif //DEVELOPMENT_TIMELIB
+      #endif //OPTION_USE_OLD_TIME_CODE
 
       switch (LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_POSITION){
         case LEFT: k3ngdisplay.print_left_fixed_field_size(workstring,LCD_ALT_HHMM_CLOCK_AND_MAIDENHEAD_ROW-1,6); break;
@@ -6914,7 +6932,7 @@ void update_lcd_display(){
     static int last_clock_seconds_clock_and_maidenhead = 0;
 
     if (!row_override[LCD_CONSTANT_HHMMSS_CLOCK_AND_MAIDENHEAD_ROW]){    
-      #if !defined(DEVELOPMENT_TIMELIB)
+      #if defined(OPTION_USE_OLD_TIME_CODE)
 
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
         if (local_clock.hours < 10) {
@@ -6951,7 +6969,7 @@ void update_lcd_display(){
       if (last_clock_seconds_clock_and_maidenhead != local_clock.seconds) {force_display_update_now = 1;}
       last_clock_seconds_clock_and_maidenhead = local_clock.seconds;
 
-      #else //#if !defined(DEVELOPMENT_TIMELIB)---------------
+      #else //#if defined(OPTION_USE_OLD_TIME_CODE)---------------
 
 
       #ifdef OPTION_CLOCK_ALWAYS_HAVE_HOUR_LEADING_ZERO
@@ -6990,7 +7008,7 @@ void update_lcd_display(){
       last_clock_seconds_clock_and_maidenhead = second();
 
 
-      #endif //#if !defined(DEVELOPMENT_TIMELIB)
+      #endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 
     }
 
@@ -7102,19 +7120,19 @@ void update_lcd_display(){
     static byte big_clock_last_clock_seconds = 0;
   
     if (!row_override[LCD_BIG_CLOCK_ROW]){    
-      #if !defined(DEVELOPMENT_TIMELIB)
+      #if defined(OPTION_USE_OLD_TIME_CODE)
       k3ngdisplay.print_center_entire_row(timezone_modified_clock_string(),LCD_BIG_CLOCK_ROW-1,0);
       if (big_clock_last_clock_seconds != current_clock.seconds) {
         force_display_update_now = 1;
         big_clock_last_clock_seconds = current_clock.seconds;
       }
-      #else //DEVELOPMENT_TIMELIB
+      #else //OPTION_USE_OLD_TIME_CODE
       k3ngdisplay.print_center_entire_row(timezone_modified_clock_string(),LCD_BIG_CLOCK_ROW-1,0);
       if (big_clock_last_clock_seconds != second()) {
         force_display_update_now = 1;
         big_clock_last_clock_seconds = second();
       }
-      #endif //DEVELOPMENT_TIMELIB
+      #endif //OPTION_USE_OLD_TIME_CODE
     }
   #endif //defined(OPTION_DISPLAY_BIG_CLOCK) && defined(FEATURE_CLOCK)
 
@@ -9104,7 +9122,7 @@ void output_debug(){
           }
           debug.print("ACTIVE  Next AOS:");
          
-          #if !defined(DEVELOPMENT_TIMELIB)
+          #if defined(OPTION_USE_OLD_TIME_CODE)
           debug.print(satellite[current_satellite_position_in_array].next_aos.year);
           debug.print("-");
           if (satellite[current_satellite_position_in_array].next_aos.month < 10){debug.print("0");}
@@ -9164,7 +9182,7 @@ void output_debug(){
           }
 
 
-          #else //DEVELOPMENT_TIMELIB
+          #else //OPTION_USE_OLD_TIME_CODE
 
           debug.print(satellite[current_satellite_position_in_array].next_aos.Year+1970);
           debug.print("-");
@@ -9224,7 +9242,7 @@ void output_debug(){
               break;              
           }
 
-          #endif //DEVELOPMENT_TIMELIB
+          #endif //OPTION_USE_OLD_TIME_CODE
 
           debug.print(F(" Sat_Calc_Timeout: "));
 
@@ -11022,16 +11040,16 @@ void initialize_peripherals(){
   #endif
 
   #ifdef FEATURE_CLOCK
-    #if !defined(DEVELOPMENT_TIMELIB)
+    #if defined(OPTION_USE_OLD_TIME_CODE)
     set_clock.year = CLOCK_DEFAULT_YEAR_AT_BOOTUP;
     set_clock.month = CLOCK_DEFAULT_MONTH_AT_BOOTUP;
     set_clock.day = CLOCK_DEFAULT_DAY_AT_BOOTUP;
     set_clock.hours = CLOCK_DEFAULT_HOURS_AT_BOOTUP;
     set_clock.minutes = CLOCK_DEFAULT_MINUTES_AT_BOOTUP;
     set_clock.seconds = CLOCK_DEFAULT_SECONDS_AT_BOOTUP;
-    #else //DEVELOPMENT_TIMELIB
+    #else //OPTION_USE_OLD_TIME_CODE
     setTime(CLOCK_DEFAULT_HOURS_AT_BOOTUP,CLOCK_DEFAULT_MINUTES_AT_BOOTUP,CLOCK_DEFAULT_SECONDS_AT_BOOTUP,CLOCK_DEFAULT_DAY_AT_BOOTUP,CLOCK_DEFAULT_MONTH_AT_BOOTUP,CLOCK_DEFAULT_YEAR_AT_BOOTUP);
-    #endif //DEVELOPMENT_TIMELIB
+    #endif //OPTION_USE_OLD_TIME_CODE
   #endif
 
 
@@ -13926,7 +13944,7 @@ void update_sun_position(){
   #endif      
 
 
-  #if !defined(DEVELOPMENT_TIMELIB)
+  #if defined(OPTION_USE_OLD_TIME_CODE)
 
 
   c_time.iYear = current_clock.year;
@@ -13938,7 +13956,7 @@ void update_sun_position(){
   c_time.dSeconds = current_clock.seconds;
 
 
-  #else //DEVELOPMENT_TIMELIB
+  #else //OPTION_USE_OLD_TIME_CODE
   time_t temp_t = now();
 
   c_time.iYear = year(temp_t);
@@ -13949,7 +13967,7 @@ void update_sun_position(){
   c_time.dMinutes = minute(temp_t);
   c_time.dSeconds = second(temp_t);
 
-  #endif //DEVELOPMENT_TIMELIB
+  #endif //OPTION_USE_OLD_TIME_CODE
 
   c_loc.dLongitude = longitude;
   c_loc.dLatitude  = latitude;
@@ -13990,7 +14008,7 @@ void update_sun_position(){
 
     double RA, Dec, topRA, topDec, LST, HA, dist;
 
-    #if !defined(DEVELOPMENT_TIMELIB)
+    #if defined(OPTION_USE_OLD_TIME_CODE)
     moon2(current_clock.year, current_clock.month, current_clock.day, (current_clock.hours + (current_clock.minutes / 60.0) + (current_clock.seconds / 3600.0)), longitude, latitude, &RA, &Dec, &topRA, &topDec, &LST, &HA, &moon_azimuth, &moon_elevation, &dist);
     #else
     time_t temp_t = now();
@@ -14079,7 +14097,7 @@ char * timezone_modified_clock_string(){
   char temp_string[16] = "";
 
 
-  #if !defined(DEVELOPMENT_TIMELIB)
+  #if defined(OPTION_USE_OLD_TIME_CODE)
 
   dtostrf(local_clock.year, 0, 0, temp_string);
   strcpy(return_string, temp_string);
@@ -14119,7 +14137,7 @@ char * timezone_modified_clock_string(){
   }
 
 
-  #else //DEVELOPMENT_TIMELIB
+  #else //OPTION_USE_OLD_TIME_CODE
 
   time_t t = now() + (time_t)(configuration.clock_timezone_offset * SECS_PER_HOUR);
 
@@ -14161,7 +14179,7 @@ char * timezone_modified_clock_string(){
   }
 
 
-  #endif //DEVELOPMENT_TIMELIB
+  #endif //OPTION_USE_OLD_TIME_CODE
 
 
   return return_string;
@@ -14177,7 +14195,7 @@ char * zulu_clock_string(){
   static char return_string[32] = "";
   char temp_string[16] = "";
 
-  #if !defined(DEVELOPMENT_TIMELIB)
+  #if defined(OPTION_USE_OLD_TIME_CODE)
 
   dtostrf(current_clock.year, 0, 0, temp_string);
   strcpy(return_string, temp_string);
@@ -14215,7 +14233,7 @@ char * zulu_clock_string(){
   strcat(return_string,"Z");
 
 
-  #else //#if !defined(DEVELOPMENT_TIMELIB)------------
+  #else //#if defined(OPTION_USE_OLD_TIME_CODE)------------
 
   dtostrf(year(), 0, 0, temp_string);
   strcpy(return_string, temp_string);
@@ -14252,7 +14270,7 @@ char * zulu_clock_string(){
   strcat(return_string, temp_string);
   strcat(return_string,"Z");
 
-  #endif //#if !defined(DEVELOPMENT_TIMELIB)
+  #endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 
   return return_string;
 
@@ -14260,7 +14278,7 @@ char * zulu_clock_string(){
 #endif // FEATURE_CLOCK
 
 // --------------------------------------------------------------
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
 #ifdef FEATURE_CLOCK
 void update_time(){
 
@@ -14454,7 +14472,7 @@ void update_time(){
 
 } /* update_time */
 #endif // FEATURE_CLOCK
-#endif //DEVELOPMENT_TIMELIB
+#endif //OPTION_USE_OLD_TIME_CODE
 
 // --------------------------------------------------------------
 
@@ -14511,21 +14529,21 @@ void service_gps(){
     if (fix_age < GPS_VALID_FIX_AGE_MS) {
 
       if (SYNC_TIME_WITH_GPS) {
-        #if !defined(DEVELOPMENT_TIMELIB)
-        set_clock.year = gps_year;
-        set_clock.month = gps_month;
-        set_clock.day = gps_day;
-        set_clock.hours = gps_hours;
-        set_clock.minutes = gps_minutes;
-        set_clock.seconds = gps_seconds;
-        millis_at_last_calibration = millis() - GPS_UPDATE_LATENCY_COMPENSATION_MS;
-        update_time();
+        #if defined(OPTION_USE_OLD_TIME_CODE)
+          set_clock.year = gps_year;
+          set_clock.month = gps_month;
+          set_clock.day = gps_day;
+          set_clock.hours = gps_hours;
+          set_clock.minutes = gps_minutes;
+          set_clock.seconds = gps_seconds;
+          millis_at_last_calibration = millis() - GPS_UPDATE_LATENCY_COMPENSATION_MS;
+          update_time();
       
-        #else //DEVELOPMENT_TIMELIB
+        #else //OPTION_USE_OLD_TIME_CODE
 
-        setTime(gps_hours, gps_minutes, gps_seconds, gps_day, gps_month, gps_year);
+          setTime(gps_hours, gps_minutes, gps_seconds, gps_day, gps_month, gps_year);
 
-        #endif //DEVELOPMENT_TIMELIB
+        #endif //OPTION_USE_OLD_TIME_CODE
 
         #ifdef DEBUG_GPS
           #ifdef DEBUG_GPS_SERIAL
@@ -14585,21 +14603,20 @@ void service_gps(){
         }
       #endif // defined(OPTION_SYNC_RTC_TO_GPS) && defined(FEATURE_RTC_TEENSY)
 
-      //#if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING) || defined(FEATURE_REMOTE_UNIT_SLAVE) 
-        if (SYNC_COORDINATES_WITH_GPS) {
-          latitude = float(gps_lat) / 1000000.0;
-          longitude = float(gps_lon) / 1000000.0;
-          altitude_m = float(gps.altitude()) / 100.0;
-          #ifdef DEBUG_GPS
-            debug.print(F("service_gps: coord sync:"));
-            debug.print(latitude,2);
-            debug.print(" ");
-            debug.print(longitude,2);
-            debug.print(" ");
-            debug.print(altitude_m,2);
-            debug.println("m");
-          #endif // DEBUG_GPS
-        }
+      if (SYNC_COORDINATES_WITH_GPS) {
+        latitude = float(gps_lat) / 1000000.0;
+        longitude = float(gps_lon) / 1000000.0;
+        altitude_m = float(gps.altitude()) / 100.0;
+        #ifdef DEBUG_GPS
+          debug.print(F("service_gps: coord sync:"));
+          debug.print(latitude,2);
+          debug.print(" ");
+          debug.print(longitude,2);
+          debug.print(" ");
+          debug.print(altitude_m,2);
+          debug.println("m");
+        #endif // DEBUG_GPS
+      }
 
       last_sync = millis();
     }
@@ -14742,7 +14759,7 @@ void service_rtc(){
           debug.print(now.second());
           debug.println("");
         #endif // DEBUG_RTC
-        #if !defined(DEVELOPMENT_TIMELIB)
+        #if defined(OPTION_USE_OLD_TIME_CODE)
         set_clock.year = now.year();
         set_clock.month = now.month();
         set_clock.day = now.day();
@@ -14751,11 +14768,11 @@ void service_rtc(){
         set_clock.seconds = now.second();
         millis_at_last_calibration = millis();
         update_time();
-        #else //DEVELOPMENT_TIMELIB
+        #else //OPTION_USE_OLD_TIME_CODE
 
         setTime(now.hour(), now.minute(), now.second(), now.day(), now.month(), now.year());
 
-        #endif //DEVELOPMENT_TIMELIB
+        #endif //OPTION_USE_OLD_TIME_CODE
         clock_status = RTC_SYNC;
       } else {
         clock_status = FREE_RUNNING;
@@ -14784,7 +14801,7 @@ void service_rtc(){
           control_port->print(':');
           control_port->println(rtc.second, DEC);
         #endif // DEBUG_RTC
-        #if !defined(DEVELOPMENT_TIMELIB)
+        #if defined(OPTION_USE_OLD_TIME_CODE)
         set_clock.year = rtc.year;
         set_clock.month = rtc.month;
         set_clock.day = rtc.day;
@@ -14793,9 +14810,9 @@ void service_rtc(){
         set_clock.seconds = rtc.second;
         millis_at_last_calibration = millis();
         update_time();
-        #else //DEVELOPMENT_TIMELIB
+        #else //OPTION_USE_OLD_TIME_CODE
         setTime(rtc.hour, rtc.minute, rtc.second, rtc.day, rtc.month, rtc.year);
-        #endif //DEVELOPMENT_TIMELIB
+        #endif //OPTION_USE_OLD_TIME_CODE
         clock_status = RTC_SYNC;
       } else {
         clock_status = FREE_RUNNING;
@@ -15092,7 +15109,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
     #ifdef FEATURE_CLOCK
     case 'C':         // show clock
-      #if !defined(DEVELOPMENT_TIMELIB)
+      #if defined(OPTION_USE_OLD_TIME_CODE)
       update_time();
       #endif
       sprintf(return_string, "%s", timezone_modified_clock_string());
@@ -15116,7 +15133,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
            (temp_minute >= 0) && (temp_minute < 60) &&
            (temp_second >= 0) && (temp_second < 60) &&
            ((input_buffer_index == 14) || (input_buffer_index == 16)) ){
-        #if !defined(DEVELOPMENT_TIMELIB)
+        #if defined(OPTION_USE_OLD_TIME_CODE)
         set_clock.year = temp_year;
         set_clock.month = temp_month;
         set_clock.day = temp_day;
@@ -15124,9 +15141,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         set_clock.minutes = temp_minute;
         set_clock.seconds = temp_second;
         millis_at_last_calibration = millis();
-        #else //#if !defined(DEVELOPMENT_TIMELIB)
+        #else //#if defined(OPTION_USE_OLD_TIME_CODE)
         setTime(temp_hour, temp_minute, temp_second, temp_day, temp_month, temp_year);
-        #endif //#if !defined(DEVELOPMENT_TIMELIB)
+        #endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 
         #if defined(FEATURE_SATELLITE_TRACKING)
           satellite_array_data_ready = 0;
@@ -15177,15 +15194,15 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
         #if (!defined(FEATURE_RTC_DS1307) && !defined(FEATURE_RTC_PCF8583) && !defined(FEATURE_RTC_TEENSY))
           strcpy(return_string, "Clock set to ");
-          #if !defined(DEVELOPMENT_TIMELIB)
+          #if defined(OPTION_USE_OLD_TIME_CODE)
           update_time();
-          #endif //DEVELOPMENT_TIMELIB
+          #endif //OPTION_USE_OLD_TIME_CODE
           strcat(return_string, timezone_modified_clock_string());
         #else
           strcpy_P(return_string, (const char*) F("Internal clock and RTC set to "));
-          #if !defined(DEVELOPMENT_TIMELIB)
+          #if defined(OPTION_USE_OLD_TIME_CODE)
           update_time();
-          #endif //#if !defined(DEVELOPMENT_TIMELIB)
+          #endif //#if defined(OPTION_USE_OLD_TIME_CODE)
           strcat(return_string, timezone_modified_clock_string());
         #endif
       } else {
@@ -15769,12 +15786,20 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           service_satellite_tracking(0,1);  // initialize satellite tracking
           break;
 
+        case '&': //zzzzzz
+          control_port->println(F("Recalculating all satellites..."));
+          change_tracking(DEACTIVATE_ALL);
+          service_calc_satellite_data_service_state = SERVICE_IDLE;
+          warm_initialize_satellite_array();
+          break;          
+
         case '@':
           control_port->println(F("TLE file:"));
           print_tle_file_area_eeprom();
           break;
 
         case '#':
+          change_tracking(DEACTIVATE_ALL);
           control_port->println(F("Paste bare TLE file text now; double return to end."));
           write_char_to_tle_file_area_eeprom(0,1); // initialize   
           tle_upload_start_time = millis();
@@ -16046,7 +16071,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
           strcat(return_string,","); 
 
           #ifdef FEATURE_CLOCK
-            #if !defined(DEVELOPMENT_TIMELIB)
+            #if defined(OPTION_USE_OLD_TIME_CODE)
             update_time();
             #endif
             strcat(return_string,timezone_modified_clock_string());
@@ -16170,9 +16195,9 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         if ((input_buffer[2] == 'C') && (input_buffer[3] == 'L')) {  // \?CL - read the clock
           #ifdef FEATURE_CLOCK
             strconditionalcpy(return_string,"\\!OKCL", include_response_code);
-            #if !defined(DEVELOPMENT_TIMELIB)
+            #if defined(OPTION_USE_OLD_TIME_CODE)
             update_time();
-            #endif //#if !defined(DEVELOPMENT_TIMELIB)
+            #endif //#if defined(OPTION_USE_OLD_TIME_CODE)
             strcat(return_string,timezone_modified_clock_string());
           #else //FEATURE_CLOCK
             strconditionalcpy(return_string,"\\!??CL", include_response_code);
@@ -16951,7 +16976,7 @@ Not implemented yet:
         // control_port->println(current_satellite_next_los_el,0);
         control_port->print(F(" Max El:"));
         control_port->println(satellite[current_satellite_position_in_array].next_pass_max_el);
-        #if !defined(DEVELOPMENT_TIMELIB)
+        #if defined(OPTION_USE_OLD_TIME_CODE)
         temp_datetime.seconds = 0; 
         #endif
         control_port->print(satellite_aos_los_string(current_satellite_position_in_array));
@@ -16990,10 +17015,10 @@ Not implemented yet:
     for (int z = 0;z < SATELLITE_LIST_LENGTH;z++){
       satellite_next_event_seconds[(byte)z] = 9999998L;
       if (satellite[z].order < 255){
-        #if !defined(DEVELOPMENT_TIMELIB)
+        #if defined(OPTION_USE_OLD_TIME_CODE)
         los_time_diff = difftime(&satellite[z].next_los,&current_clock,&dummyint1,&dummyint2,&dummyint3,&dummyint4);
         aos_time_diff = difftime(&satellite[z].next_aos,&current_clock,&dummyint1,&dummyint2,&dummyint3,&dummyint4);
-        #else //DEVELOPMENT_TIMELIB
+        #else //OPTION_USE_OLD_TIME_CODE
         tmElements_t current_clock;
         breakTime(now(), current_clock); 
         los_time_diff = difftime(&satellite[z].next_los,&current_clock,&dummyint1,&dummyint2,&dummyint3,&dummyint4);
@@ -17199,17 +17224,17 @@ Not implemented yet:
     if (abs(satellite[satellite_array_position].next_pass_max_el) < 100){control_port->print(" ");}            
     control_port->print(satellite[satellite_array_position].next_pass_max_el);  
     control_port->print("  ");
-    #if !defined(DEVELOPMENT_TIMELIB)
+    #if defined(OPTION_USE_OLD_TIME_CODE)
     if (satellite[satellite_array_position].next_los.year > 0){
       control_port->print("\t");
       control_port->print(satellite_aos_los_string(satellite_array_position));
     }
-    #else //DEVELOPMENT_TIMELIB
+    #else //OPTION_USE_OLD_TIME_CODE
     if (satellite[satellite_array_position].next_los.Year > 0){
       control_port->print("\t");
       control_port->print(satellite_aos_los_string(satellite_array_position));
     }
-    #endif //DEVELOPMENT_TIMELIB
+    #endif //OPTION_USE_OLD_TIME_CODE
     // if (((float)satellite[satellite_array_position].elevation >= SATELLITE_AOS_ELEVATION_MIN) && (satellite[satellite_array_position].next_aos.year > 0)){
     if ((satellite[satellite_array_position].status & 1) == 1){
       send_vt100_code((char*)VT100_CODE_BLINK);
@@ -17346,7 +17371,7 @@ Not implemented yet:
 
     // if ((float)satellite[which_satellite].elevation >= SATELLITE_AOS_ELEVATION_MIN) {
 
-    #if defined(DEVELOPMENT_TIMELIB)
+    #if !defined(OPTION_USE_OLD_TIME_CODE)
 
     tmElements_t temp_datetime;
     tmElements_t current_clock;
@@ -19809,6 +19834,36 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     if (!satellite_initialized){return;}  // if we're not initialized yet, don't do anything below yet and exit
 
 
+        //zzzzzz
+    // has anything changed requiring us to recalculate everything?    
+    static byte last_clock_status = clock_status;
+    static double last_longitude = longitude;
+    static double last_latitude = latitude;
+    byte invoke_recalc = 0;
+
+    // did the clock come out of free running state ?
+    if ((clock_status != last_clock_status) && (last_clock_status == FREE_RUNNING)){
+      #if defined(DEBUG_SATELLITE_CALC_RESET)
+        debug.println("service_satellite_tracking: calc reset due to clock status change.");
+      #endif
+      invoke_recalc = 1;
+    }
+
+    // have we changed location ?
+    if ( (int(last_latitude*100) != int(latitude*100)) || (int(last_longitude*100) != int(longitude*100)) ){
+      #if defined(DEBUG_SATELLITE_CALC_RESET)
+        debug.println("service_satellite_tracking: calc reset due to location change.");
+      #endif
+      invoke_recalc = 1;
+    }
+
+    last_clock_status = clock_status;
+    last_longitude = longitude;
+    last_latitude = latitude; 
+
+    if (invoke_recalc){warm_initialize_satellite_array();}
+
+
     if ((periodic_current_satellite_status > 0) && ((millis()-last_periodic_current_satellite_status_print) >= (periodic_current_satellite_status * 1000))){
       print_current_satellite_status();
       last_periodic_current_satellite_status_print = millis();
@@ -19889,7 +19944,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
             debug.println("");
           #endif 
 
-          #if !defined(DEVELOPMENT_TIMELIB)
+          #if defined(OPTION_USE_OLD_TIME_CODE)
 
           if (((satellite[satellite_array_refresh_position].status & 2) == 1) || ((satellite[satellite_array_refresh_position].next_aos.year == 0)) || ((satellite[satellite_array_refresh_position].status & 4) == 4)){  
             // satellite was flagged for calculation timeout or for some reason is unpopulated or there is an AOS/LOS state change flag, do a full calc
@@ -19900,7 +19955,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
             service_calc_satellite_data(satellite_array_refresh_position,1,UPDATE_SAT_ARRAY_SLOT_JUST_AZ_EL,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE,0);
           }
 
-          #else //DEVELOPMENT_TIMELIB
+          #else //OPTION_USE_OLD_TIME_CODE
 
           if (((satellite[satellite_array_refresh_position].status & 2) == 1) || ((satellite[satellite_array_refresh_position].next_aos.Year == 0)) || ((satellite[satellite_array_refresh_position].status & 4) == 4)){  
             // satellite was flagged for calculation timeout or for some reason is unpopulated or there is an AOS/LOS state change flag, do a full calc
@@ -19911,7 +19966,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
             service_calc_satellite_data(satellite_array_refresh_position,1,UPDATE_SAT_ARRAY_SLOT_JUST_AZ_EL,SERVICE_CALC_DO_NOT_PRINT_HEADER,SERVICE_CALC_INITIALIZE,SERVICE_CALC_DO_NOT_PRINT_DONE,0);
           }
 
-          #endif //DEVELOPMENT_TIMELIB
+          #endif //OPTION_USE_OLD_TIME_CODE
 
         }
         satellite_array_refresh_position++;
@@ -20125,7 +20180,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     static unsigned long calculation_start_time;
 
-    #if !defined(DEVELOPMENT_TIMELIB)
+    #if defined(OPTION_USE_OLD_TIME_CODE)
     static tm temp_aos, temp_los;
     #else
     static tmElements_t temp_aos, temp_los;
@@ -20205,7 +20260,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       service_calc_satellite_data_task = do_this_task;
       print_header = do_this_print_header;
 
-      #if !defined(DEVELOPMENT_TIMELIB)
+      #if defined(OPTION_USE_OLD_TIME_CODE)
 
       calc_years = current_clock.year;
       calc_months = current_clock.month;
@@ -20214,7 +20269,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       calc_minutes = current_clock.minutes;
       calc_seconds = current_clock.seconds;
 
-      #else //DEVELOPMENT_TIMELIB
+      #else //OPTION_USE_OLD_TIME_CODE
 
       time_t temp_t = now();
 
@@ -20225,7 +20280,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
       calc_minutes = minute(temp_t);
       calc_seconds = second(temp_t);
 
-      #endif //DEVELOPMENT_TIMELIB
+      #endif //OPTION_USE_OLD_TIME_CODE
 
       print_done = do_print_done;
       stage_1_aos_and_los_collection_state = JUST_GETTING_STARTED;
@@ -20340,21 +20395,21 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
               if ((stage_1_aos_and_los_collection_state == GET_AOS_THEN_LOS) || (stage_1_aos_and_los_collection_state == GOT_LOS_NEED_AOS)){
                 temp_next_aos_az = calc_satellite_azimuth;
                 temp_next_aos_el = calc_satellite_elevation;  
-                #if !defined(DEVELOPMENT_TIMELIB)                 
+                #if defined(OPTION_USE_OLD_TIME_CODE)                 
                 temp_aos.year = calc_years;
                 temp_aos.month = calc_months;
                 temp_aos.day = calc_days;
                 temp_aos.hours = calc_hours;
                 temp_aos.minutes = calc_minutes;       
                 temp_aos.seconds = calc_seconds; 
-                #else //DEVELOPMENT_TIMELIB
+                #else //OPTION_USE_OLD_TIME_CODE
                 temp_aos.Year = calc_years-1970;
                 temp_aos.Month = calc_months;
                 temp_aos.Day = calc_days;
                 temp_aos.Hour = calc_hours;
                 temp_aos.Minute = calc_minutes;       
                 temp_aos.Second = calc_seconds; 
-                #endif //DEVELOPMENT_TIMELIB          
+                #endif //OPTION_USE_OLD_TIME_CODE          
                 if (stage_1_aos_and_los_collection_state == GET_AOS_THEN_LOS){
                   stage_1_aos_and_los_collection_state = GOT_AOS_NEED_LOS;
                 } else {
@@ -20378,21 +20433,21 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
               if ((stage_1_aos_and_los_collection_state == GOT_AOS_NEED_LOS) || (stage_1_aos_and_los_collection_state == GET_LOS_THEN_AOS)){
                 temp_next_los_az = calc_satellite_azimuth;
                 temp_next_los_el = calc_satellite_elevation;  
-                #if !defined(DEVELOPMENT_TIMELIB)                
+                #if defined(OPTION_USE_OLD_TIME_CODE)                
                 temp_los.year = calc_years;
                 temp_los.month = calc_months;
                 temp_los.day = calc_days;
                 temp_los.hours = calc_hours;
                 temp_los.minutes = calc_minutes;      
                 temp_los.seconds = calc_seconds;   
-                #else //DEVELOPMENT_TIMELIB
+                #else //OPTION_USE_OLD_TIME_CODE
                 temp_los.Year = calc_years-1970;
                 temp_los.Month = calc_months;
                 temp_los.Day = calc_days;
                 temp_los.Hour = calc_hours;
                 temp_los.Minute = calc_minutes;      
                 temp_los.Second = calc_seconds; 
-                #endif //DEVELOPMENT_TIMELIB         
+                #endif //OPTION_USE_OLD_TIME_CODE         
                 if (stage_1_aos_and_los_collection_state == GOT_AOS_NEED_LOS){
                   calculation_stage_state = STAGE_2_CALC;
                   satellite[service_calc_current_sat].next_pass_max_el = (byte)pass_max_elevation;
@@ -20411,21 +20466,21 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         }  //if (calculation_stage_state == STAGE_1_CALC){
 
         if (calculation_stage_state == STAGE_2_CALC){
-          #if !defined(DEVELOPMENT_TIMELIB) 
+          #if defined(OPTION_USE_OLD_TIME_CODE) 
           calc_years = temp_aos.year;
           calc_months = temp_aos.month;
           calc_days = temp_aos.day;
           calc_hours = temp_aos.hours;
           calc_minutes = temp_aos.minutes;       
           calc_seconds = temp_aos.seconds; 
-          #else //DEVELOPMENT_TIMELIB
+          #else //OPTION_USE_OLD_TIME_CODE
           calc_years = temp_aos.Year+1970;
           calc_months = temp_aos.Month;
           calc_days = temp_aos.Day;
           calc_hours = temp_aos.Hour;
           calc_minutes = temp_aos.Minute;       
           calc_seconds = temp_aos.Second; 
-          #endif //DEVELOPMENT_TIMELIB
+          #endif //OPTION_USE_OLD_TIME_CODE
           // go back in time
           #if defined(DEBUG_SATELLITE_TRACKING_CALC_STAGE_2)
             debug.print(F("service_calc_satellite_data: STAGE_2_CALC 1:"));
@@ -20472,38 +20527,38 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           if (calc_satellite_elevation >= SATELLITE_AOS_ELEVATION_MIN){  // have we found the AOS time?
             temp_next_aos_az = calc_satellite_azimuth;
             temp_next_aos_el = calc_satellite_elevation;   
-            #if !defined(DEVELOPMENT_TIMELIB)                 
+            #if defined(OPTION_USE_OLD_TIME_CODE)                 
             temp_aos.year = calc_years;
             temp_aos.month = calc_months;
             temp_aos.day = calc_days;
             temp_aos.hours = calc_hours;
             temp_aos.minutes = calc_minutes;       
             temp_aos.seconds = calc_seconds; 
-            #else //DEVELOPMENT_TIMELIB
+            #else //OPTION_USE_OLD_TIME_CODE
             temp_aos.Year = calc_years-1970;
             temp_aos.Month = calc_months;
             temp_aos.Day = calc_days;
             temp_aos.Hour = calc_hours;
             temp_aos.Minute = calc_minutes;       
             temp_aos.Second = calc_seconds; 
-            #endif //DEVELOPMENT_TIMELIB
+            #endif //OPTION_USE_OLD_TIME_CODE
             calculation_stage_state = STAGE_2_CALC_LOS; 
             // get setup for stage 2 LOS calculation 
-            #if !defined(DEVELOPMENT_TIMELIB)
+            #if defined(OPTION_USE_OLD_TIME_CODE)
             calc_years = temp_los.year;
             calc_months = temp_los.month;
             calc_days = temp_los.day;
             calc_hours = temp_los.hours;
             calc_minutes = temp_los.minutes;       
             calc_seconds = temp_los.seconds; 
-            #else //DEVELOPMENT_TIMELIB
+            #else //OPTION_USE_OLD_TIME_CODE
             calc_years = temp_los.Year+1970;
             calc_months = temp_los.Month;
             calc_days = temp_los.Day;
             calc_hours = temp_los.Hour;
             calc_minutes = temp_los.Minute;       
             calc_seconds = temp_los.Second;
-            #endif //DEVELOPMENT_TIMELIB
+            #endif //OPTION_USE_OLD_TIME_CODE
             add_time(calc_years,calc_months,calc_days,calc_hours,calc_minutes,calc_seconds,0,-1*SATELLITE_CALC_STAGE_1_RESOLUTION_SECS,0);          
             #if defined(DEBUG_SATELLITE_TRACKING_CALC_STAGE_2)
               debug.print(F("service_calc_satellite_data: STAGE_2_CALC 3:"));
@@ -20533,21 +20588,21 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           if (calc_satellite_elevation < SATELLITE_AOS_ELEVATION_MIN){  // have we found th LOS time?
             temp_next_los_az = calc_satellite_azimuth;
             temp_next_los_el = calc_satellite_elevation; 
-            #if !defined(DEVELOPMENT_TIMELIB)                  
+            #if defined(OPTION_USE_OLD_TIME_CODE)                  
             temp_los.year = calc_years;
             temp_los.month = calc_months;
             temp_los.day = calc_days;
             temp_los.hours = calc_hours;
             temp_los.minutes = calc_minutes;       
             temp_los.seconds = calc_seconds; 
-            #else //DEVELOPMENT_TIMELIB
+            #else //OPTION_USE_OLD_TIME_CODE
             temp_los.Year = calc_years-1970;
             temp_los.Month = calc_months;
             temp_los.Day = calc_days;
             temp_los.Hour = calc_hours;
             temp_los.Minute = calc_minutes;       
             temp_los.Second = calc_seconds; 
-            #endif //DEVELOPMENT_TIMELIB
+            #endif //OPTION_USE_OLD_TIME_CODE
             calculation_stage_state = STAGE_3_CALC;  
             #if defined(DEBUG_SATELLITE_TRACKING_CALC_STAGE_2)
               debug.print(F("service_calc_satellite_data: STAGE_2_CALC 3:"));
@@ -20573,21 +20628,21 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         // I think I've easily burned up 200 hours working on this satellite code and I need a break after I got it all working.
 
         if (calculation_stage_state == STAGE_3_CALC){
-          #if !defined(DEVELOPMENT_TIMELIB) 
+          #if defined(OPTION_USE_OLD_TIME_CODE) 
           calc_years = temp_aos.year;
           calc_months = temp_aos.month;
           calc_days = temp_aos.day;
           calc_hours = temp_aos.hours;
           calc_minutes = temp_aos.minutes;       
           calc_seconds = temp_aos.seconds; 
-          #else //DEVELOPMENT_TIMELIB
+          #else //OPTION_USE_OLD_TIME_CODE
           calc_years = temp_aos.Year+1970;          
           calc_months = temp_aos.Month;
           calc_days = temp_aos.Day;
           calc_hours = temp_aos.Hour;
           calc_minutes = temp_aos.Minute;       
           calc_seconds = temp_aos.Second; 
-          #endif //DEVELOPMENT_TIMELIB
+          #endif //OPTION_USE_OLD_TIME_CODE
           // go back in time
           #if defined(DEBUG_SATELLITE_TRACKING_CALC_STAGE_3)
             debug.print(F("service_calc_satellite_data: STAGE_3_CALC 1:"));
@@ -20633,38 +20688,38 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           if (calc_satellite_elevation >= SATELLITE_AOS_ELEVATION_MIN){  // have we found the AOS time?
             temp_next_aos_az = calc_satellite_azimuth;
             temp_next_aos_el = calc_satellite_elevation; 
-            #if !defined(DEVELOPMENT_TIMELIB)                  
+            #if defined(OPTION_USE_OLD_TIME_CODE)                  
             temp_aos.year = calc_years;
             temp_aos.month = calc_months;
             temp_aos.day = calc_days;
             temp_aos.hours = calc_hours;
             temp_aos.minutes = calc_minutes;       
             temp_aos.seconds = calc_seconds; 
-            #else //DEVELOPMENT_TIMELIB
+            #else //OPTION_USE_OLD_TIME_CODE
             temp_aos.Year = calc_years-1970;
             temp_aos.Month = calc_months;
             temp_aos.Day = calc_days;
             temp_aos.Hour = calc_hours;
             temp_aos.Minute = calc_minutes;       
             temp_aos.Second = calc_seconds; 
-            #endif  //DEVELOPMENT_TIMELIB
+            #endif  //OPTION_USE_OLD_TIME_CODE
             calculation_stage_state = STAGE_3_CALC_LOS; 
             // get setup for stage 3 LOS calculation 
-            #if !defined(DEVELOPMENT_TIMELIB) 
+            #if defined(OPTION_USE_OLD_TIME_CODE) 
             calc_years = temp_los.year;
             calc_months = temp_los.month;
             calc_days = temp_los.day;
             calc_hours = temp_los.hours;
             calc_minutes = temp_los.minutes;       
             calc_seconds = temp_los.seconds; 
-            #else //DEVELOPMENT_TIMELIB
+            #else //OPTION_USE_OLD_TIME_CODE
             calc_years = temp_los.Year+1970;
             calc_months = temp_los.Month;
             calc_days = temp_los.Day;
             calc_hours = temp_los.Hour;
             calc_minutes = temp_los.Minute;       
             calc_seconds = temp_los.Second;
-            #endif //DEVELOPMENT_TIMELIB
+            #endif //OPTION_USE_OLD_TIME_CODE
             add_time(calc_years,calc_months,calc_days,calc_hours,calc_minutes,calc_seconds,0,-1*SATELLITE_CALC_STAGE_2_RESOLUTION_SECS,0);          
             #if defined(DEBUG_SATELLITE_TRACKING_CALC_STAGE_3)
               debug.print(F("service_calc_satellite_data: STAGE_3_CALC 3:"));
@@ -20694,21 +20749,21 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           if (calc_satellite_elevation < SATELLITE_AOS_ELEVATION_MIN){  // have we found th LOS time?
             temp_next_los_az = calc_satellite_azimuth;
             temp_next_los_el = calc_satellite_elevation;  
-            #if !defined(DEVELOPMENT_TIMELIB)                  
+            #if defined(OPTION_USE_OLD_TIME_CODE)                  
             temp_los.year = calc_years;
             temp_los.month = calc_months;
             temp_los.day = calc_days;
             temp_los.hours = calc_hours;
             temp_los.minutes = calc_minutes;       
             temp_los.seconds = calc_seconds; 
-            #else //DEVELOPMENT_TIMELIB
+            #else //OPTION_USE_OLD_TIME_CODE
             temp_los.Year = calc_years-1970;
             temp_los.Month = calc_months;
             temp_los.Day = calc_days;
             temp_los.Hour = calc_hours;
             temp_los.Minute = calc_minutes;       
             temp_los.Second = calc_seconds; 
-            #endif //DEVELOPMENT_TIMELIB
+            #endif //OPTION_USE_OLD_TIME_CODE
             calculation_stage_state = FINISH_UP;  
             #if defined(DEBUG_SATELLITE_TRACKING_CALC_STAGE_3)
               debug.print(F("service_calc_satellite_data: STAGE_3_CALC 3:"));
@@ -20730,7 +20785,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
         } //if (calculation_stage_state == STAGE_3_CALC_LOS){  
 
         if (calculation_stage_state == FINISH_UP){
-          #if !defined(DEVELOPMENT_TIMELIB)
+          #if defined(OPTION_USE_OLD_TIME_CODE)
           satellite[service_calc_current_sat].next_aos.year = temp_aos.year;
           satellite[service_calc_current_sat].next_aos.month = temp_aos.month;
           satellite[service_calc_current_sat].next_aos.day = temp_aos.day;
@@ -20744,7 +20799,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           satellite[service_calc_current_sat].next_los.hours = temp_los.hours;
           satellite[service_calc_current_sat].next_los.minutes = temp_los.minutes;
           satellite[service_calc_current_sat].next_los.seconds = temp_los.seconds;
-          #else //DEVELOPMENT_TIMELIB
+          #else //OPTION_USE_OLD_TIME_CODE
           satellite[service_calc_current_sat].next_aos.Year = temp_aos.Year;
           satellite[service_calc_current_sat].next_aos.Month = temp_aos.Month;
           satellite[service_calc_current_sat].next_aos.Day = temp_aos.Day;
@@ -20759,7 +20814,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           satellite[service_calc_current_sat].next_los.Minute = temp_los.Minute;
           satellite[service_calc_current_sat].next_los.Second = temp_los.Second;
 
-          #endif //DEVELOPMENT_TIMELIB
+          #endif //OPTION_USE_OLD_TIME_CODE
           satellite[service_calc_current_sat].next_los_az = temp_next_los_az;
 
           if (service_calc_current_sat== current_satellite_position_in_array){
@@ -20980,7 +21035,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 #endif 
 //-----------------------------------------------------------------------
 #if defined(FEATURE_CLOCK)
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
   void cleartime(tm * time1){
 
     time1->year = 0;
@@ -20991,7 +21046,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     time1->seconds = 0;
 
   }
-#else //!defined(DEVELOPMENT_TIMELIB)
+#else //defined(OPTION_USE_OLD_TIME_CODE)
 
   void cleartime(tmElements_t * time1){
 
@@ -21004,11 +21059,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
   }
 
-#endif //!defined(DEVELOPMENT_TIMELIB)
+#endif //defined(OPTION_USE_OLD_TIME_CODE)
 #endif
 //-----------------------------------------------------------------------
 #if defined(FEATURE_CLOCK)
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
   long difftime(tm * time1,tm * time2,int* days_diff,int* hours_diff,int* minutes_diff,int* seconds_diff){
 
     // this is   time1   - time2
@@ -21045,7 +21100,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
                             + ((double)days_diff_days * (double)86400));
 
   }
-#else //#if !defined(DEVELOPMENT_TIMELIB) -----------------
+#else //#if defined(OPTION_USE_OLD_TIME_CODE) -----------------
 
   long difftime(tmElements_t * time1,tmElements_t * time2,int* days_diff,int* hours_diff,int* minutes_diff,int* seconds_diff){
 
@@ -21087,13 +21142,13 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
   }
 
-#endif //#if !defined(DEVELOPMENT_TIMELIB)
+#endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 #endif
 //-----------------------------------------------------------------------
 
 
 #if defined(FEATURE_CLOCK)
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
   char* tm_month_and_day_string(tm * time1){
 
     static char tempstring[3];
@@ -21111,7 +21166,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
   }
 
-#else //#if !defined(DEVELOPMENT_TIMELIB)
+#else //#if defined(OPTION_USE_OLD_TIME_CODE)
 
   char* tm_month_and_day_string(tmElements_t * time1){
 
@@ -21130,13 +21185,13 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
   }
 
-#endif //#if !defined(DEVELOPMENT_TIMELIB)
+#endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 
 #endif //FEATURE_CLOCK
 
 //-----------------------------------------------------------------------
 #if defined(FEATURE_CLOCK)
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
   char* tm_date_string(tm * time1){
 
     static char tempstring[11];
@@ -21158,7 +21213,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
   }
 
-#else //#if !defined(DEVELOPMENT_TIMELIB)
+#else //#if defined(OPTION_USE_OLD_TIME_CODE)
 
   char* tm_date_string(tmElements_t * time1){
 
@@ -21184,11 +21239,11 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
   }
 
-#endif //#if !defined(DEVELOPMENT_TIMELIB)
+#endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 #endif //FEATURE_CLOCK
 //-----------------------------------------------------------------------
 #if defined(FEATURE_CLOCK)
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
   char* tm_time_string_short(tm * time1){
 
     static char tempstring[6];
@@ -21205,7 +21260,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     return tempstring;
   }
 
-#else //#if !defined(DEVELOPMENT_TIMELIB) -----
+#else //#if defined(OPTION_USE_OLD_TIME_CODE) -----
 
   char* tm_time_string_short(tmElements_t * time1){
 
@@ -21223,12 +21278,12 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     return tempstring;
   }
 
-#endif //#if !defined(DEVELOPMENT_TIMELIB)
+#endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 #endif //FEATURE_SATELLITE_TRACKING
 
 //-----------------------------------------------------------------------
 #if defined(FEATURE_CLOCK)
-#if !defined(DEVELOPMENT_TIMELIB)
+#if defined(OPTION_USE_OLD_TIME_CODE)
   char* tm_time_string_long(tm * time1){
 
     static char tempstring[6];
@@ -21249,7 +21304,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     return tempstring;
   }
 
-#else //#if !defined(DEVELOPMENT_TIMELIB) ------
+#else //#if defined(OPTION_USE_OLD_TIME_CODE) ------
 
   char* tm_time_string_long(tmElements_t * time1){
 
@@ -21271,7 +21326,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
     return tempstring;
   }
 
-#endif //#if !defined(DEVELOPMENT_TIMELIB)
+#endif //#if defined(OPTION_USE_OLD_TIME_CODE)
 #endif //FEATURE_SATELLITE_TRACKING
 
 //------------------------------------------------------
@@ -21320,4 +21375,26 @@ void send_vt100_code(char* code_to_send){
 
 }
 
+//------------------------------------------------------
+#if defined(FEATURE_SATELLITE_TRACKING)
+  void warm_initialize_satellite_array(){
+
+    for (int x = 0;x < SATELLITE_LIST_LENGTH;x++){
+      if ((satellite[x].status != 255) && (strlen(satellite[x].name) > 2)){
+        satellite[x].next_pass_max_el = 0;
+        satellite[x].status = satellite[x].status & B11111000; // clear aos (1), timeout (2), and AOS/LOS state change (4) flags
+        cleartime(&satellite[x].next_aos);
+        cleartime(&satellite[x].next_los);
+        satellite[x].azimuth = 0;
+        satellite[x].elevation = 0;
+        satellite[x].next_aos_az = 0;
+        satellite[x].next_los_az = 0;
+        satellite[x].longitude = 0;
+        satellite[x].latitude = 0; 
+        satellite[x].order = 254;  // 254 = valid slot, but no order placed on it yet             
+      }
+    }            
+            
+  }
+#endif //FEATURE_SATELLITE_TRACKING
 // that's all, folks !

@@ -22,7 +22,7 @@
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
-#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -187,3 +187,6 @@
 // #define OPTION_STEPPER_DO_NOT_USE_DIGITALWRITEFAST_LIBRARY
 
 // #define OPTION_CLI_VT100   // use VT100 terminal emulation
+
+#define OPTION_GPS_USE_TINY_GPS_LIBRARY               // For serial port based NMEA GPS units; serial port defined by GPS_PORT and GPS_PORT_BAUD_RATE in settings file
+

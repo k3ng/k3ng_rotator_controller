@@ -173,3 +173,6 @@
 //#define OPTION_STEPPER_DO_NOT_USE_DIGITALWRITEFAST_LIBRARY
 
 // #define OPTION_CLI_VT100   // use VT100 terminal emulation
+
+#define OPTION_GPS_USE_TINY_GPS_LIBRARY               // For serial port based NMEA GPS units; serial port defined by GPS_PORT and GPS_PORT_BAUD_RATE in settings file
+

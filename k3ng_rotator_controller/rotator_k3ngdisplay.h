@@ -37,6 +37,9 @@
 #ifdef HARDWARE_WB6KCN
   #include "rotator_features_wb6kcn.h"
 #endif
+#ifdef HARDWARE_WB6KCN_K3NG
+  #include "rotator_features_wb6kcn_k3ng.h"
+#endif
 #ifdef HARDWARE_M0UPU
   #include "rotator_features_m0upu.h"
 #endif
@@ -46,15 +49,14 @@
 #if !defined(HARDWARE_CUSTOM)
   #include "rotator_features.h" 
 #endif   
-
-#ifdef HARDWARE_EA4TX_ARS_USB
-  #include "rotator_pins_ea4tx_ars_usb.h"
-#endif
 #ifdef HARDWARE_M0UPU
   #include "rotator_pins_m0upu.h"
 #endif
 #ifdef HARDWARE_WB6KCN
   #include "rotator_pins_wb6kcn.h"
+#endif
+#ifdef HARDWARE_WB6KCN_K3NG
+  #include "rotator_pins_wb6kcn_k3ng.h"
 #endif
 #ifdef HARDWARE_TEST
   #include "rotator_pins_test.h"
@@ -67,7 +69,7 @@
   #include "rotator.h"
 #endif
 
-#define K3NG_DISPLAY_LIBRARY_VERSION "2020.03.16.01"
+#define K3NG_DISPLAY_LIBRARY_VERSION "2021.10.14.01"
 #define MAX_SCREEN_BUFFER_COLUMNS 20
 #define MAX_SCREEN_BUFFER_ROWS 4
 
