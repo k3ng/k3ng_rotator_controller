@@ -1039,6 +1039,8 @@
         All time functionality permanent changed to use TimeLib library
         Working on adding Sparkfun u-blox GNSS library (OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY)  
 
+      2021.10.17.01
+        FEATURE_SATELLITE_TRACKING: I *believe* I fixed the issue with satellite tracking using DEFAULT_LATITUDE and DEFAULT_LONGITUDE rather than GPS-derived coordinates
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -1053,7 +1055,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.15.01"
+#define CODE_VERSION "2021.10.17.01"
 
 
 #include <avr/pgmspace.h>
@@ -1738,7 +1740,7 @@ struct config_t {
   byte service_calc_satellite_data_task;
 
   Satellite sat;
-  Observer obs("", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M);
+  //Observer obs("", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M); //qqqqqq
   SatDateTime sat_datetime;
 
   struct satellite_list{
@@ -9244,7 +9246,12 @@ void output_debug(){
 
           #endif //OPTION_USE_OLD_TIME_CODE
 
-          debug.print(F(" Sat_Calc_Timeout: "));
+          // debug.print(F(" LA: ")); //qqqqq
+          // debug.print(obs.LA);
+          // debug.print(F(" LO: "));
+          // debug.print(obs.LO);
+
+          debug.print(F(" In Sat Calc Timeout: "));
 
           for (int x = 0;x < SATELLITE_LIST_LENGTH;x++){
             if((satellite[x].status & 2) == 2){
@@ -9253,7 +9260,7 @@ void output_debug(){
             }             
           } 
 
-          debug.println("");
+          debug.println("$");
         #endif
 
         debug.print(F("\tCONFIG_"));
@@ -16922,15 +16929,15 @@ Not implemented yet:
 
         control_port->print(F("Satellite:"));
         control_port->println(configuration.current_satellite);
-        control_port->print(F("Location:"));
+        // control_port->print(F("Location:"));
         //control_port->print(obs.name);
         //control_port->print(" (");
-        control_port->print(obs.LA,4);
-        control_port->print(",");
-        control_port->print(obs.LO,4);
-        control_port->print(F(" "));
-        control_port->print(obs.HT,0);
-        control_port->println(F("m"));
+        // control_port->print(obs.LA,4);  //qqqqqq
+        // control_port->print(",");
+        // control_port->print(obs.LO,4);
+        // control_port->print(F(" "));
+        // control_port->print(obs.HT,0);
+        // control_port->println(F("m"));
         control_port->print(F("AZ:"));
         control_port->print(current_satellite_azimuth,DISPLAY_DECIMAL_PLACES);
         control_port->print(F(" EL:"));
@@ -20210,9 +20217,12 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     byte pull_result = 0;
 
-    obs.LA = latitude;
-    obs.LO = longitude;
-    obs.HT = altitude_m;
+    // obs.LA = latitude; //qqqqqq
+    // obs.LO = longitude;
+    // obs.HT = altitude_m;
+
+    Observer obs("",latitude,longitude,altitude_m); //qqqqqq
+
 
     if (service_action == SERVICE_CALC_REPORT_STATE){return service_calc_satellite_data_service_state;}
 
@@ -20311,9 +20321,6 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
           return 0;          
         }
         sat_datetime.settime(calc_years, calc_months, calc_days, calc_hours, calc_minutes, calc_seconds);
-        // obs.LA = latitude;
-        // obs.LO = longitude;
-        // obs.HT = altitude_m;
         pull_result = pull_satellite_tle_and_activate(satellite[service_calc_current_sat].name,NOT_VERBOSE,DO_NOT_MAKE_IT_THE_CURRENT_SATELLITE);
         if (pull_result == 1){
           sat.predict(sat_datetime);

@@ -192,10 +192,10 @@ You can tweak these, but read the online documentation!
 
 #define SERIAL_LED_TIME_MS 250
 
-// #define DEFAULT_LATITUDE 1.0
-// #define DEFAULT_LONGITUDE -2.0
-#define DEFAULT_LATITUDE 40.889958
-#define DEFAULT_LONGITUDE -75.585972
+#define DEFAULT_LATITUDE 1.0
+#define DEFAULT_LONGITUDE -2.0
+// #define DEFAULT_LATITUDE 40.889958
+// #define DEFAULT_LONGITUDE -75.585972
 
 #define MOON_TRACKING_CHECK_INTERVAL 5000 // This is only written to the configuration upon first boot of the code or when EEPROM_MAGIC_NUMBER is changed in rotator.h
 #define MOON_AOS_AZIMUTH_MIN 0
