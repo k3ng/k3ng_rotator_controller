@@ -1042,6 +1042,9 @@
       2021.10.17.01
         FEATURE_SATELLITE_TRACKING: I *believe* I fixed the issue with satellite tracking using DEFAULT_LATITUDE and DEFAULT_LONGITUDE rather than GPS-derived coordinates
 
+      2021.10.19.01
+        Increment Encoder Sensors: Attempt to get large EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV working correctly
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1055,7 +1058,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.17.01"
+#define CODE_VERSION "2021.10.19.01"
 
 
 #include <avr/pgmspace.h>
@@ -1740,7 +1743,6 @@ struct config_t {
   byte service_calc_satellite_data_task;
 
   Satellite sat;
-  //Observer obs("", DEFAULT_LATITUDE, DEFAULT_LONGITUDE, DEFAULT_ALTITUDE_M); //qqqqqq
   SatDateTime sat_datetime;
 
   struct satellite_list{
@@ -9246,11 +9248,6 @@ void output_debug(){
 
           #endif //OPTION_USE_OLD_TIME_CODE
 
-          // debug.print(F(" LA: ")); //qqqqq
-          // debug.print(obs.LA);
-          // debug.print(F(" LO: "));
-          // debug.print(obs.LO);
-
           debug.print(F(" In Sat Calc Timeout: "));
 
           for (int x = 0;x < SATELLITE_LIST_LENGTH;x++){
@@ -9700,7 +9697,7 @@ void read_elevation(byte force_read){
 
 
     #ifdef FEATURE_EL_POSITION_INCREMENTAL_ENCODER
-    elevation = ((((el_incremental_encoder_position) / (EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0));
+      elevation = ((((el_incremental_encoder_position) / (EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) * 360.0));
     #ifdef FEATURE_ELEVATION_CORRECTION
     elevation = correct_elevation(elevation);
     #endif // FEATURE_ELEVATION_CORRECTION
@@ -13549,16 +13546,17 @@ void el_position_incremental_encoder_interrupt_handler(){
     }
 
     
+
     #ifndef OPTION_SCANCON_2RMHF3600_INC_ENCODER
       if ((current_phase_a == LOW) && (current_phase_b == LOW) && (current_phase_z == LOW)) {
         el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
       } else {
 
         if (el_incremental_encoder_position < 0) {
-          el_incremental_encoder_position = ((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1);
+          el_incremental_encoder_position = (long(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1L);
         }
 
-        if (el_incremental_encoder_position >= (EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
+        if (el_incremental_encoder_position >= long(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
           el_incremental_encoder_position = 0;
         }  
 
@@ -13568,13 +13566,16 @@ void el_position_incremental_encoder_interrupt_handler(){
         el_incremental_encoder_position = EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION;
       } else {
         if (el_incremental_encoder_position < 0) {
-          el_incremental_encoder_position = ((EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.) - 1);
+          el_incremental_encoder_position = (long(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4L) - 1L);
         }
-        if (el_incremental_encoder_position >= (EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4.)) {
+        if (el_incremental_encoder_position >= long(EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV*4L)) {
           el_incremental_encoder_position = 0;
         }  
       } 
     #endif //OPTION_SCANCON_2RMHF3600_INC_ENCODER
+
+  
+
 
     el_3_phase_encoder_last_phase_a_state = current_phase_a;
     el_3_phase_encoder_last_phase_b_state = current_phase_b;
@@ -16929,15 +16930,6 @@ Not implemented yet:
 
         control_port->print(F("Satellite:"));
         control_port->println(configuration.current_satellite);
-        // control_port->print(F("Location:"));
-        //control_port->print(obs.name);
-        //control_port->print(" (");
-        // control_port->print(obs.LA,4);  //qqqqqq
-        // control_port->print(",");
-        // control_port->print(obs.LO,4);
-        // control_port->print(F(" "));
-        // control_port->print(obs.HT,0);
-        // control_port->println(F("m"));
         control_port->print(F("AZ:"));
         control_port->print(current_satellite_azimuth,DISPLAY_DECIMAL_PLACES);
         control_port->print(F(" EL:"));
@@ -20217,12 +20209,7 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     byte pull_result = 0;
 
-    // obs.LA = latitude; //qqqqqq
-    // obs.LO = longitude;
-    // obs.HT = altitude_m;
-
-    Observer obs("",latitude,longitude,altitude_m); //qqqqqq
-
+    Observer obs("",latitude,longitude,altitude_m);
 
     if (service_action == SERVICE_CALC_REPORT_STATE){return service_calc_satellite_data_service_state;}
 

@@ -107,8 +107,8 @@ You can tweak these, but read the online documentation!
 #define ENCODER_PRESET_TIMEOUT 5000
 
 // various code settings
-#define AZIMUTH_TOLERANCE 0.1            // rotator will stop within X degrees when doing autorotation
-#define ELEVATION_TOLERANCE 0.1 //1.0
+#define AZIMUTH_TOLERANCE 0.01            // rotator will stop within X degrees when doing autorotation
+#define ELEVATION_TOLERANCE 0.01 //1.0
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
@@ -185,8 +185,8 @@ You can tweak these, but read the online documentation!
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_SECONDS 0
 #define ROTATION_INDICATOR_PIN_TIME_DELAY_MINUTES 0
 
-#define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
-#define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000.0
+#define AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000L //2000.0
+#define EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV 2000L //2000.0
 #define AZ_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION 0  // can be 0 to 4 x AZ_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV
 #define EL_INCREMENTAL_ENCODER_ZERO_PULSE_POSITION 0  // can be 0 to 4 x EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV
 
