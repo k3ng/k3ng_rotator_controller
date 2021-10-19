@@ -22,7 +22,7 @@
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP  
 
-#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -84,7 +84,7 @@
 // #define FEATURE_MIDAS_I2C_DISPLAY
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY  
 
-// #define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+#define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
 
@@ -193,3 +193,4 @@
 #define OPTION_GPS_USE_TINY_GPS_LIBRARY               // For serial port based NMEA GPS units; serial port defined by GPS_PORT and GPS_PORT_BAUD_RATE in settings file
 // #define OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY   // For Sparkfun (and perhaps others) u-blox GPS units interfaced via I2C ( https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library)
 
+#define OPTION_NEW_NEXTION_INIT_CODE

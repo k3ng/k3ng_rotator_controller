@@ -1045,6 +1045,9 @@
       2021.10.19.01
         Increment Encoder Sensors: Attempt to get large EL_POSITION_INCREMENTAL_ENCODER_PULSES_PER_REV working correctly
 
+      2021.10.19.02
+        FEATURE_NEXTION_DISPLAY: testing new initialization code (OPTION_NEW_NEXTION_INIT_CODE)
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1058,7 +1061,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.19.01"
+#define CODE_VERSION "2021.10.19.02"
 
 
 #include <avr/pgmspace.h>
@@ -4806,88 +4809,164 @@ void service_nextion_display(){
     static unsigned long last_moon_and_sun_and_sat_update = 0;
   #endif
 
-
-  if ((initialization_stage == 0) && (millis() > 100)){
-
-
-    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      debug.println(F("\r\nservice_nextion_display: init: 0"));
-    #endif     
-    nexSerial.begin(NEXTION_SERIAL_BAUD);
-
-    sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
-
-    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      debug.println(F("\r\nservice_nextion_display: sent code_c"));
-    #endif   
-
-    sendNextionCommand("rest");      // reset the Nextion unit
-
-    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      debug.println(F("\r\nservice_nextion_display: sent rest"));
-    #endif   
-
-    initialization_stage = 1;
-    last_various_things_update = millis();
-    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      debug.println(F("\r\nservice_nextion_display: init 0 -> 1"));
-    #endif    
-  }
-
-
-  if (initialization_stage == 1){  // look for 'i am alive' bytes from Nextion
-
-    nextion_i_am_alive_string[0] = 255;
-    nextion_i_am_alive_string[1] = 255;
-    nextion_i_am_alive_string[2] = 255;
-    nextion_i_am_alive_string[3] = 0; // Null - end of string
-  
-    if (nexSerial.available()){
+  #if !defined(OPTION_NEW_NEXTION_INIT_CODE)
+    // OLD CODE
+    if ((initialization_stage == 0) && (millis() > 100)){
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-        debug.print(F("\r\nservice_nextion_display: recv:"));
-      #endif
-  
-      serial_byte = nexSerial.read();  
+        debug.println(F("\r\nservice_nextion_display: init: 0"));
+      #endif     
+      nexSerial.begin(NEXTION_SERIAL_BAUD);
+
+      sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
+
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-        debug.write(serial_byte);
-        debug.print(":");
-        debug.print(serial_byte);
-      #endif            
-      if (i_am_alive_bytes_received < 254){  // we're looking for the 'i am alive' bytes from the Nextion
-        if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
-          i_am_alive_bytes_received++;
-          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-            debug.println(F(" match!"));
-          #endif             
-          if (nextion_i_am_alive_string[i_am_alive_bytes_received] == 0){  // a null is the end of the nextion_i_am_alive_string char[]
-            i_am_alive_bytes_received = 254;       
-          }         
-        } else {
-          i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
-          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-            debug.println(F(" no match"));
-          #endif              
-        }
-      } 
+        debug.println(F("\r\nservice_nextion_display: sent code_c"));
+      #endif   
+
+      sendNextionCommand("rest");      // reset the Nextion unit
+
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.println(F("\r\nservice_nextion_display: sent rest"));
+      #endif   
+
+      initialization_stage = 1;
+      last_various_things_update = millis();
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.println(F("\r\nservice_nextion_display: init 0 -> 1"));
+      #endif    
     }
 
-    if (i_am_alive_bytes_received == 254){   // we got all the 'i am alive' bytes from the Nextion
-      initialization_stage = 2;
-      output_nextion_gSC_variable();  // send gSC variable ASAP
-      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-        debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
-        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));
-        last_various_things_update = millis();        
-      #endif            
-    } else {
-      if ((millis()-last_various_things_update) > 2000){  // we've been waiting too long, let's try this again
-        initialization_stage = 0;
+    if (initialization_stage == 1){  // look for 'i am alive' bytes from Nextion
+      nextion_i_am_alive_string[0] = 255;
+      nextion_i_am_alive_string[1] = 255;
+      nextion_i_am_alive_string[2] = 255;
+      nextion_i_am_alive_string[3] = 0; // Null - end of string
+    
+      if (nexSerial.available()){
         #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-          debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, attempting init again"));
-        #endif             
+          debug.print(F("\r\nservice_nextion_display: recv:"));
+        #endif
+    
+        serial_byte = nexSerial.read();  
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.write(serial_byte);
+          debug.print(":");
+          debug.print(serial_byte);
+        #endif            
+        if (i_am_alive_bytes_received < 254){  // we're looking for the 'i am alive' bytes from the Nextion
+          if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
+            i_am_alive_bytes_received++;
+            #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+              debug.println(F(" match!"));
+            #endif             
+            if (nextion_i_am_alive_string[i_am_alive_bytes_received] == 0){  // a null is the end of the nextion_i_am_alive_string char[]
+              i_am_alive_bytes_received = 254;       
+            }         
+          } else {
+            i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
+            #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+              debug.println(F(" no match"));
+            #endif              
+          }
+        } 
+      }
+
+      if (i_am_alive_bytes_received == 254){   // we got all the 'i am alive' bytes from the Nextion
+        initialization_stage = 2;
+        output_nextion_gSC_variable();  // send gSC variable ASAP
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
+          debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));
+          last_various_things_update = millis();        
+        #endif            
+      } else {
+        if ((millis()-last_various_things_update) > 2000){  // we've been waiting too long, let's try this again
+          initialization_stage = 0;
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, attempting init again"));
+          #endif             
+        }
       }
     }
-  }
+
+  #else // OPTION_NEW_NEXTION_INIT_CODE
+    // NEW CODE
+    if ((initialization_stage == 0) /*&& (millis() > 100)*/){
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.println(F("\r\nservice_nextion_display: init: 0"));
+      #endif     
+      nexSerial.begin(NEXTION_SERIAL_BAUD);
+      initialization_stage = 1;
+      last_various_things_update = millis();
+      i_am_alive_bytes_received = 0;
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        debug.println(F("\r\nservice_nextion_display: init 0 -> 1"));
+      #endif    
+    }
+
+    if (initialization_stage == 1){
+      nextion_i_am_alive_string[0] = 136;
+      nextion_i_am_alive_string[1] = 255;
+      nextion_i_am_alive_string[2] = 255;
+      nextion_i_am_alive_string[3] = 255;
+      nextion_i_am_alive_string[4] = 0; // Null - end of string
+    
+      if ((millis()-last_various_things_update) > 2000){  // we've been waiting too long, let's send a reset to Nextion
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, sending reset to Nextion"));
+        #endif     
+        sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: sent code_c"));
+        #endif   
+        sendNextionCommand("rest");      // reset the Nextion unit
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: sent rest"));
+        #endif  
+        last_various_things_update = millis(); 
+      }
+
+      if (nexSerial.available()){
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.print(F("\r\nservice_nextion_display: recv:"));
+        #endif
+    
+        serial_byte = nexSerial.read();  
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.write(serial_byte);
+          debug.print(":");
+          debug.print(serial_byte);
+        #endif            
+        if (i_am_alive_bytes_received < 254){  // we're looking for the 'i am alive' bytes from the Nextion
+          if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
+            i_am_alive_bytes_received++;
+            #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+              debug.println(F(" match!"));
+            #endif             
+            if (nextion_i_am_alive_string[i_am_alive_bytes_received] == 0){  // a null is the end of the nextion_i_am_alive_string char[]
+              i_am_alive_bytes_received = 254;       
+            }         
+          } else {
+            i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
+            #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+              debug.println(F(" no match"));
+            #endif              
+          }
+        } 
+
+        if (i_am_alive_bytes_received == 254){   // we got all the 'i am alive' bytes from the Nextion
+          initialization_stage = 2;
+          output_nextion_gSC_variable();  // send gSC variable ASAP
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
+            debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update)); 
+          #endif   
+          last_various_things_update = millis();         
+        }
+      }
+    }
+  #endif  // OPTION_NEW_NEXTION_INIT_CODE
+
 
   if (initialization_stage < 2){return;}     // we haven't initialized yet.  come back later.
 
