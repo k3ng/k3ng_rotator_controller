@@ -372,15 +372,6 @@ You can tweak these, but read the online documentation!
 // Added in 2020.08.24.01
 #define NEXTION_NUMBER_OF_NEXT_SATELLITES 6
 
-// Added / Updated in 2020.08.26.02
-// #define SATELLITE_CALC_THROTTLE_DOWN_TO_MEDIUM_RESOLUTION_MS 1000
-// #define SATELLITE_CALC_THROTTLE_DOWN_TO_LOW_RESOLUTION_MS 5000
-// #define SATELLITE_AOS_LOS_CALC_RESOLUTION_HIGH_SECS 10
-// #define SATELLITE_AOS_LOS_CALC_RESOLUTION_MEDIUM_SECS 30
-// #define SATELLITE_AOS_LOS_CALC_RESOLUTION_LOW_SECS 120
-// #define SATELLITE_AOS_LOS_CALC_RESOLUTION_HIGH_TRIGGER_SECS 3600 //300     //next event is < 5 minutes
-// #define SATELLITE_AOS_LOS_CALC_RESOLUTION_MEDIUM_TRIGGER_SECS 10800 //3600 //next < 1 hour
-
 // Added / Updated in 2020.08.29.01
 #define SATELLITE_CALC_TIMEOUT_MS 10000
 #define SATELLITE_AOS_ELEVATION_MIN 0.0
@@ -388,9 +379,6 @@ You can tweak these, but read the online documentation!
 #define SATELLITE_CALC_STAGE_2_RESOLUTION_SECS 10
 #define SATELLITE_CALC_STAGE_3_RESOLUTION_SECS 1
 
-// Deprecated in 2020.08.30.01
-// #define PARK_AZIMUTH 0.0     // replace the 0.0 with your park azimuth; azimuth is in raw degrees (i.e. on a 180 degree starting point rotator, 0 degrees = 360)
-// #define PARK_ELEVATION 0.0    // replace the 0.0 with your park elevation
-
+#define NEXTION_GSC_STARTUP_DELAY 0
 
 

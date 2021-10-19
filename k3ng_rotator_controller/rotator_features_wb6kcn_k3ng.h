@@ -74,7 +74,7 @@
 // #define FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER
    
 // And if you are using any display other than a 4 bit LCD, you must also change the feature setting in rotator_k3ngdisplay.h!!!!
-// #define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
+#define FEATURE_4_BIT_LCD_DISPLAY // Uncomment for classic 4 bit LCD display (most common)
 // #define FEATURE_ADAFRUIT_I2C_LCD
 // #define FEATURE_ADAFRUIT_BUTTONS  // Uncomment this to use Adafruit I2C LCD buttons for manual AZ/EL instead of normal buttons (also set this feature in rotator_k3ngdisplay.h)
 // #define FEATURE_YOURDUINO_I2C_LCD
@@ -193,4 +193,5 @@
 #define OPTION_GPS_USE_TINY_GPS_LIBRARY               // For serial port based NMEA GPS units; serial port defined by GPS_PORT and GPS_PORT_BAUD_RATE in settings file
 // #define OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY   // For Sparkfun (and perhaps others) u-blox GPS units interfaced via I2C ( https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library)
 
-#define OPTION_NEW_NEXTION_INIT_CODE
+#define OPTION_DEPRECATED_NEXTION_INIT_CODE_1  // use only with VK4GHZ Nextion firmware versions previous to 2021-10-23
+// #define OPTION_DEPRECATED_NEXTION_INIT_CODE_2  // use only with VK4GHZ Nextion firmware versions previous to 2021-10-23

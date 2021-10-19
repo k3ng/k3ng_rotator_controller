@@ -1051,6 +1051,9 @@
       2021.10.19.03  
         FEATURE_NEXTION_DISPLAY: optimization of OPTION_NEW_NEXTION_INIT_CODE
 
+      2021.10.19.04 
+        FEATURE_NEXTION_DISPLAY: more work on initialization code 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1064,7 +1067,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.19.03"
+#define CODE_VERSION "2021.10.19.04"
 
 
 #include <avr/pgmspace.h>
@@ -1750,6 +1753,10 @@ struct config_t {
 
   Satellite sat;
   SatDateTime sat_datetime;
+
+  #if defined(DEBUG_SATELLITE_USE_OLD_OBSERVER_OBJECT)
+    Observer obs("",DEFAULT_LATITUDE,DEFAULT_LONGITUDE,DEFAULT_ALTITUDE_M);
+  #endif  
 
   struct satellite_list{
     char name[SATELLITE_NAME_LENGTH];
@@ -4811,8 +4818,10 @@ void service_nextion_display(){
     static unsigned long last_moon_and_sun_and_sat_update = 0;
   #endif
 
-  #if !defined(OPTION_NEW_NEXTION_INIT_CODE)
-    // OLD CODE
+  // initialization ---------------------------------------------------------------------------
+
+  #if defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_1)
+    // OLD CODE 1
     if ((initialization_stage == 0) && (millis() > 100)){
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
         debug.println(F("\r\nservice_nextion_display: init: 0"));
@@ -4839,10 +4848,7 @@ void service_nextion_display(){
     }
 
     if (initialization_stage == 1){  // look for 'i am alive' bytes from Nextion
-      nextion_i_am_alive_string[0] = 255;
-      nextion_i_am_alive_string[1] = 255;
-      nextion_i_am_alive_string[2] = 255;
-      nextion_i_am_alive_string[3] = 0; // Null - end of string
+      byte nextion_i_am_alive_string[] = {255,255,255,0};
     
       if (nexSerial.available()){
         #if defined(DEBUG_NEXTION_DISPLAY_INIT)
@@ -4890,96 +4896,258 @@ void service_nextion_display(){
         }
       }
     }
-  #else // OPTION_NEW_NEXTION_INIT_CODE
-    // NEW CODE
-    if (initialization_stage == 0){
+  #else // OPTION_DEPRECATED_NEXTION_INIT_CODE_1
+    #if defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_2)
+      // OLD CODE 2
+      if (initialization_stage == 0){
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: init: 0"));
+        #endif     
+        nexSerial.begin(NEXTION_SERIAL_BAUD);
+        initialization_stage = 1;
+        last_various_things_update = millis();
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: init 0 -> 1"));
+        #endif    
+      }
+
+      if (initialization_stage == 1){
+        byte nextion_i_am_alive_string[] = {136,255,255,255};
+      
+        if ((millis()-last_various_things_update) > 2000){  // we've been waiting too long, let's send a reset to Nextion
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, sending reset to Nextion"));
+          #endif     
+          sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.println(F("\r\nservice_nextion_display: sent code_c"));
+          #endif   
+          sendNextionCommand("rest");      // reset the Nextion unit
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.println(F("\r\nservice_nextion_display: sent rest"));
+          #endif  
+          last_various_things_update = millis(); 
+        }
+
+        if (nexSerial.available()){
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.print(F("\r\nservice_nextion_display: recv:"));
+          #endif
+      
+          serial_byte = nexSerial.read();  
+          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+            debug.write(serial_byte);
+            debug.print(":");
+            debug.print(serial_byte);
+          #endif            
+          if (i_am_alive_bytes_received < 254){  // we're looking for the 'i am alive' bytes from the Nextion
+            if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
+              i_am_alive_bytes_received++;
+              #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+                debug.print(F(" match! i_am_alive_bytes_received:"));
+                debug.print(i_am_alive_bytes_received);
+                debug.println("");
+              #endif             
+              if (i_am_alive_bytes_received == 4){ // have we receive all the 'i am alive' bytes?
+                initialization_stage = 2;
+                output_nextion_gSC_variable();  // send gSC variable ASAP
+                #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+                  debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
+                  debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update)); 
+                #endif   
+                last_various_things_update = millis();     
+              }         
+            } else {
+              i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
+              #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+                debug.println(F(" no match"));
+              #endif              
+            }
+          } 
+        }
+      }
+    #endif //OPTION_DEPRECATED_NEXTION_INIT_CODE_2
+  #endif  // OPTION_DEPRECATED_NEXTION_INIT_CODE_1
+
+  #if (defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_1) || defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_2))
+    if (initialization_stage < 2){return;}     // we haven't initialized yet.  come back later.
+
+    // Update various things
+    if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
+      
+      temp = 0;
+
+      output_nextion_gSC_variable();  // send system capabilities variable
+
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        if (initialization_stage == 2){
+          debug.print(F("\r\nservice_nextion_display: init: sent first "));
+          debug.print(workstring1);
+          debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+          debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+        }
+      #endif   
+
+      temp = 0;
+
+      #if defined(LANGUAGE_ENGLISH)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_ENGLISH;
+      #endif    
+      #if defined(LANGUAGE_SPANISH)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_SPANISH;
+      #endif    
+      #if defined(LANGUAGE_CZECH)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_CZECH;
+      #endif    
+      #if defined(LANGUAGE_PORTUGUESE_BRASIL)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_PORTUGUESE_BRASIL;
+      #endif        
+      #if defined(LANGUAGE_GERMAN)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_GERMAN;
+      #endif
+      #if defined(LANGUAGE_FRENCH)
+        temp = temp | NEXTION_API_SYSTEM_CAPABILITIES_FRENCH;
+      #endif  
+
+      strcpy_P(workstring1,(const char*) F("gL="));
+      dtostrf(temp, 1, 0, workstring2);
+      strcat(workstring1,workstring2);
+      sendNextionCommand(workstring1);
+
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        if (initialization_stage == 2){
+          debug.print(F("\r\nservice_nextion_display: init: sent first "));
+          debug.print(workstring1);
+          debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+          debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+        }
+      #endif
+
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        if (initialization_stage == 2){
+          debug.print(F("\r\nservice_nextion_display: init: sent first "));
+          debug.print(workstring1);
+          debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+          debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+        }
+      #endif      
+
+      // Rotator Controller Arduino Code Version
+      strcpy_P(workstring1,(const char*) F("vRCVersion.txt=\""));
+      strcat(workstring1,CODE_VERSION);
+      strcat(workstring1,"\"");
+      sendNextionCommand(workstring1);
+
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        if (initialization_stage == 2){
+          debug.print(F("\r\nservice_nextion_display: init: sent first "));
+          debug.print(workstring1);
+          debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+          debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+        }
+      #endif      
+
+      // gDP - Display decimal places
+      dtostrf(DISPLAY_DECIMAL_PLACES, 1, 0, workstring1);
+      strcpy_P(workstring2,(const char*) F("gDP="));
+      strcat(workstring2,workstring1);
+      sendNextionCommand(workstring2);  
+
+      #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+        if (initialization_stage == 2){
+          debug.print(F("\r\nservice_nextion_display: init: sent first "));
+          debug.print(workstring2);
+          debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
+          debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
+        }
+      #endif         
+
+      #if defined(FEATURE_PARK)
+        strcpy_P(workstring1,(const char*) F("vPA.val="));
+        dtostrf(configuration.park_azimuth, 1, 0, workstring2);
+        strcat(workstring1,workstring2);
+        sendNextionCommand(workstring1);
+
+        #if defined(FEATURE_ELEVATION_CONTROL)
+          strcpy_P(workstring1,(const char*) F("vPE.val="));
+          dtostrf(configuration.park_elevation, 1, 0, workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1); 
+        #endif         
+
+        #if defined(FEATURE_AUTOPARK)
+          strcpy_P(workstring1,(const char*) F("vAT.val="));
+          dtostrf(configuration.autopark_time_minutes, 1, 0, workstring2);
+          strcat(workstring1,workstring2);
+          sendNextionCommand(workstring1);
+        #endif
+      #endif //FEATURE_PARK
+
+      last_various_things_update = millis();
+
+      if (initialization_stage == 2){
+        initialization_stage = 3;
+
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println("\r\nservice_nextion_display: done with init, init -> 3");
+        #endif   
+      }
+    }
+  #endif //(defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_1) || defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_2))
+
+
+  #if (!defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_1) && !defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_2))
+
+    // Current initialization code
+
+    /* Nextion Initialization code from VK4GHZ
+     *  
+     *  VK4GHZ Nextion firmware Version 2021-10-23 or later required.  
+     *  
+     *  This works on the understanding that the Nextion will be ready before the Arduino sends the gSC variable to it.
+     *  Therefore 2-way handshaking is not needed.
+     *  Resetting the Nextion is not needed.
+     *  
+     *  If the Nextion fails to receive gSC, then that indicates a user configuration error, or mis-wired TXD/RXD lines.
+     *  
+     *  Nextion 3.2" Enhanced is ready ~ 225 mS after powering up
+     *  Nextion 3.5" Enhanced is ready ~ 390 mS after powering up
+     *  Nextion 5.0" Enhanced is ready ~ 345 mS after powering up
+     *  Nextion 7.0" Enhanced is ready ~     mS after powering up (VK4GHZ does not have a 7.0" to test with, but will happily accept donations!)
+     *  
+     *  Tests indicate nexSerial is set 363 ~ 2400 mS after Teensy 3.2 board powers up.
+     *  This may not be the same on successive power ups. 
+     *  Dunno why?
+     *  
+     *  Sending of gSC can be delayed by increasing the value of NEXTION_GSC_STARTUP_DELAY in rotator_settings.h (default 0 mS)
+     *  However, a value of 0 works with 3.5" enhanced, being the slowest HMI to become ready.
+    */
+    
+    if ((initialization_stage == 0) && (millis() > NEXTION_GSC_STARTUP_DELAY)){    
+
+      nexSerial.begin(NEXTION_SERIAL_BAUD);
+    
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
         debug.println(F("\r\nservice_nextion_display: init: 0"));
+        debug.print(F("\r\nNextion serial: "));         // Debug print how long after power up Nextion serial is set
+        debug.print(millis());
+        debug.println(" mS");
       #endif     
-      nexSerial.begin(NEXTION_SERIAL_BAUD);
-      initialization_stage = 1;
+
+      output_nextion_gSC_variable();                    // send gSC variable to Nextion
+      initialization_stage = 2;                         // Straight to init stage 2, init stage 1 has become redundant
+      
       last_various_things_update = millis();
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-        debug.println(F("\r\nservice_nextion_display: init 0 -> 1"));
+        debug.println(F("\r\nservice_nextion_display: init 0 -> 2"));  // init stage 2
       #endif    
     }
 
-    if (initialization_stage == 1){
-      byte nextion_i_am_alive_string[] = {136,255,255,255};
-    
-      if ((millis()-last_various_things_update) > 2000){  // we've been waiting too long, let's send a reset to Nextion
-        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-          debug.println(F("\r\nservice_nextion_display: didn't receive nextion_i_am_alive_string after 2 secs, sending reset to Nextion"));
-        #endif     
-        sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
-        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-          debug.println(F("\r\nservice_nextion_display: sent code_c"));
-        #endif   
-        sendNextionCommand("rest");      // reset the Nextion unit
-        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-          debug.println(F("\r\nservice_nextion_display: sent rest"));
-        #endif  
-        last_various_things_update = millis(); 
-      }
 
-      if (nexSerial.available()){
-        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-          debug.print(F("\r\nservice_nextion_display: recv:"));
-        #endif
-    
-        serial_byte = nexSerial.read();  
-        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-          debug.write(serial_byte);
-          debug.print(":");
-          debug.print(serial_byte);
-        #endif            
-        if (i_am_alive_bytes_received < 254){  // we're looking for the 'i am alive' bytes from the Nextion
-          if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
-            i_am_alive_bytes_received++;
-            #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-              debug.print(F(" match! i_am_alive_bytes_received:"));
-              debug.print(i_am_alive_bytes_received);
-              debug.println("");
-            #endif             
-            if (i_am_alive_bytes_received == 4){ // have we receive all the 'i am alive' bytes?
-              initialization_stage = 2;
-              output_nextion_gSC_variable();  // send gSC variable ASAP
-              #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-                debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
-                debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update)); 
-              #endif   
-              last_various_things_update = millis();     
-            }         
-          } else {
-            i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
-            #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-              debug.println(F(" no match"));
-            #endif              
-          }
-        } 
-      }
-    }
-  #endif  // OPTION_NEW_NEXTION_INIT_CODE
-
-
-  if (initialization_stage < 2){return;}     // we haven't initialized yet.  come back later.
 
   // Update various things
-  if (((millis() - last_various_things_update) > NEXTION_LESS_FREQUENT_UPDATE_MS) || (initialization_stage == 2)){
+  if (initialization_stage == 2){
     
-    temp = 0;
-
-    output_nextion_gSC_variable();  // send system capabilities variable
-
-    #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-      if (initialization_stage == 2){
-        debug.print(F("\r\nservice_nextion_display: init: sent first "));
-        debug.print(workstring1);
-        debug.print(F("  mS elapsed since nextion_i_am_alive_string:"));
-        debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update));          
-      }
-    #endif   
-
     temp = 0;
 
     #if defined(LANGUAGE_ENGLISH)
@@ -5084,9 +5252,13 @@ void service_nextion_display(){
         debug.println("\r\nservice_nextion_display: done with init, init -> 3");
       #endif   
     }
-
+ 
 
   }
+
+  #endif // (!defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_1) && !defined(OPTION_DEPRECATED_NEXTION_INIT_CODE_2))
+
+  // end of initialization ---------------------------------------------------------------------------
 
   // Get incoming commands
   if (nexSerial.available()){
@@ -20282,7 +20454,10 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     byte pull_result = 0;
 
-    Observer obs("",latitude,longitude,altitude_m);
+
+    #if !defined(DEBUG_SATELLITE_USE_OLD_OBSERVER_OBJECT)
+    /*static*/ Observer obs("",latitude,longitude,altitude_m);  // don't do static here.  it doesn't work
+    #endif
 
     if (service_action == SERVICE_CALC_REPORT_STATE){return service_calc_satellite_data_service_state;}
 

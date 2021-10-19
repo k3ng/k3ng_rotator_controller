@@ -385,4 +385,6 @@ You can tweak these, but read the online documentation!
 #define SATELLITE_CALC_STAGE_2_RESOLUTION_SECS 10
 #define SATELLITE_CALC_STAGE_3_RESOLUTION_SECS 1
 
+#define NEXTION_GSC_STARTUP_DELAY 0
+
 

@@ -176,3 +176,5 @@
 
 #define OPTION_GPS_USE_TINY_GPS_LIBRARY               // For serial port based NMEA GPS units; serial port defined by GPS_PORT and GPS_PORT_BAUD_RATE in settings file
 
+#define OPTION_DEPRECATED_NEXTION_INIT_CODE_1  // use only with VK4GHZ Nextion firmware versions previous to 2021-10-23
+// #define OPTION_DEPRECATED_NEXTION_INIT_CODE_2  // use only with VK4GHZ Nextion firmware versions previous to 2021-10-23
