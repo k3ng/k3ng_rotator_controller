@@ -1048,6 +1048,9 @@
       2021.10.19.02
         FEATURE_NEXTION_DISPLAY: testing new initialization code (OPTION_NEW_NEXTION_INIT_CODE)
 
+      2021.10.19.03  
+        FEATURE_NEXTION_DISPLAY: optimization of OPTION_NEW_NEXTION_INIT_CODE
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1061,7 +1064,7 @@
 
   */
 
-#define CODE_VERSION "2021.10.19.02"
+#define CODE_VERSION "2021.10.19.03"
 
 
 #include <avr/pgmspace.h>
@@ -4752,7 +4755,6 @@ void service_nextion_display(){
   static byte nextion_port_buffer[32];
   char return_string[32];
   static byte received_backslash = 0;  
-  byte nextion_i_am_alive_string[4];
   static byte i_am_alive_bytes_received = 0;
   static byte consecutive_ff_bytes_received = 0;
 
@@ -4888,28 +4890,22 @@ void service_nextion_display(){
         }
       }
     }
-
   #else // OPTION_NEW_NEXTION_INIT_CODE
     // NEW CODE
-    if ((initialization_stage == 0) /*&& (millis() > 100)*/){
+    if (initialization_stage == 0){
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
         debug.println(F("\r\nservice_nextion_display: init: 0"));
       #endif     
       nexSerial.begin(NEXTION_SERIAL_BAUD);
       initialization_stage = 1;
       last_various_things_update = millis();
-      i_am_alive_bytes_received = 0;
       #if defined(DEBUG_NEXTION_DISPLAY_INIT)
         debug.println(F("\r\nservice_nextion_display: init 0 -> 1"));
       #endif    
     }
 
     if (initialization_stage == 1){
-      nextion_i_am_alive_string[0] = 136;
-      nextion_i_am_alive_string[1] = 255;
-      nextion_i_am_alive_string[2] = 255;
-      nextion_i_am_alive_string[3] = 255;
-      nextion_i_am_alive_string[4] = 0; // Null - end of string
+      byte nextion_i_am_alive_string[] = {136,255,255,255};
     
       if ((millis()-last_various_things_update) > 2000){  // we've been waiting too long, let's send a reset to Nextion
         #if defined(DEBUG_NEXTION_DISPLAY_INIT)
@@ -4941,10 +4937,18 @@ void service_nextion_display(){
           if (serial_byte == nextion_i_am_alive_string[i_am_alive_bytes_received]){
             i_am_alive_bytes_received++;
             #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-              debug.println(F(" match!"));
+              debug.print(F(" match! i_am_alive_bytes_received:"));
+              debug.print(i_am_alive_bytes_received);
+              debug.println("");
             #endif             
-            if (nextion_i_am_alive_string[i_am_alive_bytes_received] == 0){  // a null is the end of the nextion_i_am_alive_string char[]
-              i_am_alive_bytes_received = 254;       
+            if (i_am_alive_bytes_received == 4){ // have we receive all the 'i am alive' bytes?
+              initialization_stage = 2;
+              output_nextion_gSC_variable();  // send gSC variable ASAP
+              #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+                debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
+                debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update)); 
+              #endif   
+              last_various_things_update = millis();     
             }         
           } else {
             i_am_alive_bytes_received = 0;  // we didn't get a byte match, reset the byte pointer
@@ -4953,16 +4957,6 @@ void service_nextion_display(){
             #endif              
           }
         } 
-
-        if (i_am_alive_bytes_received == 254){   // we got all the 'i am alive' bytes from the Nextion
-          initialization_stage = 2;
-          output_nextion_gSC_variable();  // send gSC variable ASAP
-          #if defined(DEBUG_NEXTION_DISPLAY_INIT)
-            debug.print(F("\r\nservice_nextion_display: nextion_i_am_alive_string received, init 1 -> 2   mS elapsed since rest:"));
-            debug.println(int((unsigned long)millis()-(unsigned long)last_various_things_update)); 
-          #endif   
-          last_various_things_update = millis();         
-        }
       }
     }
   #endif  // OPTION_NEW_NEXTION_INIT_CODE
