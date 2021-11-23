@@ -1054,6 +1054,10 @@
       2021.10.19.04 
         FEATURE_NEXTION_DISPLAY: more work on initialization code 
 
+      2021.11.22.01
+        FEATURE_NEXTION_DISPLAY: Added OPTION_SEND_NEXTION_RESET_AT_BOOTUP which may fix Nextion boot up issues for some
+        Also working on FEATURE_CALIBRATION 
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1193,7 +1197,6 @@
 #endif
 
 #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY) || defined(FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
-  //#define ENCODER_OPTIMIZE_INTERRUPTS
   #include <Encoder.h>
 #endif    
 
@@ -1262,6 +1265,8 @@
 #include "rotator_debug_log_activation.h"
 
 
+
+
 /*----------------------- variables -------------------------------------*/
 
 byte incoming_serial_byte = 0;
@@ -1303,7 +1308,9 @@ byte periodic_debug_dump_time_seconds = 3;
 DebugClass debug;
 
 struct config_t {
-  byte magic_number;
+  byte configuration_struct_version;
+  byte configuration_struct_subversion;
+  byte calibration_points;
   int analog_az_full_ccw;
   int analog_az_full_cw;
   int analog_el_0_degrees;
@@ -1314,10 +1321,6 @@ struct config_t {
   long last_el_incremental_encoder_position;
   float azimuth_offset;
   float elevation_offset;
-  byte az_stepper_motor_last_pin_state;
-  byte el_stepper_motor_last_pin_state;
-  byte az_stepper_motor_last_direction;
-  byte el_stepper_motor_last_direction;
   int azimuth_starting_point;
   long azimuth_rotation_capability;
   byte brake_az_disabled;
@@ -1325,21 +1328,41 @@ struct config_t {
   byte autopark_active;
   unsigned int autopark_time_minutes;
   byte azimuth_display_mode;
-  char current_satellite[17];
   int park_azimuth;
-  int park_elevation;
-  unsigned int tracking_sun_check_frequency_ms;
-  unsigned int tracking_moon_check_frequency_ms;
-  unsigned int tracking_sat_check_frequency_ms;
-  unsigned int tracking_sun_minimum_rotation_interval_ms;
-  unsigned int tracking_moon_minimum_rotation_interval_ms;
-  unsigned int tracking_sat_minimum_rotation_interval_ms;  
-  float tracking_sun_degrees_difference_threshold;
-  float tracking_moon_degrees_difference_threshold;
-  float tracking_sat_degrees_difference_threshold; 
-  byte audible_alert_enabled; 
-  byte audible_alert_enabled_az_target;
-  byte audible_alert_enabled_el_target;
+  int park_elevation;  
+  #if defined(FEATURE_STEPPER_MOTOR)
+    byte az_stepper_motor_last_pin_state;
+    byte el_stepper_motor_last_pin_state;
+    byte az_stepper_motor_last_direction;
+    byte el_stepper_motor_last_direction;
+  #endif
+  #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+    unsigned int tracking_sun_check_frequency_ms;
+    unsigned int tracking_moon_check_frequency_ms;
+    unsigned int tracking_sun_minimum_rotation_interval_ms;
+    unsigned int tracking_moon_minimum_rotation_interval_ms;
+    float tracking_sun_degrees_difference_threshold;
+    float tracking_moon_degrees_difference_threshold;
+  #endif
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    float tracking_sat_degrees_difference_threshold; 
+    unsigned int tracking_sat_check_frequency_ms;
+    unsigned int tracking_sat_minimum_rotation_interval_ms;  
+    char current_satellite[17];
+  #endif
+  #if defined(FEATURE_AUDIBLE_ALERT)
+    byte audible_alert_enabled; 
+    byte audible_alert_enabled_az_target;
+    byte audible_alert_enabled_el_target;
+  #endif
+  #if defined(FEATURE_CALIBRATION)
+    float calibration_az_from[CALIBRATION_POINTS];
+    float calibration_az_to[CALIBRATION_POINTS];
+    float calibration_el_from[CALIBRATION_POINTS];
+    float calibration_el_to[CALIBRATION_POINTS]; 
+    byte calibration_az_flag[CALIBRATION_POINTS];  // 0 = empty, 1 = default endpoint, 2 = sun calibration point, 3 = moon calibration point
+    byte calibration_el_flag[CALIBRATION_POINTS];
+  #endif
 } configuration;
 
 
@@ -2725,22 +2748,22 @@ void initialize_rotary_encoders(){
 
 
   #if defined(FEATURE_EL_PRESET_ENCODER) && defined(FEATURE_ELEVATION_CONTROL)
-  pinModeEnhanced(el_rotary_preset_pin1, INPUT);
-  pinModeEnhanced(el_rotary_preset_pin2, INPUT);
-  el_encoder_degrees = elevation;
-  #ifdef OPTION_ENCODER_ENABLE_PULLUPS
-  digitalWriteEnhanced(el_rotary_preset_pin1, HIGH);
-  digitalWriteEnhanced(el_rotary_preset_pin2, HIGH);
-  #endif // OPTION_ENCODER_ENABLE_PULLUPS
+    pinModeEnhanced(el_rotary_preset_pin1, INPUT);
+    pinModeEnhanced(el_rotary_preset_pin2, INPUT);
+    el_encoder_degrees = elevation;
+    #ifdef OPTION_ENCODER_ENABLE_PULLUPS
+      digitalWriteEnhanced(el_rotary_preset_pin1, HIGH);
+      digitalWriteEnhanced(el_rotary_preset_pin2, HIGH);
+    #endif // OPTION_ENCODER_ENABLE_PULLUPS
   #endif // defined(FEATURE_EL_PRESET_ENCODER) && defined(FEATURE_ELEVATION_CONTROL)
 
   #ifdef FEATURE_AZ_POSITION_ROTARY_ENCODER
-  pinModeEnhanced(az_rotary_position_pin1, INPUT);
-  pinModeEnhanced(az_rotary_position_pin2, INPUT);
-  #ifdef OPTION_ENCODER_ENABLE_PULLUPS
-  digitalWriteEnhanced(az_rotary_position_pin1, HIGH);
-  digitalWriteEnhanced(az_rotary_position_pin2, HIGH);
-  #endif // OPTION_ENCODER_ENABLE_PULLUPS
+    pinModeEnhanced(az_rotary_position_pin1, INPUT);
+    pinModeEnhanced(az_rotary_position_pin2, INPUT);
+    #ifdef OPTION_ENCODER_ENABLE_PULLUPS
+      digitalWriteEnhanced(az_rotary_position_pin1, HIGH);
+      digitalWriteEnhanced(az_rotary_position_pin2, HIGH);
+    #endif // OPTION_ENCODER_ENABLE_PULLUPS
   #endif // FEATURE_AZ_POSITION_ROTARY_ENCODER
 
 
@@ -5134,6 +5157,17 @@ void service_nextion_display(){
         debug.println(" mS");
       #endif     
 
+      #if defined(OPTION_SEND_NEXTION_RESET_AT_BOOTUP)
+        sendNextionCommand("code_c");    // stop execution of any buffered commands in Nextion
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: sent code_c"));
+        #endif   
+        sendNextionCommand("rest");      // reset the Nextion unit
+        #if defined(DEBUG_NEXTION_DISPLAY_INIT)
+          debug.println(F("\r\nservice_nextion_display: sent rest"));
+        #endif 
+      #endif //OPTION_SEND_NEXTION_RESET_AT_BOOTUP     
+
       output_nextion_gSC_variable();                    // send gSC variable to Nextion
       initialization_stage = 2;                         // Straight to init stage 2, init stage 1 has become redundant
       
@@ -7448,6 +7482,31 @@ void clear_serial_buffer(){
 
 #endif // FEATURE_YAESU_EMULATION
 // --------------------------------------------------------------
+byte calculated_configuration_struct_subversion(){
+
+  byte subversion = 0;
+
+  #if defined(FEATURE_CALIBRATION)
+    subversion = subversion | 1;
+  #endif
+
+  #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+    subversion = subversion | 2;
+  #endif
+
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    subversion = subversion | 4;
+  #endif
+
+  #if defined(FEATURE_AUDIBLE_ALERT)
+    subversion = subversion | 8;
+  #endif
+
+  return subversion;
+
+}
+
+// --------------------------------------------------------------
 void read_settings_from_eeprom(){
 
   byte * p = (byte *)(void *)&configuration;
@@ -7470,11 +7529,20 @@ void read_settings_from_eeprom(){
   for (i = 0; i < sizeof(configuration); i++) {
     *p++ = EEPROM.read(ee++);
   }
-
-  if (configuration.magic_number == EEPROM_MAGIC_NUMBER) {
+  
+  #if defined(FEATURE_CALIBRATION)
+  if ((configuration.configuration_struct_version == CONFIGURATION_STRUCT_VERSION) && (configuration.configuration_struct_subversion == calculated_configuration_struct_subversion()) && (configuration.calibration_points == CALIBRATION_POINTS)){
+  #else
+  if ((configuration.configuration_struct_version == CONFIGURATION_STRUCT_VERSION)){
+  #endif
+    
     #ifdef DEBUG_EEPROM
       if (debug_mode) {
         debug.println("read_settings_from_eeprom: reading settings from eeprom: ");
+        debug.print("\nconfiguration_struct_version"):
+        debug.print(configuration.configuration_struct_version);
+        debug.print("\nconfiguration_struct_subversion"):
+        debug.print(configuration.configuration_struct_subversion);        
         debug.print("\nanalog_az_full_ccw");
         debug.print(configuration.analog_az_full_ccw);
         debug.print("\nanalog_az_full_cw");
@@ -7491,10 +7559,12 @@ void read_settings_from_eeprom(){
         debug.print(configuration.last_az_incremental_encoder_position);
         debug.print("\nlast_el_incremental_encoder_position:");
         debug.print(configuration.last_el_incremental_encoder_position);
-        debug.print("\naz_offset:");
-        debug.print(configuration.azimuth_offset,2);
-        debug.print("\nel_offset:");
-        debug.print(configuration.elevation_offset,2);
+        #if !defined(FEATURE_CALIBRATION)
+          debug.print("\naz_offset:");
+          debug.print(configuration.azimuth_offset,2);
+          debug.print("\nel_offset:");
+          debug.print(configuration.elevation_offset,2);
+        #endif
         debug.print("az starting point:");
         debug.print(configuration.azimuth_starting_point);
         debug.print("az rotation capability:");
@@ -7524,7 +7594,7 @@ void read_settings_from_eeprom(){
     #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
       raw_azimuth = configuration.last_azimuth;
       if (raw_azimuth >= 360) {
-        azimuth = raw_azimuth - 360;
+        azimuth = raw_azimuth - 360.0;
       } else {
         azimuth = raw_azimuth;
       }
@@ -7573,6 +7643,40 @@ void read_settings_from_eeprom(){
 
 
 } /* read_settings_from_eeprom */
+
+// --------------------------------------------------------------
+#if defined(FEATURE_CALIBRATION)
+  void initialize_calibration_tables(){
+
+
+    for (byte x = 0;x < CALIBRATION_POINTS;x++){  // initialize the calibration array
+      configuration.calibration_az_from[x] = 0;
+      configuration.calibration_az_to[x] = 0;   
+      configuration.calibration_az_flag[x] = 0;
+      configuration.calibration_el_from[x] = 0;
+      configuration.calibration_el_to[x] = 0;   
+      configuration.calibration_el_flag[x] = 0;  
+    }
+
+    configuration.calibration_az_from[0] = AZIMUTH_STARTING_POINT_EEPROM_INITIALIZE;
+    configuration.calibration_az_to[0] = AZIMUTH_STARTING_POINT_EEPROM_INITIALIZE;
+    configuration.calibration_az_flag[0] = 1;  // 1 = default endpoint  
+
+    configuration.calibration_az_from[1] = AZIMUTH_STARTING_POINT_EEPROM_INITIALIZE + AZIMUTH_ROTATION_CAPABILITY_EEPROM_INITIALIZE;
+    configuration.calibration_az_to[1] = AZIMUTH_STARTING_POINT_EEPROM_INITIALIZE + AZIMUTH_ROTATION_CAPABILITY_EEPROM_INITIALIZE; 
+    configuration.calibration_az_flag[1] = 1;  // 1 = default endpoint 
+
+    // configuration.calibration_el_from[0] = 0;  // don't need to actually set this because it was initialized above
+    // configuration.calibration_el_to[0] = 0;    // don't need to actually set this because it was initialized above
+    configuration.calibration_el_flag[0] = 1;  // 1 = default endpoint 
+
+    configuration.calibration_el_from[1] = ELEVATION_MAXIMUM_DEGREES;
+    configuration.calibration_el_to[1] = ELEVATION_MAXIMUM_DEGREES; 
+    configuration.calibration_el_flag[1] = 1;  // 1 = default endpoint 
+
+  }  //initialize_calibration_tables
+#endif //FEATURE_CALIBRATION
+
 // --------------------------------------------------------------
 void initialize_eeprom_with_defaults(){
 
@@ -7601,20 +7705,33 @@ void initialize_eeprom_with_defaults(){
   configuration.autopark_active = 0;
   configuration.autopark_time_minutes = 0;
   configuration.azimuth_display_mode = AZ_DISPLAY_MODE_NORMAL;
-  strcpy(configuration.current_satellite,"-");
-  configuration.tracking_sun_check_frequency_ms = SUN_TRACKING_CHECK_INTERVAL;
-  configuration.tracking_moon_check_frequency_ms = MOON_TRACKING_CHECK_INTERVAL;
-  configuration.tracking_sat_check_frequency_ms = SATELLITE_TRACKING_UPDATE_INTERVAL;
-  configuration.tracking_sun_minimum_rotation_interval_ms = 0;
-  configuration.tracking_moon_minimum_rotation_interval_ms = 0;
-  configuration.tracking_sat_minimum_rotation_interval_ms = 0; 
-  configuration.tracking_sun_degrees_difference_threshold = 0.1;
-  configuration.tracking_moon_degrees_difference_threshold = 0.1;
-  configuration.tracking_sat_degrees_difference_threshold = 0.1; 
-  configuration.audible_alert_enabled = 1;
-  configuration.audible_alert_enabled_az_target = AUDIBLE_ALERT_AT_AZ_TARGET;
-  configuration.audible_alert_enabled_el_target = AUDIBLE_ALERT_AT_EL_TARGET; 
+  
 
+  #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
+    configuration.tracking_sun_check_frequency_ms = SUN_TRACKING_CHECK_INTERVAL;
+    configuration.tracking_moon_check_frequency_ms = MOON_TRACKING_CHECK_INTERVAL;
+    configuration.tracking_sun_minimum_rotation_interval_ms = 0;
+    configuration.tracking_moon_minimum_rotation_interval_ms = 0;  
+    configuration.tracking_sun_degrees_difference_threshold = 0.1;
+    configuration.tracking_moon_degrees_difference_threshold = 0.1;
+  #endif  
+
+  #if defined(FEATURE_SATELLITE_TRACKING)
+    configuration.tracking_sat_check_frequency_ms = SATELLITE_TRACKING_UPDATE_INTERVAL;
+    configuration.tracking_sat_minimum_rotation_interval_ms = 0; 
+    configuration.tracking_sat_degrees_difference_threshold = 0.1; 
+    strcpy(configuration.current_satellite,"-");
+  #endif
+
+  #if defined(FEATURE_AUDIBLE_ALERT)
+    configuration.audible_alert_enabled = 1;
+    configuration.audible_alert_enabled_az_target = AUDIBLE_ALERT_AT_AZ_TARGET;
+    configuration.audible_alert_enabled_el_target = AUDIBLE_ALERT_AT_EL_TARGET; 
+  #endif  
+
+  #if defined(FEATURE_CALIBRATION)
+    initialize_calibration_tables();
+  #endif
 
   #ifdef FEATURE_ELEVATION_CONTROL
     configuration.last_elevation = elevation;
@@ -7645,7 +7762,13 @@ void write_settings_to_eeprom(){
     debug.println("write_settings_to_eeprom: writing settings to eeprom");
   #endif // DEBUG_EEPROM
 
-  configuration.magic_number = EEPROM_MAGIC_NUMBER;
+  configuration.configuration_struct_version = CONFIGURATION_STRUCT_VERSION;
+
+  configuration.configuration_struct_subversion = calculated_configuration_struct_subversion(); 
+
+  #if defined(FEATURE_CALIBRATION)
+    configuration.calibration_points = CALIBRATION_POINTS;
+  #endif
 
   const byte * p = (const byte *)(const void *)&configuration;
   unsigned int i;
@@ -8270,6 +8393,7 @@ void check_timed_interval(){
 } /* check_timed_interval */
 #endif // FEATURE_TIMED_BUFFER
 // --------------------------------------------------------------
+#if !defined(FEATURE_CALIBRATION)
 void apply_azimuth_offset(){
 
   if (configuration.azimuth_offset < 0){
@@ -8277,6 +8401,7 @@ void apply_azimuth_offset(){
   }
 
 }
+#endif
 // --------------------------------------------------------------
 
 
@@ -8351,8 +8476,10 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
-
+  
+      #if !defined(FEATURE_CALIBRATION)
       apply_azimuth_offset();
+      #endif
 
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         if (raw_azimuth < 0){raw_azimuth = 0;}
@@ -8390,7 +8517,9 @@ void read_azimuth(byte force_read){
             raw_azimuth = correct_azimuth(raw_azimuth);
           #endif // FEATURE_AZIMUTH_CORRECTION
 
+          #if !defined(FEATURE_CALIBRATION)          
           apply_azimuth_offset();
+          #endif
 
           if (AZIMUTH_SMOOTHING_FACTOR > 0) {
             if (raw_azimuth < 0){raw_azimuth = 0;}
@@ -8440,16 +8569,14 @@ void read_azimuth(byte force_read){
           }
         #else
           if (configuration.last_azimuth < 0) {
-            configuration.last_azimuth += 360;
+            configuration.last_azimuth += 360.0;
           }
           if (configuration.last_azimuth >= 360) {
-            configuration.last_azimuth -= 360;
+            configuration.last_azimuth -= 360.0;
           }
         #endif // OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
 
-
         raw_azimuth = configuration.last_azimuth;
-
 
         #ifdef FEATURE_AZIMUTH_CORRECTION
           raw_azimuth = correct_azimuth(raw_azimuth);
@@ -8493,10 +8620,10 @@ void read_azimuth(byte force_read){
         }
         #else
           if (configuration.last_azimuth < 0){
-            configuration.last_azimuth += 360;
+            configuration.last_azimuth += 360.0;
           }
           if (configuration.last_azimuth >= 360){
-            configuration.last_azimuth -= 360;
+            configuration.last_azimuth -= 360.0;
           }
         #endif // OPTION_AZ_POSITION_ROTARY_ENCODER_HARD_LIMIT
 
@@ -8540,7 +8667,9 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_HMC5883L
 
@@ -8585,7 +8714,9 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       azimuth = raw_azimuth;
     #endif // FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY
 
@@ -8631,19 +8762,16 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       azimuth = raw_azimuth;
     #endif //FEATURE_AZ_POSITION_DFROBOT_QMC5883
-
-
-
-
 
     #if defined(FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883)
 
       int mecha_x, mecha_y, mecha_z, mecha_azimuth;
       compass.read(&mecha_x, &mecha_y, &mecha_z, &mecha_azimuth);
-
 
       #ifdef DEBUG_QMC5883
         debug.print("read_azimuth: QMC5883 x:");
@@ -8656,8 +8784,6 @@ void read_azimuth(byte force_read){
         debug.print(mecha_azimuth);                
         debug.println("");
       #endif //DEBUG_QMC5883
-
-
 
       // Correct for heading < 0deg and heading > 360deg
       if (mecha_azimuth < 0){
@@ -8677,7 +8803,9 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       azimuth = raw_azimuth;
     #endif //FEATURE_AZ_POSITION_MECHASOLUTION_QMC5883
 
@@ -8694,7 +8822,9 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         if (raw_azimuth < 0){raw_azimuth = 0;}
         raw_azimuth = (raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
@@ -8751,7 +8881,9 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       if (AZIMUTH_SMOOTHING_FACTOR > 0) {
         if (raw_azimuth < 0){raw_azimuth = 0;}
         raw_azimuth = (raw_azimuth * ((float)1 - ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100))) + ((float)previous_raw_azimuth * ((float)AZIMUTH_SMOOTHING_FACTOR / (float)100));
@@ -8788,7 +8920,9 @@ void read_azimuth(byte force_read){
         #ifdef FEATURE_AZIMUTH_CORRECTION
           raw_azimuth = correct_azimuth(raw_azimuth);
         #endif // FEATURE_AZIMUTH_CORRECTION
+        #if !defined(FEATURE_CALIBRATION)  
         apply_azimuth_offset();
+        #endif
         convert_raw_azimuth_to_real_azimuth();
       }
     #endif // FEATURE_AZ_POSITION_PULSE_INPUT
@@ -8809,7 +8943,9 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       convert_raw_azimuth_to_real_azimuth();
     #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI
 
@@ -8827,7 +8963,9 @@ void read_azimuth(byte force_read){
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = (correct_azimuth(raw_azimuth));
       #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       apply_azimuth_offset();
+      #endif
       convert_raw_azimuth_to_real_azimuth();
       if (raw_azimuth != incremental_encoder_previous_raw_azimuth) {
         configuration.last_az_incremental_encoder_position = az_incremental_encoder_position;
@@ -8845,7 +8983,9 @@ void read_azimuth(byte force_read){
     #ifdef FEATURE_AZIMUTH_CORRECTION
       raw_azimuth = (correct_azimuth(raw_azimuth));
     #endif // FEATURE_AZIMUTH_CORRECTION
+    #if !defined(FEATURE_CALIBRATION)  
     apply_azimuth_offset();
+    #endif
     azimuth = raw_azimuth;
   #endif //FEATURE_AZ_POSITION_A2_ABSOLUTE_ENCODER  
 
@@ -9066,9 +9206,11 @@ void output_debug(){
               debug.print(F(" OVERLAP"));
             }
           #endif
+          #if !defined(FEATURE_CALIBRATION)  
           debug.print(F("  Offset:"));
           dtostrf(configuration.azimuth_offset,0,2,tempstring);
           debug.print(tempstring);
+          #endif
         #endif // ndef HARDWARE_EA4TX_ARS_USB
         debug.println("");
 
@@ -9128,9 +9270,10 @@ void output_debug(){
 
             debug.print("  Current:");
             debug.print(current_el_speed_voltage);
-
+            #if !defined(FEATURE_CALIBRATION)  
             debug.print("  Offset:");
             debug.print(configuration.elevation_offset, 2);
+            #endif
           #endif //ifndef HARDWARE_EA4TX_ARS_USB
           debug.println("");
         #endif // FEATURE_ELEVATION_CONTROL
@@ -9666,7 +9809,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + (configuration.elevation_offset);
+      #endif
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
         if (elevation < 0){elevation = 0;}
         elevation = (elevation * ((float)1 - ((float)ELEVATION_SMOOTHING_FACTOR / (float)100))) + ((float)previous_elevation * ((float)ELEVATION_SMOOTHING_FACTOR / (float)100));
@@ -9784,7 +9929,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + (configuration.elevation_offset);
+      #endif
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
         if (elevation < 0){elevation = 0;}
         elevation = (elevation * ((float)1 - ((float)ELEVATION_SMOOTHING_FACTOR / (float)100))) + ((float)previous_elevation * ((float)ELEVATION_SMOOTHING_FACTOR / (float)100));
@@ -9806,7 +9953,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + (configuration.elevation_offset);
+      #endif
     #endif // FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB
 
 
@@ -9825,7 +9974,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + (configuration.elevation_offset);
+      #endif
     #endif // FEATURE_EL_POSITION_ADAFRUIT_LSM303
 
     #ifdef FEATURE_EL_POSITION_POLOLU_LSM303
@@ -9842,7 +9993,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + (configuration.elevation_offset);
+      #endif
     #endif // FEATURE_EL_POSITION_POLOLU_LSM303
 
 
@@ -9871,7 +10024,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = correct_elevation(elevation);
       #endif //FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + configuration.elevation_offset;
+      #endif
     }
     #endif // FEATURE_EL_POSITION_PULSE_INPUT
 
@@ -9897,7 +10052,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
       elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + (configuration.elevation_offset);
+      #endif
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
         if (elevation < 0){elevation = 0;}
         elevation = (elevation * ((float)1 - ((float)ELEVATION_SMOOTHING_FACTOR / (float)100))) + ((float)previous_elevation * ((float)ELEVATION_SMOOTHING_FACTOR / (float)100));
@@ -9934,7 +10091,9 @@ void read_elevation(byte force_read){
       #ifdef FEATURE_ELEVATION_CORRECTION
         elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
       elevation = elevation + configuration.elevation_offset;
+      #endif
       if (elevation > 180) {
         elevation = elevation - 360.0;
       }
@@ -9951,7 +10110,9 @@ void read_elevation(byte force_read){
       configuration_dirty = 1;
       incremental_encoder_previous_elevation = elevation;
     }
+    #if !defined(FEATURE_CALIBRATION)  
     elevation = elevation + (configuration.elevation_offset);
+    #endif
     #endif // FEATURE_EL_POSITION_INCREMENTAL_ENCODER
 
     #ifdef FEATURE_EL_POSITION_MEMSIC_2125
@@ -9977,7 +10138,9 @@ void read_elevation(byte force_read){
     #ifdef FEATURE_ELEVATION_CORRECTION
     elevation = correct_elevation(elevation);
     #endif //FEATURE_ELEVATION_CORRECTION
+    #if !defined(FEATURE_CALIBRATION)  
     elevation = elevation + (configuration.elevation_offset);
+    #endif
   #endif //FEATURE_EL_POSITION_A2_ABSOLUTE_ENCODER  
 
 
@@ -14279,6 +14442,8 @@ void update_sun_position(){
 #if defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 byte calibrate_az_el(float new_az, float new_el){
 
+#if !defined(FEATURE_CALIBRATION)  
+
   #ifdef DEBUG_OFFSET
     debug.print("calibrate_az_el: new_az:");
     debug.print(new_az, 2);
@@ -14316,6 +14481,8 @@ byte calibrate_az_el(float new_az, float new_el){
   } else {
     return 0;
   }
+
+#endif
 
 } /* calibrate_az_el */
 #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
@@ -15671,7 +15838,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
   #endif // FEATURE_SUN_TRACKING
 
-
+  #if !defined(FEATURE_CALIBRATION)
     case 'X':
       switch (toupper(input_buffer[2])) {
         #if defined(FEATURE_SUN_TRACKING)
@@ -15704,8 +15871,89 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         default: strcpy(return_string, "?>"); break;
 
 
-      } /* switch */
-      break;
+      } //switch (toupper(input_buffer[2]))
+      break; //case 'X':
+
+  #else //FEATURE_CALIBRATION
+
+    case 'X':
+      #if defined(FEATURE_SUN_TRACKING)
+        if ((input_buffer_index == 3) && (toupper(input_buffer[2]) == 'S')){
+          update_sun_position();
+          if (calibrate_az_el(sun_azimuth, sun_elevation)) {
+            strcpy(return_string, az_el_calibrated_string());
+          } else {
+            strcpy_P(return_string, (const char*) F("Error."));
+          }
+        }
+      #endif // FEATURE_SUN_TRACKING
+
+      #if defined(FEATURE_MOON_TRACKING)
+        if ((input_buffer_index == 3) && (toupper(input_buffer[2]) == 'M')){
+          update_moon_position();
+          if (calibrate_az_el(moon_azimuth, moon_elevation)) {
+            strcpy(return_string, az_el_calibrated_string());
+          } else {
+            strcpy_P(return_string, (const char*) F("Error."));
+          }
+        }
+      #endif // FEATURE_MOON_TRACKING
+        
+      if ((input_buffer_index == 3) && (toupper(input_buffer[2]) == '0')){
+        initialize_calibration_tables();
+        configuration_dirty = 1;
+        strcpy_P(return_string, (const char*) F("Cleared calibration tables")); 
+      } 
+
+      if (input_buffer_index == 2){   // no arguments, print the calibration table
+        control_port->println(F("\n\rCalibration Tables\n\r"));
+        control_port->println(F("AZ\n\rIn\t\tOut"));
+        for (byte x = 0;x < CALIBRATION_POINTS;x++){
+          if (configuration.calibration_az_flag[x] > 0){
+            control_port->print(configuration.calibration_az_from[x],2);
+            control_port->print("\t");
+            if (configuration.calibration_az_from[x] > 360.0){
+              control_port->print("(");
+              control_port->print(configuration.calibration_az_from[x]-360.0,2);
+              control_port->print(")");
+            }
+            control_port->print("\t");
+            control_port->print(configuration.calibration_az_to[x],2);
+            if (configuration.calibration_az_to[x] > 360.0){
+              control_port->print("(");
+              control_port->print(configuration.calibration_az_to[x]-360.0,2);
+              control_port->print(")");
+            }
+            control_port->print("\t");            
+            control_port->print("\t"); 
+            switch (configuration.calibration_el_flag[x]){
+              case 1:control_port->println(F("default"));break;
+              case 2:control_port->println(F("sun"));break;
+              case 3:control_port->println(F("moon"));break;
+              case 4:control_port->println(F("user"));break;
+            }
+          }
+        }
+        control_port->println(F("\n\rEL\n\rIn\tOut"));  
+        for (byte x = 0;x < CALIBRATION_POINTS;x++){
+          if (configuration.calibration_el_flag[x] > 0){
+            control_port->print(configuration.calibration_el_from[x],2);
+            control_port->print("\t");
+            control_port->print(configuration.calibration_el_to[x],2);   
+            control_port->print("\t");
+            switch (configuration.calibration_el_flag[x]){
+              case 1:control_port->println(F("default"));break;
+              case 2:control_port->println(F("sun"));break;
+              case 3:control_port->println(F("moon"));break;
+              case 4:control_port->println(F("user"));break;
+            }
+          }            
+        }
+        //zzzzzzzz
+      }      
+      break; //case 'X'
+
+    #endif //FEATURE_CALIBRATION
 
     #ifdef FEATURE_PARK
     case 'P':    // Park, PA and PE commands - set / query park azimuth and elevation
@@ -16498,21 +16746,15 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
         #endif  
 
         #if defined(FEATURE_NEXTION_DISPLAY)
-//zzzzzz
           if ((input_buffer[2] == 'N') && (input_buffer[3] == 'G')) {  // \?NG - output Nextion gSC variable immediately on Nextion por
             output_nextion_gSC_variable();
             if (input_source != SOURCE_NEXTION){
                strconditionalcpy(return_string,"\\!OKNG", include_response_code);
             }
           }
-
         #endif
-
-
-
       } //if (input_buffer_index == 4)
  
-
     if (input_buffer_index == 6){
       if ((input_buffer[2] == 'D') && (input_buffer[3] == 'O')) {  // \?DOxx - digital pin initialize as output; xx = pin # (01, 02, A0,etc.)
         if ((((input_buffer[4] > 47) && (input_buffer[4] < 58)) || (toupper(input_buffer[4]) == 'A')) && (input_buffer[5] > 47) && (input_buffer[5] < 58)) {
@@ -16739,22 +16981,27 @@ Not implemented yet:
               }
             }
           }  
-          if (input_buffer[3] == 'A'){
-            configuration.tracking_sat_degrees_difference_threshold = tempfloat;
-            strconditionalcpy(return_string,"\\!OKTA", include_response_code);
-            configuration_dirty = 1;
-          }
-          if (input_buffer[3] == 'B'){
-            configuration.tracking_sun_degrees_difference_threshold = tempfloat;
-            strconditionalcpy(return_string,"\\!OKTB", include_response_code);
-            configuration_dirty = 1;
-          }
-          if (input_buffer[3] == 'C'){
-            configuration.tracking_moon_degrees_difference_threshold = tempfloat;
-            strconditionalcpy(return_string,"\\!OKTC", include_response_code);
-            configuration_dirty = 1;
-          }
-          
+          #if defined(FEATURE_SATELLITE_TRACKING)
+            if (input_buffer[3] == 'A'){
+              configuration.tracking_sat_degrees_difference_threshold = tempfloat;
+              strconditionalcpy(return_string,"\\!OKTA", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif
+          #if defined(FEATURE_SUN_TRACKING)
+            if (input_buffer[3] == 'B'){
+              configuration.tracking_sun_degrees_difference_threshold = tempfloat;
+              strconditionalcpy(return_string,"\\!OKTB", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif
+          #if defined(FEATURE_MOON_TRACKING)
+            if (input_buffer[3] == 'C'){
+              configuration.tracking_moon_degrees_difference_threshold = tempfloat;
+              strconditionalcpy(return_string,"\\!OKTC", include_response_code);
+              configuration_dirty = 1;
+            }
+          #endif
         }  
 
       }
@@ -20077,8 +20324,6 @@ void convert_polar_to_cartesian(byte coordinate_conversion,double azimuth_in,dou
 
     if (!satellite_initialized){return;}  // if we're not initialized yet, don't do anything below yet and exit
 
-
-        //zzzzzz
     // has anything changed requiring us to recalculate everything?    
     static byte last_clock_status = clock_status;
     static double last_longitude = longitude;

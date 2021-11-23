@@ -273,6 +273,9 @@ You can tweak these, but read the online documentation!
 //#define ELEVATION_CALIBRATION_FROM_ARRAY {0,180,360}
 //#define ELEVATION_CALIBRATION_TO_ARRAY {180,0,-180}
 
+//This is for under development FEATURE_CALIBRATION
+#define CALIBRATION_POINTS 8
+
 #define ANALOG_OUTPUT_MAX_EL_DEGREES 180
 
 #define EL_POSITION_PULSE_DEBOUNCE 500  // in ms
