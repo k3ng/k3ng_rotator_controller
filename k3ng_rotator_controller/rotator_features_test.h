@@ -169,7 +169,7 @@
 
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
-//#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
+// #define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
 //#define OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE  // use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
 // #define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
@@ -199,7 +199,7 @@
 
 //#define OPTION_STEPPER_DO_NOT_USE_DIGITALWRITEFAST_LIBRARY
 
-//#define OPTION_USE_OLD_TIME_CODE
+// #define OPTION_USE_OLD_TIME_CODE
 
 #define OPTION_CLI_VT100
 
