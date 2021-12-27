@@ -109,7 +109,12 @@ You can tweak these, but read the online documentation!
 // various code settings
 #define AZIMUTH_TOLERANCE 0.01            // rotator will stop within X degrees when doing autorotation
 #define ELEVATION_TOLERANCE 0.01 //1.0
+
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
+#define REMOTE_UNIT_ROTATION_TIMEOUT 5000 // timeout any remote unit rotation operation if a ping (PG) is not receive within 5 seconds
+
+#define REMOTE_UNIT_ROTATION_COMMAND_REPEAT_MS 500 // used by the master unit; this need to be less than OPERATION_TIMEOUT on the remote unit
+
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
 #define LCD_COLUMNS 20 //16
@@ -345,7 +350,7 @@ You can tweak these, but read the online documentation!
 // Serial Port Settings
 #define CONTROL_PORT_MAPPED_TO &Serial     // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
 #define CONTROL_PORT_BAUD_RATE 115200 //9600
-//#define REMOTE_PORT Serial3                 // used to control remote unit
+#define REMOTE_PORT Serial3                 // used to control remote unit
 #define REMOTE_UNIT_PORT_BAUD_RATE 9600 
 #define GPS_PORT Serial2
 #define GPS_PORT_BAUD_RATE 9600

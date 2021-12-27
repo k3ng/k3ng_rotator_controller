@@ -21,9 +21,9 @@
 #define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP  
-#define FEATURE_CALIBRATION  // under development - this will get rid of azimuth and elevation offsets and replace with runtime calibration tables
+// #define FEATURE_CALIBRATION  // under development - this will get rid of azimuth and elevation offsets and replace with runtime calibration tables
 
-// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -40,6 +40,9 @@
 
 // #define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
 // #define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
+
+// #define FEATURE_MASTER_SEND_AZ_ROTATION_COMMANDS_TO_REMOTE
+// #define FEATURE_MASTER_SEND_EL_ROTATION_COMMANDS_TO_REMOTE
 
 //#define FEATURE_ADC_RESOLUTION12   // 12 bit ADC resolution for Teensy 3.x, Arduino Due Zero MKR families 
 
@@ -85,7 +88,7 @@
 // #define FEATURE_MIDAS_I2C_DISPLAY
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY  
 
-#define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+// #define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
 

@@ -109,7 +109,13 @@ You can tweak these, but read the online documentation!
 // various code settings
 #define AZIMUTH_TOLERANCE 0.1            // rotator will stop within X degrees when doing autorotation
 #define ELEVATION_TOLERANCE 0.1 //1.0
-#define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
+
+#if defined(FEATURE_REMOTE_UNIT_SLAVE)
+  #define OPERATION_TIMEOUT 1000           // timeout for remote unit any rotation operation in mS - 1 seconds
+#else
+   #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
+#endif
+
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
 #define LCD_COLUMNS 20 //16
