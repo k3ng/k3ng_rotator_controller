@@ -120,11 +120,8 @@ You can tweak these, but read the online documentation!
 #define AZIMUTH_TOLERANCE 5.0            // rotator will stop within X degrees when doing autorotation
 #define ELEVATION_TOLERANCE 5.0
 
-#if defined(FEATURE_REMOTE_UNIT_SLAVE)
-  #define OPERATION_TIMEOUT 1000           // timeout for remote unit any rotation operation in mS - 1 second
-#else
-   #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
-#endif
+#define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
+#define REMOTE_UNIT_ROTATION_TIMEOUT 5000 // timeout any remote unit rotation operation if a ping (PG) is not receive within 5 seconds
 
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
@@ -171,7 +168,7 @@ You can tweak these, but read the online documentation!
 
 #define EEPROM_WRITE_DIRTY_CONFIG_TIME  30  //time in seconds
 
-#define DISPLAY_DECIMAL_PLACES 0
+#define DISPLAY_DECIMAL_PLACES 1
 
 #define AZ_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
 #define EL_POSITION_ROTARY_ENCODER_DEG_PER_PULSE 0.5
@@ -356,7 +353,7 @@ You can tweak these, but read the online documentation!
 // Serial Port Settings
 #define CONTROL_PORT_MAPPED_TO &Serial     // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
 #define CONTROL_PORT_BAUD_RATE 115200
-//#define REMOTE_PORT Serial3                 // used to control remote unit
+#define REMOTE_PORT Serial3                 // used to control remote unit
 #define REMOTE_UNIT_PORT_BAUD_RATE 9600 
 #define GPS_PORT Serial2
 #define GPS_PORT_BAUD_RATE 9600

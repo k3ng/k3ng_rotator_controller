@@ -12,26 +12,24 @@
 
 */
 
-#define DEVELOPMENT_TIMELIB
-
 #define FEATURE_ELEVATION_CONTROL       // uncomment this for AZ/EL rotators
 #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION         // Easycom protocol emulation on control port (undefine FEATURE_YAESU_EMULATION above)
 // #define FEATURE_DCU_1_EMULATION            // DCU-1 protocol emulation on control port
 
-#define FEATURE_MOON_TRACKING
-#define FEATURE_SUN_TRACKING
+// #define FEATURE_MOON_TRACKING
+// #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
-#define FEATURE_GPS
+// #define FEATURE_GPS
 // #define FEATURE_RTC_DS1307
 // #define FEATURE_RTC_PCF8583
 // #define FEATURE_RTC_TEENSY // Requires DEVELOPMENT_TIMELIB at the moment
 // #define FEATURE_ETHERNET
-#define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
+// #define FEATURE_STEPPER_MOTOR    // Requires TimerFive library to be copied to the Arduino libraries directory (If using OPTION_STEPPER_MOTOR_USE_TIMER_ONE_INSTEAD_OF_FIVE below, copy the TimeOne library)
 // #define FEATURE_AUTOCORRECT
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP
 
-#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 //#define TEST_NEW_SAT_CALC
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
@@ -47,8 +45,10 @@
 /* master and remote slave unit functionality */
 // #define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
 
-// #define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
+#define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
 // #define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
+#define FEATURE_MASTER_SEND_AZ_ROTATION_COMMANDS_TO_REMOTE
+#define FEATURE_MASTER_SEND_EL_ROTATION_COMMANDS_TO_REMOTE
 
 // #define FEATURE_ADC_RESOLUTION12   // 12 bit ADC resolution for Teensy 3.x, Arduino Due Zero MKR families 
 
@@ -56,11 +56,11 @@
 // #define FEATURE_AZ_POSITION_POTENTIOMETER   //this is used for both a voltage from a rotator control or a homebrew rotator with a potentiometer
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER
 // #define FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html
-#define FEATURE_AZ_POSITION_PULSE_INPUT
+// #define FEATURE_AZ_POSITION_PULSE_INPUT
 // #define FEATURE_AZ_POSITION_HMC5883L            // HMC5883L digital compass support
 // #define FEATURE_AZ_POSITION_DFROBOT_QMC5883            // QMC5883 digital compass support using DFRobot library at https://github.com/DFRobot/DFRobot_QMC5883
 // #define FEATURE_AZ_POSITION_HMC5883L_USING_JARZEBSKI_LIBRARY            // HMC5883L digital compass support using Jarzebski library at https://github.com/jarzebski/Arduino-HMC5883L
-// #define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
+#define FEATURE_AZ_POSITION_GET_FROM_REMOTE_UNIT  // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_AZ_POSITION_ADAFRUIT_LSM303              // Uncomment for azimuth using LSM303 compass and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_AZ_POSITION_POLOLU_LSM303              // Uncomment for azimuth using LSM303 compass and Polulu library
 // #define FEATURE_AZ_POSITION_HH12_AS5045_SSI
@@ -72,10 +72,10 @@
 // #define FEATURE_EL_POSITION_POTENTIOMETER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER
 // #define FEATURE_EL_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY  // library @ http://www.pjrc.com/teensy/td_libs_Encoder.html
-#define FEATURE_EL_POSITION_PULSE_INPUT
+// #define FEATURE_EL_POSITION_PULSE_INPUT
 // #define FEATURE_EL_POSITION_ADXL345_USING_LOVE_ELECTRON_LIB // Uncomment for elevation ADXL345 accelerometer support using ADXL345 library
 // #define FEATURE_EL_POSITION_ADXL345_USING_ADAFRUIT_LIB      // Uncomment for elevation ADXL345 accelerometer support using Adafruit library
-// #define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
+#define FEATURE_EL_POSITION_GET_FROM_REMOTE_UNIT            // requires FEATURE_MASTER_WITH_SERIAL_SLAVE or FEATURE_MASTER_WITH_ETHERNET_SLAVE
 // #define FEATURE_EL_POSITION_ADAFRUIT_LSM303                            // Uncomment for elevation using LSM303 accelerometer and Adafruit library (https://github.com/adafruit/Adafruit_LSM303) (also uncomment object declaration below)
 // #define FEATURE_EL_POSITION_POLOLU_LSM303              // Uncomment for elevation using LSM303 compass and Polulu library
 // #define FEATURE_EL_POSITION_HH12_AS5045_SSI
@@ -95,14 +95,14 @@
 // #define FEATURE_FABO_LCD_PCF8574_DISPLAY
 // #define FEATURE_HD44780_I2C_DISPLAY    // Not working yet
 
-#define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
+// #define FEATURE_NEXTION_DISPLAY  // Documentation: https://github.com/k3ng/k3ng_rotator_controller/wiki/425-Human-Interface:-Nextion-Display
 
 // #define FEATURE_ANALOG_OUTPUT_PINS
 
 // #define FEATURE_SUN_PUSHBUTTON_AZ_EL_CALIBRATION
 // #define FEATURE_MOON_PUSHBUTTON_AZ_EL_CALIBRATION
 
-#define FEATURE_AUDIBLE_ALERT
+// #define FEATURE_AUDIBLE_ALERT
 
 /* preset rotary encoder features and options */
 // #define FEATURE_AZ_PRESET_ENCODER            // Uncomment for Rotary Encoder Azimuth Preset support
@@ -126,8 +126,8 @@
 // #define FEATURE_LIMIT_SENSE
 // #define FEATURE_TIMED_BUFFER           // Support for Yaesu timed buffer commands
 // #define OPTION_SERIAL_HELP_TEXT        // Yaesu help command prints help
-#define FEATURE_PARK
-#define FEATURE_AUTOPARK               // Requires FEATURE_PARK
+// #define FEATURE_PARK
+// #define FEATURE_AUTOPARK               // Requires FEATURE_PARK
 // #define OPTION_AZ_MANUAL_ROTATE_LIMITS    // this option will automatically stop the L and R commands when hitting a CCW or CW limit (settings below - AZ_MANUAL_ROTATE_*_LIMIT) 
 // #define OPTION_EL_MANUAL_ROTATE_LIMITS
 //#define OPTION_C_COMMAND_SENDS_AZ_AND_EL  // uncomment this when using Yaesu emulation with Ham Radio Deluxe
@@ -169,8 +169,8 @@
 
 //#define FEATURE_POWER_SWITCH
 //#define OPTION_EXTERNAL_ANALOG_REFERENCE  //Activate external analog voltage reference (needed for RemoteQTH.com unit)
-// #define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
-//#define OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE  // use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
+#define OPTION_SYNC_MASTER_CLOCK_TO_SLAVE        // use when GPS unit is connected to slave unit and you want to synchronize the master unit clock to the slave unit GPS clock
+#define OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE  // use when GPS unit is connected to slave unit and you want to synchronize the master unit coordinates to the slave unit GPS
 //#define OPTION_DISABLE_HMC5883L_ERROR_CHECKING
 // #define OPTION_HAMLIB_EASYCOM_AZ_EL_COMMAND_HACK
 // #define OPTION_HAMLIB_EASYCOM_NO_TERMINATOR_CHARACTER_HACK
@@ -204,7 +204,7 @@
 #define OPTION_CLI_VT100
 
 #define OPTION_GPS_USE_TINY_GPS_LIBRARY               // For serial port based NMEA GPS units; serial port defined by GPS_PORT and GPS_PORT_BAUD_RATE in settings file
-#define OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY   // For Sparkfun (and perhaps others) u-blox GPS units interfaced via I2C ( https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library)
+// #define OPTION_GPS_USE_SPARKFUN_U_BLOX_GNSS_LIBRARY   // For Sparkfun (and perhaps others) u-blox GPS units interfaced via I2C ( https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library)
 
 #define OPTION_DEPRECATED_NEXTION_INIT_CODE_1  // use only with VK4GHZ Nextion firmware versions previous to 2021-10-23
 // #define OPTION_DEPRECATED_NEXTION_INIT_CODE_2  // use only with VK4GHZ Nextion firmware versions previous to 2021-10-23

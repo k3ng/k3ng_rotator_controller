@@ -1076,6 +1076,8 @@
         \U command: query sun azimuth and elevation
         Still working on FEATURE_CALIBRATION
         
+      2021.12.27.02
+        Tested FEATURE_MASTER_SEND_AZ_ROTATION_COMMANDS_TO_REMOTE and FEATURE_MASTER_SEND_EL_ROTATION_COMMANDS_TO_REMOTE and fixed issue with link pings (PG) being sent way too often
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -4006,6 +4008,7 @@ void check_serial(){
             // }
             if (remote_port_rx_sniff) {
               control_port->write(incoming_serial_byte);
+              control_port->flush();
             }
         #endif //defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
@@ -10092,10 +10095,10 @@ void read_elevation(byte force_read){
       #endif // DEBUG_HEADING_READING_TIME
       elevation = remote_unit_command_result_float;
       #ifdef FEATURE_ELEVATION_CORRECTION
-      elevation = correct_elevation(elevation);
+        elevation = correct_elevation(elevation);
       #endif // FEATURE_ELEVATION_CORRECTION
       #if !defined(FEATURE_CALIBRATION)  
-      elevation = elevation + (configuration.elevation_offset);
+        elevation = elevation + (configuration.elevation_offset);
       #endif
       if (ELEVATION_SMOOTHING_FACTOR > 0) {
         if (elevation < 0){elevation = 0;}
@@ -13372,7 +13375,7 @@ void service_remote_communications_incoming_buffer(){
       debug.print(remote_unit_port_buffer_index);
       debug.print(" buffer: ");
       for (int x = 0; x < remote_unit_port_buffer_index; x++) {
-        debug_write((char*)remote_unit_port_buffer[x]);
+        debug.write((char*)remote_unit_port_buffer[x]);
         debug.println("$");
       }
     #endif // DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER
@@ -13401,7 +13404,7 @@ void service_remote_communications_incoming_buffer(){
           }
           break;
         #endif //OPTION_SYNC_MASTER_COORDINATES_TO_SLAVE
-        #ifdef OPTION_SYNC_MASTER_CLOCK_TO_SLAVE
+        #if defined(OPTION_SYNC_MASTER_CLOCK_TO_SLAVE) && defined(FEATURE_CLOCK)
         case REMOTE_UNIT_GS_COMMAND:
           if ((remote_unit_port_buffer[0] == 'G') && (remote_unit_port_buffer[1] == 'S')){
             if (remote_unit_port_buffer[2] == '1'){
@@ -13477,19 +13480,19 @@ void service_remote_communications_incoming_buffer(){
         case REMOTE_UNIT_AZ_COMMAND:
           if ((remote_unit_port_buffer_index == 13) && (remote_unit_port_buffer[0] == 'A') && (remote_unit_port_buffer[1] == 'Z') &&
               (is_ascii_number(remote_unit_port_buffer[2])) && (is_ascii_number(remote_unit_port_buffer[3])) && (is_ascii_number(remote_unit_port_buffer[4])) && (is_ascii_number(remote_unit_port_buffer[6]))  && (is_ascii_number(remote_unit_port_buffer[7])) && (is_ascii_number(remote_unit_port_buffer[8])) && (is_ascii_number(remote_unit_port_buffer[9])) && (is_ascii_number(remote_unit_port_buffer[10])) && (is_ascii_number(remote_unit_port_buffer[11]))) {
-            remote_unit_command_result_float = ((remote_unit_port_buffer[2] - 48) * 100) + ((remote_unit_port_buffer[3] - 48) * 10) + (remote_unit_port_buffer[4] - 48) + ((remote_unit_port_buffer[6] - 48) / 10.0) + ((remote_unit_port_buffer[7] - 48) / 100.0) + ((remote_unit_port_buffer[8] - 48) / 1000.0) + ((remote_unit_port_buffer[9] - 48) / 10000.0) + ((remote_unit_port_buffer[10] - 48) / 100000.0) + ((remote_unit_port_buffer[11] - 48) / 1000000.0);
+            remote_unit_command_result_float = float((remote_unit_port_buffer[2] - 48) * 100) + float((remote_unit_port_buffer[3] - 48) * 10) + float(remote_unit_port_buffer[4] - 48) + (float(remote_unit_port_buffer[6] - 48) / (float)10.0) + (float(remote_unit_port_buffer[7] - 48) / (float)100.0) + (float(remote_unit_port_buffer[8] - 48) / (float)1000.0) + (float(remote_unit_port_buffer[9] - 48) / (float)10000.0) + (float(remote_unit_port_buffer[10] - 48) / (float)100000.0) + (float(remote_unit_port_buffer[11] - 48) / (float)1000000.0);
             good_data = 1;
           }
           break;
         case REMOTE_UNIT_EL_COMMAND:
           if ((remote_unit_port_buffer_index == 14) && (remote_unit_port_buffer[0] == 'E') && (remote_unit_port_buffer[1] == 'L') &&
               (is_ascii_number(remote_unit_port_buffer[3])) && (is_ascii_number(remote_unit_port_buffer[4])) && (is_ascii_number(remote_unit_port_buffer[5])) && (is_ascii_number(remote_unit_port_buffer[7])) && (is_ascii_number(remote_unit_port_buffer[8])) && (is_ascii_number(remote_unit_port_buffer[9])) && (is_ascii_number(remote_unit_port_buffer[10])) && (is_ascii_number(remote_unit_port_buffer[11])) && (is_ascii_number(remote_unit_port_buffer[12]))) {
-            remote_unit_command_result_float = ((remote_unit_port_buffer[3] - 48) * 100) + ((remote_unit_port_buffer[4] - 48) * 10) + (remote_unit_port_buffer[5] - 48) + ((remote_unit_port_buffer[7] - 48) / 10.0)  + ((remote_unit_port_buffer[8] - 48) / 100.0)  + ((remote_unit_port_buffer[9] - 48) / 1000.0)  + ((remote_unit_port_buffer[10] - 48) / 10000.0)  + ((remote_unit_port_buffer[11] - 48) / 100000.0)  + ((remote_unit_port_buffer[12] - 48) / 1000000.0);
+            remote_unit_command_result_float = (float(remote_unit_port_buffer[3] - 48) * 100) + float((remote_unit_port_buffer[4] - 48) * 10) + float(remote_unit_port_buffer[5] - 48) + (float(remote_unit_port_buffer[7] - 48) / (float)10.0)  + (float(remote_unit_port_buffer[8] - 48) / (float)100.0)  + (float(remote_unit_port_buffer[9] - 48) / (float)1000.0)  + (float(remote_unit_port_buffer[10] - 48) / (float)10000.0)  + (float(remote_unit_port_buffer[11] - 48) / (float)100000.0)  + (float(remote_unit_port_buffer[12] - 48) / (float)1000000.0);
             if (remote_unit_port_buffer[2] == '+') {
               good_data = 1;
             }
             if (remote_unit_port_buffer[2] == '-') {
-              remote_unit_command_result_float = remote_unit_command_result_float * -1.0;
+              remote_unit_command_result_float = remote_unit_command_result_float * (float)-1.0;
               good_data = 1;
             }
           }
@@ -13529,7 +13532,7 @@ void service_remote_communications_incoming_buffer(){
         debug.print(remote_unit_port_buffer_index);
         debug.print(" buffer: ");
         for (int x = 0; x < remote_unit_port_buffer_index; x++) {
-          debug_write((char*)remote_unit_port_buffer[x]);
+          debug.write((char*)remote_unit_port_buffer[x]);
         }
         debug.println("$");
         #endif // DEBUG_SVC_REMOTE_COMM_INCOMING_BUFFER_BAD_DATA
@@ -22139,7 +22142,7 @@ void send_vt100_code(char* code_to_send){
 
     static unsigned long last_pg_send_time = REMOTE_UNIT_ROTATION_TIMEOUT;
 
-    if ((millis() - last_pg_send_time) > ((long)REMOTE_UNIT_ROTATION_TIMEOUT * (long)0.8)){
+    if ((float)(millis() - (float)last_pg_send_time) > ((float)REMOTE_UNIT_ROTATION_TIMEOUT * (float)0.8)){
       submit_remote_command(REMOTE_UNIT_PG_COMMAND,0,0);
       last_pg_send_time = millis();
     }

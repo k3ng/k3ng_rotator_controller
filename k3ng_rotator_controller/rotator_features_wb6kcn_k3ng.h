@@ -7,12 +7,12 @@
 /* main features */
 
 #define FEATURE_ELEVATION_CONTROL      // uncomment this for AZ/EL rotators
-#define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
+// #define FEATURE_YAESU_EMULATION           // uncomment this for Yaesu GS-232 emulation on control port
 // #define FEATURE_EASYCOM_EMULATION      // Easycom protocol emulation on control port
 // #define FEATURE_DCU_1_EMULATION        // DCU-1 protocol emulation on control port (only supports azimuth only systems)
 
-#define FEATURE_MOON_TRACKING
-#define FEATURE_SUN_TRACKING
+// #define FEATURE_MOON_TRACKING
+// #define FEATURE_SUN_TRACKING
 #define FEATURE_CLOCK
 #define FEATURE_GPS
 // #define FEATURE_RTC_DS1307
@@ -23,7 +23,7 @@
 // #define FEATURE_TEST_DISPLAY_AT_STARTUP  
 // #define FEATURE_CALIBRATION  // under development - this will get rid of azimuth and elevation offsets and replace with runtime calibration tables
 
-#define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
+// #define FEATURE_SATELLITE_TRACKING  // https://github.com/k3ng/k3ng_rotator_controller/wiki/707-Satellite-Tracking
 
 #define LANGUAGE_ENGLISH         // all languages customized in rotator_language.h
 // #define LANGUAGE_SPANISH
@@ -36,7 +36,7 @@
 // #define LANGUAGE_NORWEGIAN_BOKMAAL
 
 /* master and remote slave unit functionality */
-// #define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
+#define FEATURE_REMOTE_UNIT_SLAVE // uncomment this to make this unit a remote unit controlled by a host unit                      
 
 // #define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
 // #define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]

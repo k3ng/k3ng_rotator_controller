@@ -40,6 +40,9 @@
 // #define FEATURE_MASTER_WITH_SERIAL_SLAVE       // [master]{remote_port}<-------serial-------->{control_port}[slave]
 // #define FEATURE_MASTER_WITH_ETHERNET_SLAVE     // [master]<-------------------ethernet--------------------->[slave]
 
+// #define FEATURE_MASTER_SEND_AZ_ROTATION_COMMANDS_TO_REMOTE
+// #define FEATURE_MASTER_SEND_EL_ROTATION_COMMANDS_TO_REMOTE
+
 //#define FEATURE_ADC_RESOLUTION12   // 12 bit ADC resolution for Teensy 3.x, Arduino Due Zero MKR families 
 
 /* position sensors - pick one for azimuth and one for elevation if using an az/el rotator */
