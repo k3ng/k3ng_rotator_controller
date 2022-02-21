@@ -121,7 +121,7 @@ You can tweak these, but read the online documentation!
 #define ELEVATION_TOLERANCE 5.0
 
 #define OPERATION_TIMEOUT 120000        // timeout for any rotation operation in mS ; 120 seconds is usually enough unless you have the speed turned down
-#define REMOTE_UNIT_ROTATION_TIMEOUT 5000 // timeout any remote unit rotation operation if a ping (PG) is not receive within 5 seconds
+#define MASTER_REMOTE_LINK_PING_TIME_MS 5000
 
 #define TIMED_INTERVAL_ARRAY_SIZE 20
 
@@ -181,9 +181,9 @@ You can tweak these, but read the online documentation!
 #define COMMAND_BUFFER_SIZE 50
 
 #define REMOTE_BUFFER_TIMEOUT_MS 250
-#define REMOTE_UNIT_COMMAND_TIMEOUT_MS 2000
-#define AZ_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for azimuth
-#define EL_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for elevation
+// #define REMOTE_UNIT_COMMAND_TIMEOUT_MS 2000
+// #define AZ_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for azimuth
+// #define EL_REMOTE_UNIT_QUERY_TIME_MS 150         // how often we query the remote remote for elevation
 
 #define AZIMUTH_SMOOTHING_FACTOR 0      // value = 0 to 99.9
 #define ELEVATION_SMOOTHING_FACTOR 0    // value = 0 to 99.9
@@ -354,7 +354,7 @@ You can tweak these, but read the online documentation!
 #define CONTROL_PORT_MAPPED_TO &Serial     // change this line to map the control port to a different serial port (Serial1, Serial2, etc.)
 #define CONTROL_PORT_BAUD_RATE 115200
 #define REMOTE_PORT Serial3                 // used to control remote unit
-#define REMOTE_UNIT_PORT_BAUD_RATE 9600 
+#define REMOTE_UNIT_PORT_BAUD_RATE 57600 
 #define GPS_PORT Serial2
 #define GPS_PORT_BAUD_RATE 9600
 // #define GPS_MIRROR_PORT Serial1          // use this to mirror output from a GPS unit into the Arduino out another port (uncomment to enable)

@@ -24,6 +24,44 @@
 // So, here it is!
 //
 
+/*
+
+Copyright 2011, Mark VandeWettering. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   1. Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer 
+      in the documentation and/or other materials provided with the 
+      distribution.
+
+THIS SOFTWARE IS PROVIDED BY MARK VANDEWETTERING ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation
+are those of the authors and should not be interpreted as representing
+official policies, either expressed or implied, of Mark VandeWettering
+
+*/
+
+// Modification by Anthony Good, K3NG 2020-07-24: Changed DateTime to SatDateTime to avoid a conflict with an RTC library I'm using
+
+// Modification by Anthony Good, K3NG 2022-02-20: Added Observer.update_location function
+
 #include "P13.h"
 
 double
@@ -183,6 +221,45 @@ Observer::Observer(const char *nm, double lat, double lng, double hgt)
     V[1] =  O[0] * W0 ;
     V[2] =  0 ;
 }
+
+// START - 2022-02-20 Added by Goody K3NG
+void
+Observer::update_location(const char *nm, double lat, double lng, double hgt)
+{
+    this->name = nm ;
+    LA = RADIANS(lat) ;
+    LO = RADIANS(lng) ;
+    HT = hgt / 1000 ;
+
+    U[0] = cos(LA)*cos(LO) ;
+    U[1] = cos(LA)*sin(LO) ;
+    U[2] = sin(LA) ;
+
+    E[0] = -sin(LO) ;
+    E[1] =  cos(LO) ;
+    E[2] =  0. ;
+
+    N[0] = -sin(LA)*cos(LO) ;
+    N[1] = -sin(LA)*sin(LO) ;
+    N[2] =  cos(LA) ;
+
+    double RP = RE * (1 - FL) ;
+    double XX = RE * RE ;
+    double ZZ = RP * RP ;
+    double D = sqrt(XX*cos(LA)*cos(LA) + 
+	            ZZ*sin(LA)*sin(LA)) ;
+    double Rx = XX / D + HT ;
+    double Rz = ZZ / D + HT ;
+
+    O[0] = Rx * U[0] ;
+    O[1] = Rx * U[1] ;
+    O[2] = Rz * U[2] ;
+
+    V[0] = -O[1] * W0 ;
+    V[1] =  O[0] * W0 ;
+    V[2] =  0 ;
+}
+// END - 2022-02-20 Added by Goody K3NG
 
 //----------------------------------------------------------------------
 //     _              ___       _       _ _ _ _       

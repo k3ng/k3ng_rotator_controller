@@ -58,7 +58,9 @@ official policies, either expressed or implied, of Mark VandeWettering
 
 */
 
-// Modification by Anthony Good, K3NG 2020-07-24: Change DateTime to SatDateTime to avoid a conflict with an RTC library I'm using
+// Modification by Anthony Good, K3NG 2020-07-24: Changed DateTime to SatDateTime to avoid a conflict with an RTC library I'm using
+
+// Modification by Anthony Good, K3NG 2022-02-20: Added Observer.update_location function
 
 //----------------------------------------------------------------------
 
@@ -139,6 +141,8 @@ public:
     
     Observer(const char *, double, double, double) ;
     ~Observer() { } ;
+
+	void update_location(const char *nm, double lat, double lng, double hgt);  // 2022-02-20 Added by Goody K3NG
 } ;
 
 //----------------------------------------------------------------------
@@ -147,7 +151,7 @@ public:
 class Satellite { 
   	long N ;
 	long YE ;	
-        long DE ;
+    long DE ;
 	double TE ;
 	double IN ;
 	double RA ;
@@ -171,7 +175,9 @@ class Satellite {
         double RS ;
 
 public:
-        const char *name ;
+
+    const char *name ;
+
 	Vec3 SAT, VEL ;		// celestial coordinates
     	Vec3 S, V ; 		// geocentric coordinates
  
