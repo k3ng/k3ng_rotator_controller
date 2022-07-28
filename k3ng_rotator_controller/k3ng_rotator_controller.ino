@@ -11848,7 +11848,7 @@ void service_request_queue(){
     control_port->flush();
   #endif // DEBUG_LOOP
 
-  int work_target_raw_azimuth = 0;
+  float work_target_raw_azimuth = 0;
   byte direction_to_go = 0;
   byte within_tolerance_flag = 0;
 
