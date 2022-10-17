@@ -7210,9 +7210,9 @@ void read_settings_from_eeprom(){
     #ifdef DEBUG_EEPROM
       if (debug_mode) {
         debug.println("read_settings_from_eeprom: reading settings from eeprom: ");
-        debug.print("\nconfiguration_struct_version"):
+        debug.print("\nconfiguration_struct_version");
         debug.print(configuration.configuration_struct_version);
-        debug.print("\nconfiguration_struct_subversion"):
+        debug.print("\nconfiguration_struct_subversion");
         debug.print(configuration.configuration_struct_subversion);        
         debug.print("\nanalog_az_full_ccw");
         debug.print(configuration.analog_az_full_ccw);
