@@ -7127,10 +7127,12 @@ void update_lcd_display(){
 // --------------------------------------------------------------
 #if defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 void get_keystroke(){
-  while (control_port->available() == 0) {
-  }
-  while (control_port->available() > 0)
-    incoming_serial_byte = control_port->read();
+  #ifndef OPTION_SAVE_CONFIGURATION_WITHOUT_WAITING_FOR_KEYSTROKE
+    while (control_port->available() == 0) {
+    }
+    while (control_port->available() > 0)
+      incoming_serial_byte = control_port->read();
+  #endif
 }
 #endif // defined(FEATURE_REMOTE_UNIT_SLAVE) || defined(FEATURE_YAESU_EMULATION) || defined(FEATURE_EASYCOM_EMULATION)
 
