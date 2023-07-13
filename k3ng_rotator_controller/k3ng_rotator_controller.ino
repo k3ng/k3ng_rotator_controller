@@ -9335,7 +9335,7 @@ void output_debug(){
         #if !defined(TEENSYDUINO)
           void * HP = malloc(4);
           if (HP) {free(HP);}
-          unsigned long free = (unsigned long)SP - (unsigned long)HP;
+          unsigned long free = 0; //(unsigned long)SP - (unsigned long)HP;
           sprintf(tempstring,"%lu",(unsigned long)free);
           if ((free < 500) || (free > 10000)){
             debug.print(F("WARNING: Low memory: "));
@@ -13569,9 +13569,9 @@ byte get_analog_pin(byte pin_number){
     case 1: return_output = A1; break;
     case 2: return_output = A2; break;
     case 3: return_output = A3; break;
-    case 4: return_output = A4; break;
-    case 5: return_output = A5; break;
-    case 6: return_output = A6; break;
+   // case 4: return_output = A4; break;
+   // case 5: return_output = A5; break;
+   // case 6: return_output = A6; break;
   }
 
   return return_output;
