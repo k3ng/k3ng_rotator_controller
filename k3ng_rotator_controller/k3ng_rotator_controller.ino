@@ -10117,7 +10117,7 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
           }
           if (rotate_cw) {
-            digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_ACTIVE_VALUE);
+            digitalWriteEnhanced(rotate_cw, LOW);
             #if defined(pin_led_cw)
               digitalWriteEnhanced(pin_led_cw, PIN_LED_ACTIVE_STATE);
             #endif
@@ -10157,7 +10157,7 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_INACTIVE_VALUE);
           }        
           if (rotate_cw) {
-            digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
+            //digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
             #if defined(pin_led_cw)
               digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
             #endif          
@@ -10239,8 +10239,9 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
           if (rotate_cw_ccw){
             digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
           }    
+          
           if (rotate_cw) {
-            digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
+            digitalWriteEnhanced(rotate_cw, HIGH);
             #if defined(pin_led_cw)
               digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
             #endif          
