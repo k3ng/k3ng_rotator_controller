@@ -1,4 +1,17 @@
-/* Arduino Rotator Controller
+/* 
+AZC notes:
+
+easyEda: https://easyeda.com/editor#id=a82c5445af594906814706b7dc0fdf6f|e73a62999b1b49efba16c5c9ce2f9027
+
+
+using https://github.com/adafruit/Adafruit_SSD1306
+
+*/
+
+
+/* 
+ * Arduino Rotator Controller
+ * 
 
    Anthony Good
    K3NG
