@@ -1328,7 +1328,7 @@ byte current_az_speed_voltage = 0;
 double latitude = DEFAULT_LATITUDE;
 double longitude = DEFAULT_LONGITUDE;
 double altitude_m = DEFAULT_ALTITUDE_M;
-byte periodic_debug_dump_time_seconds = 3;
+byte periodic_debug_dump_time_seconds = 1;
 
 DebugClass debug;
 
@@ -10113,9 +10113,6 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
               }
             #endif //FEATURE_STEPPER_MOTOR                 
           }
-          if (rotate_cw_ccw){
-            digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
-          }
           if (rotate_cw) {
             digitalWriteEnhanced(rotate_cw, LOW);
             #if defined(pin_led_cw)
@@ -10128,6 +10125,15 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
               digitalWriteEnhanced(pin_led_ccw, PIN_LED_INACTIVE_STATE);
             #endif          
           }
+
+          
+          delay(50);
+          
+          if (rotate_cw_ccw){
+            digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
+          }
+
+          
           #ifdef DEBUG_ROTATOR
             if (debug_mode) {
               debug.print(F(" normal_az_speed_voltage:"));
@@ -10198,6 +10204,7 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             if (rotate_ccw_pwm) {
               analogWriteEnhanced(rotate_ccw_pwm, 0);
             }
+            
             if (rotate_cw_ccw_pwm) {
               analogWriteEnhanced(rotate_cw_ccw_pwm, 0);
             }
@@ -10236,10 +10243,8 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             #endif //FEATURE_STEPPER_MOTOR 
           }
           
-          if (rotate_cw_ccw){
-            digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
-          }    
-          
+
+
           if (rotate_cw) {
             digitalWriteEnhanced(rotate_cw, HIGH);
             #if defined(pin_led_cw)
@@ -10252,6 +10257,13 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
               digitalWriteEnhanced(pin_led_ccw, PIN_LED_ACTIVE_STATE);
             #endif          
           }  
+
+          delay(50);
+          
+          if (rotate_cw_ccw){
+            digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
+          }
+          
           #ifdef DEBUG_ROTATOR
           if (debug_mode) {
             debug.print(F(" normal_az_speed_voltage:"));
