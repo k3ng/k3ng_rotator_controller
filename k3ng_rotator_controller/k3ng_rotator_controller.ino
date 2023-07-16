@@ -1867,7 +1867,9 @@ struct config_t {
 #endif
 
 
-
+void 
+  wifiSetup(void);
+  
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 
 void setup() {
@@ -1888,12 +1890,16 @@ void setup() {
 
   initialize_interrupts();
 
+  wifiSetup();
+
   run_this_once();
 
 
 }
 
 /*-------------------------- here's where the magic happens --------------------------------*/
+
+void wifiLoop(void);
 
 void loop() {
 
@@ -2092,6 +2098,8 @@ void loop() {
   #ifdef OPTION_MORE_SERIAL_CHECKS
     check_serial();
   #endif
+
+  wifiLoop();
 
 } // loop 
 
