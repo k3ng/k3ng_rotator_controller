@@ -1136,6 +1136,8 @@ using https://github.com/adafruit/Adafruit_SSD1306
   
 #include "rotator_dependencies.h"
 
+#include <Wire.h>
+
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
   #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
 #endif
@@ -11029,8 +11031,13 @@ void initialize_peripherals(){
     control_port->flush();
   #endif // DEBUG_LOOP
 
+  Wire.setSDA(20);
+  Wire.setSCL(21); 
+   
   #ifdef FEATURE_WIRE_SUPPORT
-    Wire.begin();
+
+    
+   // Wire.begin();
   #endif
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L

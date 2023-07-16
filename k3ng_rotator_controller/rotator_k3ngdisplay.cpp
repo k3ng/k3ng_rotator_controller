@@ -13,8 +13,8 @@
 #include "rotator_k3ngdisplay.h"
 
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
-  #include <LiquidCrystal.h>
-  LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin);
+  //#include <LiquidCrystal.h>
+  //LiquidCrystal lcd(lcd_4_bit_rs_pin, lcd_4_bit_enable_pin, lcd_4_bit_d4_pin, lcd_4_bit_d5_pin, lcd_4_bit_d6_pin, lcd_4_bit_d7_pin);
 #endif // FEATURE_4_BIT_LCD_DISPLAY
 
 #ifdef FEATURE_WIRE_SUPPORT
@@ -43,6 +43,10 @@
   #include <hd44780.h>                       // main hd44780 header
   #include <hd44780ioClass/hd44780_I2Cexp.h> // i2c expander i/o class header
 #endif  
+
+#include <Adafruit_GFX.h>
+
+#include <Adafruit_SSD1306.h>
 
 
 #if defined(FEATURE_YOURDUINO_I2C_LCD)
@@ -126,7 +130,36 @@ K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_ti
 
 //-----------------------------------------------------------------------------------------------------
 
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+// The pins for I2C are defined by the Wire-library. 
+// On an arduino UNO:       A4(SDA), A5(SCL)
+// On an arduino MEGA 2560: 20(SDA), 21(SCL)
+// On an arduino LEONARDO:   2(SDA),  3(SCL), ...
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 lcd(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 void K3NGdisplay::initialize(){
+
+  //Serial.begin(9600);
+
+  
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!lcd.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  } else {
+
+    Serial.println(F("SSD1306 OK"));
+
+    
+  }
+ 
+/*
 
   #if !defined(FEATURE_MIDAS_I2C_DISPLAY)
   lcd.begin(display_columns, display_rows);  // if you are getting an error on this line and do not have
@@ -165,13 +198,47 @@ void K3NGdisplay::initialize(){
 
   clear();
 
+  */
+
+ lcd.display();
+  delay(2000); // Pause for 2 seconds
+
+
+    Serial.println("Display 2()");
+    Serial.flush();
+
+  // Clear the buffer
+  lcd.clearDisplay();
+
+  // Draw a single pixel in white
+  lcd.drawPixel(10, 10, SSD1306_WHITE);
+
+  // Show the display buffer on the screen. You MUST call display() after
+  // drawing commands to make them visible on screen!
+  lcd.display();
+  delay(2000);
+  // display.display() is NOT necessary after every single drawing command,
+  // unless that's what you want...rather, you can batch up a bunch of
+  // drawing operations and then update the screen all at once by calling
+  // display.display(). These examples demonstrate both approaches...
+
+//  testdrawline();      // Draw many lines
+
+
+  lcd.setTextSize(1);             // Normal 1:1 pixel scale
+  lcd.setTextColor(SSD1306_WHITE);        // Draw white text
+  lcd.setCursor(0,0);             // Start at top-left corner
+  lcd.println(F("Hello, world!"));
+  lcd.display();
 
 }
 
 //-----------------------------------------------------------------------------------------------------
 
 void K3NGdisplay::service(uint8_t force_update_flag = 0){
-
+   
+   return;
+   
 
   // force_update_flag = 1 : force a screen update regardless of update_time_ms, but not if there is a timed message (i.e. revert_screen_flag = 1)
   // force_update_flag = 2 : force a screen update regardless of update_time_ms and revert_screen_flag
@@ -254,10 +321,12 @@ void K3NGdisplay::clear(){
 
   }
 
-  lcd.clear();
+  // TODO 
+  // lcd.clear();
 
   #ifdef FEATURE_4_BIT_LCD_DISPLAY
-    lcd.noCursor();
+   // TODO
+   // lcd.noCursor();
   #endif  
   
   current_print_row = 0;
@@ -303,7 +372,8 @@ void K3NGdisplay::update(){
 
   byte wrote_to_lcd_last_loop = 0;
 
-  lcd.noCursor();
+  // TODO
+  //lcd.noCursor();
   lcd.setCursor(0,0);
 
   for (int x = 0;x < (display_columns*display_rows);x++){  	
@@ -356,7 +426,8 @@ void K3NGdisplay::redraw(){
 
   // redraw the screen with the current screen_buffer_live
 
-  lcd.noCursor();
+  // TODO
+  //lcd.noCursor();
   lcd.setCursor(0,0);
 
   for (int x = 0;x < (display_columns*display_rows);x++){   
@@ -814,4 +885,3 @@ uint8_t K3NGdisplay::readButtons(){
 
 
 #endif //K3NG_DISPLAY_H
-
