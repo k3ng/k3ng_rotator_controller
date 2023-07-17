@@ -141,6 +141,7 @@ K3NGdisplay::K3NGdisplay(int _display_columns, int _display_rows, int _update_ti
 // On an arduino LEONARDO:   2(SDA),  3(SCL), ...
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+
 Adafruit_SSD1306 lcd(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 void K3NGdisplay::initialize(){
@@ -200,35 +201,17 @@ void K3NGdisplay::initialize(){
 
   */
 
- lcd.display();
-  delay(2000); // Pause for 2 seconds
-
-
-    Serial.println("Display 2()");
-    Serial.flush();
-
   // Clear the buffer
   lcd.clearDisplay();
-
-  // Draw a single pixel in white
-  lcd.drawPixel(10, 10, SSD1306_WHITE);
-
-  // Show the display buffer on the screen. You MUST call display() after
-  // drawing commands to make them visible on screen!
-  lcd.display();
-  delay(2000);
-  // display.display() is NOT necessary after every single drawing command,
-  // unless that's what you want...rather, you can batch up a bunch of
-  // drawing operations and then update the screen all at once by calling
-  // display.display(). These examples demonstrate both approaches...
-
-//  testdrawline();      // Draw many lines
-
 
   lcd.setTextSize(1);             // Normal 1:1 pixel scale
   lcd.setTextColor(SSD1306_WHITE);        // Draw white text
   lcd.setCursor(0,0);             // Start at top-left corner
-  lcd.println(F("Hello, world!"));
+  lcd.cp437(false);         // Use full 256 char 'Code Page 437' font
+  lcd.println(F("0123456789"));
+  lcd.println(F("0123456789"));
+  lcd.println(F("0123456789"));
+  lcd.println(F("0123456789"));
   lcd.display();
 
 }
@@ -237,9 +220,7 @@ void K3NGdisplay::initialize(){
 
 void K3NGdisplay::service(uint8_t force_update_flag = 0){
    
-   return;
    
-
   // force_update_flag = 1 : force a screen update regardless of update_time_ms, but not if there is a timed message (i.e. revert_screen_flag = 1)
   // force_update_flag = 2 : force a screen update regardless of update_time_ms and revert_screen_flag
 
@@ -442,6 +423,8 @@ void K3NGdisplay::redraw(){
       lcd.print(screen_buffer_live[x]);
     }
   }
+
+  lcd.display();
 
 
 }	
