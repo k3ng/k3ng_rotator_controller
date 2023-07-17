@@ -46,7 +46,7 @@
 
 #include <Adafruit_GFX.h>
 
-#include <Adafruit_SSD1306.h>
+#include "Adafruit_SSD1306.h"
 
 
 #if defined(FEATURE_YOURDUINO_I2C_LCD)
