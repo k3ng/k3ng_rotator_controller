@@ -1083,6 +1083,9 @@
         FEATURE_SATELLITE_TRACKING: Updated P13 library to have observer.update_location function.  Controller code now uses update_location rather than instantiating new Observer objects
         Updated hardcoded AO17TEST TLE 
 
+      2023.09.29.0800
+        Added FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE; not tested  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -1706,12 +1709,12 @@ struct config_t {
   char report[80];
 #endif //FEATURE_AZ_POSITION_POLOLU_LSM303
 
-#ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
+#if defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI) || defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE)
   #include "hh12.h"
   hh12 azimuth_hh12;
 #endif //FEATURE_AZ_POSITION_HH12_AS5045_SSI
 
-#ifdef FEATURE_EL_POSITION_HH12_AS5045_SSI
+#if defined(FEATURE_EL_POSITION_HH12_AS5045_SSI)  || defined(FEATURE_EL_POSITION_HH12_AS5045_SSI_RELATIVE)
   #include "hh12.h"
   hh12 elevation_hh12;
 #endif //FEATURE_EL_POSITION_HH12_AS5045_SSI
@@ -8623,6 +8626,53 @@ void read_azimuth(byte force_read){
       convert_raw_azimuth_to_real_azimuth();
     #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI
 
+// zzzzzz
+
+    #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE
+
+      static float hh12_last_reading = 0;
+      static byte last_reading_initialized = 0;
+      float reading_difference = 0;
+
+      float hh12_current_reading = azimuth_hh12.heading();
+
+      if (!last_reading_initialized){
+        hh12_last_reading = hh12_current_reading;
+        last_reading_initialized = 1;
+      }
+
+      reading_difference = hh12_last_reading - hh12_current_reading;
+
+      if (abs(reading_difference) > 350.0){  // if we moved more than 350 degrees since the last reading, assume we did a 359->0/0->359 transition
+        if (reading_difference > 0){  // we went CCW 0->359
+          reading_difference = (reading_difference + 360.0) * -1.0;
+        } else {  // we went CW 359->0
+          reading_difference = (reading_difference - 360.0) * -1.0;
+        }
+      }
+
+      #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
+        reading_difference = reading_difference * -1.0;
+      #endif
+
+      raw_azimuth += reading_difference;
+    
+      #ifdef DEBUG_HH12
+        if ((millis() - last_hh12_debug) > 5000) {
+          debug.print(F("read_azimuth: HH-12 raw: "));
+          control_port->println(raw_azimuth);
+          last_hh12_debug = millis();
+        }
+      #endif // DEBUG_HH12
+      #ifdef FEATURE_AZIMUTH_CORRECTION
+        raw_azimuth = correct_azimuth(raw_azimuth);
+      #endif // FEATURE_AZIMUTH_CORRECTION
+      #if !defined(FEATURE_CALIBRATION)  
+      apply_azimuth_offset();
+      #endif
+      convert_raw_azimuth_to_real_azimuth();
+      hh12_last_reading = hh12_current_reading;
+    #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE
 
     #ifdef FEATURE_AZ_POSITION_INCREMENTAL_ENCODER
       if (configuration.azimuth_starting_point == 0) {
@@ -11848,7 +11898,7 @@ void service_request_queue(){
     control_port->flush();
   #endif // DEBUG_LOOP
 
-  float work_target_raw_azimuth = 0;
+  int work_target_raw_azimuth = 0;
   byte direction_to_go = 0;
   byte within_tolerance_flag = 0;
 
