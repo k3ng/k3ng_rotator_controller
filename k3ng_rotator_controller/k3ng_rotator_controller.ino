@@ -1086,6 +1086,9 @@
       2023.09.29.0800
         Added FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE; not tested  
 
+      2023.09.29.2039
+        More code in DEBUG_HH12  
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -8632,21 +8635,25 @@ void read_azimuth(byte force_read){
 
       static float hh12_last_reading = 0;
       static byte last_reading_initialized = 0;
-      float reading_difference = 0;
-
       float hh12_current_reading = azimuth_hh12.heading();
 
+      #ifdef DEBUG_HH12
+        char debug_msg[32];
+      #endif
+
       if (!last_reading_initialized){
+        raw_azimuth = configuration.last_azimuth;
         hh12_last_reading = hh12_current_reading;
         last_reading_initialized = 1;
+        return;
       }
 
-      reading_difference = hh12_last_reading - hh12_current_reading;
+      float reading_difference = hh12_last_reading - hh12_current_reading;
 
       if (abs(reading_difference) > 350.0){  // if we moved more than 350 degrees since the last reading, assume we did a 359->0/0->359 transition
-        if (reading_difference > 0){  // we went CCW 0->359
+        if (reading_difference > 0){  // we went 359<--CCW--0
           reading_difference = (reading_difference + 360.0) * -1.0;
-        } else {  // we went CW 359->0
+        } else {  // we went 359--CW-->0
           reading_difference = (reading_difference - 360.0) * -1.0;
         }
       }
@@ -8655,20 +8662,57 @@ void read_azimuth(byte force_read){
         reading_difference = reading_difference * -1.0;
       #endif
 
-      raw_azimuth += reading_difference;
-    
+      if (reading_difference != 0){
+        raw_azimuth = raw_azimuth + reading_difference;
+        configuration.last_azimuth = raw_azimuth;
+        configuration_dirty = 1;
+        #ifdef DEBUG_HH12
+          debug.print(F("read_azimuth: *reading_difference*:"));
+          sprintf(debug_msg,"%ld",reading_difference);
+          debug.print(debug_msg);
+          debug.print(F(" hh12_last_reading:"));
+          sprintf(debug_msg,"%ld",hh12_last_reading);
+          debug.print(debug_msg);          
+          debug.print(F(" hh12_current_reading:"));
+          sprintf(debug_msg,"%ld",hh12_current_reading);
+          debug.print(debug_msg);
+          debug.print(F(" raw_az:"));
+          sprintf(debug_msg,"%ld",raw_azimuth);
+          debug.print(debug_msg);  
+          #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
+            debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
+          #endif          
+          debug.println("");  
+        #endif
+      }
+
       #ifdef DEBUG_HH12
-        if ((millis() - last_hh12_debug) > 5000) {
-          debug.print(F("read_azimuth: HH-12 raw: "));
-          control_port->println(raw_azimuth);
+        if ((millis() - last_hh12_debug) > 2000) {
+          debug.print(F("read_azimuth: *reading_difference*:"));
+          sprintf(debug_msg,"%ld",reading_difference);
+          debug.print(debug_msg);
+          debug.print(F(" hh12_last_reading:"));
+          sprintf(debug_msg,"%ld",hh12_last_reading);
+          debug.print(debug_msg);          
+          debug.print(F(" hh12_current_reading:"));
+          sprintf(debug_msg,"%ld",hh12_current_reading);
+          debug.print(debug_msg);
+          debug.print(F(" raw_az:"));
+          sprintf(debug_msg,"%ld",raw_azimuth);
+          debug.print(debug_msg);   
+          #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
+            debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
+          #endif             
+          debug.println("");  
           last_hh12_debug = millis();
         }
       #endif // DEBUG_HH12
+
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
       #endif // FEATURE_AZIMUTH_CORRECTION
       #if !defined(FEATURE_CALIBRATION)  
-      apply_azimuth_offset();
+        apply_azimuth_offset();
       #endif
       convert_raw_azimuth_to_real_azimuth();
       hh12_last_reading = hh12_current_reading;
