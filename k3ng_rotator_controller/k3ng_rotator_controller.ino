@@ -1087,6 +1087,9 @@
         Added FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE; not tested  
 
       2023.09.29.2039
+        More code in DEBUG_HH12
+
+      2023.10.02.2302
         More code in DEBUG_HH12  
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
@@ -8635,11 +8638,14 @@ void read_azimuth(byte force_read){
 
       static float hh12_last_reading = 0;
       static byte last_reading_initialized = 0;
-      float hh12_current_reading = azimuth_hh12.heading();
-
+      float hh12_current_reading = 0;
+      float reading_difference = 0;
+      
       #ifdef DEBUG_HH12
-        char debug_msg[32];
+        static char debug_msg[32];
       #endif
+
+      hh12_current_reading = azimuth_hh12.heading();
 
       if (!last_reading_initialized){
         raw_azimuth = configuration.last_azimuth;
@@ -8648,14 +8654,22 @@ void read_azimuth(byte force_read){
         return;
       }
 
-      float reading_difference = hh12_last_reading - hh12_current_reading;
+      reading_difference = hh12_last_reading - hh12_current_reading;
 
       if (abs(reading_difference) > 350.0){  // if we moved more than 350 degrees since the last reading, assume we did a 359->0/0->359 transition
+        #ifdef DEBUG_HH12
+          debug.print(F("read_azimuth: reading_difference > 350:"));
+          control_port->println(reading_difference);
+        #endif   
         if (reading_difference > 0){  // we went 359<--CCW--0
           reading_difference = (reading_difference + 360.0) * -1.0;
         } else {  // we went 359--CW-->0
           reading_difference = (reading_difference - 360.0) * -1.0;
         }
+        #ifdef DEBUG_HH12
+          debug.print(F("read_azimuth: reading_difference now:"));
+          control_port->println(reading_difference);
+        #endif         
       }
 
       #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
@@ -8668,16 +8682,16 @@ void read_azimuth(byte force_read){
         configuration_dirty = 1;
         #ifdef DEBUG_HH12
           debug.print(F("read_azimuth: *reading_difference*:"));
-          sprintf(debug_msg,"%ld",reading_difference);
+          sprintf(debug_msg,"%.3f",reading_difference);
           debug.print(debug_msg);
           debug.print(F(" hh12_last_reading:"));
-          sprintf(debug_msg,"%ld",hh12_last_reading);
+          sprintf(debug_msg,"%.3f",hh12_last_reading);
           debug.print(debug_msg);          
           debug.print(F(" hh12_current_reading:"));
-          sprintf(debug_msg,"%ld",hh12_current_reading);
+          sprintf(debug_msg,"%.3f",hh12_current_reading);
           debug.print(debug_msg);
           debug.print(F(" raw_az:"));
-          sprintf(debug_msg,"%ld",raw_azimuth);
+          sprintf(debug_msg,"%.3f",raw_azimuth);
           debug.print(debug_msg);  
           #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
             debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
@@ -8689,16 +8703,16 @@ void read_azimuth(byte force_read){
       #ifdef DEBUG_HH12
         if ((millis() - last_hh12_debug) > 2000) {
           debug.print(F("read_azimuth: *reading_difference*:"));
-          sprintf(debug_msg,"%ld",reading_difference);
+          sprintf(debug_msg,"%.3f",reading_difference);
           debug.print(debug_msg);
           debug.print(F(" hh12_last_reading:"));
-          sprintf(debug_msg,"%ld",hh12_last_reading);
+          sprintf(debug_msg,"%.3f",hh12_last_reading);
           debug.print(debug_msg);          
           debug.print(F(" hh12_current_reading:"));
-          sprintf(debug_msg,"%ld",hh12_current_reading);
+          sprintf(debug_msg,"%.3f",hh12_current_reading);
           debug.print(debug_msg);
           debug.print(F(" raw_az:"));
-          sprintf(debug_msg,"%ld",raw_azimuth);
+          sprintf(debug_msg,"%.3f",raw_azimuth);
           debug.print(debug_msg);   
           #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
             debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
