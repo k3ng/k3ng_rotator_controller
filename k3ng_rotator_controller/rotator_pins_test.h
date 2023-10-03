@@ -113,7 +113,7 @@
 
 #define blink_led 0 //13
 
-#ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
+#if defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI) || defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE)
 #define az_hh12_clock_pin 53 //11
 #define az_hh12_cs_pin 52 //12
 #define az_hh12_data_pin 51 //13

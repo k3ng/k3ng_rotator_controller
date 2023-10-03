@@ -1092,6 +1092,9 @@
       2023.10.02.2302
         More code in DEBUG_HH12  
 
+      2023.10.03.2326
+        Fixed bugs in FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE
+
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
 
@@ -11236,7 +11239,7 @@ void initialize_peripherals(){
   #endif //defined(FEATURE_AZ_POSITION_POLOLU_LSM303) || defined(FEATURE_EL_POSITION_POLOLU_LSM303)
 
 
-  #ifdef FEATURE_AZ_POSITION_HH12_AS5045_SSI
+  #if defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI) || defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE)
     azimuth_hh12.initialize(az_hh12_clock_pin, az_hh12_cs_pin, az_hh12_data_pin);
   #endif // FEATURE_AZ_POSITION_HH12_AS5045_SSI
 
