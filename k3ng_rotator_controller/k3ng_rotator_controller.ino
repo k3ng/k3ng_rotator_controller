@@ -1094,6 +1094,9 @@
 
       2023.10.03.2326
         Fixed bugs in FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE
+      
+      2023.10.06.2200
+        FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE: fixed bugs
 
     All library files should be placed in directories likes \sketchbook\libraries\library1\ , \sketchbook\libraries\library2\ , etc.
     Anything rotator_*.* should be in the ino directory!
@@ -1108,7 +1111,7 @@
 
   */
 
-#define CODE_VERSION "2022.02.20.01"
+#define CODE_VERSION "2023.10.06.2200"
 
 
 #include <avr/pgmspace.h>
@@ -8658,20 +8661,22 @@ void read_azimuth(byte force_read){
       }
 
       reading_difference = hh12_last_reading - hh12_current_reading;
-
-      if (abs(reading_difference) > 350.0){  // if we moved more than 350 degrees since the last reading, assume we did a 359->0/0->359 transition
+// zzzzzzz
+      if (abs(reading_difference) > 250.0){  // if we moved more than X degrees since the last reading, assume we did a 359->0/0->359 transition
         #ifdef DEBUG_HH12
           debug.print(F("read_azimuth: reading_difference > 350:"));
-          control_port->println(reading_difference);
+          debug.print(reading_difference);
+          debug.println("");
         #endif   
         if (reading_difference > 0){  // we went 359<--CCW--0
-          reading_difference = (reading_difference + 360.0) * -1.0;
-        } else {  // we went 359--CW-->0
           reading_difference = (reading_difference - 360.0) * -1.0;
+        } else {  // we went 359--CW-->0
+          reading_difference = (reading_difference + 360.0) * -1.0;
         }
         #ifdef DEBUG_HH12
           debug.print(F("read_azimuth: reading_difference now:"));
-          control_port->println(reading_difference);
+          debug.print(reading_difference);
+          debug.println("");
         #endif         
       }
 
@@ -8684,46 +8689,42 @@ void read_azimuth(byte force_read){
         configuration.last_azimuth = raw_azimuth;
         configuration_dirty = 1;
         #ifdef DEBUG_HH12
-          debug.print(F("read_azimuth: *reading_difference*:"));
-          sprintf(debug_msg,"%.3f",reading_difference);
-          debug.print(debug_msg);
-          debug.print(F(" hh12_last_reading:"));
-          sprintf(debug_msg,"%.3f",hh12_last_reading);
-          debug.print(debug_msg);          
-          debug.print(F(" hh12_current_reading:"));
-          sprintf(debug_msg,"%.3f",hh12_current_reading);
-          debug.print(debug_msg);
-          debug.print(F(" raw_az:"));
-          sprintf(debug_msg,"%.3f",raw_azimuth);
-          debug.print(debug_msg);  
-          #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
-            debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
-          #endif          
-          debug.println("");  
+          if (abs(reading_difference) > 0.9){ // get rid of noise
+            debug.print(F("read_azimuth: *\t"));
+            debug.print(reading_difference);
+            // debug.print(F(" hh12_last_reading:")); 
+            // debug.print(hh12_last_reading);        
+            // debug.print(F(" hh12_current_reading:"));
+            // debug.print(hh12_current_reading);
+            debug.print(F("\traw_az:"));  
+            debug.print(raw_azimuth);
+            #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
+              debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
+            #endif          
+            debug.println("");  
+          }
         #endif
       }
 
-      #ifdef DEBUG_HH12
-        if ((millis() - last_hh12_debug) > 2000) {
-          debug.print(F("read_azimuth: *reading_difference*:"));
-          sprintf(debug_msg,"%.3f",reading_difference);
-          debug.print(debug_msg);
-          debug.print(F(" hh12_last_reading:"));
-          sprintf(debug_msg,"%.3f",hh12_last_reading);
-          debug.print(debug_msg);          
-          debug.print(F(" hh12_current_reading:"));
-          sprintf(debug_msg,"%.3f",hh12_current_reading);
-          debug.print(debug_msg);
-          debug.print(F(" raw_az:"));
-          sprintf(debug_msg,"%.3f",raw_azimuth);
-          debug.print(debug_msg);   
-          #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
-            debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
-          #endif             
-          debug.println("");  
-          last_hh12_debug = millis();
-        }
-      #endif // DEBUG_HH12
+      // #ifdef DEBUG_HH12
+      //   if ((millis() - last_hh12_debug) > 2000) {
+      //     last_hh12_debug = millis();
+          // debug.print(F("read_azimuth: *reading_difference*:"));
+          // debug.print(reading_difference);
+          // // debug.print(F(" hh12_last_reading:")); 
+          // // debug.print(hh12_last_reading);        
+          // // debug.print(F(" hh12_current_reading:"));
+          // // debug.print(hh12_current_reading);
+          // debug.print(F(" raw_az:"));  
+          // debug.print(raw_azimuth);
+          // #if defined(OPTION_REVERSE_AZ_HH12_AS5045)
+          //   debug.print(F(" OPTION_REVERSE_AZ_HH12_AS5045"));
+          // #endif          
+          // debug.println("");  
+      //     debug.println("");  
+          
+      //   }
+      // #endif // DEBUG_HH12
 
       #ifdef FEATURE_AZIMUTH_CORRECTION
         raw_azimuth = correct_azimuth(raw_azimuth);
@@ -14651,7 +14652,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
     byte hit_error = 0;
   #endif // defined(FEATURE_MOON_TRACKING) || defined(FEATURE_SUN_TRACKING)
 
-  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
+  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY) || defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE)
     float new_azimuth = 9999;
   #endif
 
@@ -14687,7 +14688,7 @@ byte process_backslash_command(byte input_buffer[], int input_buffer_index, byte
 
   switch (input_buffer[1]) {
   #if !defined(OPTION_SAVE_MEMORY_EXCLUDE_BACKSLASH_CMDS)
-  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY)
+  #if defined(FEATURE_AZ_POSITION_ROTARY_ENCODER) || defined(FEATURE_AZ_POSITION_PULSE_INPUT) || defined(FEATURE_AZ_POSITION_ROTARY_ENCODER_USE_PJRC_LIBRARY) || defined(FEATURE_AZ_POSITION_HH12_AS5045_SSI_RELATIVE)
     case 'A':      // \Ax[x][x] - manually set azimuth
       new_azimuth = 9999;
       switch (input_buffer_index) {
