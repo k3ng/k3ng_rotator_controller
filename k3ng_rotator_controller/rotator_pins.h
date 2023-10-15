@@ -10,18 +10,18 @@
 
 /* azimuth pins --------------------- (use just the azimuth pins for an azimuth-only rotator) */
 
-#define rotate_cw 6              // goes high to activate rotator R (CW) rotation - pin 1 on Yaesu connector
-#define rotate_ccw 7             // goes high to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
-#define rotate_cw_ccw  0         // goes high for both CW and CCW rotation
+#define rotate_cw 16              // goes high to activate rotator R (CW) rotation - pin 1 on Yaesu connector
+#define rotate_ccw 0             // goes high to activate rotator L (CCW) rotation - pin 2 on Yaesu connector
+#define rotate_cw_ccw  17         // goes high for both CW and CCW rotation
 #define rotate_cw_pwm 0          // optional - PWM CW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_ccw_pwm 0         // optional - PWM CCW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_cw_ccw_pwm 0      // optional - PWM on CW and CCW output - set to 0 to disable (must be PWM capable pin)
 #define rotate_cw_freq 0         // optional - CW variable frequency output
 #define rotate_ccw_freq 0        // optional - CCW variable frequency output
-#define button_cw 0              // normally open button to ground for manual CW rotation (schematic pin: A2)
-#define button_ccw 0             // normally open button to ground for manual CCW rotation (schematic pin: A3)
+#define button_cw 14              // normally open button to ground for manual CW rotation (schematic pin: A2)
+#define button_ccw 15             // normally open button to ground for manual CCW rotation (schematic pin: A3)
 #define serial_led 0             // LED blinks when command is received on serial port (set to 0 to disable)
-#define rotator_analog_az A0     // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
+#define rotator_analog_az 26     // reads analog azimuth voltage from rotator - pin 4 on Yaesu connector
 #define azimuth_speed_voltage 0  // optional - PWM output for speed control voltage feed into rotator (on continually unlike rotate_cw_pwm and rotate_ccw_pwm)
 #define overlap_led 0            // line goes active when azimuth rotator is in overlap (> 360 rotators)
 #define brake_az 0               // goes high to disengage azimuth brake (set to 0 to disable)
@@ -235,4 +235,3 @@
 #define satellite_tracking_active_pin 0
 #define satellite_tracking_activate_line 0
 #define satellite_tracking_button 0        // use with a normally open momentary switch to ground
-

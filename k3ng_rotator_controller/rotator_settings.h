@@ -243,13 +243,9 @@ You can tweak these, but read the online documentation!
 
 #define POWER_SWITCH_IDLE_TIMEOUT 15  // use with FEATURE_POWER_SWITCH; units are minutes
 
-#ifdef HARDWARE_EA4TX_ARS_USB
+
 #define BUTTON_ACTIVE_STATE HIGH
 #define BUTTON_INACTIVE_STATE LOW
-#else
-#define BUTTON_ACTIVE_STATE LOW
-#define BUTTON_INACTIVE_STATE HIGH
-#endif
 
 /*
  *
@@ -389,5 +385,3 @@ You can tweak these, but read the online documentation!
 #define SATELLITE_CALC_STAGE_3_RESOLUTION_SECS 1
 
 #define NEXTION_GSC_STARTUP_DELAY 0
-
-

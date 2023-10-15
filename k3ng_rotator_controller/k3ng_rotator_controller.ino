@@ -1,4 +1,17 @@
-/* Arduino Rotator Controller
+/* 
+AZC notes:
+
+easyEda: https://easyeda.com/editor#id=a82c5445af594906814706b7dc0fdf6f|e73a62999b1b49efba16c5c9ce2f9027
+
+
+using https://github.com/adafruit/Adafruit_SSD1306
+
+*/
+
+
+/* 
+ * Arduino Rotator Controller
+ * 
 
    Anthony Good
    K3NG
@@ -1138,6 +1151,8 @@
   
 #include "rotator_dependencies.h"
 
+#include <Wire.h>
+
 #ifdef FEATURE_4_BIT_LCD_DISPLAY
   #include <LiquidCrystal.h>  // required for classic 4 bit interface LCD display (FEATURE_4_BIT_LCD_DISPLAY)
 #endif
@@ -1343,7 +1358,7 @@ byte current_az_speed_voltage = 0;
 double latitude = DEFAULT_LATITUDE;
 double longitude = DEFAULT_LONGITUDE;
 double altitude_m = DEFAULT_ALTITUDE_M;
-byte periodic_debug_dump_time_seconds = 3;
+byte periodic_debug_dump_time_seconds = 1;
 
 DebugClass debug;
 
@@ -1867,7 +1882,9 @@ struct config_t {
 #endif
 
 
-
+void 
+  wifiSetup(void);
+  
 /* ------------------ let's start doing some stuff now that we got the formalities out of the way --------------------*/
 
 void setup() {
@@ -1888,12 +1905,16 @@ void setup() {
 
   initialize_interrupts();
 
+  wifiSetup();
+
   run_this_once();
 
 
 }
 
 /*-------------------------- here's where the magic happens --------------------------------*/
+
+void wifiLoop(void);
 
 void loop() {
 
@@ -2092,6 +2113,8 @@ void loop() {
   #ifdef OPTION_MORE_SERIAL_CHECKS
     check_serial();
   #endif
+
+  wifiLoop();
 
 } // loop 
 
@@ -7225,9 +7248,9 @@ void read_settings_from_eeprom(){
     #ifdef DEBUG_EEPROM
       if (debug_mode) {
         debug.println("read_settings_from_eeprom: reading settings from eeprom: ");
-        debug.print("\nconfiguration_struct_version"):
+        debug.print("\nconfiguration_struct_version");
         debug.print(configuration.configuration_struct_version);
-        debug.print("\nconfiguration_struct_subversion"):
+        debug.print("\nconfiguration_struct_subversion");
         debug.print(configuration.configuration_struct_subversion);        
         debug.print("\nanalog_az_full_ccw");
         debug.print(configuration.analog_az_full_ccw);
@@ -9447,7 +9470,7 @@ void output_debug(){
         #if !defined(TEENSYDUINO)
           void * HP = malloc(4);
           if (HP) {free(HP);}
-          unsigned long free = (unsigned long)SP - (unsigned long)HP;
+          unsigned long free = 0; //(unsigned long)SP - (unsigned long)HP;
           sprintf(tempstring,"%lu",(unsigned long)free);
           if ((free < 500) || (free > 10000)){
             debug.print(F("WARNING: Low memory: "));
@@ -10226,7 +10249,7 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             #endif //FEATURE_STEPPER_MOTOR                 
           }
           if (rotate_cw) {
-            digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_ACTIVE_VALUE);
+            digitalWriteEnhanced(rotate_cw, LOW);
             #if defined(pin_led_cw)
               digitalWriteEnhanced(pin_led_cw, PIN_LED_ACTIVE_STATE);
             #endif
@@ -10237,9 +10260,15 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
               digitalWriteEnhanced(pin_led_ccw, PIN_LED_INACTIVE_STATE);
             #endif          
           }
+
+          
+          delay(50);
+          
           if (rotate_cw_ccw){
             digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
           }
+
+          
           #ifdef DEBUG_ROTATOR
             if (debug_mode) {
               debug.print(F(" normal_az_speed_voltage:"));
@@ -10265,15 +10294,15 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
           if (rotate_cw_ccw_pwm) {
             analogWriteEnhanced(rotate_cw_ccw_pwm, 0);
           }
+          if (rotate_cw_ccw){
+            digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_INACTIVE_VALUE);
+          }        
           if (rotate_cw) {
-            digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
+            //digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
             #if defined(pin_led_cw)
               digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
             #endif          
           }
-          if (rotate_cw_ccw){
-            digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_INACTIVE_VALUE);
-          }        
           if (rotate_cw_freq) {
             noTone(rotate_cw_freq);
           }
@@ -10310,6 +10339,7 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             if (rotate_ccw_pwm) {
               analogWriteEnhanced(rotate_ccw_pwm, 0);
             }
+            
             if (rotate_cw_ccw_pwm) {
               analogWriteEnhanced(rotate_cw_ccw_pwm, 0);
             }
@@ -10347,8 +10377,11 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             }
             #endif //FEATURE_STEPPER_MOTOR 
           }
+          
+
+
           if (rotate_cw) {
-            digitalWriteEnhanced(rotate_cw, ROTATE_PIN_AZ_INACTIVE_VALUE);
+            digitalWriteEnhanced(rotate_cw, HIGH);
             #if defined(pin_led_cw)
               digitalWriteEnhanced(pin_led_cw, PIN_LED_INACTIVE_STATE);
             #endif          
@@ -10358,10 +10391,14 @@ void rotator(byte rotation_action, byte rotation_type, byte traceback) {
             #if defined(pin_led_ccw)
               digitalWriteEnhanced(pin_led_ccw, PIN_LED_ACTIVE_STATE);
             #endif          
-          }
+          }  
+
+          delay(50);
+          
           if (rotate_cw_ccw){
             digitalWriteEnhanced(rotate_cw_ccw, ROTATE_PIN_AZ_ACTIVE_VALUE);
-          }      
+          }
+          
           #ifdef DEBUG_ROTATOR
           if (debug_mode) {
             debug.print(F(" normal_az_speed_voltage:"));
@@ -11114,8 +11151,13 @@ void initialize_peripherals(){
     control_port->flush();
   #endif // DEBUG_LOOP
 
+  Wire.setSDA(20);
+  Wire.setSCL(21); 
+   
   #ifdef FEATURE_WIRE_SUPPORT
-    Wire.begin();
+
+    
+   // Wire.begin();
   #endif
 
   #ifdef FEATURE_AZ_POSITION_HMC5883L
@@ -13681,9 +13723,9 @@ byte get_analog_pin(byte pin_number){
     case 1: return_output = A1; break;
     case 2: return_output = A2; break;
     case 3: return_output = A3; break;
-    case 4: return_output = A4; break;
-    case 5: return_output = A5; break;
-    case 6: return_output = A6; break;
+   // case 4: return_output = A4; break;
+   // case 5: return_output = A5; break;
+   // case 6: return_output = A6; break;
   }
 
   return return_output;
